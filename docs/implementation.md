@@ -1,5 +1,7 @@
 # Implémentation et ownership
 
+[Index documentaire](README.md) · [Contribution](../CONTRIBUTING.md)
+
 Lire le [plan](plan.md) et les [résultats locaux](progress.md). Le présent document
 définit les lots et responsabilités ; leur validation exige les preuves du
 registre. Garder la comparaison des alternatives ouverte avant de développer le

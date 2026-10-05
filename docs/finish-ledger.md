@@ -1,5 +1,7 @@
 # Finition de Worktree Sweep
 
+[Index documentaire](README.md) · [Guide de démarrage](getting-started.md)
+
 Mandat du 04/10/2026 : terminer les lots issus du RETEX, éprouver les conditions
 du nettoyage et préparer la livraison. Au démarrage, le dépôt n'avait ni premier
 commit ni remote. La destination et la licence de publication ont été demandées

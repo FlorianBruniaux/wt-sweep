@@ -1,150 +1,157 @@
-# Worktree Sweep (`wt-sweep`)
+# Worktree Sweep
 
-CLI Rust pour inventorier les dépôts et worktrees Git puis produire un rapport
-local explicable. Le MVP en lecture seule est implémenté pour macOS : découverte,
-relations Git et import forge hors ligne. Le nom reste provisoire ; `apply`
-reste indisponible.
+**Find your Git worktrees. See what reached an integration branch. Keep the unknowns visible.**
 
-## Utilisation
+[Florian Bruniaux](https://github.com/FlorianBruniaux) · [Projects](https://www.florian.bruniaux.com/projects/)
 
-```sh
-cargo build --locked --offline
-# Une famille explicitement choisie, JSON réversible ou tableau :
-target/debug/wt-sweep scan --repo /chemin/clone --format json
-target/debug/wt-sweep scan --repo /chemin/clone --out /autre/inventory.json
-# Inclure les fichiers locaux et l'index, dans une exécution isolée :
-target/debug/wt-sweep scan --repo /chemin/clone --local --run-dir /autre/runs
-# Racines ciblées, sans exclusions implicites de dossiers cachés ou ignorés :
-target/debug/wt-sweep scan --root /racine/a --root /racine/b --workers 4 --format json
-# Rapport local, cible d'intégration choisie explicitement :
-target/debug/wt-sweep plan --inventory /autre/inventory.json \
-  --target refs/heads/main --out /autre/review.json
-target/debug/wt-sweep plan --inventory /autre/inventory.json \
-  --target refs/heads/main --summary --run-dir /autre/runs
-# Imports hors ligne, aucune commande distante exécutée :
-target/debug/wt-sweep forge commandes
-target/debug/wt-sweep forge ingerer --raw /autre/raw.json \
-  --receipt /autre/receipt.json --out /autre/forge.json
-target/debug/wt-sweep plan --inventory /autre/inventory.json \
-  --forge /autre/forge.json --target refs/heads/main --format json
-```
+[Quick start](#quick-start) · [Features](#features) · [How it works](#how-it-works) · [Documentation](#documentation) · [Changelog](CHANGELOG.md) · [Contributing](CONTRIBUTING.md)
 
-`--repo`, `--root` et `--all` sont mutuellement exclusifs. Aucun scan n'est
-implicite. `--all` part des montages retournés par le noyau et expose ses lacunes ;
-il n'a jamais été exécuté sur la machine de développement. Les tests injectent
-leurs racines et volumes. `--workers 1..8` borne les lectures parallèles de
-métadonnées, avec une valeur par défaut de 1. L'ordre d'agrégation et les
-observations restent identiques sur une fixture stable. Les appels Git restent
-séquentiels et bornés.
+Worktree Sweep (`wt-sweep`) is a local Rust CLI for discovering Git repositories
+and worktrees, inspecting local files, and reviewing commit relationships with
+optional GitHub or GitLab evidence. It produces readable reports and versioned
+JSON. No service, forge account or AI model is required to run it.
 
-Avant les lectures, le processus désactive la matérialisation des fichiers
-dataless, vérifie cette politique et la transmet à Git. Un échec provoque un
-refus explicite. Cette protection couvre aussi les lectures indirectes de Git ;
-elle ne constitue pas un instantané du disque. Les autres systèmes refusent les
-opérations exigeant cette protection. Voir les [frontières natives](docs/native-boundaries.md).
+**Status: read-only MVP for macOS.** Discovery and review are implemented;
+backup, restore and removal are unavailable. `apply` refuses every invocation.
+The project name is provisional and no release has been published.
 
-`--out` crée exclusivement un nouveau JSON, hors des familles et du périmètre
-inspectés, puis affiche un tableau. Il refuse les sorties existantes et les
-ancêtres symboliques. La publication et son nettoyage utilisent un descripteur
-de répertoire, avec contrôle d'identité ; cela ne démontre pas l'exclusion de
-tous les écrivains ou l'immobilité globale des noms. Pour un inventaire global,
-les marqueurs Git des ancêtres sont aussi vérifiés, même si le parcours partiel
-n'a pas encore découvert la famille concernée.
+![Worktree Sweep: choose a repository or roots, inventory worktrees with optional files and index, check Git relationships against explicit targets, then review activity, integration and unknowns. A matching HEAD can still leave untracked notes to preserve. Backup, restore and removal are unavailable.](docs/assets/worktree-sweep-workflow.jpg)
 
-`--run-dir BASE` demande une base existante hors des cibles et crée un dossier
-unique contenant le JSON, `report.txt` et `run.json`. Ce reçu donne les empreintes
-des deux artefacts, les dates de publication et un état `complete` ou `partial`.
-Les dates de collecte sont dans les artefacts. Deux processus créent des dossiers
-distincts ; aucun fichier précédent n'est remplacé. `--run-dir` et `--out` sont
-incompatibles. Un dossier sans reçu valide est incomplet, même si des fichiers
-s'y trouvent. Ces synchronisations ne constituent pas le contrat de sauvegarde U5.
+[Diagram source and generation notes](docs/assets/README.md). The local-file
+example is reproduced in the [disposable demo](docs/getting-started.md#disposable-demo).
 
-Le rapport décrit sujet du commit, branche, HEAD complet, MR associées, preuves
-et inconnues. `--summary` produit cinq lignes et indique le détail conservé quand
-`--run-dir` est utilisé. Les sujets sont bornés à 240 octets, les contrôles sont
-échappés, les titres n'ont aucune autorité sur le classement. `--summary` et
-`--format json` sont incompatibles.
+## Why it exists
 
-`scan --local` collecte types, modes, propriétaire, identités, dates, liens et
-SHA-256 des fichiers résidents, y compris cachés et ignorés. Il conserve l'index
-brut, l'index partagé identifiable et le reflog HEAD propre au worktree. Les index
-partagés restent sans interprétation sémantique : la lecture Git testée modifie
-leurs métadonnées, donc l'outil expose cette lacune. Le parseur traite les versions
-2 et 3 ; version 4 et extensions obligatoires non reconnues restent inconnues.
-Les règles d'ignorés passent par une commande Git qui ne lit pas l'index.
-ACL, attributs étendus,
-reflogs partagés et sauvegarde des objets restent hors de ce manifeste.
+Parallel development leaves worktrees spread across clones, hidden directories
+and temporary locations. A branch can look merged while its worktree still
+contains untracked notes, ignored files or a different staged version.
 
-Les limites par worktree sont 20 000 entrées, 64 Mio par fichier, 256 Mio lus,
-8 Mio de manifeste compact, 256 niveaux et 60 secondes. L'ensemble d'un scan
-local est limité à 25 000 entrées, 256 Mio de contenu publié, 24 Mio de manifestes
-compacts et 120 secondes. Chaque dépassement laisse une lacune explicite ; les
-appels bloqués dans le noyau ne garantissent pas une interruption immédiate.
-Un JSON publié ne peut dépasser 32 Mio ; réduire la portée si cette limite est
-atteinte. Le manifeste décrit un intervalle, sans instantané atomique. `plan`
-le transporte et signale que les contenus locaux n'ont pas été relus.
+Worktree Sweep brings that evidence into one report. You choose the scan scope
+and the integration refs. Each worktree keeps its full HEAD, observed Git
+relationships, associated requests, risks and unknowns. An integration
+observation describes committed Git state; local work still needs preservation.
 
-## Contrats et limites
+## Quick start
 
-- `wt-sweep.inventory/1` conserve chemins en octets hexadécimaux, OID complets,
-  identités, états de chemins, inscriptions Git, lacunes et intervalle observé.
-  Les erreurs d'accès ne deviennent pas des absences. Les domaines non
-  inventoriés restent explicites ; `local_inventories` est renseigné uniquement
-  quand `--local` est demandé.
-- `wt-sweep.review/1` contient des observations, risques et inconnues, aucune
-  action. Les relations permises sont identité de commit, ascendance par lecture
-  des objets commit et identité d'arbre. Les octets des commits, arbres et blobs
-  lus sont vérifiés contre leur OID ; un objet absent ou corrompu reste inconnu.
-  Les gitlinks appartiennent aux arbres.
-  Une cible doit être nommée par `--target` pour porter un classement
-  `integration_observed` ; les autres refs restent des cibles intermédiaires.
-  Patch-id, simulation de fusion, âge et fermeture d'une MR ne sont pas des preuves.
-- `wt-sweep.forge/1` conserve faits positifs et provenance des exports, même
-  partiels. Les reçus doivent venir de l'exécuteur ayant persisté les octets.
-  Pagination complète et vue cohérente sont distinctes ; aucune absence de MR
-  n'est certifiée par les adaptateurs actuels. Une observation historique ne
-  certifie pas l'état actuel du serveur.
+### Build from source
 
-Le [registre d'implémentation](docs/progress.md) distingue les critères éprouvés
-et ceux encore ouverts. [E1](docs/decisions/apply-readiness.md) reste
-`NON_DEMONTREE` : le produit ne fournit ni sauvegarde admissible ni retrait.
-Les [retours des sessions de ménage](docs/retex-sessions.md) ont fourni cinq
-témoins et les trois lots de rapport, manifeste et exécution isolée décrits ici.
-Les montages non visibles, les permissions TCC réelles, le comportement d'un
-véritable placeholder FileProvider et la cohérence temporelle ne sont pas
-certifiés. Deux tables de montages identiques restent des observations successives,
-pas une preuve d'immobilité de la machine.
-
-Avant un futur moteur de nettoyage, comparer agentrinse et les autres candidats
-aux mêmes fixtures. Les [références](docs/references.md) ne constituent pas une
-validation comportementale de ces alternatives.
-
-## Développement
-
-macOS, Rust 1.95.0 et Python 3.11 ou ultérieur pour les tests. `Cargo.lock` est versionné ; les
-bibliothèques utilisées sont serde/serde_json, rustix pour les publications par
-descripteur, libc pour les frontières macOS, SHA-256 et SHA-1 avec détection de
-collisions pour les objets Git.
-Après une récupération explicite des dépendances,
-les vérifications fonctionnent hors ligne :
+From a checkout of this repository, on macOS with Rust installed:
 
 ```sh
-cargo fmt --all -- --check
-cargo clippy --all-targets --locked --offline -- -D warnings
-cargo test --locked --offline
-cargo build --locked --offline
-python3 -B -m unittest discover -s tests -p 'test_*.py' -v
-python3 -B -m unittest discover -s experiments/exclusion -p 'test_*.py' -v
-python3 -B scripts/sync-ai.py --check
+cargo fetch --locked
+cargo build --release --locked --offline
+./target/release/wt-sweep --help
 ```
 
-Sur macOS, choisir un Python récent si `python3` ne fournit pas `tomllib`.
-Les tests ne nettoient que leurs propres fixtures temporaires. La suite Python
-produit utilise `target/debug/wt-sweep`, à reconstruire avant de la lancer.
+The repository pins Rust 1.95.0 in [rust-toolchain.toml](rust-toolchain.toml).
+Fetching dependencies needs network access; skip that step when they are already
+cached. Git is read through `/usr/bin/git`. There is no package-manager install
+or global configuration step. See [setup and troubleshooting](docs/getting-started.md).
 
-[Plan](docs/plan.md), [ownership](docs/implementation.md),
-[harness IA](docs/harness.md), [changelog](CHANGELOG.md).
-Aucun service, compte forge ou modèle n'est nécessaire à l'exécution du produit.
-La publication Cargo est désactivée ; licence et dépôt distant restent à choisir.
-`cargo build --release --locked --offline` produit le binaire optimisé dans
-`target/release/wt-sweep`, sans installation ni publication.
+### Inspect one repository family
+
+Set `repo_path` to the clone you want to inspect. The report directory must be
+outside the inspected repository, its worktrees and Git administration.
+
+```sh
+repo_path="/absolute/path/to/your/clone"
+report_dir="$(mktemp -d /private/tmp/wt-sweep-report.XXXXXX)"
+
+./target/release/wt-sweep scan --repo "$repo_path" --local \
+  --out "$report_dir/inventory.json"
+
+# Choose an existing full ref. Use refs/heads/master if that is your target.
+./target/release/wt-sweep plan --inventory "$report_dir/inventory.json" \
+  --target refs/heads/main --summary --run-dir "$report_dir"
+```
+
+`scan --local` includes tracked, untracked and ignored resident files within
+explicit limits. `plan` prints a five-line summary and saves the full report,
+JSON and publication receipt in a new run directory. Existing outputs are never
+replaced. For a copy-and-run example, use the [disposable demo](docs/getting-started.md#disposable-demo).
+
+### Read the result
+
+| Classification | What was observed |
+| --- | --- |
+| `active` | An open MR or PR was associated with the worktree's host, project, branch and HEAD. This takes priority over integration observations. |
+| `integration_observed` | A verified commit or tree relationship reaches a ref you explicitly selected with `--target`. |
+| `to_triage` | Neither condition was established. Inspect the observations and unknowns. |
+
+**None of these classifications authorizes deletion.** A worktree can have an
+integrated HEAD and still contain local changes. Missing forge evidence remains
+unknown, including when Git integration was observed.
+
+## Features
+
+| Capability | Use it for | Entry point |
+| --- | --- | --- |
+| Repository families | Discover the main checkout, linked and detached worktrees, and missing registrations. | `scan --repo PATH` |
+| Scoped discovery | Walk selected roots, including hidden, ignored and nested directories, with coverage gaps retained. | `scan --root PATH` |
+| Local file manifests | Inspect file hashes, metadata, index entries and selected worktree administration. | `scan --local` |
+| Git relationships | Observe identical commits, ancestry and identical trees against named refs. | `plan --target FULL_REF` |
+| Offline forge evidence | Import captured GitHub/GitLab data with provenance, without contacting a forge. | `forge ingerer` |
+| Human and machine output | Read the detailed report or five-line summary; retain full path bytes and OIDs in JSON. | `--summary`, `--format json` |
+| Separate runs | Keep concurrent reports in distinct directories with artifact hashes and publication timestamps. | `--run-dir BASE` |
+
+Global discovery is also available through `scan --all`. It uses visible mounted
+volumes and reports access gaps. It has been tested with injected volumes, not
+by scanning the development machine. Start with a repository or selected roots.
+
+## How it works
+
+Collection performs bounded reads. Judgement classifies the collected evidence
+without doing I/O. Git object bytes are checked against their full OIDs. Age,
+patch-id, a closed MR and a model suggestion cannot establish integration.
+
+On macOS, the process disables and verifies dataless-file materialization before
+protected reads, including its Git children. If that policy cannot be established,
+the operation is refused. Access failures and timeouts remain visible. A completed
+walk is still an interval of observations, not an atomic filesystem snapshot.
+
+`plan` rechecks Git evidence but carries saved local manifests forward without
+rereading their contents. The [architecture](docs/architecture.md) and
+[evidence contracts](docs/contracts.md) describe these boundaries.
+
+## Documentation
+
+| Start here | What it covers |
+| --- | --- |
+| [Getting started](docs/getting-started.md) | Setup, disposable demo, report interpretation and troubleshooting |
+| [CLI reference](docs/cli.md) | Commands, defaults, output modes, limits and exit codes |
+| [Offline forge imports](docs/forge.md) | Exports, executor receipts and association limits |
+| [Evidence and JSON](docs/contracts.md) | Schema fields, path bytes, digests and run receipts |
+| [Architecture](docs/architecture.md) | Module responsibilities, read boundaries and test strategy |
+| [Documentation index](docs/README.md) | All guides, design decisions and validation records |
+
+User guides are in English. The original design, experiment and implementation
+records are retained in French.
+
+## Roadmap and validation
+
+| Stage | Current state |
+| --- | --- |
+| U1–U4: discovery and review | Implemented and tested locally on macOS; evidence limits remain explicit. |
+| E1: exclude concurrent writers | **Not demonstrated.** Existing experiments defeat the proposed locking and rename approaches. |
+| U5: durable backup and independent restore | Blocked on E1 and a complete preservation contract. |
+| U6–U7: removal | Unavailable, pending fixture validation, independent review and exact human approval. |
+
+The [acceptance plan](docs/plan.md) defines the gates. The
+[apply decision](docs/decisions/apply-readiness.md) records why they remain closed.
+
+The implementation checkpoint on 2026-10-05 recorded 92 passing Rust tests and
+78 passing Python tests. Skips, native experiment results and the tested binary
+digest are in the [validation ledger](docs/finish-ledger.md#vérifications).
+These are local results. Remote CI, real FileProvider placeholders, actual TCC
+denials and a machine-wide snapshot have not been verified.
+
+## Development and project status
+
+See [CONTRIBUTING.md](CONTRIBUTING.md) for the build, test commands, disposable
+fixtures and documentation conventions. The [changelog](CHANGELOG.md) tracks
+unreleased changes; [related tools](docs/references.md) remain candidates for
+behavioral comparison before a removal engine is built.
+
+The source checkout is the current distribution. Cargo publishing is disabled,
+and a project license has not been selected. No license or public release is
+implied by the presence of this README.

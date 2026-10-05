@@ -1,5 +1,7 @@
 # Résultats d'implémentation
 
+[Index documentaire](README.md) · [Contrats des artefacts](contracts.md)
+
 Le 04/10/2026, le MVP macOS U1 à U4 est implémenté et vérifié sur des familles
 Git jetables : inventaire, découverte, rapport local et import forge. La table
 native des montages et la politique de refus de matérialisation sont raccordées.

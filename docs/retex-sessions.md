@@ -1,5 +1,7 @@
 # Retours des sessions de ménage : apports à Worktree Sweep
 
+[Index documentaire](README.md) · [Guide de démarrage](getting-started.md)
+
 Lecture et expériences du 04/10/2026. Sources : `RETEX-session-msds-20261004.md`,
 les cinq scripts et les sept TSV conservés sous `scripts/session-msds/` dans le
 dossier de ménage, ainsi que le texte Aristote fourni dans cette conversation.

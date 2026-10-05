@@ -1,0 +1,11 @@
+flowchart LR
+    CHOOSE["CHOOSE: one repository or selected roots"] --> INVENTORY["INVENTORY: Git worktrees; files and index optional; coverage gaps visible"]
+    INVENTORY --> CHECK["CHECK: commits, ancestry and trees against explicit integration targets"]
+    FORGE["Optional forge export"] --> CHECK
+    CHECK --> REVIEW["REVIEW: active, integration observed, or to triage; unknowns remain visible"]
+
+    subgraph EXAMPLE["Same commit. Local work can remain."]
+        COMMIT["HEAD matches main"]
+        LOCAL["Untracked notes still exist"]
+        PRESERVE["Local files still need preservation."]
+    end

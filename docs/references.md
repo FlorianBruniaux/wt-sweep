@@ -1,5 +1,7 @@
 # Références et décisions de réutilisation
 
+[Index documentaire](README.md) · [Présentation du projet](../README.md)
+
 La recherche du 04/10/2026 porte sur la documentation et une lecture ciblée du
 code. Aucun de ces produits n'a été exécuté pour valider notre contrat complet.
 L'absence de candidat équivalent vérifié n'est pas une preuve d'absence du marché.

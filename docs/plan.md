@@ -1,5 +1,7 @@
 # Plan de Worktree Sweep
 
+[Index documentaire](README.md) · [Architecture](architecture.md) · [Référence CLI](cli.md)
+
 Synthèse de conception consolidée le 04/10/2026. Les critères ci-dessous restent
 la cible d'acceptation. Le [registre d'implémentation](progress.md) distingue les
 comportements U1 à U4 testés localement des critères encore ouverts.

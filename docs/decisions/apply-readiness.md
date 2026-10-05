@@ -1,5 +1,7 @@
 # Accès à U5/U6 : décision E1 du 04/10/2026
 
+[Index des décisions](README.md) · [Architecture](../architecture.md)
+
 **NON_DEMONTREE. Aucun mécanisme d'exclusion conforme n'a été établi avec les
 droits et contraintes de cette session. U5 reste bloquée, puis U6 et U7 par
 dépendance.** Cette conclusion porte sur les mécanismes examinés et les preuves

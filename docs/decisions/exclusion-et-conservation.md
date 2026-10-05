@@ -1,5 +1,7 @@
 # E1 : exclusion et conservation
 
+[Index des décisions](README.md) · [Architecture](../architecture.md)
+
 Décision du 04/10/2026 : **NON_DEMONTREE**. Les témoins exécutés sur
 macOS 26.5.1 arm64 réfutent les mécanismes particuliers ci-dessous. Ils ne
 démontrent pas l'impossibilité de tout mécanisme futur. `apply` reste indisponible ;

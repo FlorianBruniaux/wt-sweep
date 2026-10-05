@@ -1,5 +1,7 @@
 # Configuration IA du dépôt
 
+[Index documentaire](README.md) · [Contribution](../CONTRIBUTING.md)
+
 `harness/instructions.md`, `harness/agents.json` et `harness/agents/*.md` sont les
 sources éditables. `scripts/sync-ai.py` génère les deux instructions racine, les
 agents Claude/Codex, la configuration Codex et un inventaire SHA-256. Aucun fichier

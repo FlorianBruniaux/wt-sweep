@@ -1,73 +1,100 @@
 # Changelog
 
+Changes are grouped under `Unreleased` until a release is published. The package
+version in Cargo is a development version, not a release announcement.
+
+[Project overview](README.md) · [Documentation](docs/README.md) · [Contributing](CONTRIBUTING.md)
+
 ## [Unreleased]
 
-- Ajoute le rapport descriptif : sujet de commit borné, branche, HEAD complet,
-  titres/liens de MR, observations et inconnues ; résumé de cinq lignes.
-- Ajoute `scan --local` : manifestes bornés des fichiers suivis, non suivis et
-  ignorés, index brut et reflog HEAD propre, empreintes et métadonnées par
-  descripteurs. Les index partagés sont conservés bruts ; leur interprétation
-  reste inconnue pour éviter l'effet de bord Git observé sur leurs dates.
-- Ajoute `--run-dir` pour publier chaque exécution dans un nouveau dossier avec
-  JSON, détail et reçu des empreintes. Les sorties restent hors des cibles ;
-  aucune exécution concurrente ne remplace les fichiers de la précédente.
-- Documente une troisième exception unsafe privée pour sélectionner le cwd Git
-  par descripteur avant exec ; aucun retour au chemin après substitution.
-- Éprouve les capacités E1 : lease d'écriture refusé et révocation de fichier
-  régulier non prise en charge dans le contexte testé. U5 à U7 restent bloquées,
-  avec la frontière d'autorité nécessaire décrite dans `docs/decisions/apply-readiness.md`.
-- Refuse les flags réservés des index v3 et applique un même plafond aux entrées
-  de fichiers, d'index et d'administration, après reproductions indépendantes.
-- Arrête les recherches de relations quand le commit source est illisible,
-  en conservant les associations forge. Le scénario FIFO retrouve son délai
-  de test sans augmenter celui-ci. Le nettoyage des processus de test ne dépend
-  plus d'une lecture globale de la table des processus.
-- Analyse les retours de ménage msds et Aristote sans reprendre leurs inventaires
-  partagés ni leurs opérations réelles. Documente huit pistes et trois prochains
-  lots dans `docs/retex-sessions.md`.
-- Ajoute cinq témoins sur dépôts jetables : ignorés retirés sans force, non-suivis
-  refusés, empreinte de statut insensible au contenu, index perdu par un patch
-  depuis HEAD et écrivain visible par descripteur mais extérieur au filtre cwd.
-  Aucun moteur de retrait n'est activé.
-- Termine les raccordements du MVP macOS U1 à U4 : montages natifs sans filtrage
-  silencieux, matérialisation dataless désactivée et vérifiée pour le processus,
-  ses threads et Git, lectures de métadonnées parallèles réglables de 1 à 8.
-- Corrige l'identification du principal avec `--separate-git-dir`, conserve les
-  incertitudes lors d'un changement de montage et refuse une sortie dans un
-  dépôt encore non découvert par un inventaire global partiel.
-- Ajoute les preuves natives, les positifs résidents avec includes, alternates
-  et packs, les refus bornés des FIFO et le rejeu historique explicite de !91,
-  !92 et de la MR !383 associée à `lead-app-mr43`. Aucun scan global réel exécuté.
-- Documente les deux frontières FFI privées revues, seules exceptions locales
-  à l'interdiction Rust du code unsafe. FileProvider réel et TCC restent non testés.
-- Implémente l'inventaire U1 : familles Git exactes, chemins réversibles, OID
-  complets, erreurs explicites, JSON/tableau et publications sans remplacement.
-- Ajoute un exécuteur Git borné, environnement isolé, capture par sockets et
-  contrôle croisé des administrations pour détecter les omissions de Git.
-- Ajoute les oracles indépendants de conservation et les témoins d'E1 :
-  exclusion des écrivains NON_DEMONTREE, `apply` toujours indisponible.
-- Développe U2, U3 et U4 : découverte par racines, rapport de relations locales
-  avec digest canonique, et ingestion d'exports forge liés à leurs reçus.
-  Voir `docs/progress.md` pour les validations et critères ouverts.
-- Vérifie les octets des objets Git contre leurs OID SHA-1/SHA-256, borne les
-  lectures du rapport et refuse une sortie dans un worktree déplacé depuis
-  l'inventaire. Les preuves historiques forge sont relues avant association.
-- Signale les champs forge contradictoires sans association précise et conserve
-  dans la couverture les entrées GraphQL dont le contenu manque.
-- Ajoute les dépendances nécessaires aux formats JSON, empreintes et opérations
-  sur descripteurs ; CI préparée pour récupérer puis tester hors ligne.
-- Remplace le statut périmé du socle dans les instructions canoniques par un
-  renvoi aux preuves d'implémentation, puis régénère les projections concernées.
+### Added
 
-- Exclut les handoffs locaux du suivi Git pour conserver les chemins privés hors des fichiers distribués.
+- Gemini workflow infographic embedded in the README, with a local-preservation
+  example, descriptive alt text, editable logical source and generation record.
+  The third render passed text and edge review at native and README sizes;
+  two rejected drafts remain documented. No product behavior changed.
 
-- Initialise le crate `wt-sweep` sans dépendance, avec Rust épinglé et verrou Cargo.
-- Ajoute aide/version et refus explicites des commandes produit non implémentées.
-- Ajoute les tests CLI et ceux du générateur de configuration sur fixtures isolées.
-- Génère les instructions et quatre rôles pour Claude et Codex depuis `harness/`,
-  avec contrôle de dérive, refus des liens symboliques et des préimages modifiées.
-- Ajoute la CI macOS et les plans de découverte, comparaison des alternatives,
-  conservation et implémentation parallèle.
-- Limites du socle initial : aucun inventaire, jugement Git, sauvegarde ni retrait implémenté.
-  Présence des configurations distincte de leur chargement natif ; CI distante
-  non exécutée lors de la préparation locale.
+- Read-only macOS inventory and review MVP, covering U1–U4 of the
+  [acceptance plan](docs/plan.md).
+- Explicit repository, root and mounted-volume discovery. Preserve repository
+  families, linked/detached worktrees, missing registrations, reversible path
+  bytes, full object IDs, coverage gaps and observation intervals.
+- Native macOS mount collection and verified process/thread/child policy against
+  dataless-file materialization. Configurable parallel metadata reads from 1 to 8.
+- Local Git review with verified object bytes, commit identity, ancestry and tree
+  identity. Integration targets must be explicit; other refs remain intermediate.
+- Offline GitLab/GitHub export ingestion, capture receipts, raw-source replay,
+  positive facts from partial exports and explicit association uncertainty.
+- Descriptive reports with bounded commit subjects, branches, full HEADs, MR/PR
+  titles and links, observations, risks and unknowns. Five-line summary output.
+- `scan --local` manifests for tracked, untracked, ignored and hidden resident
+  files, with hashes, metadata, index observations and the worktree's own HEAD
+  reflog. Ordinary index versions 2/3 and conflict stages are parsed; split-index
+  semantics remain unknown to avoid the observed Git metadata side effect.
+- `--run-dir` publications in unique directories with JSON, full report and
+  artifact-hash receipts. Concurrent runs do not replace each other's outputs.
+- Independent conservation oracles, positive Git fixtures, error injection and
+  synthetic forge exports. Explicit historical replays remain opt-in.
+- Disposable E1 and cleanup-session witnesses: ignored files removed without
+  force, untracked-file refusal, status insensitive to content changes, index
+  loss through a HEAD-only patch, and writers outside a cwd-only process check.
+- Native writer-exclusion capability probe, with the failed lease/revocation
+  observations and the next authority boundary recorded in the
+  [apply decision](docs/decisions/apply-readiness.md).
+- Canonical AI development instructions and four roles, generated for Claude and
+  Codex with drift, symlink and preimage checks. This is development tooling;
+  the product needs no AI model.
+- macOS CI workflow for locked dependency retrieval, offline Rust checks, Python
+  suites and harness synchronization. Remote execution is not yet verified.
+- User documentation on 2026-10-05: [getting started](docs/getting-started.md),
+  [CLI reference](docs/cli.md), [forge imports](docs/forge.md),
+  [JSON contracts](docs/contracts.md), [architecture](docs/architecture.md),
+  [contribution guide](CONTRIBUTING.md) and linked documentation/decision indexes.
+  Includes replayable Git and forge demos on disposable synthetic inputs.
+
+### Changed
+
+- Reworked the README in English with a direct quick start, capabilities,
+  classification guide, data flow, roadmap and validation links. Existing French
+  engineering records remain available through the documentation index.
+- Grouped this changelog by change type while retaining bootstrap history.
+- Replaced stale bootstrap status in canonical repository instructions with a
+  link to implementation evidence and regenerated the affected projections.
+- Kept local handoffs outside tracked source to avoid distributing private paths.
+
+### Fixed
+
+- Main-worktree identification with `--separate-git-dir`.
+- Uncertainty retention when mounts change during discovery.
+- Output placement inside a repository not yet discovered by a partial global
+  scan, or inside a worktree moved after inventory capture.
+- Altered normalized forge facts and contradictory host/project fields being
+  eligible for precise association; missing GraphQL nodes remain coverage gaps.
+- Reserved flags in index v3 and inconsistent entry budgets across files, index
+  entries and administrative observations.
+- Redundant relation reads when the source commit is unreadable. The FIFO
+  regression passes within its original timeout; malformed subjects on valid
+  objects still allow Git judgement.
+- Test-process cleanup that depended on a global process-table read. Tests now
+  reap the process they own, including on failure.
+
+### Read and preservation boundaries
+
+- Controlled Git arguments and environment, bounded I/O and timeouts, executable
+  configuration neutralization, and denial of implicit object downloads.
+- Commit/tree/blob bytes checked against SHA-1 or SHA-256 OIDs, with SHA-1
+  collision detection. Missing or corrupt objects remain unknown.
+- Exclusive output publication outside inspected boundaries, with descriptor
+  identity checks. Three private unsafe boundaries are documented and reviewed:
+  native mounts, materialization policy and descriptor-selected Git cwd.
+- `apply` remains unavailable. E1 writer exclusion is not demonstrated; durable
+  backup, independent restore and removal are blocked. The
+  [finishing ledger](docs/finish-ledger.md) records local checks and remaining limits.
+
+## Bootstrap history
+
+The initial scaffold pinned Rust and Cargo, exposed help/version and refused
+unimplemented product commands. It introduced the generated development harness,
+CLI/generator tests and acceptance plan before discovery and review existed.
+The implementation and scaffold were first committed together in `a1a768f`.
+There was no separate bootstrap release.

@@ -1,5 +1,7 @@
 # Frontières natives macOS
 
+[Index documentaire](README.md) · [Architecture](architecture.md) · [Contrats](contracts.md)
+
 Le MVP utilise trois exceptions unsafe privées : `mounts::ffi`,
 `residency::ffi` et `git::anchored_cwd`.
 `libc` fournit les types de l'ABI et `getfsstat`. Les deux fonctions de politique

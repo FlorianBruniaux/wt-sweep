@@ -1,0 +1,164 @@
+{
+  "visual": "Worktree Sweep workflow",
+  "status": "accepted_and_integrated",
+  "requested_provider": "Gemini",
+  "model": "gemini-3-pro-image",
+  "cli": "gemini-image",
+  "cli_sha256": "8f9e76dccdd753d0bd14facc6cc7bd7c32934e88913f2a303ff6560b12a24524",
+  "aspect_ratio_requested": "16:9",
+  "resolution_requested": "CLI default (documented 1K)",
+  "call_ceiling": 3,
+  "logical_calls": 3,
+  "successful_image_responses": 3,
+  "calls_remaining": 0,
+  "prompt": {
+    "path": "worktree-sweep-workflow-v2.prompt.md",
+    "sha256": "91b818bfafdcc110f3a06b2a01a8fe2c37a9b7099cc9e9937c7df89f8d32e4e1"
+  },
+  "pricing": {
+    "checked_on": "2026-10-05",
+    "source": "https://ai.google.dev/gemini-api/docs/pricing",
+    "tier": "Standard",
+    "currency": "USD",
+    "image_output_1k_2k": 0.134,
+    "image_output_4k": 0.24,
+    "planned_image_output_ceiling": 0.268,
+    "excluded": [
+      "input",
+      "text and thinking",
+      "grounding",
+      "taxes"
+    ],
+    "incremental_image_output_estimate": 0.134,
+    "cumulative_image_output_estimate": 0.402,
+    "provider_reported_billing": "UNKNOWN; CLI does not expose usage metadata",
+    "authorized_image_output_ceiling": 0.402
+  },
+  "references_inspected": [
+    "yt-insights/docs/assets/yt-insights-workflow.jpg",
+    "agent-router/docs/media/routing-demo-poster.png"
+  ],
+  "reference_images_uploaded": false,
+  "source_claims": [
+    "../getting-started.md#disposable-demo",
+    "../cli.md",
+    "../contracts.md"
+  ],
+  "attempts": [
+    {
+      "number": 1,
+      "started_at": "2026-10-05T08:27:27.253777+00:00",
+      "prompt_sha256": "cd12070eede825ee7f04d1c573a57f8e1f29433dc0472992ed1cd428894551dc",
+      "output_requested": "history/workflow-attempt-01.png",
+      "status": "rejected",
+      "exit_code": 0,
+      "finished_at": "2026-10-05T08:27:51.510110+00:00",
+      "diagnostic": "Saved <repo>/docs/assets/history/workflow-attempt-01.png",
+      "native_sha256": "98a2a2bb637e7f8c0f14092a5b84996fcb7fc37e3585ff3250abe3182c758c8a",
+      "native_bytes": 498556,
+      "native_path": "history/workflow-attempt-01.jpg",
+      "native_mime": "image/jpeg",
+      "native_dimensions": [
+        1376,
+        768
+      ],
+      "qa": {
+        "native_size_viewed": true,
+        "accepted": false,
+        "reason": "Closed text inventory violated: case-panel icon adds HEAD and commit = annotations, which were not requested.",
+        "edges": "Four workflow edges, correct direction and endpoints.",
+        "content": "Main labels and read-only boundary correct.",
+        "normalization": "Renamed .png to .jpg to match actual MIME; bytes unchanged."
+      },
+      "prompt_path": "worktree-sweep-workflow.prompt.md",
+      "image_output_estimate_usd": 0.134
+    },
+    {
+      "number": 2,
+      "started_at": "2026-10-05T08:29:42.050522+00:00",
+      "prompt_sha256": "cd12070eede825ee7f04d1c573a57f8e1f29433dc0472992ed1cd428894551dc",
+      "output_requested": "history/workflow-attempt-02.jpg",
+      "status": "rejected",
+      "retry_reason": "Stochastic extra labels on attempt 1; identical self-contained prompt",
+      "exit_code": 0,
+      "finished_at": "2026-10-05T08:30:07.483707+00:00",
+      "diagnostic": "Saved <repo>/docs/assets/history/workflow-attempt-02.jpg",
+      "native_sha256": "9195c614f8c6b5fa524b3a30c85795b5a4bff8d28d0f503ab7ce7d4409fee515",
+      "native_bytes": 509583,
+      "native_path": "history/workflow-attempt-02.jpg",
+      "native_mime": "image/jpeg",
+      "native_dimensions": [
+        1376,
+        768
+      ],
+      "qa": {
+        "native_size_viewed": true,
+        "accepted": false,
+        "reason": "Classification labels appear inside the report pictogram and are duplicated outside; Active is missing from the main three-row list. The closed text inventory and blank-icon requirement are not met.",
+        "edges": "Four workflow edges with correct direction and endpoints.",
+        "content": "Read-only product limits remain visible; no cleanup authorization depicted.",
+        "normalization": "None; native JPEG retained unchanged."
+      },
+      "prompt_path": "worktree-sweep-workflow.prompt.md",
+      "image_output_estimate_usd": 0.134
+    },
+    {
+      "number": 3,
+      "started_at": "2026-10-05T08:36:49.066642+00:00",
+      "prompt_path": "worktree-sweep-workflow-v2.prompt.md",
+      "prompt_sha256": "91b818bfafdcc110f3a06b2a01a8fe2c37a9b7099cc9e9937c7df89f8d32e4e1",
+      "output_requested": "history/workflow-attempt-03.jpg",
+      "status": "accepted",
+      "retry_reason": "User-authorized third attempt; revised standalone brief with empty report icon and unlabelled matching circles",
+      "exit_code": 0,
+      "finished_at": "2026-10-05T08:37:11.900144+00:00",
+      "diagnostic": "Saved <repo>/docs/assets/history/workflow-attempt-03.jpg",
+      "native_sha256": "5f9d79e8e449a9c39d08b0bc078f042ca86951a684fb7ba1ca2421fce8859ef7",
+      "native_bytes": 467179,
+      "native_path": "history/workflow-attempt-03.jpg",
+      "native_mime": "image/jpeg",
+      "native_dimensions": [
+        1376,
+        768
+      ],
+      "image_output_estimate_usd": 0.134,
+      "qa": {
+        "native_size_viewed": true,
+        "readme_width_viewed": 960,
+        "accepted": true,
+        "closed_text_inventory": "All 23 requested strings present once; no unrequested textual annotations; classification rows outside empty report pictogram.",
+        "edges": "Exactly four workflow arrows: CHOOSE to INVENTORY, INVENTORY to CHECK, CHECK to REVIEW, optional forge export to CHECK. Case panel has no workflow connectors.",
+        "readability": "All titles, labels, example and product boundary readable at native size and 960px width.",
+        "nonblocking_style_notes": [
+          "White content area under a navy header, rather than the fully dark brief; retained for clear contrast.",
+          "Native 1376x768 is the provider output for the requested 16:9 canvas; no stretching or cropping applied."
+        ],
+        "review_scope": "Assistant visual inspection; not an independent review or a runtime product test.",
+        "normalization": "None; delivered JPEG is a byte-identical copy of the native response."
+      }
+    }
+  ],
+  "delivered": {
+    "path": "worktree-sweep-workflow.jpg",
+    "sha256": "5f9d79e8e449a9c39d08b0bc078f042ca86951a684fb7ba1ca2421fce8859ef7",
+    "mime": "image/jpeg",
+    "dimensions": [
+      1376,
+      768
+    ],
+    "bytes": 467179,
+    "source_attempt": 3,
+    "normalization": "None; no upscale, crop, stretch or retouching"
+  },
+  "integration_status": "Embedded in ../../README.md; documentation index and changelog updated",
+  "api_authentication": "successful provider image response",
+  "next_proposed_prompt": {
+    "path": "worktree-sweep-workflow-v2.prompt.md",
+    "sha256": "91b818bfafdcc110f3a06b2a01a8fe2c37a9b7099cc9e9937c7df89f8d32e4e1",
+    "status": "used by accepted third attempt"
+  },
+  "additional_authorization": {
+    "date": "2026-10-05",
+    "scope": "Exactly one additional Gemini image attempt (third call), explicitly authorized by user"
+  }
+}
