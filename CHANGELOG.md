@@ -42,6 +42,9 @@ version in Cargo is a development version, not a release announcement.
   [decision to keep removal unavailable](docs/decisions/apply-readiness.md).
 - Optional [AI development harness](docs/harness.md) with generated Claude/Codex
   instructions and four roles. The CLI needs no AI model.
+- [FSL-1.1-ALv2 license](LICENSE.md), matching Agent Router, declared in Cargo.
+- README badges for the actual CI workflow, pinned Rust toolchain, macOS runtime
+  and license; six GitHub area labels documented in the contribution guide.
 
 ### Changed
 
@@ -57,6 +60,10 @@ version in Cargo is a development version, not a release announcement.
 
 ### Fixed
 
+- Transport-denial test setup now uses the standard ten-second Git budget.
+  The first GitHub run exceeded its one-second fixture-initialization limit.
+  The assertion requires a protocol refusal rather than accepting any error;
+  production deadlines are unchanged.
 - Main-worktree identification with `--separate-git-dir`.
 - Uncertainty retention when mounts change during discovery.
 - Output placement inside a repository not yet discovered by a partial global

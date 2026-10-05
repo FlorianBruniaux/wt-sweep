@@ -73,6 +73,26 @@ moving files. Update `CHANGELOG.md` under `Unreleased`; do not invent a release
 date, license, benchmark or CI badge. Keep source/setup instructions usable
 without a global install.
 
+## License and labels
+
+The project's [license](LICENSE.md) is FSL-1.1-ALv2. Preserve third-party notices
+when adding or adapting external code.
+
+GitHub issues use the standard type labels, such as `bug`, `enhancement` and
+`documentation`. Add an area label when the scope is known:
+
+| Label | Scope |
+| --- | --- |
+| `area:discovery` | Repository families, traversal and coverage |
+| `area:review` | Git relationships, classifications and reports |
+| `area:forge` | Offline GitHub/GitLab exports and association |
+| `area:preservation` | Local manifests, writer exclusion and future restore/removal gates |
+| `area:documentation` | README, guides, examples and diagrams |
+| `area:governance` | License, packaging, CI and project metadata |
+
+Use `blocked` when a named prerequisite or decision prevents progress. A label
+does not establish that an acceptance gate passed.
+
 ## AI development harness
 
 The runtime does not need an AI agent. Repository instructions and four optional

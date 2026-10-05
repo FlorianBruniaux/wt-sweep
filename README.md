@@ -2,6 +2,11 @@
 
 **Find your Git worktrees. See what reached an integration branch. Keep the unknowns visible.**
 
+[![Read-only MVP checks](https://github.com/FlorianBruniaux/wt-sweep/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/FlorianBruniaux/wt-sweep/actions/workflows/ci.yml)
+[![Rust toolchain: 1.95.0](https://img.shields.io/badge/Rust-1.95.0-dc7336?logo=rust)](rust-toolchain.toml)
+[![Runtime: macOS](https://img.shields.io/badge/Runtime-macOS-597ee5)](docs/getting-started.md#prerequisites)
+[![License: FSL-1.1-ALv2](https://img.shields.io/badge/License-FSL--1.1--ALv2-597ee5)](LICENSE.md)
+
 [Florian Bruniaux](https://github.com/FlorianBruniaux) · [Projects](https://www.florian.bruniaux.com/projects/)
 
 [Quick start](#quick-start) · [Features](#features) · [How it works](#how-it-works) · [Documentation](#documentation) · [Changelog](CHANGELOG.md) · [Contributing](CONTRIBUTING.md)
@@ -159,8 +164,9 @@ The [acceptance plan](docs/plan.md) defines the gates. The
 The implementation checkpoint on 2026-10-05 recorded 92 passing Rust tests and
 78 passing Python tests. Skips, native experiment results and the tested binary
 digest are in the [validation ledger](docs/finish-ledger.md#vérifications).
-These are local results. Remote CI, real FileProvider placeholders, actual TCC
-denials and a machine-wide snapshot have not been verified.
+These are local results; the CI badge links to the current workflow status.
+Real FileProvider placeholders, actual TCC denials and a machine-wide snapshot
+have not been verified.
 
 ## Development and project status
 
@@ -169,6 +175,16 @@ fixtures and documentation conventions. The [changelog](CHANGELOG.md) tracks
 unreleased changes; [related tools](docs/references.md) remain candidates for
 behavioral comparison before a removal engine is built.
 
-The source checkout is the current distribution. Cargo publishing is disabled,
-and a project license has not been selected. No license or public release is
-implied by the presence of this README.
+The source checkout is the current distribution. Cargo publishing is disabled;
+no package release has been published.
+
+## License
+
+[Functional Source License 1.1, Apache 2.0 future license](LICENSE.md)
+(`FSL-1.1-ALv2`), copyright 2026 Florian Bruniaux. The same license is used by
+Agent Router.
+
+The FSL restricts competing commercial uses. Each version receives an additional
+Apache 2.0 license two years after it is made available. Read the
+[full terms](LICENSE.md) and the [FSL explanation](https://fsl.software/).
+Third-party dependencies retain their own licenses.

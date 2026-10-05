@@ -29,5 +29,6 @@ copié depuis ces projets.
 
 L'entrée optionnelle `wt sweep` pourra utiliser les
 [sous-commandes Worktrunk](https://worktrunk.dev/extending/#custom-subcommands).
-Elle ne bloque pas le CLI autonome. Disponibilité du nom sur les registres et
-choix de licence restent à vérifier avant publication.
+Elle ne bloque pas le CLI autonome. La disponibilité du nom sur les registres
+reste à vérifier avant publication d'un paquet. La licence du projet est
+[FSL-1.1-ALv2](../LICENSE.md).

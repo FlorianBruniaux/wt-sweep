@@ -969,41 +969,34 @@ mod tests {
         let git = ControlledGit::default();
         let mut init = git.command(&fixture);
         init.arg("init");
-        run_bounded(
-            init,
-            &fixture,
-            "fixture_init",
-            Duration::from_secs(1),
-            1024 * 1024,
-        )
-        .unwrap_or_else(|e| panic!("init: {e}"));
+        // Fixture setup shares the normal budget; CI's first Git launch can be slow.
+        run_bounded(init, &fixture, "fixture_init", git.timeout, 1024 * 1024)
+            .unwrap_or_else(|e| panic!("init: {e}"));
         let mut config = git.command(&fixture);
         config.args(["config", "protocol.ext.allow", "always"]);
-        run_bounded(
-            config,
-            &fixture,
-            "fixture_config",
-            Duration::from_secs(1),
-            1024,
-        )
-        .unwrap_or_else(|e| panic!("config: {e}"));
+        run_bounded(config, &fixture, "fixture_config", git.timeout, 1024)
+            .unwrap_or_else(|e| panic!("config: {e}"));
         let witness = fixture.join("witness");
         let mut command = git.command(&fixture);
         command
             .arg("fetch")
             .arg(format!("ext::/usr/bin/touch {}", witness.display()));
-        assert!(
-            run_bounded(
-                command,
-                &fixture,
-                "fixture_transport",
-                Duration::from_secs(1),
-                1024 * 1024
-            )
-            .is_err()
-        );
+        let denial = run_bounded(
+            command,
+            &fixture,
+            "fixture_transport",
+            git.timeout,
+            1024 * 1024,
+        )
+        .err()
+        .unwrap_or_else(|| panic!("controlled Git must refuse the ext transport"));
         let executed = witness.exists();
         fs::remove_dir_all(&fixture).unwrap_or_else(|e| panic!("cleanup owned fixture: {e}"));
+        assert_eq!(
+            denial.code, "git_exit",
+            "a timeout is not a transport refusal"
+        );
+        assert!(denial.message.contains("transport 'ext' not allowed"));
         assert!(
             !executed,
             "repository protocol.ext.allow bypassed generic protocol.allow=never"
