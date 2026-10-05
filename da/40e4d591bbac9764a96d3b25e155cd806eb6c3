@@ -1,0 +1,30 @@
+docs/assets/git-and-local-work.svg
+  s_160b3107588443::t_c6f9659e35a0fc 1-80
+README.md
+  s_160b3107588443::t_c6f9659e35a0fc 33,35-36
+docs/README.md
+  s_160b3107588443::t_c6f9659e35a0fc 23
+docs/assets/README.md
+  s_160b3107588443::t_c6f9659e35a0fc 1,5-25,31-32,34-35,39,58,63-64,73,85
+  s_160b3107588443::t_787329e43df7b4 26-30
+docs/assets/generation.json
+  s_160b3107588443::t_c6f9659e35a0fc 3,153
+CHANGELOG.md
+  s_160b3107588443::t_c6f9659e35a0fc 12-14,61-63
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "da40e4d591bbac9764a96d3b25e155cd806eb6c3",
+  "prompts": {},
+  "sessions": {
+    "s_160b3107588443": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a106f2-069b-7be2-aa09-88b1bbf2331e",
+        "model": "gpt-6-astra"
+      },
+      "human_author": "Florian BRUNIAUX <florian@bruniaux.com>"
+    }
+  }
+}
