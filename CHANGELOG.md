@@ -1,7 +1,7 @@
 # Changelog
 
-Changes are grouped under `Unreleased` until a release is published. The package
-version in Cargo is a development version, not a release announcement.
+No release has been published. `Unreleased` covers the current source checkout;
+the Cargo package version is a development version.
 
 [Project overview](README.md) · [Documentation](docs/README.md) · [Contributing](CONTRIBUTING.md)
 
@@ -11,23 +11,27 @@ version in Cargo is a development version, not a release announcement.
 
 - Read-only macOS inventory and review MVP, covering U1–U4 of the
   [acceptance plan](docs/plan.md).
-- Explicit repository, root and mounted-volume discovery. Preserve repository
-  families, linked/detached worktrees, missing registrations, reversible path
-  bytes, full object IDs, coverage gaps and observation intervals.
-- Native macOS mount collection and verified process/thread/child policy against
-  dataless-file materialization. Configurable parallel metadata reads from 1 to 8.
-- Local Git review with verified object bytes, commit identity, ancestry and tree
-  identity. Integration targets must be explicit; other refs remain intermediate.
-- Offline GitLab/GitHub export ingestion, capture receipts, raw-source replay,
-  positive facts from partial exports and explicit association uncertainty.
-- Descriptive reports with bounded commit subjects, branches, full HEADs, MR/PR
-  titles and links, observations, risks and unknowns. Five-line summary output.
+- Discovery from a repository path, selected roots or mounted volumes. Results
+  include repository families, linked and detached worktrees, missing
+  registrations, coverage gaps and observation intervals. Paths retain their
+  original bytes, and object IDs remain full-length.
+- Native macOS mount collection and a verified policy that disables dataless-file
+  materialization for the process, reading threads and Git children. Metadata
+  reads can use 1 to 8 workers.
+- Local Git review that verifies object bytes and checks commit identity,
+  ancestry and tree identity. Integration targets must be explicit; other refs
+  remain intermediate.
+- Offline GitLab/GitHub export imports with capture receipts and raw-source
+  replay. Partial exports retain observed requests and gaps in their provenance
+  or association with a worktree.
+- Detailed reports with bounded commit subjects, branches, full HEADs, MR/PR
+  titles and links, observations, risks and unknowns. `--summary` prints five lines.
 - `scan --local` manifests for tracked, untracked, ignored and hidden resident
   files, with hashes, metadata, index observations and the worktree's own HEAD
   reflog. Ordinary index versions 2/3 and conflict stages are parsed; split-index
   semantics remain unknown to avoid the observed Git metadata side effect.
-- `--run-dir` publications in unique directories with JSON, full report and
-  artifact-hash receipts. Concurrent runs do not replace each other's outputs.
+- `--run-dir` to save JSON, the full report and an artifact-hash receipt in a
+  unique directory. Concurrent runs do not replace each other's outputs.
 - User documentation on 2026-10-05: [getting started](docs/getting-started.md),
   [CLI reference](docs/cli.md), [forge imports](docs/forge.md),
   [JSON contracts](docs/contracts.md), [architecture](docs/architecture.md),
@@ -43,19 +47,19 @@ version in Cargo is a development version, not a release announcement.
 - Optional [AI development harness](docs/harness.md) with generated Claude/Codex
   instructions and four roles. The CLI needs no AI model.
 - [FSL-1.1-ALv2 license](LICENSE.md), matching Agent Router, declared in Cargo.
-- README badges for the actual CI workflow, pinned Rust toolchain, macOS runtime
+- README badges for the CI workflow, pinned Rust toolchain, macOS runtime
   and license; six GitHub area labels documented in the contribution guide.
+- Author portrait, role and profile/blog/project links in the README, matching
+  the AgentSec presentation block.
 
 ### Changed
 
-- Added the author's portrait, role and profile/blog/project links to the README,
-  following the AgentSec presentation block.
-- Reworked the README in English with a direct quick start, capabilities,
-  classification guide, data flow, roadmap and validation links. Existing French
-  engineering records remain available through the documentation index.
-- Grouped this changelog by change type while retaining bootstrap history.
-- Completed cloning instructions and report interpretation examples; identified
-  the private visual reference without linking readers to an inaccessible page.
+- Rewrote the README in English with cloning instructions,
+  report examples and links to the existing French engineering records.
+- Replaced the README slogan and repetitive guide prose with concrete
+  descriptions. Commands, captured outputs and product limits are unchanged.
+- Grouped the changelog by change type and retained bootstrap history.
+- Named the private visual reference without linking to an inaccessible page.
 - Replaced stale bootstrap status in canonical repository instructions with a
   link to implementation evidence and regenerated the affected projections.
 - Kept local handoffs outside tracked source to avoid distributing private paths.
@@ -66,14 +70,14 @@ version in Cargo is a development version, not a release announcement.
   The first GitHub run exceeded its one-second fixture-initialization limit.
   The assertion requires a protocol refusal rather than accepting any error;
   production deadlines are unchanged.
-- Main-worktree identification with `--separate-git-dir`.
-- Uncertainty retention when mounts change during discovery.
-- Output placement inside a repository not yet discovered by a partial global
-  scan, or inside a worktree moved after inventory capture.
-- Altered normalized forge facts and contradictory host/project fields being
-  eligible for precise association; missing GraphQL nodes remain coverage gaps.
-- Reserved flags in index v3 and inconsistent entry budgets across files, index
-  entries and administrative observations.
+- Main-worktree identification when Git administration uses `--separate-git-dir`.
+- Discovery now retains uncertainty when mounts change during a scan.
+- Output checks now reject locations inside a repository not yet discovered by
+  a partial global scan, or inside a worktree moved after inventory capture.
+- Forge association no longer accepts altered normalized facts or contradictory
+  host/project fields. Missing GraphQL nodes remain coverage gaps.
+- Corrected index v3 reserved-flag handling and inconsistent entry budgets
+  across files, index entries and administrative observations.
 - Redundant relation reads when the source commit is unreadable. The FIFO
   regression passes within its original timeout; malformed subjects on valid
   objects still allow Git judgement.
@@ -82,13 +86,13 @@ version in Cargo is a development version, not a release announcement.
 
 ### Read and preservation boundaries
 
-- Controlled Git arguments and environment, bounded I/O and timeouts, executable
-  configuration neutralization, and denial of implicit object downloads.
-- Commit/tree/blob bytes checked against SHA-1 or SHA-256 OIDs, with SHA-1
-  collision detection. Missing or corrupt objects remain unknown.
-- Exclusive output publication outside inspected boundaries, with descriptor
-  identity checks. Three private unsafe boundaries are documented and reviewed:
-  native mounts, materialization policy and descriptor-selected Git cwd.
+- Git runs with controlled arguments and environment, I/O limits and timeouts.
+  The CLI neutralizes executable configuration and denies implicit object downloads.
+- Object reads check commit, tree and blob bytes against SHA-1 or SHA-256 OIDs,
+  with SHA-1 collision detection. Missing or corrupt objects remain unknown.
+- Outputs require new files outside inspected boundaries and descriptor identity
+  checks. Three private unsafe boundaries are documented and reviewed: native
+  mounts, materialization policy and descriptor-selected Git cwd.
 - `apply` remains unavailable. E1 writer exclusion is not demonstrated; durable
   backup, independent restore and removal are blocked. The
   [finishing ledger](docs/finish-ledger.md) records local checks and remaining limits.

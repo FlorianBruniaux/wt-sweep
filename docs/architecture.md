@@ -27,16 +27,16 @@ flowchart TD
     P --> W
 ```
 
-The same supplied observations give the same judgement. Collecting again can
-produce different observations, timestamps and digests as the filesystem changes.
-Metadata concurrency preserves deterministic aggregation on a stable fixture;
-it does not establish a snapshot.
+`review::judge` returns the same judgement for the same observations. A new scan
+can produce different observations, timestamps and digests as the filesystem
+changes. Parallel metadata reads aggregate deterministically on a stable
+fixture, but a scan does not capture an atomic snapshot.
 
 ## Module map
 
 | Module | Responsibility |
 | --- | --- |
-| [main](../src/main.rs) | Parse the narrow CLI, apply scan-wide local budgets, select outputs and keep `apply` unavailable. |
+| [main](../src/main.rs) | Parse CLI arguments, apply scan-wide local budgets, select outputs and refuse `apply`. |
 | [model](../src/model.rs) | Versioned serializable contracts and byte-preserving identities. |
 | [discover](../src/discover.rs) | Bounded traversal, marker discovery, deduplication, coverage and injectable filesystem provider. |
 | [mounts](../src/mounts.rs) | Read macOS mount observations without silently filtering volume types. |
@@ -51,11 +51,11 @@ it does not establish a snapshot.
 
 ## Read and publication boundaries
 
-Git uses an explicit executable, argument list and controlled environment.
-Executable configuration such as hooks, filters and fsmonitor is neutralized;
-implicit object downloads are denied. Output, input and execution time are
-bounded, and exit status is checked before output can become evidence. A failure
-cannot become a valid empty result.
+`ControlledGit` selects the executable, arguments and environment. It neutralizes
+executable configuration such as hooks, filters and fsmonitor, denies implicit
+object downloads, and limits input, output and execution time. It checks the
+exit status before accepting output, so a failed command cannot supply an
+apparently valid empty result.
 
 The native materialization policy applies to the process, reading threads and
 Git children. This also covers indirect Git reads through includes, alternates
@@ -67,9 +67,9 @@ identity and checks observed changes. Git calls for that collector select the
 acquired worktree descriptor as their working directory. This avoids returning
 to a substituted path; it does not exclude concurrent writers.
 
-Publication refuses existing files, symlink ancestors and inspected locations.
-For a saved review, boundaries include current registrations as well as those
-from the input inventory. Each run owns a new directory. See
+The output code refuses existing files, symlink ancestors and inspected locations.
+Before saving a review, it checks current worktree registrations as well as those
+from the input inventory. Each run creates a new directory. See
 [native boundaries](native-boundaries.md) for the three private unsafe exceptions
 and [run receipts](contracts.md#run-receipts) for the publication protocol.
 
@@ -82,8 +82,8 @@ mount changes and access failures without scanning the developer's machine.
 
 The [exclusion experiments](../experiments/exclusion/) demonstrate failure modes
 of proposed writer-exclusion techniques, including an already-open descriptor
-outside the target cwd and a late detached commit. A passing counterexample test
-means the proposed protection failed in that case. It does not open the apply gate.
+outside the target cwd and a late detached commit. These tests pass when they
+reproduce a failure of the proposed protection; their success does not satisfy E1.
 
 Run instructions are in [CONTRIBUTING.md](../CONTRIBUTING.md). Observed results
 and skipped cases live in the [implementation record](progress.md) and
@@ -96,5 +96,6 @@ durable backup and independent restoration. Only then can fixture removal be
 implemented, followed by independent review and exact approval for real use.
 The proposed `wt-sweep.apply-plan/1` is a future contract, not an emitted artifact.
 
-The [decision index](decisions/README.md) records the failed mechanisms and next
-proof obligations. The development harness cannot supply the missing authority.
+The [decision index](decisions/README.md) records the failed mechanisms and the
+evidence still needed. Development-harness checks do not verify writer exclusion,
+backup or restoration.

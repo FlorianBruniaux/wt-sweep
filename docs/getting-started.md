@@ -4,10 +4,11 @@
 
 ## Prerequisites
 
-The supported runtime is macOS. Protected reads require native control of
-dataless-file materialization; other platforms refuse operations that require
-that guard. `/usr/bin/git` must be available. Actual FileProvider placeholders
-and TCC denial behavior remain outside the verified coverage.
+Run the CLI on macOS with `/usr/bin/git` available. Before protected reads, the
+CLI must disable dataless-file materialization through a native macOS policy
+and verify that the policy is in force. On other platforms, it refuses operations
+that require this guard.
+Behavior with actual FileProvider placeholders and TCC denials remains unverified.
 
 Clone the repository, then build with the Rust toolchain pinned in
 [rust-toolchain.toml](../rust-toolchain.toml). GitHub access is required while the
@@ -67,9 +68,9 @@ Unknowns: 2 worktrees; coverage gaps: 0
 
 The remaining two summary lines give the saved detail path and review digest.
 Their values vary per run. The main checkout counts as a worktree. Both HEADs
-match `refs/heads/main`, but `notes.txt` remains untracked local work. That is why
-an integration observation cannot authorize removal. Both worktrees have
-unknowns: forge evidence is missing and saved local manifests were not revalidated.
+match `refs/heads/main`, but that commit contains no copy of the untracked
+`notes.txt`. Both worktrees have unknowns because forge evidence is missing and
+saved local manifests were not revalidated.
 
 The fixture and its reports remain at the printed path for inspection. The demo
 does not run cleanup. See [run receipts](contracts.md#run-receipts) to verify the
@@ -87,9 +88,10 @@ Choose roots explicitly. Repeat `--root` to cover several locations:
   --workers 4 --format json
 ```
 
-Hidden, ignored and nested directories are included. Access failures, traversal
-budgets and unresolved markers stay in the output. `--workers` controls parallel
-metadata reads only. It does not make the scan an atomic snapshot.
+The scan includes hidden, ignored and nested directories, and reports access
+failures, reached traversal limits and unresolved repository markers.
+`--workers` controls parallel metadata reads only; the filesystem can still
+change during the scan.
 
 For saved output, use `--out` or `--run-dir` outside every selected root and
 discovered repository family. The parent directory must exist and its ancestors
@@ -118,22 +120,24 @@ local contents or query a forge. The demo's `notes.txt` is still present; its
 file entry is in `local_inventories`, separate from the commit relationship.
 The [annotated JSON excerpt](contracts.md#example-review-item) shows those fields.
 
-Start with `classification`, then inspect `observations`, `requests`, `risks`
-and `unknowns` for each item. In JSON, also read `coverage.gaps`, `not_collected`
-and any local-manifest gaps. A successful process exit can carry partial evidence.
+For each item, read `classification` alongside `observations`, `requests`, `risks`
+and `unknowns`. Check `coverage.gaps`, `not_collected` and local-manifest gaps in
+the JSON even when the command exits successfully: exit code `0` allows partial
+evidence.
 
 Pass full integration refs such as `refs/heads/main` or
 `refs/remotes/origin/main`. The latter is the local remote-tracking ref; no fetch
 occurs. Omitting `--target` still produces a report, but local relationships only
 have an intermediate role and cannot produce `integration_observed`.
 
-Subjects and MR/PR titles help you recognize work. They do not affect judgement.
-An open, precisely associated MR/PR takes priority and yields `active`.
-Missing associations never prove there are no requests.
+Subjects and MR/PR titles are display fields and do not affect judgement.
+An open MR/PR that precisely matches the worktree takes priority and yields
+`active`. If none can be associated, forge state remains unknown.
 
 `plan` checks Git state during enrichment. Local manifests retain the scan's
-timestamp and are marked as not revalidated. To collect current local contents,
-run a new `scan --local` into a new output. Keep each run's context and interval.
+timestamp and are marked as not revalidated. Run `scan --local` into a new output
+to inspect local files again; keep the scan's scope and observation interval
+alongside its results.
 
 ## Troubleshooting
 

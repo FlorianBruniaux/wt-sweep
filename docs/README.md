@@ -2,41 +2,42 @@
 
 [Project overview](../README.md) · [Changelog](../CHANGELOG.md) · [Contributing](../CONTRIBUTING.md)
 
-User documentation for the read-only macOS MVP, checked against the implementation
-on 2026-10-05. The guides are in English; design and validation records remain in
-their original French. Dates on those records identify their own evidence window.
+These guides cover the read-only macOS MVP and were checked against the
+implementation on 2026-10-05. User guides are in English; design and validation
+records retain their original French and the dates of their observations.
 
 ## Use the CLI
 
-| Document | Purpose and limit |
+| Document | Contents |
 | --- | --- |
-| [Getting started](getting-started.md) | Build, replay a disposable demo and understand reports; requires macOS. |
+| [Getting started](getting-started.md) | macOS setup, disposable demo, report interpretation and troubleshooting. |
 | [CLI reference](cli.md) | Implemented commands, output rules, exit codes and collection limits. |
-| [Offline forge imports](forge.md) | Import local exports and receipts; no current server-state guarantee. |
-| [Evidence and JSON contracts](contracts.md) | Consume artifacts without promoting unknowns or hashes into cleanup authority. |
+| [Offline forge imports](forge.md) | Supported exports, capture receipts and limits of MR/PR association. |
+| [Evidence and JSON contracts](contracts.md) | Artifact fields, classifications, path encoding, digests and receipts. |
 
 ## Develop and verify
 
-| Document | Purpose and limit |
+| Document | Contents |
 | --- | --- |
 | [Contributing](../CONTRIBUTING.md) | Local checks, fixture ownership and change requirements. |
-| [Workflow infographic](assets/README.md) | Gemini workflow illustration, reviewed 2026-10-05; editable source, native outputs and generation provenance. |
-| [Architecture](architecture.md) | Current modules and I/O boundaries; no removal engine exists. |
+| [Workflow infographic](assets/README.md) | Gemini illustration reviewed on 2026-10-05, source briefs, generated images and review notes. |
+| [Architecture](architecture.md) | Module responsibilities, data flow, read boundaries and test strategy. |
 | [Native boundaries](native-boundaries.md) | Three reviewed private unsafe boundaries and their evidence limits. |
-| [AI development harness](harness.md) | Canonical instructions and generated host files; file validation does not prove activation. |
+| [AI development harness](harness.md) | Canonical instructions, generated host files and separate checks for native activation. |
 | [Implementation results](progress.md) | U1–U4 behavior and the original local validation record. |
 | [Finishing ledger](finish-ledger.md) | RETEX additions, final local checks, skips and remaining gates. |
 
 ## Design and decisions
 
-| Document | Purpose and limit |
+| Document | Contents |
 | --- | --- |
-| [Acceptance plan](plan.md) | U1–U7 and E1 criteria; a criterion is not a claim of completion. |
+| [Acceptance plan](plan.md) | U1–U7 and E1 acceptance criteria. |
 | [Implementation and ownership](implementation.md) | Development units, responsibilities and the recorded model allocation. |
-| [Decision index](decisions/README.md) | Writer-exclusion counterexamples and the blocked apply boundary. |
+| [Decision index](decisions/README.md) | Failed writer-exclusion experiments and the decision to keep `apply` unavailable. |
 | [Cleanup-session lessons](retex-sessions.md) | Sourced lessons and disposable tests; historical shared inventories are not reused. |
 | [Related tools and references](references.md) | Candidates for comparison; no behavioral equivalence has been established. |
 
-For product status, start with the README. For an acceptance claim, follow the
-plan to its validation record. For future removal, start with E1 in the decision
-index; a successful read-only scan does not open that gate.
+The [project README](../README.md#roadmap-and-validation) summarizes current
+status. Read the [validation ledger](finish-ledger.md) for test results and
+the [apply decision](decisions/apply-readiness.md) for the unmet requirements
+that keep removal unavailable.

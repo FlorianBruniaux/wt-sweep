@@ -2,11 +2,10 @@
 
 [Documentation index](README.md) · [CLI reference](cli.md) · [Architecture](architecture.md)
 
-The JSON artifacts preserve observations, uncertainty and provenance. They
-contain no cleanup actions. The authoritative field definitions are in
-[model.rs](../src/model.rs); publication receipts are defined in
-[run.rs](../src/run.rs). This guide describes their meaning, not a separate
-JSON Schema validator.
+The CLI's JSON artifacts store observations, unknowns and source records.
+They contain no cleanup actions. Field definitions are in
+[model.rs](../src/model.rs), with publication receipts in
+[run.rs](../src/run.rs); no separate JSON Schema validator is provided.
 
 ## Formats
 
@@ -55,10 +54,10 @@ timestamps describe an observation interval.
   index and the worktree's own HEAD reflog.
 - Its own interval, completeness flag, gaps, omitted domains and content digest.
 
-**The artifact stores hashes and metadata, not copies of file contents.** Reading
-and hashing an index or reflog does not back it up. It cannot restore a worktree.
-Symlinks are recorded without following them; special files remain visible with
-gaps instead of being read as regular content.
+**A local manifest cannot restore a worktree.** It stores hashes and metadata
+without copying file contents, including the index and reflog. The collector
+records symlinks without following them, and reports gaps for special files
+instead of reading them as regular content.
 
 The index parser supports ordinary versions 2 and 3, including conflict stages.
 Split indexes, version 4 and unsupported mandatory extensions retain unknown
@@ -94,9 +93,9 @@ proof. See [forge association](forge.md#association-and-judgement) for `active`.
 ## Example review item
 
 This excerpt comes from the [disposable demo](getting-started.md#disposable-demo).
-It selects fields from the linked worktree's `items` entry, with collection
-timestamps and other fields omitted. It is an explanation of a real result,
-not a complete artifact to pass back to the CLI.
+It selects fields from the linked worktree's `items` entry and omits collection
+timestamps and other fields. Because it is incomplete, it cannot be passed back
+to the CLI as an artifact.
 
 ```json
 {
@@ -144,8 +143,8 @@ Selected fields from that entry are:
 ```
 
 The path decodes to `notes.txt`. Match the manifest's `worktree` to the review
-item's `path` before combining them. This hash describes the note observed during
-the scan; it provides neither its contents nor a current-file guarantee.
+item's `path` before combining them. The hash describes the note's bytes during
+the scan; you still need the file itself, which may have changed since then.
 
 ## Digests
 
@@ -162,9 +161,9 @@ The local-manifest serializer uses model field order and excludes collection
 timestamps; see [content_digest](../src/local.rs). These are different recipes.
 Hashing the pretty-printed review file will not reproduce its canonical digest.
 
-Use the implementation's serialization contract for interoperability. A digest
-binds evidence bytes; it does not prove freshness, capture authenticity,
-writer exclusion, durability or approval.
+To reproduce a digest, follow the corresponding serializer. A matching digest
+only establishes which bytes it covers. It does not verify freshness, capture
+authenticity, writer exclusion, durability or approval.
 
 ## Run receipts
 

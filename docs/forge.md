@@ -33,8 +33,9 @@ field names are also normalized. Supported GraphQL envelopes are
 It is not a generic GraphQL importer. See the [adapter](../src/forge.rs) for the
 exact field mappings and [fixture tests](../tests/forge.rs) for accepted shapes.
 
-Without `--receipt`, recognized positive facts are retained with incomplete
-provenance. The command does not synthesize evidence of capture from a transcript.
+Without `--receipt`, the importer retains recognized requests but marks their
+capture provenance as incomplete. It does not turn a command transcript into
+capture evidence.
 
 ## Executor receipt
 
@@ -53,14 +54,15 @@ The client that actually executes and persists the capture should write
 | `pages` | Ordered records with `number`, `items`, `cursor`, `next_cursor`. Page numbering starts at 1. |
 | `pagination_complete` | The executor's completion observation, checked against the parsed pages. |
 
-A hash or size mismatch rejects ingestion. Missing pages, repeated cursors,
-contradictions, truncation and nonzero exits preserve uncertainty. Pages with
-100 or more items are treated conservatively as possibly saturated.
+The importer rejects a hash or size mismatch. It records uncertainty for missing
+pages, repeated cursors, contradictory data, truncation and nonzero exit codes.
+A page with 100 or more items is marked as possibly saturated: more results may
+have been available.
 
-`receipt_verified` means the receipt passed the local structural and consistency
-checks. It is not a signature or authentication of the executor's claims.
-Even complete pagination cannot prove a coherent view of a changing server:
-the current adapter always reports `absence_proven: false` and
+`receipt_verified` means the receipt passed local structural and consistency
+checks, which do not authenticate the executor's claims. The server may change
+between page reads even when pagination completes, so the current adapter
+always reports `absence_proven: false` and
 `temporal_consistency: "not_guaranteed"`.
 
 ## Replay a synthetic export
@@ -92,10 +94,10 @@ combining the two demos does not establish an MR association.
 
 ## Association and judgement
 
-Precise association requires compatible local remote identity, host/project,
-source branch and full HEAD. Contradictory fields prevent that association.
-Positive requests in a partial export can still be useful, but missing requests
-are never evidence of absence.
+For a precise MR/PR association, the local remote identity, host/project,
+source branch and full HEAD must agree. Contradictory fields prevent that
+association. A partial export can establish that a request was observed;
+an omitted request may still exist on the server.
 
 An associated open request classifies a worktree as `active`, before considering
 integration. A closed or merged request alone cannot classify it as integrated.
@@ -103,4 +105,4 @@ Local object relationships must reach an explicit integration target. Request
 titles and links are descriptive; the source HEAD is not an integration target.
 
 Before sharing captures, inspect them for private repository names, paths,
-subjects and request titles. Their hashes preserve integrity, not confidentiality.
+subjects and request titles. Hashing a capture does not redact its contents.

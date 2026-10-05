@@ -2,9 +2,9 @@
 
 [Project overview](README.md) · [Documentation](docs/README.md) · [Architecture](docs/architecture.md)
 
-Worktree Sweep is a read-only macOS MVP. Contributions should preserve explicit
-unknowns, reversible path identities and the separation between collection and
-judgement. Read the [acceptance plan](docs/plan.md) and
+Worktree Sweep is a read-only macOS MVP. Preserve unknowns and original path
+bytes, and keep collection I/O separate from judgement. Read the
+[acceptance plan](docs/plan.md) and
 [implementation responsibilities](docs/implementation.md) before changing behavior.
 
 ## Set up and verify
@@ -31,8 +31,8 @@ python3 -B scripts/sync-ai.py --check
 
 The Python product tests execute `target/debug/wt-sweep`, so rebuild it after
 changing Rust code. The repository's [CI workflow](.github/workflows/ci.yml)
-defines the same checks. A workflow file does not establish a successful remote
-run. Record actual results, skipped tests and the source revision tested.
+defines the same checks. Record local results, skipped tests and the source
+revision tested; check the remote run separately before claiming CI passed.
 
 Where `rtk` is installed, follow repository instructions and use its supported
 wrappers. Use `rtk proxy` when exact output matters, especially for Git evidence.
@@ -68,10 +68,10 @@ records in their original language. Link a new document from its directory's
 README and connect it to related guides. User commands belong in the CLI guide;
 acceptance evidence belongs in a dated validation record.
 
-Replay documented examples on disposable fixtures. Check paths and anchors when
-moving files. Update `CHANGELOG.md` under `Unreleased`; do not invent a release
-date, license, benchmark or CI badge. Keep source/setup instructions usable
-without a global install.
+Replay documented examples on disposable fixtures, and check links when moving
+files or headings. Record changes under `Unreleased` in `CHANGELOG.md`. Release
+dates, license statements, benchmarks and CI badges must match their sources.
+Setup instructions should work from a source checkout without a global install.
 
 ## License and labels
 
@@ -90,8 +90,9 @@ GitHub issues use the standard type labels, such as `bug`, `enhancement` and
 | `area:documentation` | README, guides, examples and diagrams |
 | `area:governance` | License, packaging, CI and project metadata |
 
-Use `blocked` when a named prerequisite or decision prevents progress. A label
-does not establish that an acceptance gate passed.
+Use `blocked` when a prerequisite or decision prevents progress, and name it in
+the issue. Record acceptance evidence in the validation ledger, separately from
+issue labels.
 
 ## AI development harness
 
@@ -105,13 +106,14 @@ python3 -B scripts/sync-ai.py --check
 ```
 
 Do not edit generated `AGENTS.md`, `CLAUDE.md` or host agents independently.
-The generator refuses drifted preimages. Review the generated diff. Validation
-does not prove native loading or hook activation; see [harness evidence](docs/harness.md).
+The generator refuses to overwrite files changed since their last generation.
+Review its diff, and verify native loading or hook activation separately using
+the [harness evidence guide](docs/harness.md).
 
 Delegation needs task authorization and explicit file ownership. The integrator
 owns shared contracts and Cargo metadata; independent reviewers do not approve
-their own implementation. Commits, pushes, releases and real cleanup follow the
-task's authorization, not an agent's availability.
+their own implementation. The task must authorize any commit, push, release or
+real cleanup.
 
 ## Report a problem
 

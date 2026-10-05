@@ -12,7 +12,7 @@
   </tr>
 </table>
 
-**Find your Git worktrees. See what reached an integration branch. Keep the unknowns visible.**
+**A macOS CLI to inventory Git worktrees and compare their commits with refs you select.**
 
 [![Read-only MVP checks](https://github.com/FlorianBruniaux/wt-sweep/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/FlorianBruniaux/wt-sweep/actions/workflows/ci.yml)
 [![Rust toolchain: 1.95.0](https://img.shields.io/badge/Rust-1.95.0-dc7336?logo=rust)](rust-toolchain.toml)
@@ -21,10 +21,10 @@
 
 [Quick start](#quick-start) · [Features](#features) · [How it works](#how-it-works) · [Documentation](#documentation) · [Changelog](CHANGELOG.md) · [Contributing](CONTRIBUTING.md)
 
-Worktree Sweep (`wt-sweep`) is a local Rust CLI for discovering Git repositories
-and worktrees, inspecting local files, and reviewing commit relationships with
-optional GitHub or GitLab evidence. It produces readable reports and versioned
-JSON. No service, forge account or AI model is required to run it.
+Worktree Sweep (`wt-sweep`) finds repositories and their worktrees within a scope
+you choose. It checks local Git relationships and can include file manifests and
+captured GitHub or GitLab data in its reports. The Rust CLI writes text and
+versioned JSON; it runs locally without a service, forge account or AI model.
 
 **Status: read-only MVP for macOS.** Discovery and review are implemented;
 backup, restore and removal are unavailable. `apply` refuses every invocation.
@@ -41,10 +41,10 @@ Parallel development leaves worktrees spread across clones, hidden directories
 and temporary locations. A branch can look merged while its worktree still
 contains untracked notes, ignored files or a different staged version.
 
-Worktree Sweep brings that evidence into one report. You choose the scan scope
-and the integration refs. Each worktree keeps its full HEAD, observed Git
-relationships, associated requests, risks and unknowns. An integration
-observation describes committed Git state; local work still needs preservation.
+The report lists each worktree's full HEAD, its relationships to the refs you
+selected, associated PRs or MRs, and any risks or missing evidence. With
+`scan --local`, it also records local files and index state. These records help
+you inspect what remains in a worktree; they contain no backup of its files.
 
 ## Quick start
 
@@ -132,9 +132,10 @@ by scanning the development machine. Start with a repository or selected roots.
 
 ## How it works
 
-Collection performs bounded reads. Judgement classifies the collected evidence
-without doing I/O. Git object bytes are checked against their full OIDs. Age,
-patch-id, a closed MR and a model suggestion cannot establish integration.
+The collector limits how much it reads and how long operations can run. It
+checks Git object bytes against their full OIDs before the review code
+classifies the observations without further I/O. Age, patch-id, a closed MR
+and a model suggestion cannot establish integration.
 
 On macOS, the process disables and verifies dataless-file materialization before
 protected reads, including its Git children. If that policy cannot be established,
@@ -174,7 +175,7 @@ The [acceptance plan](docs/plan.md) defines the gates. The
 The implementation checkpoint on 2026-10-05 recorded 92 passing Rust tests and
 78 passing Python tests. Skips, native experiment results and the tested binary
 digest are in the [validation ledger](docs/finish-ledger.md#vérifications).
-These are local results; the CI badge links to the current workflow status.
+The CI badge links to remote workflow results, separate from these local checks.
 Real FileProvider placeholders, actual TCC denials and a machine-wide snapshot
 have not been verified.
 
