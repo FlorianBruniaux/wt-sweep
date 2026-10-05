@@ -201,6 +201,7 @@ describe the read and publication boundaries.
 
 | Start here | What it covers |
 | --- | --- |
+| [Hands-on tutorial (French)](docs/tutorial.fr.md) | Disposable trial, local tests, first real repository and a copyable assistant prompt |
 | [Getting started](docs/getting-started.md) | Setup, disposable demo, report interpretation and troubleshooting |
 | [CLI reference](docs/cli.md) | Commands, defaults, output modes, limits and exit codes |
 | [Offline forge imports](docs/forge.md) | Exports, executor receipts and association limits |
@@ -208,9 +209,9 @@ describe the read and publication boundaries.
 | [Architecture](docs/architecture.md) | Module responsibilities, read boundaries and test strategy |
 | [Documentation index](docs/README.md) | All guides, design decisions and validation records |
 
-This overview is also available [in French](README.fr.md). Detailed user guides
-are in English. The original design, experiment and implementation records are
-retained in French.
+This overview and the hands-on tutorial are available in French. Other detailed
+user guides are in English. The original design, experiment and implementation
+records are retained in French.
 
 ## Roadmap and validation
 

@@ -2,6 +2,9 @@
 
 [Documentation index](README.md) · [CLI reference](cli.md) · [Evidence contracts](contracts.md)
 
+For a French walkthrough with expected results, local test commands and an
+assistant prompt, read the [hands-on tutorial](tutorial.fr.md).
+
 ## Prerequisites
 
 Run the CLI on macOS with `/usr/bin/git` available. Before protected reads, the

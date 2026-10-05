@@ -64,8 +64,9 @@ requests, patch IDs and clean status output cannot replace those conditions.
 ## Documentation
 
 Keep [README.md](README.md) and [README.fr.md](README.fr.md) aligned when changing
-behavior, commands or project status. Detailed user guides are in English;
-retain the existing French engineering records in their original language.
+behavior, commands or project status. The [hands-on tutorial](docs/tutorial.fr.md)
+is in French; other detailed user guides are in English. Retain the existing
+French engineering records in their original language.
 Link a new document from its directory's README and connect it to related
 guides. User commands belong in the CLI guide; acceptance evidence belongs in
 a dated validation record.

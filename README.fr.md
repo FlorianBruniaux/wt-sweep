@@ -21,7 +21,7 @@
 [![Système : macOS](https://img.shields.io/badge/Runtime-macOS-597ee5)](docs/getting-started.md#prerequisites)
 [![Licence : FSL-1.1-ALv2](https://img.shields.io/badge/License-FSL--1.1--ALv2-597ee5)](LICENSE.md)
 
-[Démarrage rapide](#démarrage-rapide) · [Fonctionnalités](#fonctionnalités) · [Fonctionnement](#fonctionnement) · [Documentation](#documentation) · [Changelog](CHANGELOG.md) · [Contribuer](CONTRIBUTING.md)
+[Démarrage rapide](#démarrage-rapide) · [Tutoriel et tests](docs/tutorial.fr.md) · [Prompt à copier](docs/tutorial.fr.md#prompt-à-donner-à-un-assistant) · [Fonctionnalités](#fonctionnalités) · [Fonctionnement](#fonctionnement) · [Documentation](#documentation) · [Changelog](CHANGELOG.md) · [Contribuer](CONTRIBUTING.md)
 
 Worktree Sweep (`wt-sweep`) repère les dépôts et leurs worktrees dans le périmètre
 que vous choisissez. Il vérifie les relations Git locales et peut inclure dans
@@ -218,6 +218,7 @@ précisent les limites de lecture et de publication des rapports.
 
 | Guide | Contenu |
 | --- | --- |
+| [Tutoriel en français](docs/tutorial.fr.md) | Essai sur un dépôt jetable, tests automatiques, premier dépôt réel et prompt pour un assistant |
 | [Démarrage](docs/getting-started.md) | Installation, démo sur un dépôt jetable, lecture des rapports et dépannage |
 | [Référence CLI](docs/cli.md) | Commandes, valeurs par défaut, modes de sortie, limites et codes de retour |
 | [Imports de forge hors ligne](docs/forge.md) | Exports, reçus d’exécution et limites d’association |
@@ -225,8 +226,9 @@ précisent les limites de lecture et de publication des rapports.
 | [Architecture](docs/architecture.md) | Rôle des modules, limites de lecture et stratégie de test |
 | [Index documentaire](docs/README.md) | Ensemble des guides, décisions de conception et relevés de validation |
 
-Les guides détaillés sont en anglais. Les documents de conception, d’expérimentation
-et d’implémentation sont conservés dans leur version française d’origine.
+Le tutoriel est en français ; les autres guides d’utilisation détaillés sont en
+anglais. Les documents de conception, d’expérimentation et d’implémentation sont
+conservés dans leur version française d’origine.
 
 ## Feuille de route et validation
 

@@ -9,6 +9,9 @@ the Cargo package version is a development version.
 
 ### Added
 
+- [French hands-on tutorial](docs/tutorial.fr.md) with a disposable two-worktree
+  trial, expected results with and without an integration target, local test
+  commands and a copyable prompt for an assistant reviewing one repository.
 - [French README](README.fr.md) with translated Mermaid diagrams and expandable
   sections, plus links to switch between the English and French overviews.
 - Dark SVG infographic showing a matching commit alongside an untracked local

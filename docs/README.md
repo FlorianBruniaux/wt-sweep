@@ -4,13 +4,15 @@
 
 These guides cover the read-only macOS MVP and were checked against the
 implementation on 2026-10-05. The project overview is available in English and
-French. Detailed user guides are in English; design and validation records
-retain their original French and the dates of their observations.
+French, with a French hands-on tutorial. Other detailed user guides are in
+English; design and validation records retain their original French and the
+dates of their observations.
 
 ## Use the CLI
 
 | Document | Contents |
 | --- | --- |
+| [Tutoriel en français](tutorial.fr.md) | Disposable trial, local tests, first real repository and a copyable assistant prompt. |
 | [Getting started](getting-started.md) | macOS setup, disposable demo, report interpretation and troubleshooting. |
 | [CLI reference](cli.md) | Implemented commands, output rules, exit codes and collection limits. |
 | [Offline forge imports](forge.md) | Supported exports, capture receipts and limits of MR/PR association. |
