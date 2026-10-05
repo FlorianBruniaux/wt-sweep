@@ -61,11 +61,16 @@ cargo build --release --locked --offline
 ./target/release/wt-sweep --help
 ```
 
+<details>
+<summary>Build prerequisites and offline dependencies</summary>
+
 If you already have a checkout, run the build commands from its root.
 The repository pins Rust 1.95.0 in [rust-toolchain.toml](rust-toolchain.toml).
 Fetching dependencies needs network access; skip that step when they are already
 cached. Git is read through `/usr/bin/git`. There is no package-manager install
 or global configuration step. See [setup and troubleshooting](docs/getting-started.md).
+
+</details>
 
 ### Inspect one repository family
 
@@ -116,6 +121,9 @@ unknown, including when Git integration was observed.
 
 ## Features
 
+<details>
+<summary>Capabilities and CLI entry points</summary>
+
 | Capability | Use it for | Entry point |
 | --- | --- | --- |
 | Repository families | Discover the main checkout, linked and detached worktrees, and missing registrations. | `scan --repo PATH` |
@@ -130,7 +138,49 @@ Global discovery is also available through `scan --all`. It uses visible mounted
 volumes and reports access gaps. It has been tested with injected volumes, not
 by scanning the development machine. Start with a repository or selected roots.
 
+</details>
+
 ## How it works
+
+`scan` saves an inventory within the scope you choose. `plan` reads it, checks
+Git relationships against explicit targets and produces a review:
+
+```mermaid
+flowchart LR
+    Scan["scan<br/>Explicit scope"] --> Inventory["Inventory JSON<br/>Optional files and index"]
+    Inventory --> Plan["plan<br/>Verify Git relationships"]
+    Targets["Integration refs"] --> Plan
+    Forge["Captured forge export"] -. optional .-> Plan
+    Plan --> Report["Report and JSON<br/>Risks and unknowns"]
+```
+
+`plan` carries saved local manifests forward without rereading their contents.
+An observed Git relationship therefore says nothing about changes to local
+files since the scan.
+
+<details>
+<summary>How a worktree is classified</summary>
+
+An open MR or PR takes priority only when its host, project, source branch and
+full HEAD match the worktree. Otherwise, the review checks for a verified commit
+or tree relationship to an explicit integration target.
+
+```mermaid
+flowchart TD
+    Open{"Precisely associated<br/>open MR or PR?"}
+    Open -->|Yes| Active["active"]
+    Open -->|Not established| Git{"Verified Git relationship<br/>to an explicit integration target?"}
+    Git -->|Yes| Integrated["integration_observed"]
+    Git -->|Not established| Triage["to_triage"]
+    Active --> Review["Retain risks and unknowns<br/>No deletion authorization"]
+    Integrated --> Review
+    Triage --> Review
+```
+
+The [classification table](#read-the-result) and [evidence contracts](docs/contracts.md#reviews-and-relationships)
+describe how to read these results.
+
+</details>
 
 The collector limits how much it reads and how long operations can run. It
 checks Git object bytes against their full OIDs before the review code
@@ -142,9 +192,8 @@ protected reads, including its Git children. If that policy cannot be establishe
 the operation is refused. Access failures and timeouts remain visible. A completed
 walk is still an interval of observations, not an atomic filesystem snapshot.
 
-`plan` rechecks Git evidence but carries saved local manifests forward without
-rereading their contents. The [architecture](docs/architecture.md) and
-[evidence contracts](docs/contracts.md) describe these boundaries.
+The [architecture](docs/architecture.md) and [evidence contracts](docs/contracts.md)
+describe the read and publication boundaries.
 
 ## Documentation
 
@@ -162,6 +211,12 @@ records are retained in French.
 
 ## Roadmap and validation
 
+Discovery and review are implemented. Writer exclusion has not been
+demonstrated, so backup, restore and removal remain unavailable.
+
+<details>
+<summary>Implementation stages and recorded validation</summary>
+
 | Stage | Current state |
 | --- | --- |
 | U1–U4: discovery and review | Implemented and tested locally on macOS; evidence limits remain explicit. |
@@ -178,6 +233,8 @@ digest are in the [validation ledger](docs/finish-ledger.md#vérifications).
 The CI badge links to remote workflow results, separate from these local checks.
 Real FileProvider placeholders, actual TCC denials and a machine-wide snapshot
 have not been verified.
+
+</details>
 
 ## Development and project status
 

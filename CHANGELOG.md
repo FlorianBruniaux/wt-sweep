@@ -9,6 +9,7 @@ the Cargo package version is a development version.
 
 ### Added
 
+- README Mermaid diagrams for the scan/review flow and classification rules.
 - Read-only macOS inventory and review MVP, covering U1–U4 of the
   [acceptance plan](docs/plan.md).
 - Discovery from a repository path, selected roots or mounted volumes. Results
@@ -54,6 +55,9 @@ the Cargo package version is a development version.
 
 ### Changed
 
+- Collapsed README build notes, capability details, classification diagram and
+  validation records into expandable sections. Quick-start commands and current
+  product limits remain visible.
 - Rewrote the README in English with cloning instructions,
   report examples and links to the existing French engineering records.
 - Replaced the README slogan and repetitive guide prose with concrete
