@@ -64,7 +64,10 @@ class FamilyFixture:
         self.manifest_roots = set(self.expected)
 
     def git(self, *args):
-        return subprocess.run([GIT, *args], env=self.env, capture_output=True, check=True, timeout=15)
+        # Fixture commands must not read the caller's terminal (pack-objects
+        # reads revision input even with --all). Payload readers pass input explicitly.
+        return subprocess.run([GIT, *args], env=self.env, stdin=subprocess.DEVNULL,
+                              capture_output=True, check=True, timeout=15)
 
     def scan(self, *args, repo=None, env=None):
         return subprocess.run([str(BINARY), "scan", "--repo", str(repo or self.principal), *args],

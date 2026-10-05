@@ -63,6 +63,38 @@ class MvpTests(unittest.TestCase):
             if process.poll() is None or not process.stdout.closed:
                 self.reap_owned_process(process, grace=0.01)
 
+    def test_fixture_pack_does_not_wait_for_callers_stdin(self):
+        script = """
+from inventory_support import HistoryFixture
+
+fixture = HistoryFixture()
+try:
+    prefix = fixture.principal / ".git/objects/pack/pack"
+    result = fixture.git("-C", str(fixture.principal), "pack-objects", "--all", str(prefix))
+    oid = result.stdout.decode().strip()
+    fixture.git("verify-pack", str(prefix.parent / f"pack-{oid}.idx"))
+    print(oid)
+finally:
+    fixture.close()
+"""
+        process = subprocess.Popen([sys.executable, "-B", "-c", script],
+                                   cwd=Path(__file__).resolve().parent, env=self.fixture.env,
+                                   stdin=subprocess.PIPE, stdout=subprocess.PIPE,
+                                   stderr=subprocess.PIPE, start_new_session=True)
+        try:
+            # Keep stdin open and empty until the child exits. communicate()
+            # would close it first and conceal the interactive-terminal bug.
+            process.wait(timeout=25)
+            stdout, stderr = process.communicate(timeout=5)
+        except subprocess.TimeoutExpired:
+            self.reap_owned_process(process, grace=0.01)
+            self.fail("fixture pack waited for caller input; owned process reaped")
+        finally:
+            if process.poll() is None or not process.stdout.closed:
+                self.reap_owned_process(process, grace=0.01)
+        self.assertEqual(process.returncode, 0, stderr.decode(errors="replace"))
+        self.assertRegex(stdout, rb"^[0-9a-f]{40}\n$", "fixture did not produce a verified pack")
+
     def inventory(self, repo=None):
         result = self.run_cli("scan", "--repo", repo or self.fixture.principal, "--format", "json")
         self.assertEqual(result.returncode, 0, result.stderr.decode(errors="replace"))

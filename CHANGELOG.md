@@ -81,6 +81,10 @@ the Cargo package version is a development version.
 
 ### Fixed
 
+- Python fixture Git commands now close standard input explicitly. Running the
+  suite from a terminal previously made `pack-objects --all` wait for input and
+  time out during the FIFO-pack test setup. A regression keeps the caller's
+  input open while checking that fixture packing completes; timeouts are unchanged.
 - Transport-denial test setup now uses the standard ten-second Git budget.
   The first GitHub run exceeded its one-second fixture-initialization limit.
   The assertion requires a protocol refusal rather than accepting any error;
