@@ -1,0 +1,30 @@
+docs/getting-started.md
+  s_160b3107588443::t_4f605ae10d7fd6 12-14,17-18,25,28,101-119
+  s_160b3107588443::t_f7e7e78004c3cc 120
+docs/contracts.md
+  s_160b3107588443::t_4f605ae10d7fd6 94-149
+CHANGELOG.md
+  s_160b3107588443::t_4f605ae10d7fd6 35-44,52-53
+README.md
+  s_160b3107588443::t_4f605ae10d7fd6 38-39,42-43,49,79-90
+  s_160b3107588443::t_5ab50609426b71 91
+docs/assets/README.md
+  s_160b3107588443::t_4f605ae10d7fd6 25-26
+  s_160b3107588443::t_d93678e159a0a7 27-28
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "f68e64dfab0e3423b1f71e214b8c0cbaa2867bc8",
+  "prompts": {},
+  "sessions": {
+    "s_160b3107588443": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a106f2-069b-7be2-aa09-88b1bbf2331e",
+        "model": "gpt-6-astra"
+      },
+      "human_author": "Florian BRUNIAUX <florian@bruniaux.com>"
+    }
+  }
+}
