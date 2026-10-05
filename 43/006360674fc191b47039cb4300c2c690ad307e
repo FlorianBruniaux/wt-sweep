@@ -1,0 +1,42 @@
+CHANGELOG.md
+  s_160b3107588443::t_1f48d3bb008d2d 57,79-80
+  s_160b3107588443::t_394e8a928cbb62 3-4,14-28,33-34,50,52-53,58-62,73-78,89-95
+docs/README.md
+  s_160b3107588443::t_394e8a928cbb62 5-7,11,13,15-16,20,23-24,26,32,34,36,40-43
+docs/contracts.md
+  s_160b3107588443::t_1f48d3bb008d2d 8,57-60,96-98,146-147,164-166
+  s_160b3107588443::t_78727d6752d0eb 5
+  s_160b3107588443::t_1bcf2c0c3d727b 6-7
+docs/architecture.md
+  s_160b3107588443::t_394e8a928cbb62 30-33,39,54-58,70-72,85-86,99-101
+docs/forge.md
+  s_160b3107588443::t_1f48d3bb008d2d 36,57-60,62-65,98-100,108
+  s_160b3107588443::t_cb5beac68aa131 37-38
+  s_160b3107588443::t_78727d6752d0eb 97
+README.md
+  s_160b3107588443::t_394e8a928cbb62 15,24-27,44-47,135-138,178
+CONTRIBUTING.md
+  s_160b3107588443::t_1f48d3bb008d2d 7,34-35,71-74,93-95,110-111,115-116
+  s_160b3107588443::t_1bcf2c0c3d727b 5-6,109
+docs/getting-started.md
+  s_160b3107588443::t_cb5beac68aa131 72-73
+  s_160b3107588443::t_1bd008c9674923 71
+  s_160b3107588443::t_78727d6752d0eb 8-10
+  s_160b3107588443::t_1f48d3bb008d2d 7,11,91-94,123-126,133-135,138-140
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "43006360674fc191b47039cb4300c2c690ad307e",
+  "prompts": {},
+  "sessions": {
+    "s_160b3107588443": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a106f2-069b-7be2-aa09-88b1bbf2331e",
+        "model": "gpt-6-astra"
+      },
+      "human_author": "Florian BRUNIAUX <florian@bruniaux.com>"
+    }
+  }
+}
