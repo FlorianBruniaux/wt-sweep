@@ -105,8 +105,8 @@ finally:
         path.write_text(json.dumps(self.inventory()))
         return path
 
-    def plan(self, inventory):
-        return self.run_cli("plan", "--inventory", inventory, "--target", "refs/heads/main",
+    def plan(self, inventory, target="refs/heads/main"):
+        return self.run_cli("plan", "--inventory", inventory, "--target", target,
                             "--format", "json")
 
     def assert_explicit_unknown_or_refusal(self, result):
@@ -118,9 +118,27 @@ finally:
         self.assertEqual({decode_path(item["path"]) for item in items}, set(self.fixture.expected))
         self.assertTrue(items, "blank review disguised missing evidence")
         for item in items:
-            self.assertEqual(item["classification"], "to_triage")
+            self.assertNotEqual(item["classification"], "cleanup_candidate",
+                                "unsafe required evidence became cleanup candidacy")
             self.assertFalse(item["observations"], "unsafe read became integration evidence")
             self.assertTrue(item["unknowns"], "read refusal became known absence")
+
+    def assert_clean_linked_positive(self, items, principal=None, linked=None):
+        principal = principal or self.fixture.principal
+        linked = linked or self.fixture.linked
+        by_path = {decode_path(item["path"]): item for item in items}
+        main = by_path[os.fsencode(principal)]
+        self.assertEqual(main["classification"], "keep")
+        self.assertIn("main_checkout", main["decision"]["keep_reasons"])
+        self.assertEqual(main["observations"], [], "main checkout should skip deep work")
+        candidate = by_path[os.fsencode(linked)]
+        self.assertEqual(candidate["classification"], "cleanup_candidate",
+                         "ordinary resident Git evidence caused blanket refusal")
+        self.assertTrue(any(observation["target_role"] == "integration"
+                            and observation["relation"] == "identical_commit"
+                            and observation["source_oid"] == observation["target_oid"] == candidate["head"]
+                            for observation in candidate["observations"]),
+                        "linked positive control requires actual deep object proof")
 
     def test_resident_external_config_include_remains_positive(self):
         include = self.fixture.root / "resident included config"
@@ -131,9 +149,7 @@ finally:
         self.assertEqual(result.returncode, 0, result.stderr.decode(errors="replace"))
         items = json.loads(result.stdout)["items"]
         self.assertEqual({decode_path(item["path"]) for item in items}, set(self.fixture.expected))
-        self.assertTrue(all(item["classification"] == "integration_observed" for item in items),
-                        "ordinary resident include caused blanket refusal")
-        self.assertTrue(all(item["observations"] for item in items))
+        self.assert_clean_linked_positive(items)
 
     def install_fifo_include(self):
         fifo = self.fixture.root / "included config fifo"
@@ -168,6 +184,37 @@ finally:
         os.mkfifo(blob)
         self.assert_explicit_unknown_or_refusal(self.plan(inventory))
 
+    def test_target_only_fifo_blob_is_attempted_after_clean_source_controls(self):
+        fixture = self.fixture
+        target = fixture.write_commit(fixture.principal, "target-only.txt", b"target-only FIFO blob\n")
+        blob_oid = fixture.oid(fixture.principal, "HEAD:target-only.txt")
+        fixture.git("-C", str(fixture.principal), "update-ref", "refs/heads/integration", target)
+        fixture.git("-C", str(fixture.principal), "reset", "--hard", fixture.base)
+        inventory = self.save_inventory()
+        positive = self.plan(inventory, "refs/heads/integration")
+        self.assertEqual(positive.returncode, 0, positive.stderr.decode(errors="replace"))
+        linked = next(i for i in json.loads(positive.stdout)["items"]
+                      if decode_path(i["path"]) == os.fsencode(fixture.linked))
+        self.assertEqual(linked["classification"], "cleanup_candidate")
+        self.assertTrue(any(o["relation"] == "ancestor" and o["target_oid"] == target
+                            for o in linked["observations"]))
+        blob = fixture.principal / ".git/objects" / blob_oid[:2] / blob_oid[2:]
+        self.assertTrue(blob.is_file())
+        blob.unlink()
+        os.mkfifo(blob)
+        result = self.plan(inventory, "refs/heads/integration")
+        self.assertEqual(result.returncode, 0, result.stderr.decode(errors="replace"))
+        report = json.loads(result.stdout)
+        self.assertEqual({decode_path(i["path"]) for i in report["items"]}, set(fixture.expected))
+        linked = next(i for i in report["items"] if decode_path(i["path"]) == os.fsencode(fixture.linked))
+        self.assertEqual(linked["classification"], "verify")
+        self.assertFalse(linked["observations"], "target FIFO produced unverified deep integration")
+        self.assertTrue(linked["local_summary"]["index_complete"], "deep timeout erased raw-index facts")
+        self.assertEqual(linked["local_summary"]["staged"]["observed"], 0)
+        self.assertRegex(" ".join(linked["unknowns"]), r"(?i)(timeout|timed out)",
+                         "target-only FIFO fixture must execute and time out in deep proof")
+        self.assertIn(blob_oid, " ".join(linked["unknowns"]), "timed-out object identity lost")
+
     def test_fifo_alternates_pointer_cannot_prove_integration(self):
         inventory = self.save_inventory()
         alternates = self.fixture.principal / ".git/objects/info/alternates"
@@ -185,9 +232,7 @@ finally:
         self.assertEqual(result.returncode, 0, result.stderr.decode(errors="replace"))
         items = json.loads(result.stdout)["items"]
         self.assertEqual({decode_path(item["path"]) for item in items}, set(self.fixture.expected))
-        self.assertTrue(all(item["classification"] == "integration_observed"
-                            and item["observations"] for item in items),
-                        "resident alternate object store caused blanket refusal")
+        self.assert_clean_linked_positive(items)
 
     def test_fifo_gitdir_pointer_scan_repo_and_roots_preserve_error(self):
         candidate = self.fixture.root / "special gitdir marker"
@@ -217,9 +262,7 @@ finally:
                 directory.rmdir()
         positive = self.plan(inventory)
         self.assertEqual(positive.returncode, 0, positive.stderr.decode(errors="replace"))
-        self.assertTrue(all(item["classification"] == "integration_observed"
-                            for item in json.loads(positive.stdout)["items"]),
-                        "ordinary resident pack cannot establish known identical commits")
+        self.assert_clean_linked_positive(json.loads(positive.stdout)["items"])
         pack = objects / "pack" / f"pack-{packed}.pack"
         pack.unlink()
         os.mkfifo(pack)
@@ -246,15 +289,17 @@ finally:
         self.assertEqual(len(discovered["families"]), 1)
         self.assertEqual({decode_path(w["path"]) for w in discovered["families"][0]["worktrees"]},
                          {os.fsencode(separate)}, "discovery invented administration as worktree")
+        linked = self.fixture.root / "separate linked"
+        self.fixture.git("-C", str(separate), "worktree", "add", "--detach", str(linked))
+        inventory = self.inventory(separate)
         inventory_file = self.fixture.root / "separate inventory.json"
         inventory_file.write_text(json.dumps(inventory))
         result = self.plan(inventory_file)
         self.assertEqual(result.returncode, 0, result.stderr.decode(errors="replace"))
         items = json.loads(result.stdout)["items"]
-        self.assertEqual({decode_path(item["path"]) for item in items}, {os.fsencode(separate)})
-        self.assertTrue(all(item["classification"] == "integration_observed"
-                            and item["observations"] for item in items),
-                        "known separate worktree failed plan revalidation")
+        self.assertEqual({decode_path(item["path"]) for item in items},
+                         {os.fsencode(separate), os.fsencode(linked)})
+        self.assert_clean_linked_positive(items, separate, linked)
 
     def test_bare_resident_positive(self):
         bare = self.fixture.root / "resident bare.git"
@@ -277,8 +322,7 @@ finally:
         self.assertEqual(result.returncode, 0, result.stderr.decode(errors="replace"))
         items = json.loads(result.stdout)["items"]
         self.assertEqual({decode_path(item["path"]) for item in items}, set(self.fixture.expected))
-        self.assertTrue(all(item["classification"] == "integration_observed" for item in items))
-        self.assertTrue(all(item["observations"] for item in items))
+        self.assert_clean_linked_positive(items)
         self.assertTrue(all(len(observation["source_oid"]) == 64
                             and len(observation["target_oid"]) == 64
                             for item in items for observation in item["observations"]))

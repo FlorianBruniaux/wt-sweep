@@ -23,7 +23,7 @@ cd wt-sweep
 cargo fetch --locked
 cargo build --release --locked --offline
 ./target/release/wt-sweep --version
-./target/release/wt-sweep --help
+./target/release/wt-sweep review --help
 ```
 
 `cargo fetch` retrieves dependencies. Omit it if the locked dependencies
@@ -33,8 +33,8 @@ for running the CLI. Running scans and reviews needs no credentials, daemon or m
 
 ## Disposable demo
 
-Run this block from the source checkout. It creates a new repository, one linked
-worktree and a local note under a uniquely owned temporary directory. The shell
+Run this block from the source checkout. It creates a new repository, two linked
+worktrees and a local note under a uniquely owned temporary directory. The shell
 settings apply only inside the subshell. Git configuration and templates are
 isolated for the fixture.
 
@@ -48,14 +48,15 @@ isolated for the fixture.
   demo_dir="$(mktemp -d /private/tmp/wt-sweep-demo.XXXXXX)"
   mkdir "$demo_dir/reports"
   git init --template= --initial-branch=main "$demo_dir/repo"
+  printf 'Disposable worktree triage demo\n' > "$demo_dir/repo/README.txt"
+  git -C "$demo_dir/repo" add README.txt
   git -C "$demo_dir/repo" -c user.name=Demo -c user.email=demo@example.invalid \
-    -c commit.gpgSign=false commit --allow-empty -m "Demo baseline"
+    -c commit.gpgSign=false commit -m "Demo baseline"
   git -C "$demo_dir/repo" worktree add -b demo "$demo_dir/worktree"
+  git -C "$demo_dir/repo" worktree add -b clean-demo "$demo_dir/clean-worktree"
   printf 'Local note, absent from the commit\n' > "$demo_dir/worktree/notes.txt"
 
-  ./target/release/wt-sweep scan --repo "$demo_dir/repo" --local \
-    --out "$demo_dir/reports/inventory.json"
-  ./target/release/wt-sweep plan --inventory "$demo_dir/reports/inventory.json" \
+  ./target/release/wt-sweep review --repo "$demo_dir/repo" \
     --target refs/heads/main --summary --run-dir "$demo_dir/reports"
   printf 'Demo and reports: %s\n' "$demo_dir"
 )
@@ -64,21 +65,62 @@ isolated for the fixture.
 The review starts with these three lines on a complete run of this fixture:
 
 ```text
-Worktrees: 2
-Active: 0; integration observed: 2; to triage: 0
-Unknowns: 2 worktrees; coverage gaps: 0
+Worktrees: 3
+Keep: 2; cleanup candidates: 1; verify: 0
+Coverage gaps: 0; Usage: UNKNOWN
 ```
 
-The remaining two summary lines give the saved detail path and review digest.
-Their values vary per run. The main checkout counts as a worktree. Both HEADs
-match `refs/heads/main`, but that commit contains no copy of the untracked
-`notes.txt`. Both worktrees have unknowns because forge evidence is missing and
-saved local manifests were not revalidated.
+The remaining two summary lines identify the detail command or artifact and the
+review digest. Publication also prints the newly created run path.
+Their values vary per run. The main checkout is kept as the repository entry
+point. The linked `worktree` is kept because of `notes.txt`. The linked
+`clean-worktree` can qualify as a candidate; its usage still needs confirmation.
+All three HEADs match the target, which alone does not preserve the local note.
 
-The fixture and its reports remain at the printed path for inspection. The demo
+Keep `XXXXXX` literally in the `mktemp` template; it creates a unique suffix.
+The fixture and its reports remain at the printed path for inspection. Each
+review run saves the original `inventory.json`, `review.json`, `report.txt` and
+`run.json`. The receipt binds the three artifacts; it is not a backup. The demo
 does not run cleanup. See [run receipts](contracts.md#run-receipts) to verify the
 published files, or the [forge demo](forge.md#replay-a-synthetic-export) to inspect
 offline MR data separately.
+
+## Review your repository
+
+From the source checkout, enter the repository and target you have confirmed:
+
+```sh
+(
+  set -eu
+  sweep_bin="$PWD/target/release/wt-sweep"
+  printf 'Absolute clone path: '
+  IFS= read -r repo_path
+  printf 'Confirmed full target ref (refs/heads/... or refs/remotes/...): '
+  IFS= read -r target_ref
+  /usr/bin/git --no-optional-locks -c core.fsmonitor=false -C "$repo_path" \
+    show-ref --verify --quiet "$target_ref"
+  report_dir="$(mktemp -d /private/tmp/wt-sweep-report.XXXXXX)"
+  "$sweep_bin" review --repo "$repo_path" --target "$target_ref" \
+    --summary --run-dir "$report_dir"
+  printf 'Reports: %s\n' "$report_dir"
+)
+```
+
+The target must be a full local ref. A `refs/remotes/...` ref is its locally
+recorded value; the tool does not fetch it. A missing or unverified target stays
+a gap. There is no default `main`, `master` or current branch.
+
+To examine each verdict separately, use the same explicit repository and target:
+
+```sh
+./target/release/wt-sweep review --repo "$repo_path" --target "$target_ref" --verdict keep
+./target/release/wt-sweep review --repo "$repo_path" --target "$target_ref" --verdict cleanup_candidate
+./target/release/wt-sweep review --repo "$repo_path" --target "$target_ref" --verdict verify
+```
+
+Set `repo_path` and `target_ref` in your shell first; the interactive subshell
+above keeps its variables private. Each command collects a fresh review, then
+filters its display. Source totals and gaps remain visible.
 
 ## Inspect selected roots
 
@@ -96,6 +138,11 @@ failures, reached traversal limits and unresolved repository markers.
 `--workers` controls parallel metadata reads only; the filesystem can still
 change during the scan.
 
+A multi-repository review needs an explicit target map bound to observed
+repository identities. Follow [targets and filters](targets-and-filters.md) to
+create it from an inventory. `review --root` accepts the same map, view filters,
+grouping and context options as `plan`; it does not generate targets for you.
+
 For saved output, use `--out` or `--run-dir` outside every selected root and
 discovered repository family. The parent directory must exist and its ancestors
 must be ordinary directories. On macOS, `/tmp` is commonly a symlink;
@@ -103,44 +150,57 @@ must be ordinary directories. On macOS, `/tmp` is commonly a symlink;
 
 ## Read a review
 
-Here is the linked worktree's section from the disposable demo's `report.txt`.
-Only the temporary directory prefix is replaced with `<demo>`; the local-manifest
-detail line and the final review digest are omitted. OIDs and timestamps vary
-between runs.
+For the demo with an explicit target, inspect these rows:
 
-```text
-WORKTREE	SUBJECT	BRANCH	HEAD	CLASSIFICATION
-<demo>/worktree	Demo baseline	refs/heads/demo	65a79c0b7669faf921fa0b3d88fe7f24735e470c	integration_observed
-  identical_commit 65a79c0b7669faf921fa0b3d88fe7f24735e470c -> refs/heads/main 65a79c0b7669faf921fa0b3d88fe7f24735e470c [integration]
-  UNKNOWN: local file manifest describes the inventory interval; current file bytes are not revalidated by this review
-  UNKNOWN: forge state unknown (no export)
-  Risk: integration observations do not establish preservation of local files
-```
+| Path under the demo directory | Verdict | Reason |
+| --- | --- | --- |
+| `repo` | `keep` | `main_checkout` |
+| `worktree` | `keep` | `local_untracked`, from the local note |
+| `clean-worktree` | `cleanup_candidate` | All current C1-C5 conditions established |
 
-`identical_commit` explains the classification: the worktree HEAD equals the
-explicit target. The unknowns remain because the review does not recheck saved
-local contents or query a forge. The demo's `notes.txt` is still present; its
-file entry is in `local_inventories`, separate from the commit relationship.
-The [annotated JSON excerpt](contracts.md#example-review-item) shows those fields.
+Without a target, the clean row becomes `verify`; the two retention reasons
+still apply. Missing forge data stays visible but does not prevent a candidate
+whose Git and local proofs are complete.
 
-For each item, read `classification` alongside `observations`, `requests`, `risks`
-and `unknowns`. Check `coverage.gaps`, `not_collected` and local-manifest gaps in
-the JSON even when the command exits successfully: exit code `0` allows partial
-evidence.
+Read `decision.keep_reasons` and `decision.missing_conditions` alongside the
+facets: current controls, `local_summary`, commit-graph `history`, deep
+`observations` and `private_history`. The report gives a next check for each
+missing condition. Deep work is skipped when a retention reason already exists.
 
 Pass full integration refs such as `refs/heads/main` or
-`refs/remotes/origin/main`. The latter is the local remote-tracking ref; no fetch
-occurs. Omitting `--target` still produces a report, but local relationships only
-have an intermediate role and cannot produce `integration_observed`.
+`refs/remotes/origin/main`. The latter is known locally; the tool does no fetch.
+A precisely associated open request yields `keep`, without proving a live process.
+Subjects and request titles are descriptive and cannot establish integration.
 
-Subjects and MR/PR titles are display fields and do not affect judgement.
-An open MR/PR that precisely matches the worktree takes priority and yields
-`active`. If none can be associated, forge state remains unknown.
+On the `Local now` line, `0` is exact only for a complete comparison; `>=N` is a
+lower bound and `UNKNOWN` means an incomplete zero. The old `scan --local`
+manifests remain historical. Use a fresh scan for a new detailed manifest;
+`plan` collects its own compact current summary.
 
-`plan` checks Git state during enrichment. Local manifests retain the scan's
-timestamp and are marked as not revalidated. Run `scan --local` into a new output
-to inspect local files again; keep the scan's scope and observation interval
-alongside its results.
+Exit code `0` allows partial evidence. Always retain `coverage.gaps`,
+`not_collected`, facet gaps and observation intervals when sharing a result.
+No verdict authorizes removal. The [decision contract](contracts.md#triage-policy)
+explains the evidence and conservation limits.
+
+## Saved inputs and interrupted reviews
+
+Use `scan --local` then `plan --inventory` when you need file hashes and metadata
+or a separate inventory workflow. See the [advanced commands in French](tutorial.fr.md#parcours-avancé-scan-puis-plan).
+`review` accepts neither `--local` nor `--inventory`. An archived
+`wt-sweep.review/1` is a historical report, not a current inventory; use a fresh
+scan. It cannot supply current C5 controls.
+
+Progress on stderr records observed work, not a durable checkpoint. After an
+interruption or budget stop, read `coverage`, discovery remainder, publication
+omissions and facet gaps. The remaining cover is conservative and may overlap
+visited paths. Relaunch one family or a narrower root into a new report base.
+This is a new observation, not an exact continuation of the earlier interval.
+
+A failed publication or a partial directory without a final receipt does not
+establish a saved run. If final synchronization fails after a receipt becomes
+visible, durability remains unknown. A full original source over the publication
+limit is refused for `review`; narrow the scope instead of discarding evidence.
+See [CLI limits and exit codes](cli.md).
 
 ## Troubleshooting
 
@@ -151,7 +211,7 @@ alongside its results.
 | Output already exists | Select a new filename or use `--run-dir` for a separate run. |
 | Output is inside the inspected scope | Use an existing report directory outside the roots, worktrees and Git administration. |
 | Output ancestor is not a plain directory | Use the actual directory path without symlink ancestors, such as `/private/tmp` on macOS. |
-| Only `to_triage` appears | Check explicit targets, source and target object availability, and item unknowns. This can be a valid result. |
+| `verify` appears | Follow the missing C1-C5 conditions; check targets, current state and object availability. |
 | `partial` receipt or coverage gaps | Inspect the JSON details. Narrow the scope if a collection budget was reached; other missing evidence may remain. |
 | Split index or index v4 lacks classifications | Raw index evidence is retained where identifiable, but unsupported semantic interpretation stays unknown. |
 | `apply` is unavailable | Expected behavior. Read the [decision](decisions/apply-readiness.md); no removal flag is implemented. |

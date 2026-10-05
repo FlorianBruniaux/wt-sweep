@@ -1,8 +1,8 @@
 //! Serial bounded filesystem discovery, separate from deterministic judgement.
 use crate::git::scan_family;
 use crate::model::{
-    BytePath, Gap, Inventory, Marker, NativeMountDetails, PathAlias, ScanScope, SweepError,
-    VolumeObservation,
+    BytePath, DiscoveryRemainder, DiscoveryStop, Gap, Inventory, Marker, NativeMountDetails,
+    PathAlias, RemainingCover, ScanScope, SweepError, VolumeObservation,
 };
 use std::collections::{BTreeSet, VecDeque};
 use std::fs;
@@ -53,6 +53,8 @@ pub struct DiscoveryOptions {
     pub max_directories: usize,
     pub max_depth: usize,
     pub timeout: Duration,
+    /// Soft serialized-record ceiling; one bounded operation and pending queues may exceed it.
+    pub max_observation_bytes: usize,
 }
 impl Default for DiscoveryOptions {
     fn default() -> Self {
@@ -62,8 +64,36 @@ impl Default for DiscoveryOptions {
             max_directories: 100_000,
             max_depth: 256,
             timeout: Duration::from_secs(60),
+            max_observation_bytes: 24 * 1024 * 1024,
         }
     }
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub enum DiscoveryPhase {
+    Start,
+    Progress,
+    Finished,
+}
+impl DiscoveryPhase {
+    pub fn as_str(&self) -> &'static str {
+        match self {
+            Self::Start => "start",
+            Self::Progress => "progress",
+            Self::Finished => "finished",
+        }
+    }
+}
+#[derive(Clone, Debug)]
+pub struct DiscoveryProgress {
+    pub phase: DiscoveryPhase,
+    pub directories: usize,
+    pub entries: usize,
+    pub families: usize,
+    pub queued_paths: usize,
+    pub metadata_ready_paths: usize,
+    pub current: Option<BytePath>,
+    pub stop: Option<DiscoveryStop>,
 }
 
 pub struct DirectoryListing {
@@ -166,6 +196,9 @@ pub trait DiscoveryProvider {
 }
 pub struct LocalFilesystem;
 impl DiscoveryProvider for LocalFilesystem {
+    fn cancelled(&self) -> bool {
+        crate::cancel::requested()
+    }
     fn mounted_roots(&self) -> io::Result<Vec<MountedRoot>> {
         crate::mounts::enumerate()?
             .records
@@ -441,20 +474,195 @@ pub fn scan_scope_with(
     options: &DiscoveryOptions,
     provider: &dyn DiscoveryProvider,
 ) -> Result<Inventory, SweepError> {
+    scan_scope_with_progress(scope, options, provider, &mut |_| {})
+}
+
+#[derive(Default)]
+struct ObservationBudget {
+    bytes: usize,
+    charged: [usize; 5],
+}
+impl ObservationBudget {
+    fn charge(&mut self, inventory: &Inventory) -> Result<(), SweepError> {
+        macro_rules! charge {
+            ($index:expr, $records:expr) => {{
+                let records = $records;
+                for record in &records[self.charged[$index]..] {
+                    self.bytes = self
+                        .bytes
+                        .saturating_add(crate::output::observation_bytes(record)?);
+                }
+                self.charged[$index] = records.len();
+            }};
+        }
+        charge!(0, &inventory.families);
+        charge!(1, &inventory.markers);
+        charge!(2, &inventory.coverage.gaps);
+        charge!(3, &inventory.coverage.aliases);
+        charge!(4, &inventory.coverage.volumes);
+        Ok(())
+    }
+}
+
+fn requested_stop(
+    provider: &dyn DiscoveryProvider,
+    started: Instant,
+    options: &DiscoveryOptions,
+    bytes: usize,
+) -> Option<DiscoveryStop> {
+    if provider.cancelled() {
+        Some(DiscoveryStop::Interrupted)
+    } else if started.elapsed() >= options.timeout {
+        Some(DiscoveryStop::Deadline)
+    } else if bytes > options.max_observation_bytes {
+        Some(DiscoveryStop::ObservationBudget)
+    } else {
+        None
+    }
+}
+fn stop_discovery(
+    inventory: &mut Inventory,
+    reason: DiscoveryStop,
+    pending: usize,
+    current: Option<&Path>,
+) {
+    if inventory.coverage.remaining.is_some() {
+        return;
+    }
+    let path = current
+        .map(Path::to_path_buf)
+        .or_else(|| {
+            inventory
+                .coverage
+                .roots
+                .first()
+                .and_then(|p| p.to_path().ok())
+        })
+        .unwrap_or_else(|| PathBuf::from("/"));
+    gap(
+        inventory,
+        &path,
+        format!(
+            "discovery stopped: {}; requested scope remains conservatively covered",
+            reason.as_str()
+        ),
+    );
+    inventory.coverage.remaining = Some(DiscoveryRemainder {
+        reason,
+        known_pending_paths: pending,
+        cover: RemainingCover::RequestedScope,
+    });
+    inventory.coverage.traversal_complete = false;
+}
+struct ProgressReporter<'a> {
+    callback: &'a mut dyn FnMut(&DiscoveryProgress),
+    last_emit: Instant,
+    last_work: usize,
+}
+impl ProgressReporter<'_> {
+    fn emit(&mut self, event: &DiscoveryProgress, force: bool) {
+        let work = event.entries.saturating_add(event.directories);
+        if force
+            || work.saturating_sub(self.last_work) >= 128
+            || self.last_emit.elapsed() >= Duration::from_millis(250)
+        {
+            (self.callback)(event);
+            self.last_emit = Instant::now();
+            self.last_work = work;
+        }
+    }
+}
+
+pub fn scan_scope_with_progress(
+    scope: &ScanScope,
+    options: &DiscoveryOptions,
+    provider: &dyn DiscoveryProvider,
+    progress: &mut dyn FnMut(&DiscoveryProgress),
+) -> Result<Inventory, SweepError> {
+    let started = Instant::now();
+    let mut event = DiscoveryProgress {
+        phase: DiscoveryPhase::Start,
+        directories: 0,
+        entries: 0,
+        families: 0,
+        queued_paths: match scope {
+            ScanScope::Repo { .. } => 1,
+            ScanScope::Roots { paths } => paths.len(),
+            ScanScope::AllMounted => 0,
+        },
+        metadata_ready_paths: 0,
+        current: None,
+        stop: None,
+    };
+    let mut reporter = ProgressReporter {
+        callback: progress,
+        last_emit: started,
+        last_work: 0,
+    };
+    reporter.emit(&event, true);
     crate::residency::ensure_no_materialization()?;
-    if !(1..=8).contains(&options.workers) {
+    if !(1..=8).contains(&options.workers)
+        || options.max_entries == 0
+        || options.max_directories == 0
+        || options.max_observation_bytes == 0
+    {
         return Err(SweepError::new(
             "invalid_limits",
             "discover",
             Path::new("."),
-            "workers must be between 1 and 8",
+            "workers must be 1..=8 and entry, directory and observation limits must be nonzero",
         ));
     }
+    let mut budget = ObservationBudget::default();
+    let mut initial = Inventory::new(scope.clone());
+    initial.coverage.roots = match scope {
+        ScanScope::Repo { path } => vec![path.clone()],
+        ScanScope::Roots { paths } => paths.clone(),
+        ScanScope::AllMounted => Vec::new(),
+    };
+    if let Some(reason) = requested_stop(provider, started, options, 0) {
+        stop_discovery(&mut initial, reason.clone(), event.queued_paths, None);
+        initial.finish();
+        event.phase = DiscoveryPhase::Finished;
+        event.stop = Some(reason);
+        reporter.emit(&event, true);
+        return Ok(initial);
+    }
     if let ScanScope::Repo { path } = scope {
-        return scan_family(&path.to_path()?);
+        event.phase = DiscoveryPhase::Progress;
+        event.current = Some(path.clone());
+        reporter.emit(&event, true);
+        if let Some(reason) = requested_stop(provider, started, options, 0) {
+            stop_discovery(&mut initial, reason, 1, Some(&path.to_path()?));
+        } else {
+            match scan_family(&path.to_path()?) {
+                Ok(observed) => initial = observed,
+                Err(error) if provider.cancelled() => gap(
+                    &mut initial,
+                    &path.to_path()?,
+                    format!("interrupted Git validation: {error}"),
+                ),
+                Err(error) => return Err(error),
+            }
+            budget.charge(&initial)?;
+            if let Some(reason) = requested_stop(provider, started, options, budget.bytes) {
+                stop_discovery(&mut initial, reason, 1, Some(&path.to_path()?));
+            }
+        }
+        initial.coverage.roots = vec![path.clone()];
+        initial.finish();
+        event.phase = DiscoveryPhase::Finished;
+        event.families = initial.families.len();
+        event.queued_paths = usize::from(initial.coverage.remaining.is_some());
+        event.stop = initial
+            .coverage
+            .remaining
+            .as_ref()
+            .map(|r| r.reason.clone());
+        reporter.emit(&event, true);
+        return Ok(initial);
     }
     let mut inventory = Inventory::new(scope.clone());
-    let started = Instant::now();
     let mounted_before = if matches!(scope, ScanScope::AllMounted) {
         if !provider.mount_inventory_complete() {
             gap(
@@ -544,21 +752,26 @@ pub fn scan_scope_with(
     let mut entry_count = 0usize;
     let mut directory_count = 0usize;
     let mut metadata_ready: VecDeque<(PendingPath, io::Result<fs::Metadata>)> = VecDeque::new();
+    let mut current: Option<PathBuf> = None;
     while !queue.is_empty() || !metadata_ready.is_empty() {
-        if provider.cancelled() || started.elapsed() >= options.timeout {
-            let next = metadata_ready
-                .front()
-                .map(|(entry, _)| &entry.0)
-                .or_else(|| queue.front().map(|entry| &entry.0));
-            let Some(path) = next else { break };
-            gap(
+        budget.charge(&inventory)?;
+        event.phase = DiscoveryPhase::Progress;
+        event.directories = directory_count;
+        event.entries = entry_count;
+        event.families = inventory.families.len();
+        event.queued_paths = queue.len();
+        event.metadata_ready_paths = metadata_ready.len();
+        event.current = current.as_deref().map(BytePath::from_path);
+        reporter.emit(&event, false);
+        if let Some(reason) = requested_stop(provider, started, options, budget.bytes) {
+            stop_discovery(
                 &mut inventory,
-                path,
-                if provider.cancelled() {
-                    "discovery cancelled; pending paths remain unvisited"
-                } else {
-                    "discovery deadline exceeded; pending paths remain unvisited"
-                },
+                reason,
+                queue
+                    .len()
+                    .saturating_add(metadata_ready.len())
+                    .saturating_add(usize::from(current.is_some())),
+                current.as_deref(),
             );
             break;
         }
@@ -579,10 +792,20 @@ pub fn scan_scope_with(
                 ));
             }
             metadata_ready.extend(batch.into_iter().zip(results));
+            if let Some(reason) = requested_stop(provider, started, options, budget.bytes) {
+                stop_discovery(
+                    &mut inventory,
+                    reason,
+                    queue.len().saturating_add(metadata_ready.len()),
+                    current.as_deref(),
+                );
+                break;
+            }
         }
         let Some(((path, depth, parent_device), metadata)) = metadata_ready.pop_front() else {
             break;
         };
+        current = Some(path.clone());
         let metadata = match metadata {
             Ok(metadata) => metadata,
             Err(error) => {
@@ -668,24 +891,53 @@ pub fn scan_scope_with(
                 native: None,
             });
         }
-        directory_count += 1;
-        if directory_count > options.max_directories || depth > options.max_depth {
+        if depth > options.max_depth {
             gap(
                 &mut inventory,
                 &path,
-                "directory count or depth limit reached; subtree not visited",
+                "depth limit reached; subtree not visited",
             );
             continue;
         }
-        let remaining = options.max_entries.saturating_sub(entry_count);
-        if remaining == 0 {
-            gap(
+        if directory_count >= options.max_directories {
+            stop_discovery(
                 &mut inventory,
-                &path,
-                "entry limit reached; pending paths remain unvisited",
+                DiscoveryStop::DirectoryBudget,
+                queue
+                    .len()
+                    .saturating_add(metadata_ready.len())
+                    .saturating_add(1),
+                Some(&path),
             );
             break;
         }
+        let remaining = options.max_entries.saturating_sub(entry_count);
+        if remaining == 0 {
+            stop_discovery(
+                &mut inventory,
+                DiscoveryStop::EntryBudget,
+                queue
+                    .len()
+                    .saturating_add(metadata_ready.len())
+                    .saturating_add(1),
+                Some(&path),
+            );
+            break;
+        }
+        budget.charge(&inventory)?;
+        if let Some(reason) = requested_stop(provider, started, options, budget.bytes) {
+            stop_discovery(
+                &mut inventory,
+                reason,
+                queue
+                    .len()
+                    .saturating_add(metadata_ready.len())
+                    .saturating_add(1),
+                Some(&path),
+            );
+            break;
+        }
+        directory_count += 1;
         let mut listing = match provider.read_directory(&path, remaining) {
             Ok(listing) => listing,
             Err(error) => {
@@ -717,6 +969,22 @@ pub fn scan_scope_with(
                 format!("directory entry read failed: {error}"),
             );
         }
+        for entry in &listing.entries {
+            queue.push_back((entry.clone(), depth + 1, Some(metadata.dev())));
+        }
+        budget.charge(&inventory)?;
+        if let Some(reason) = requested_stop(provider, started, options, budget.bytes) {
+            stop_discovery(
+                &mut inventory,
+                reason,
+                queue
+                    .len()
+                    .saturating_add(metadata_ready.len())
+                    .saturating_add(1),
+                Some(&path),
+            );
+            break;
+        }
         let has = |name: &str| {
             listing
                 .entries
@@ -724,6 +992,26 @@ pub fn scan_scope_with(
                 .any(|entry| entry.file_name() == Some(std::ffi::OsStr::new(name)))
         };
         if has(".git") {
+            event.phase = DiscoveryPhase::Progress;
+            event.directories = directory_count;
+            event.entries = entry_count;
+            event.families = inventory.families.len();
+            event.queued_paths = queue.len();
+            event.metadata_ready_paths = metadata_ready.len();
+            event.current = Some(BytePath::from_path(&path));
+            reporter.emit(&event, true);
+            if let Some(reason) = requested_stop(provider, started, options, budget.bytes) {
+                stop_discovery(
+                    &mut inventory,
+                    reason,
+                    queue
+                        .len()
+                        .saturating_add(metadata_ready.len())
+                        .saturating_add(1),
+                    Some(&path),
+                );
+                break;
+            }
             validate_candidate(
                 &mut inventory,
                 provider,
@@ -734,7 +1022,40 @@ pub fn scan_scope_with(
                 &context,
             );
         }
+        budget.charge(&inventory)?;
+        if let Some(reason) = requested_stop(provider, started, options, budget.bytes) {
+            stop_discovery(
+                &mut inventory,
+                reason,
+                queue
+                    .len()
+                    .saturating_add(metadata_ready.len())
+                    .saturating_add(1),
+                Some(&path),
+            );
+            break;
+        }
         if has("HEAD") && has("objects") && has("refs") {
+            event.phase = DiscoveryPhase::Progress;
+            event.directories = directory_count;
+            event.entries = entry_count;
+            event.families = inventory.families.len();
+            event.queued_paths = queue.len();
+            event.metadata_ready_paths = metadata_ready.len();
+            event.current = Some(BytePath::from_path(&path));
+            reporter.emit(&event, true);
+            if let Some(reason) = requested_stop(provider, started, options, budget.bytes) {
+                stop_discovery(
+                    &mut inventory,
+                    reason,
+                    queue
+                        .len()
+                        .saturating_add(metadata_ready.len())
+                        .saturating_add(1),
+                    Some(&path),
+                );
+                break;
+            }
             validate_candidate(
                 &mut inventory,
                 provider,
@@ -745,8 +1066,30 @@ pub fn scan_scope_with(
                 &context,
             );
         }
-        for entry in listing.entries {
-            queue.push_back((entry, depth + 1, Some(metadata.dev())));
+        budget.charge(&inventory)?;
+        if let Some(reason) = requested_stop(provider, started, options, budget.bytes) {
+            stop_discovery(
+                &mut inventory,
+                reason,
+                queue
+                    .len()
+                    .saturating_add(metadata_ready.len())
+                    .saturating_add(1),
+                Some(&path),
+            );
+            break;
+        }
+        if !listing.complete && entry_count >= options.max_entries {
+            stop_discovery(
+                &mut inventory,
+                DiscoveryStop::EntryBudget,
+                queue
+                    .len()
+                    .saturating_add(metadata_ready.len())
+                    .saturating_add(1),
+                Some(&path),
+            );
+            break;
         }
     }
     if matches!(scope, ScanScope::AllMounted) {
@@ -829,6 +1172,18 @@ pub fn scan_scope_with(
             }
         }
     }
+    budget.charge(&inventory)?;
+    if let Some(reason) = requested_stop(provider, started, options, budget.bytes) {
+        stop_discovery(
+            &mut inventory,
+            reason,
+            queue
+                .len()
+                .saturating_add(metadata_ready.len())
+                .saturating_add(usize::from(current.is_some())),
+            current.as_deref(),
+        );
+    }
     inventory
         .families
         .sort_by(|a, b| a.common_dir.cmp(&b.common_dir));
@@ -843,8 +1198,22 @@ pub fn scan_scope_with(
         .coverage
         .gaps
         .sort_by(|a, b| (&a.path, &a.reason).cmp(&(&b.path, &b.reason)));
-    inventory.coverage.traversal_complete = inventory.coverage.gaps.is_empty();
+    inventory.coverage.traversal_complete =
+        inventory.coverage.gaps.is_empty() && inventory.coverage.remaining.is_none();
     inventory.finish();
+    event.phase = DiscoveryPhase::Finished;
+    event.directories = directory_count;
+    event.entries = entry_count;
+    event.families = inventory.families.len();
+    event.queued_paths = queue.len();
+    event.metadata_ready_paths = metadata_ready.len();
+    event.current = current.as_deref().map(BytePath::from_path);
+    event.stop = inventory
+        .coverage
+        .remaining
+        .as_ref()
+        .map(|r| r.reason.clone());
+    reporter.emit(&event, true);
     Ok(inventory)
 }
 

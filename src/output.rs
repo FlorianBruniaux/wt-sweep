@@ -49,7 +49,7 @@ pub fn read_artifact<T: serde::de::DeserializeOwned>(path: &Path) -> Result<T, S
 }
 use std::{
     fs,
-    io::Write,
+    io::{self, Write},
     path::{Component, Path, PathBuf},
     sync::atomic::{AtomicU64, Ordering},
 };
@@ -84,8 +84,10 @@ fn checked_destination(
         if !meta.is_dir() || meta.file_type().is_symlink() {
             return Err(error("output ancestor is not a plain directory".into()));
         }
-        if matches!(inventory.scope, ScanScope::AllMounted) {
-            // A global walk can stop before discovering the output's repository.
+        if matches!(inventory.scope, ScanScope::AllMounted)
+            || matches!(&inventory.scope, ScanScope::Roots { paths } if !paths.is_empty())
+        {
+            // A mounted or root walk can stop before discovering the output's repository.
             // Inspect ancestor markers independently of that partial inventory.
             let has = |name: &str| -> Result<bool, SweepError> {
                 match fs::symlink_metadata(prefix.join(name)) {
@@ -99,7 +101,7 @@ fn checked_destination(
                 || (has("HEAD")? && (has("objects")? || has("commondir")? || has("config")?))
             {
                 return Err(error(
-                    "global output ancestor contains a repository or administration marker".into(),
+                    "output ancestor contains a repository or administration marker".into(),
                 ));
             }
         }
@@ -155,7 +157,8 @@ pub fn write_new(
 
 pub(crate) struct RunDirectory {
     pub path: PathBuf,
-    directory: rustix::fd::OwnedFd,
+    directory: fs::File,
+    parent: fs::File,
 }
 
 impl RunDirectory {
@@ -245,13 +248,14 @@ impl RunDirectory {
             }
             return Ok(Self {
                 path: parent.join(name),
-                directory: child,
+                directory: fs::File::from(child),
+                parent: fs::File::from(directory),
             });
         }
         Err(error("run directory collision budget exhausted".into()))
     }
 
-    pub fn write(&self, name: &str, bytes: &[u8]) -> Result<(), SweepError> {
+    pub(crate) fn open_artifact(&self, name: &str) -> Result<fs::File, SweepError> {
         use rustix::fs::{Mode, OFlags, openat};
         let error =
             |message: String| SweepError::new("run_output", "write_run", &self.path, message);
@@ -273,12 +277,23 @@ impl RunDirectory {
             Mode::RUSR | Mode::WUSR,
         )
         .map_err(|e| error(e.to_string()))?;
-        let mut file = fs::File::from(fd);
-        file.write_all(bytes).map_err(|e| error(e.to_string()))?;
-        file.sync_all().map_err(|e| error(e.to_string()))
+        Ok(fs::File::from(fd))
+    }
+    #[cfg(test)]
+    pub fn write(&self, name: &str, bytes: &[u8]) -> Result<(), SweepError> {
+        let mut file = self.open_artifact(name)?;
+        file.write_all(bytes)
+            .and_then(|_| file.sync_all())
+            .map_err(|e| SweepError::new("run_output", "write_run", &self.path, e.to_string()))
+    }
+    pub(crate) fn directory_file(&self) -> &fs::File {
+        &self.directory
+    }
+    pub(crate) fn parent_file(&self) -> &fs::File {
+        &self.parent
     }
 
-    pub fn verify_and_sync(&self) -> Result<(), SweepError> {
+    pub(crate) fn verify(&self) -> Result<(), SweepError> {
         use std::os::unix::fs::MetadataExt;
         let error =
             |message: String| SweepError::new("run_output", "verify_run", &self.path, message);
@@ -293,7 +308,7 @@ impl RunDirectory {
                     .into(),
             ));
         }
-        rustix::fs::fsync(&self.directory).map_err(|e| error(e.to_string()))
+        Ok(())
     }
 }
 
@@ -361,10 +376,35 @@ fn publish(
     result.and(cleanup)
 }
 
-pub fn inventory_table(inventory: &Inventory) -> String {
-    use std::fmt::Write;
-    let mut text = String::from("STATE\tHEAD\tBRANCH\tPATH\n");
+fn render_inventory(inventory: &Inventory, text: &mut impl std::fmt::Write) {
+    let _ = writeln!(text, "STATE\tHEAD\tBRANCH\tPATH");
+    for root in &inventory.coverage.roots {
+        let _ = writeln!(text, "Root: {}", root.display());
+    }
+    for volume in &inventory.coverage.volumes {
+        let _ = writeln!(
+            text,
+            "Volume: {} available={} kind={}",
+            volume.path.display(),
+            volume.available,
+            crate::model::BytePath::from_bytes(volume.kind.as_bytes()).display()
+        );
+    }
+    for marker in inventory
+        .markers
+        .iter()
+        .filter(|marker| marker.origin == "git_registry_outside_roots")
+    {
+        let _ = writeln!(text, "Outside-root registration: {}", marker.path.display());
+    }
     for family in &inventory.families {
+        let _ = writeln!(
+            text,
+            "Family: {} identity={}:{}",
+            family.common_dir.display(),
+            family.identity.device,
+            family.identity.inode
+        );
         for worktree in &family.worktrees {
             let state = match &worktree.path_state {
                 DirState::Present => "present",
@@ -408,7 +448,31 @@ pub fn inventory_table(inventory: &Inventory) -> String {
             crate::model::BytePath::from_bytes(gap.reason.as_bytes()).display()
         );
     }
+    if let Some(remaining) = &inventory.coverage.remaining {
+        let _ = writeln!(
+            text,
+            "Remaining: reason={} known_pending_paths={} cover=requested_scope (conservative, may include visited paths; mounted scope includes unknown mounts)",
+            remaining.reason.as_str(),
+            remaining.known_pending_paths
+        );
+    }
+    if let Some(omitted) = &inventory.coverage.publication {
+        let _ = writeln!(
+            text,
+            "Publication omitted: local_inventories={} markers={} families={} worktrees={} cover=requested_scope_and_registered_worktrees",
+            omitted.local_inventories, omitted.markers, omitted.families, omitted.worktrees
+        );
+    }
+}
+pub fn inventory_table(inventory: &Inventory) -> String {
+    let mut text = String::new();
+    render_inventory(inventory, &mut text);
     text
+}
+fn inventory_table_bounded(inventory: &Inventory, limit: usize) -> Result<String, SweepError> {
+    let mut text = BoundedText::new(limit);
+    render_inventory(inventory, &mut text);
+    text.finish()
 }
 
 #[cfg(test)]
@@ -497,4 +561,363 @@ mod tests {
         assert!(result.is_err(), "ambiguous destination was accepted");
         assert!(!changed, "published inside substituted target");
     }
+}
+
+#[derive(Clone, Debug)]
+pub struct PublicationLimits {
+    pub json_bytes: usize,
+    pub report_bytes: usize,
+    pub metadata_reserve_bytes: usize,
+}
+impl Default for PublicationLimits {
+    fn default() -> Self {
+        Self {
+            json_bytes: 32 * 1024 * 1024,
+            report_bytes: 32 * 1024 * 1024,
+            metadata_reserve_bytes: 16 * 1024,
+        }
+    }
+}
+pub struct PreparedInventory {
+    pub inventory: Inventory,
+    pub json: Vec<u8>,
+    pub report: String,
+    pub partial: bool,
+}
+fn publication_limit_error(operation: &str) -> SweepError {
+    SweepError::new(
+        "publication_limit",
+        operation,
+        Path::new(""),
+        "artifact byte limit exceeded; use a narrower scan or reduce optional detail",
+    )
+}
+
+pub struct BoundedText {
+    text: String,
+    limit: usize,
+    overflow: bool,
+}
+impl BoundedText {
+    pub fn new(limit: usize) -> Self {
+        Self {
+            text: String::new(),
+            limit,
+            overflow: false,
+        }
+    }
+    pub fn finish(self) -> Result<String, SweepError> {
+        if self.overflow {
+            Err(publication_limit_error("serialize_report"))
+        } else {
+            Ok(self.text)
+        }
+    }
+}
+impl std::fmt::Write for BoundedText {
+    fn write_str(&mut self, text: &str) -> std::fmt::Result {
+        if self.overflow || text.len() > self.limit.saturating_sub(self.text.len()) {
+            self.overflow = true;
+            return Err(std::fmt::Error);
+        }
+        self.text.push_str(text);
+        Ok(())
+    }
+}
+
+struct BoundedJson {
+    limit: usize,
+    length: usize,
+    bytes: Option<Vec<u8>>,
+}
+impl io::Write for BoundedJson {
+    fn write(&mut self, bytes: &[u8]) -> io::Result<usize> {
+        if bytes.len() > self.limit.saturating_sub(self.length) {
+            return Err(io::Error::other("serialized byte budget exceeded"));
+        }
+        self.length += bytes.len();
+        if let Some(buffer) = &mut self.bytes {
+            buffer.extend_from_slice(bytes);
+        }
+        Ok(bytes.len())
+    }
+    fn flush(&mut self) -> io::Result<()> {
+        Ok(())
+    }
+}
+fn serialize_bounded<T: serde::Serialize>(
+    value: &T,
+    writer: &mut BoundedJson,
+) -> Result<(), SweepError> {
+    serde_json::to_writer_pretty(&mut *writer, value)
+        .map_err(|_| publication_limit_error("serialize_json"))?;
+    writer
+        .write_all(b"\n")
+        .map_err(|_| publication_limit_error("serialize_json"))
+}
+pub fn bounded_json_size<T: serde::Serialize>(
+    value: &T,
+    limit: usize,
+) -> Result<usize, SweepError> {
+    let mut writer = BoundedJson {
+        limit,
+        length: 0,
+        bytes: None,
+    };
+    serialize_bounded(value, &mut writer)?;
+    Ok(writer.length)
+}
+pub fn bounded_json<T: serde::Serialize>(value: &T, limit: usize) -> Result<Vec<u8>, SweepError> {
+    let mut writer = BoundedJson {
+        limit,
+        length: 0,
+        bytes: Some(Vec::new()),
+    };
+    serialize_bounded(value, &mut writer)?;
+    Ok(writer.bytes.unwrap_or_default())
+}
+pub(crate) fn observation_bytes<T: serde::Serialize>(value: &T) -> Result<usize, SweepError> {
+    let mut writer = BoundedJson {
+        limit: usize::MAX,
+        length: 0,
+        bytes: None,
+    };
+    serde_json::to_writer(&mut writer, value)
+        .map_err(|e| SweepError::new("json", "count_observation", Path::new(""), e.to_string()))?;
+    Ok(writer.length)
+}
+fn publication_omissions(inventory: &Inventory) -> crate::model::PublicationOmissions {
+    inventory
+        .coverage
+        .publication
+        .clone()
+        .unwrap_or(crate::model::PublicationOmissions {
+            local_inventories: 0,
+            markers: 0,
+            families: 0,
+            worktrees: 0,
+            cover: crate::model::PublicationCover::RequestedScopeAndRegisteredWorktrees,
+        })
+}
+fn inventory_fits(inventory: &Inventory, limits: &PublicationLimits) -> bool {
+    bounded_json_size(inventory, limits.json_bytes).is_ok()
+        && inventory_table_bounded(inventory, limits.report_bytes).is_ok()
+}
+fn prepared(
+    inventory: Inventory,
+    limits: &PublicationLimits,
+) -> Result<PreparedInventory, SweepError> {
+    let json = bounded_json(&inventory, limits.json_bytes)?;
+    let report = inventory_table_bounded(&inventory, limits.report_bytes)?;
+    let partial = !inventory.coverage.traversal_complete
+        || !inventory.coverage.gaps.is_empty()
+        || inventory.coverage.remaining.is_some()
+        || inventory.coverage.publication.is_some();
+    Ok(PreparedInventory {
+        inventory,
+        json,
+        report,
+        partial,
+    })
+}
+fn compact_prefix(source: &Inventory, retained_units: usize) -> Inventory {
+    let mut compact = source.clone();
+    compact.families.clear();
+    let mut remaining = retained_units;
+    let mut kept_worktrees = 0usize;
+    for family in &source.families {
+        if remaining == 0 {
+            break;
+        }
+        // A family with no rows still has a positive common-directory identity.
+        let units = family.worktrees.len().max(1);
+        let keep = units.min(remaining);
+        let mut retained = family.clone();
+        retained.worktrees.truncate(keep);
+        kept_worktrees += retained.worktrees.len();
+        compact.families.push(retained);
+        remaining -= keep;
+    }
+    let mut omitted = publication_omissions(source);
+    omitted.families = omitted
+        .families
+        .saturating_add(source.families.len() - compact.families.len());
+    omitted.worktrees = omitted.worktrees.saturating_add(
+        source
+            .families
+            .iter()
+            .map(|f| f.worktrees.len())
+            .sum::<usize>()
+            - kept_worktrees,
+    );
+    compact.coverage.publication = Some(omitted);
+    compact
+}
+
+pub fn prepare_inventory(
+    inventory: &Inventory,
+    limits: &PublicationLimits,
+) -> Result<PreparedInventory, SweepError> {
+    // The reserve protects bookkeeping only. Full mandatory coverage is checked
+    // against the total JSON/report limits, rather than against the reserve.
+    let bookkeeping = crate::model::PublicationOmissions {
+        local_inventories: usize::MAX,
+        markers: usize::MAX,
+        families: usize::MAX,
+        worktrees: usize::MAX,
+        cover: crate::model::PublicationCover::RequestedScopeAndRegisteredWorktrees,
+    };
+    if limits.json_bytes == 0
+        || limits.report_bytes == 0
+        || limits.metadata_reserve_bytes > limits.json_bytes
+        || bounded_json_size(&bookkeeping, limits.metadata_reserve_bytes).is_err()
+    {
+        return Err(SweepError::new(
+            "invalid_limits",
+            "prepare_inventory",
+            Path::new(""),
+            "publication limits cannot accommodate omission bookkeeping; use a narrower scan and valid metadata reserve",
+        ));
+    }
+    if inventory_fits(inventory, limits) {
+        return prepared(inventory.clone(), limits);
+    }
+    let mut publication = inventory.clone();
+    if !publication.local_inventories.is_empty() {
+        let mut omitted = publication_omissions(&publication);
+        omitted.local_inventories = omitted
+            .local_inventories
+            .saturating_add(publication.local_inventories.len());
+        publication.local_inventories.clear();
+        publication.coverage.publication = Some(omitted);
+        if inventory_fits(&publication, limits) {
+            return prepared(publication, limits);
+        }
+    }
+    if !publication.markers.is_empty() {
+        let mut omitted = publication_omissions(&publication);
+        omitted.markers = omitted.markers.saturating_add(publication.markers.len());
+        publication.markers.clear();
+        publication.coverage.publication = Some(omitted);
+        if inventory_fits(&publication, limits) {
+            return prepared(publication, limits);
+        }
+    }
+    let mandatory = compact_prefix(&publication, 0);
+    if !inventory_fits(&mandatory, limits) {
+        return Err(publication_limit_error("mandatory_inventory_metadata"));
+    }
+    let units: usize = publication
+        .families
+        .iter()
+        .map(|f| f.worktrees.len().max(1))
+        .sum();
+    let mut low = 0usize;
+    let mut high = units;
+    while low < high {
+        let mid = low + (high - low).div_ceil(2);
+        if inventory_fits(&compact_prefix(&publication, mid), limits) {
+            low = mid;
+        } else {
+            high = mid - 1;
+        }
+    }
+    prepared(compact_prefix(&publication, low), limits)
+}
+
+pub fn revalidate_boundaries(inventory: &Inventory) -> Result<Inventory, SweepError> {
+    use std::os::unix::fs::MetadataExt;
+    let error = |path: &Path, message: String| {
+        SweepError::new("unsafe_output", "revalidate_boundaries", path, message)
+    };
+    let scope_paths: Vec<_> = match &inventory.scope {
+        ScanScope::Repo { path } => vec![path],
+        ScanScope::Roots { paths } => paths.iter().collect(),
+        ScanScope::AllMounted => Vec::new(),
+    };
+    for path in scope_paths {
+        let path = path.to_path()?;
+        if !path.is_absolute() {
+            return Err(error(&path, "saved relative scope has no verified original working directory; rescan using absolute roots".into()));
+        }
+    }
+    if inventory
+        .coverage
+        .publication
+        .as_ref()
+        .is_some_and(|omitted| omitted.families > 0 || omitted.worktrees > 0)
+    {
+        return Err(error(Path::new(""), "saved inventory omitted historical family or worktree boundaries; rescan before filesystem publication".into()));
+    }
+    let mut boundaries = inventory.clone();
+    if inventory.families.is_empty() {
+        if let ScanScope::Repo { path } = &inventory.scope {
+            let path = path.to_path()?;
+            if inventory
+                .coverage
+                .remaining
+                .as_ref()
+                .is_some_and(|r| r.reason == crate::model::DiscoveryStop::Interrupted)
+            {
+                return Err(error(&path, "interrupted repository inventory has no verified family boundaries; rescan before filesystem publication".into()));
+            }
+            let current = crate::git::scan_family(&path).map_err(|e| error(&path, format!("cannot revalidate requested repository boundaries: {e}; rescan before publication")))?;
+            if current.families.is_empty() {
+                return Err(error(&path, "requested repository has no verified family boundaries; rescan before publication".into()));
+            }
+            boundaries.families.extend(current.families);
+        }
+    }
+    for family in &inventory.families {
+        let common = family.common_dir.to_path()?;
+        if !common.is_absolute() {
+            return Err(error(&common, "saved family has a relative common-directory boundary; rescan using absolute roots".into()));
+        }
+        let metadata = fs::symlink_metadata(&common).map_err(|e| {
+            error(
+                &common,
+                format!(
+                    "cannot revalidate original common directory: {e}; rescan before publication"
+                ),
+            )
+        })?;
+        if !metadata.is_dir()
+            || metadata.dev() != family.identity.device
+            || metadata.ino() != family.identity.inode
+        {
+            return Err(error(
+                &common,
+                "output common-directory identity changed; rescan before publication".into(),
+            ));
+        }
+        let entrypoint = family
+            .worktrees
+            .first()
+            .map(|tree| &tree.path)
+            .unwrap_or(&family.common_dir)
+            .to_path()?;
+        if !entrypoint.is_absolute() {
+            return Err(error(
+                &entrypoint,
+                "saved family has a relative worktree entrypoint; rescan using absolute roots"
+                    .into(),
+            ));
+        }
+        let current = crate::git::scan_family(&entrypoint).map_err(|e| {
+            error(
+                &common,
+                format!(
+                    "cannot revalidate output family boundaries: {e}; rescan before publication"
+                ),
+            )
+        })?;
+        if current.families.len() != 1
+            || current.families[0].identity != family.identity
+            || current.families[0].common_dir != family.common_dir
+        {
+            return Err(error(&common, "output common-directory path or physical identity changed; rescan before publication".into()));
+        }
+        boundaries.families.extend(current.families);
+    }
+    Ok(boundaries)
 }

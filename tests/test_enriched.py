@@ -231,14 +231,16 @@ class EnrichedTests(unittest.TestCase):
                 item = next(item for item in review["items"]
                             if decode_path(item["path"]) == os.fsencode(self.fixture.linked))
                 self.assertEqual(item["head"], head)
-                self.assertEqual(item["classification"], "integration_observed",
-                                 "subject changed verified tree relation judgement")
+                self.assertEqual(item["classification"], "keep",
+                                 "descriptive subject cannot erase complete HEAD non-integration")
+                self.assertIn("head_not_integrated", item["decision"]["keep_reasons"])
                 self.assertEqual(item["subject_truncated"], truncated)
                 if expected is None:
                     self.assertIsNone(item["subject"])
                     self.assertTrue(any("subject" in unknown.lower() and "nul" in unknown.lower()
                                         for unknown in item["unknowns"]), "NUL subject was silently known")
                 else:
+                    self.assertIsNotNone(item["subject"], "KEEP must retain verified raw subject bytes")
                     self.assertEqual(decode_path(item["subject"]), expected)
 
     def test_subject_and_branch_are_descriptive_verified_head_fields(self):
@@ -249,9 +251,11 @@ class EnrichedTests(unittest.TestCase):
         for raw_path, item in items.items():
             self.assertEqual(item["head"], self.fixture.heads[raw_path])
             self.assertEqual(decode_path(item["branch"]), self.fixture.expected[raw_path][0].encode())
+            self.assertIsNotNone(item["subject"], "deep gating must retain verified descriptive HEAD facts")
             self.assertEqual(decode_path(item["subject"]), b"Base")
             self.assertFalse(item["subject_truncated"])
-            self.assertEqual(item["classification"], "integration_observed")
+            expected = "keep" if raw_path == os.fsencode(self.fixture.principal) else "cleanup_candidate"
+            self.assertEqual(item["classification"], expected)
 
     def test_summary_is_bounded_and_json_combination_refused(self):
         path, _ = self.save_inventory()
@@ -284,7 +288,8 @@ class EnrichedTests(unittest.TestCase):
         report = self.successful_json(self.plan(inventory, "--forge", forge, "--format", "json"))
         source = next(item for item in report["items"]
                       if decode_path(item["path"]) == os.fsencode(self.fixture.linked))
-        self.assertEqual(source["classification"], "active")
+        self.assertEqual(source["classification"], "keep")
+        self.assertIn("open_request", source["decision"]["keep_reasons"])
         self.assertTrue(source["requests"])
         self.assertEqual(source["requests"][0]["title"], "Readable request title")
         table = self.plan(inventory, "--forge", forge, "--format", "table")
@@ -299,7 +304,7 @@ class EnrichedTests(unittest.TestCase):
         report = self.successful_json(self.plan(inventory, "--forge", alternate, "--format", "json"))
         source = next(item for item in report["items"]
                       if decode_path(item["path"]) == os.fsencode(self.fixture.linked))
-        self.assertEqual(source["classification"], "integration_observed", "title fabricated matching open activity")
+        self.assertEqual(source["classification"], "cleanup_candidate", "title fabricated matching open activity")
 
     def validate_run(self, directory, artifact, command, status=None):
         self.assertEqual({path.name for path in directory.iterdir()}, {artifact, "report.txt", "run.json"},

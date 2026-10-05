@@ -99,10 +99,16 @@ source branch and full HEAD must agree. Contradictory fields prevent that
 association. A partial export can establish that a request was observed;
 an omitted request may still exist on the server.
 
-An associated open request classifies a worktree as `active`, before considering
-integration. A closed or merged request alone cannot classify it as integrated.
+An associated open request adds the `open_request` reason and classifies a
+worktree as `keep`. It does not prove a live process. A closed or merged request
+alone cannot satisfy the integration condition for `cleanup_candidate`.
 Local object relationships must reach an explicit integration target. Request
 titles and links are descriptive; the source HEAD is not an integration target.
+
+The detailed review shows the host/project, recorded HEAD, update time, raw
+source path and hash, receipt verification and capture interval beside each
+request. These identify the imported observation, not the current server state.
+An open request is a reason to retain work, not evidence of a running agent.
 
 Before sharing captures, inspect them for private repository names, paths,
 subjects and request titles. Hashing a capture does not redact its contents.

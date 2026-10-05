@@ -1,3 +1,4 @@
+pub mod cancel;
 pub mod discover;
 pub mod forge;
 pub mod git;
@@ -9,3 +10,4 @@ pub mod presentation;
 pub mod residency;
 pub mod review;
 pub mod run;
+pub mod view;
