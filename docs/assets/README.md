@@ -31,6 +31,9 @@ a cosmetic departure from the fully dark brief that preserves clear contrast.
 
 - [Accepted generation brief](worktree-sweep-workflow-v2.prompt.md): closed text
   inventory, layout, four directed edges and product boundaries.
+- [Requested dark-theme brief](worktree-sweep-workflow-v3.prompt.md): AgentSec-style
+  revision prepared on 2026-10-05; generation pending authorization. The displayed
+  image remains the accepted third response.
 - [Original brief](worktree-sweep-workflow.prompt.md): retained for attempts 1–2.
 - [Mermaid source](worktree-sweep-workflow.mmd): editable logical content and the
   separate local-preservation example.

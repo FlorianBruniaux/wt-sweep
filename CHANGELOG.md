@@ -48,6 +48,8 @@ version in Cargo is a development version, not a release announcement.
 
 ### Changed
 
+- Added the author's portrait, role and profile/blog/project links to the README,
+  following the AgentSec presentation block.
 - Reworked the README in English with a direct quick start, capabilities,
   classification guide, data flow, roadmap and validation links. Existing French
   engineering records remain available through the documentation index.
