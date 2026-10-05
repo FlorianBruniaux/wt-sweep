@@ -1,0 +1,23 @@
+CHANGELOG.md
+  s_160b3107588443::t_8942cabc76edd3 84-87
+tests/inventory_support.py
+  s_160b3107588443::t_8942cabc76edd3 67-70
+tests/test_mvp.py
+  s_160b3107588443::t_94375e38a0e9b4 66-97
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "a551ae33d749c6ee947911a10926bb6decb46d26",
+  "prompts": {},
+  "sessions": {
+    "s_160b3107588443": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a106f2-069b-7be2-aa09-88b1bbf2331e",
+        "model": "gpt-6-astra"
+      },
+      "human_author": "Florian BRUNIAUX <florian@bruniaux.com>"
+    }
+  }
+}
