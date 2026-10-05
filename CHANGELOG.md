@@ -9,11 +9,6 @@ version in Cargo is a development version, not a release announcement.
 
 ### Added
 
-- Gemini workflow infographic embedded in the README, with a local-preservation
-  example, descriptive alt text, editable logical source and generation record.
-  The third render passed text and edge review at native and README sizes;
-  two rejected drafts remain documented. No product behavior changed.
-
 - Read-only macOS inventory and review MVP, covering U1–U4 of the
   [acceptance plan](docs/plan.md).
 - Explicit repository, root and mounted-volume discovery. Preserve repository
@@ -33,24 +28,20 @@ version in Cargo is a development version, not a release announcement.
   semantics remain unknown to avoid the observed Git metadata side effect.
 - `--run-dir` publications in unique directories with JSON, full report and
   artifact-hash receipts. Concurrent runs do not replace each other's outputs.
-- Independent conservation oracles, positive Git fixtures, error injection and
-  synthetic forge exports. Explicit historical replays remain opt-in.
-- Disposable E1 and cleanup-session witnesses: ignored files removed without
-  force, untracked-file refusal, status insensitive to content changes, index
-  loss through a HEAD-only patch, and writers outside a cwd-only process check.
-- Native writer-exclusion capability probe, with the failed lease/revocation
-  observations and the next authority boundary recorded in the
-  [apply decision](docs/decisions/apply-readiness.md).
-- Canonical AI development instructions and four roles, generated for Claude and
-  Codex with drift, symlink and preimage checks. This is development tooling;
-  the product needs no AI model.
-- macOS CI workflow for locked dependency retrieval, offline Rust checks, Python
-  suites and harness synchronization. Remote execution is not yet verified.
 - User documentation on 2026-10-05: [getting started](docs/getting-started.md),
   [CLI reference](docs/cli.md), [forge imports](docs/forge.md),
   [JSON contracts](docs/contracts.md), [architecture](docs/architecture.md),
   [contribution guide](CONTRIBUTING.md) and linked documentation/decision indexes.
-  Includes replayable Git and forge demos on disposable synthetic inputs.
+  Includes replayable Git and forge demos, a captured report and annotated JSON.
+- Workflow infographic with descriptive alt text and an
+  [editable source and generation record](docs/assets/README.md).
+- Disposable Git fixtures, independent conservation checks and a macOS CI
+  workflow. Observed results and exclusions are in the
+  [validation ledger](docs/finish-ledger.md#vérifications).
+- Writer-exclusion experiments and the
+  [decision to keep removal unavailable](docs/decisions/apply-readiness.md).
+- Optional [AI development harness](docs/harness.md) with generated Claude/Codex
+  instructions and four roles. The CLI needs no AI model.
 
 ### Changed
 
@@ -58,6 +49,8 @@ version in Cargo is a development version, not a release announcement.
   classification guide, data flow, roadmap and validation links. Existing French
   engineering records remain available through the documentation index.
 - Grouped this changelog by change type while retaining bootstrap history.
+- Completed cloning instructions and report interpretation examples; identified
+  the private visual reference without linking readers to an inaccessible page.
 - Replaced stale bootstrap status in canonical repository instructions with a
   link to implementation evidence and regenerated the affected projections.
 - Kept local handoffs outside tracked source to avoid distributing private paths.

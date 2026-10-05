@@ -91,6 +91,62 @@ detection. Missing or corrupt objects remain unknown. No patch-id, merge
 simulation, age, request title or closed-request state serves as integration
 proof. See [forge association](forge.md#association-and-judgement) for `active`.
 
+## Example review item
+
+This excerpt comes from the [disposable demo](getting-started.md#disposable-demo).
+It selects fields from the linked worktree's `items` entry, with collection
+timestamps and other fields omitted. It is an explanation of a real result,
+not a complete artifact to pass back to the CLI.
+
+```json
+{
+  "head": "65a79c0b7669faf921fa0b3d88fe7f24735e470c",
+  "classification": "integration_observed",
+  "observations": [
+    {
+      "source_oid": "65a79c0b7669faf921fa0b3d88fe7f24735e470c",
+      "target_ref": {"hex": "726566732f68656164732f6d61696e"},
+      "target_oid": "65a79c0b7669faf921fa0b3d88fe7f24735e470c",
+      "relation": "identical_commit",
+      "target_role": "integration"
+    }
+  ],
+  "requests": [],
+  "risks": [
+    "integration observations do not establish preservation of local files"
+  ],
+  "unknowns": [
+    "local file manifest describes the inventory interval; current file bytes are not revalidated by this review",
+    "forge state unknown (no export)"
+  ]
+}
+```
+
+| Field | How to read this result |
+| --- | --- |
+| `classification` | The explicit integration target matched the source commit. |
+| `target_ref.hex` | Decodes to `refs/heads/main`; `target_role` records that the caller selected it. |
+| `source_oid`, `target_oid` | Equal, full object IDs support `identical_commit`. |
+| `requests: []` | No requests were supplied by a forge export. It does not prove absence on GitHub or GitLab. |
+| `unknowns`, `risks` | Keep these alongside the classification when displaying or consuming it. |
+
+The same review's `local_inventories` contains a separate entry for the note.
+Selected fields from that entry are:
+
+```json
+{
+  "path": {"hex": "6e6f7465732e747874"},
+  "kind": "file",
+  "category": "untracked",
+  "size": 35,
+  "content_sha256": "4af3c73d8b287395967842e5f0711ef165b35a9930d83e596e5a39ef714864e0"
+}
+```
+
+The path decodes to `notes.txt`. Match the manifest's `worktree` to the review
+item's `path` before combining them. This hash describes the note observed during
+the scan; it provides neither its contents nor a current-file guarantee.
+
 ## Digests
 
 | Field | Bytes bound by the digest |

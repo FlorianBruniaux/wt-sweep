@@ -9,20 +9,23 @@ dataless-file materialization; other platforms refuse operations that require
 that guard. `/usr/bin/git` must be available. Actual FileProvider placeholders
 and TCC denial behavior remain outside the verified coverage.
 
-Build from an existing source checkout with the Rust toolchain pinned in
-[rust-toolchain.toml](../rust-toolchain.toml):
+Clone the repository, then build with the Rust toolchain pinned in
+[rust-toolchain.toml](../rust-toolchain.toml). GitHub access is required while the
+repository is private. For an existing checkout, skip the first two commands:
 
 ```sh
+git clone https://github.com/FlorianBruniaux/wt-sweep.git
+cd wt-sweep
 cargo fetch --locked
 cargo build --release --locked --offline
 ./target/release/wt-sweep --version
 ./target/release/wt-sweep --help
 ```
 
-The first command retrieves dependencies. Omit it if the locked dependencies
+`cargo fetch` retrieves dependencies. Omit it if the locked dependencies
 are already cached. Rustup may also need to download the pinned toolchain.
 Python 3.11+ is needed for development tests and the optional forge demo, not
-for running the CLI. No credentials, daemon or model are needed.
+for running the CLI. Running scans and reviews needs no credentials, daemon or model.
 
 ## Disposable demo
 
@@ -94,6 +97,26 @@ must be ordinary directories. On macOS, `/tmp` is commonly a symlink;
 `/private/tmp` is used in the examples to avoid that ambiguity.
 
 ## Read a review
+
+Here is the linked worktree's section from the disposable demo's `report.txt`.
+Only the temporary directory prefix is replaced with `<demo>`; the local-manifest
+detail line and the final review digest are omitted. OIDs and timestamps vary
+between runs.
+
+```text
+WORKTREE	SUBJECT	BRANCH	HEAD	CLASSIFICATION
+<demo>/worktree	Demo baseline	refs/heads/demo	65a79c0b7669faf921fa0b3d88fe7f24735e470c	integration_observed
+  identical_commit 65a79c0b7669faf921fa0b3d88fe7f24735e470c -> refs/heads/main 65a79c0b7669faf921fa0b3d88fe7f24735e470c [integration]
+  UNKNOWN: local file manifest describes the inventory interval; current file bytes are not revalidated by this review
+  UNKNOWN: forge state unknown (no export)
+  Risk: integration observations do not establish preservation of local files
+```
+
+`identical_commit` explains the classification: the worktree HEAD equals the
+explicit target. The unknowns remain because the review does not recheck saved
+local contents or query a forge. The demo's `notes.txt` is still present; its
+file entry is in `local_inventories`, separate from the commit relationship.
+The [annotated JSON excerpt](contracts.md#example-review-item) shows those fields.
 
 Start with `classification`, then inspect `observations`, `requests`, `risks`
 and `unknowns` for each item. In JSON, also read `coverage.gaps`, `not_collected`

@@ -22,10 +22,10 @@ define these limits; the illustration does not replace them.
 
 The visual references were the workflow graphic in
 [yt-insights](https://github.com/FlorianBruniaux/youtube-video-insights) and the
-terminal presentation in [agent-router](https://github.com/FlorianBruniaux/agent-router).
-They were inspected locally. Only the text brief was sent to Gemini. The accepted
-render uses a navy header and white content area, a cosmetic departure from the
-fully dark brief that preserves clear contrast.
+terminal presentation in Agent Router, a private repository inspected locally.
+The yt-insights reference was also inspected locally. Only the text brief was
+sent to Gemini. The accepted render uses a navy header and white content area,
+a cosmetic departure from the fully dark brief that preserves clear contrast.
 
 ## Editable sources and provenance
 

@@ -35,14 +35,18 @@ observation describes committed Git state; local work still needs preservation.
 
 ### Build from source
 
-From a checkout of this repository, on macOS with Rust installed:
+On macOS with Rust installed, clone the repository and build the CLI.
+The repository is currently private, so cloning requires GitHub access:
 
 ```sh
+git clone https://github.com/FlorianBruniaux/wt-sweep.git
+cd wt-sweep
 cargo fetch --locked
 cargo build --release --locked --offline
 ./target/release/wt-sweep --help
 ```
 
+If you already have a checkout, run the build commands from its root.
 The repository pins Rust 1.95.0 in [rust-toolchain.toml](rust-toolchain.toml).
 Fetching dependencies needs network access; skip that step when they are already
 cached. Git is read through `/usr/bin/git`. There is no package-manager install
@@ -71,6 +75,19 @@ JSON and publication receipt in a new run directory. Existing outputs are never
 replaced. For a copy-and-run example, use the [disposable demo](docs/getting-started.md#disposable-demo).
 
 ### Read the result
+
+The [disposable demo](docs/getting-started.md#disposable-demo) produces this
+summary, including two worktrees whose HEAD matches the chosen target:
+
+```text
+Worktrees: 2
+Active: 0; integration observed: 2; to triage: 0
+Unknowns: 2 worktrees; coverage gaps: 0
+```
+
+The full report names each worktree, branch, HEAD and observed relationship.
+See the [captured report](docs/getting-started.md#read-a-review) and
+[annotated JSON excerpt](docs/contracts.md#example-review-item).
 
 | Classification | What was observed |
 | --- | --- |
