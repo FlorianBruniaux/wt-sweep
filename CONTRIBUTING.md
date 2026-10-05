@@ -63,10 +63,12 @@ requests, patch IDs and clean status output cannot replace those conditions.
 
 ## Documentation
 
-Keep public user guides in English and retain the existing French engineering
-records in their original language. Link a new document from its directory's
-README and connect it to related guides. User commands belong in the CLI guide;
-acceptance evidence belongs in a dated validation record.
+Keep [README.md](README.md) and [README.fr.md](README.fr.md) aligned when changing
+behavior, commands or project status. Detailed user guides are in English;
+retain the existing French engineering records in their original language.
+Link a new document from its directory's README and connect it to related
+guides. User commands belong in the CLI guide; acceptance evidence belongs in
+a dated validation record.
 
 Replay documented examples on disposable fixtures, and check links when moving
 files or headings. Record changes under `Unreleased` in `CHANGELOG.md`. Release

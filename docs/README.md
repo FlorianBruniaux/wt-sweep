@@ -1,10 +1,11 @@
 # Documentation
 
-[Project overview](../README.md) · [Changelog](../CHANGELOG.md) · [Contributing](../CONTRIBUTING.md)
+[Project overview](../README.md) · [Présentation en français](../README.fr.md) · [Changelog](../CHANGELOG.md) · [Contributing](../CONTRIBUTING.md)
 
 These guides cover the read-only macOS MVP and were checked against the
-implementation on 2026-10-05. User guides are in English; design and validation
-records retain their original French and the dates of their observations.
+implementation on 2026-10-05. The project overview is available in English and
+French. Detailed user guides are in English; design and validation records
+retain their original French and the dates of their observations.
 
 ## Use the CLI
 

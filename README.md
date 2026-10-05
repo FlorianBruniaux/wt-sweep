@@ -1,5 +1,7 @@
 # Worktree Sweep
 
+**English** · [Français](README.fr.md)
+
 <table>
   <tr>
     <td width="64">
@@ -206,8 +208,9 @@ describe the read and publication boundaries.
 | [Architecture](docs/architecture.md) | Module responsibilities, read boundaries and test strategy |
 | [Documentation index](docs/README.md) | All guides, design decisions and validation records |
 
-User guides are in English. The original design, experiment and implementation
-records are retained in French.
+This overview is also available [in French](README.fr.md). Detailed user guides
+are in English. The original design, experiment and implementation records are
+retained in French.
 
 ## Roadmap and validation
 

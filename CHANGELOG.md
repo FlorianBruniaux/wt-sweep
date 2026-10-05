@@ -9,6 +9,8 @@ the Cargo package version is a development version.
 
 ### Added
 
+- [French README](README.fr.md) with translated Mermaid diagrams and expandable
+  sections, plus links to switch between the English and French overviews.
 - Dark SVG infographic showing a matching commit alongside an untracked local
   file, based on the disposable demo. Includes editable text and accessible
   descriptions; no image-generation service was used for this visual.
