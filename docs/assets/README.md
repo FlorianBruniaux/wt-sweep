@@ -1,14 +1,42 @@
-# Workflow infographic
+# README illustrations
 
 [Documentation index](../README.md) · [Project overview](../../README.md)
 
+## Git integration and local files
+
+The project README uses this example to show why a Git integration observation
+does not establish preservation of local files. The
+[disposable demo](../getting-started.md#disposable-demo) creates both observations:
+the worktree HEAD matches `refs/heads/main`, while `notes.txt` is untracked.
+`scan --local` records its hash and metadata without copying its contents.
+
+![The same commit is referenced by main and the worktree HEAD, while notes.txt remains an untracked local file.](git-and-local-work.svg)
+
+[Editable SVG](git-and-local-work.svg), 1600 × 944. It uses the dark navy panels,
+monospace text and mint/amber accents of the Agent Router examples supplied in
+the conversation. Text and shapes are authored directly in SVG, with no external
+fonts, scripts, images or image-generation call. The SVG includes a title and
+description; the README also provides descriptive alt text.
+
+The text describes the demo and the [manifest contract](../contracts.md#inventory-and-local-manifests).
+The lower banner states the current [preservation limits](../decisions/apply-readiness.md).
+The existing Mermaid diagrams cover workflow and classification, so the README
+does not repeat that flow in this illustration.
+
+Reviewed on 2026-10-05 at native size and at 860px README width. All 21 text
+elements fit the canvas and their panels. Replaying the disposable demo
+reproduced `identical_commit` against `refs/heads/main` and the `untracked`
+35-byte note; its recorded SHA-256 matched the file on disk.
+
+## Previous workflow infographic
+
 Generated with Gemini 3 Pro Image and reviewed on 2026-10-05. The third response
-is accepted and embedded in the project README. The two earlier drafts remain
-recorded with their defects.
+was accepted and used in the project README before the SVG above replaced it.
+The two earlier drafts remain recorded with their defects.
 
 ![Worktree Sweep workflow: explicit scope, inventory, Git checks and review; a matching HEAD can coexist with local notes that need preservation.](worktree-sweep-workflow.jpg)
 
-## Intent and source claims
+### Intent and source claims
 
 Explain the read-only journey from explicit scope to inventory, Git relationship
 checks and review. The separate example shows a HEAD matching an integration
@@ -27,13 +55,13 @@ The yt-insights reference was also inspected locally. Only the text brief was
 sent to Gemini. The accepted render uses a navy header and white content area,
 a cosmetic departure from the fully dark brief that preserves clear contrast.
 
-## Editable sources and provenance
+### Editable sources and provenance
 
 - [Accepted generation brief](worktree-sweep-workflow-v2.prompt.md): closed text
   inventory, layout, four directed edges and product boundaries.
 - [Requested dark-theme brief](worktree-sweep-workflow-v3.prompt.md): AgentSec-style
-  revision prepared on 2026-10-05; generation pending authorization. The displayed
-  image remains the accepted third response.
+  revision prepared on 2026-10-05 and not executed. The project README now uses
+  the SVG example; the historical image here remains the third response.
 - [Original brief](worktree-sweep-workflow.prompt.md): retained for attempts 1–2.
 - [Mermaid source](worktree-sweep-workflow.mmd): editable logical content and the
   separate local-preservation example.
@@ -42,7 +70,7 @@ a cosmetic departure from the fully dark brief that preserves clear contrast.
 - [Delivered JPEG](worktree-sweep-workflow.jpg): 1376 × 768 pixels, byte-identical
   to the accepted native response. No crop, stretch, upscale or retouching.
 
-## Observed review
+### Observed review
 
 The accepted image contains the 23 specified labels once, with no added textual
 annotations. Classification labels sit below the empty report pictogram. The
@@ -54,7 +82,7 @@ runtime validation of the product.
 The request specified 16:9; the provider returned 1376 × 768. Native dimensions
 are retained. A smaller copy was used only for the readability check.
 
-## Attempt history and cost
+### Attempt history and cost
 
 | Attempt | Native output | Outcome | Estimated image output |
 | --- | --- | --- | --- |

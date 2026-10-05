@@ -30,10 +30,10 @@ versioned JSON; it runs locally without a service, forge account or AI model.
 backup, restore and removal are unavailable. `apply` refuses every invocation.
 The project name is provisional and no release has been published.
 
-![Worktree Sweep: choose a repository or roots, inventory worktrees with optional files and index, check Git relationships against explicit targets, then review activity, integration and unknowns. A matching HEAD can still leave untracked notes to preserve. Backup, restore and removal are unavailable.](docs/assets/worktree-sweep-workflow.jpg)
+![Example: the worktree HEAD matches refs/heads/main and is classified integration_observed, while notes.txt remains untracked. The local scan records its hash and metadata without backing up its contents. Backup, restore and removal are unavailable.](docs/assets/git-and-local-work.svg)
 
-[Diagram source and generation notes](docs/assets/README.md). The local-file
-example is reproduced in the [disposable demo](docs/getting-started.md#disposable-demo).
+Reproduce this case with the [disposable demo](docs/getting-started.md#disposable-demo).
+The [visual sources and review notes](docs/assets/README.md) include the editable SVG.
 
 ## Why it exists
 

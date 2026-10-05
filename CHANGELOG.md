@@ -9,6 +9,9 @@ the Cargo package version is a development version.
 
 ### Added
 
+- Dark SVG infographic showing a matching commit alongside an untracked local
+  file, based on the disposable demo. Includes editable text and accessible
+  descriptions; no image-generation service was used for this visual.
 - README Mermaid diagrams for the scan/review flow and classification rules.
 - Read-only macOS inventory and review MVP, covering U1–U4 of the
   [acceptance plan](docs/plan.md).
@@ -55,6 +58,9 @@ the Cargo package version is a development version.
 
 ### Changed
 
+- Replaced the README workflow image with the Git/local-file example. Mermaid
+  diagrams explain the workflow; the earlier Gemini image and generation history
+  remain in the assets documentation.
 - Collapsed README build notes, capability details, classification diagram and
   validation records into expandable sections. Quick-start commands and current
   product limits remain visible.

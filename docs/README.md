@@ -20,7 +20,7 @@ records retain their original French and the dates of their observations.
 | Document | Contents |
 | --- | --- |
 | [Contributing](../CONTRIBUTING.md) | Local checks, fixture ownership and change requirements. |
-| [Workflow infographic](assets/README.md) | Gemini illustration reviewed on 2026-10-05, source briefs, generated images and review notes. |
+| [README illustrations](assets/README.md) | Editable SVG example, previous Gemini workflow, sources and review notes. |
 | [Architecture](architecture.md) | Module responsibilities, data flow, read boundaries and test strategy. |
 | [Native boundaries](native-boundaries.md) | Three reviewed private unsafe boundaries and their evidence limits. |
 | [AI development harness](harness.md) | Canonical instructions, generated host files and separate checks for native activation. |
