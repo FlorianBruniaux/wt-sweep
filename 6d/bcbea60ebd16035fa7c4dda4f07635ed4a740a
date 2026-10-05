@@ -1,0 +1,25 @@
+README.md
+  s_160b3107588443::t_15604e7c8b915b 3-14
+docs/assets/worktree-sweep-workflow-v3.prompt.md
+  s_160b3107588443::t_15604e7c8b915b 1-57
+docs/assets/README.md
+  s_160b3107588443::t_c78c663ba685c6 34-36
+CHANGELOG.md
+  s_160b3107588443::t_c78c663ba685c6 51-52
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "6dbcbea60ebd16035fa7c4dda4f07635ed4a740a",
+  "prompts": {},
+  "sessions": {
+    "s_160b3107588443": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a106f2-069b-7be2-aa09-88b1bbf2331e",
+        "model": "gpt-6-astra"
+      },
+      "human_author": "Florian BRUNIAUX <florian@bruniaux.com>"
+    }
+  }
+}
