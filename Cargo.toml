@@ -1,0 +1,22 @@
+[package]
+name = "wt-sweep"
+version = "0.1.0"
+edition = "2024"
+rust-version = "1.85"
+description = "Git worktree discovery and evidence-based review"
+publish = false
+
+[dependencies]
+serde = { version = "=1.0.228", features = ["derive"] }
+serde_json = "=1.0.150"
+rustix = { version = "=1.1.4", features = ["fs"] }
+sha2 = "=0.10.9"
+sha1-checked = "=0.10.0"
+libc = "=0.2.189"
+
+[lints.rust]
+unsafe_code = "deny"
+
+[lints.clippy]
+unwrap_used = "deny"
+expect_used = "deny"

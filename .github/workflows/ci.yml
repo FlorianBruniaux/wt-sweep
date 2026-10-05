@@ -1,0 +1,32 @@
+name: Read-only MVP checks
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    runs-on: macos-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Install the pinned Rust toolchain
+        run: rustup toolchain install 1.95.0 --profile minimal --component rustfmt,clippy
+      - run: cargo fetch --locked
+      - run: cargo fmt --all -- --check
+      - run: cargo clippy --all-targets --locked --offline -- -D warnings
+      - run: cargo test --locked --offline
+      - run: cargo build --locked --offline
+      - run: python3 -B -m unittest discover -s tests -p 'test_*.py' -v
+      - run: python3 -B -m unittest discover -s experiments/exclusion -p 'test_*.py' -v
+      - run: python3 -B scripts/sync-ai.py --check
+      - run: git diff --exit-code

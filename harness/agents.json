@@ -1,0 +1,6 @@
+[
+  {"name": "sweep-explorer", "description": "Locate wt-sweep code, contracts and evidence without edits.", "writable": false},
+  {"name": "sweep-implementer", "description": "Implement an assigned wt-sweep unit and its regression tests.", "writable": true},
+  {"name": "sweep-test-engineer", "description": "Build isolated Git fixtures and independent conservation checks.", "writable": true},
+  {"name": "sweep-reviewer", "description": "Review false integration proofs, data loss paths and acceptance evidence.", "writable": false}
+]
