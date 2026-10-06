@@ -14,6 +14,8 @@
   </tr>
 </table>
 
+---
+
 **A macOS CLI to inventory Git worktrees and compare their commits with refs you select.**
 
 [![Read-only MVP checks](https://github.com/FlorianBruniaux/wt-sweep/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/FlorianBruniaux/wt-sweep/actions/workflows/ci.yml)
@@ -21,16 +23,21 @@
 [![Runtime: macOS](https://img.shields.io/badge/Runtime-macOS-597ee5)](docs/getting-started.md#prerequisites)
 [![License: FSL-1.1-ALv2](https://img.shields.io/badge/License-FSL--1.1--ALv2-597ee5)](LICENSE.md)
 
-[Quick start](#quick-start) · [Features](#features) · [How it works](#how-it-works) · [Documentation](#documentation) · [Changelog](CHANGELOG.md) · [Contributing](CONTRIBUTING.md)
+[Quick start](#quick-start) · [Features](#features) · [How it works](#how-it-works) · [Documentation](#documentation)
+
+[Tutorial and tests](docs/tutorial.fr.md) · [Example prompt](docs/tutorial.fr.md#prompt-à-donner-à-un-assistant) · [Roadmap](docs/roadmap.md) · [Changelog](CHANGELOG.md) · [Contributing](CONTRIBUTING.md)
+
+---
 
 Worktree Sweep (`wt-sweep`) finds repositories and their worktrees within a scope
 you choose. It checks local Git relationships and can include file manifests and
 captured GitHub or GitLab data in its reports. The Rust CLI writes text and
 versioned JSON; it runs locally without a service, forge account or AI model.
 
-**Status: read-only MVP for macOS.** Discovery and review are implemented;
-backup, restore and removal are unavailable. `apply` refuses every invocation.
-The project name is provisional and no release has been published.
+> [!NOTE]
+> **Status: read-only MVP for macOS.** Discovery and review are implemented;
+> backup, restore and removal are unavailable. `apply` refuses every invocation.
+> The project name is provisional and no release has been published.
 
 ![Historical illustration: a matching Git HEAD does not preserve untracked local files.](docs/assets/git-and-local-work.svg)
 
@@ -38,6 +45,8 @@ Historical evidence illustration. With `triage/1`, observed untracked work gives
 
 Reproduce this case with the [disposable demo](docs/getting-started.md#disposable-demo).
 The [visual sources and review notes](docs/assets/README.md) include the editable SVG.
+
+---
 
 ## Why it exists
 
@@ -50,6 +59,8 @@ selected, associated PRs or MRs, and any risks or missing evidence. `review` and
 `plan` compare the current HEAD, index and files. With `scan --local`, the inventory
 also records detailed hashes and metadata. These records help inspect what
 remains in a worktree; they contain no backup of its files.
+
+---
 
 ## Quick start
 
@@ -126,6 +137,8 @@ qualify while local changes or exclusive reflog history remain.
 See the [decision contract](docs/contracts.md#triage-policy) and
 [disposable demo](docs/getting-started.md#disposable-demo).
 
+---
+
 ## Features
 
 <details>
@@ -148,6 +161,8 @@ volumes and reports access gaps. It has been tested with injected volumes, not
 by scanning the development machine. Start with a repository or selected roots.
 
 </details>
+
+---
 
 ## How it works
 
@@ -207,6 +222,8 @@ walk is still an interval of observations, not an atomic filesystem snapshot.
 The [architecture](docs/architecture.md) and [evidence contracts](docs/contracts.md)
 describe the read and publication boundaries.
 
+---
+
 ## Documentation
 
 | Start here | What it covers |
@@ -223,6 +240,8 @@ describe the read and publication boundaries.
 This overview and the hands-on tutorial are available in French. Other detailed
 user guides are in English. The original design, experiment and implementation
 records are retained in French.
+
+---
 
 ## Roadmap and validation
 
@@ -257,6 +276,8 @@ have not been verified.
 
 </details>
 
+---
+
 ## Development and project status
 
 See [CONTRIBUTING.md](CONTRIBUTING.md) for the build, test commands, disposable
@@ -266,6 +287,8 @@ behavioral comparison before a removal engine is built.
 
 The source checkout is the current distribution. Cargo publishing is disabled;
 no package release has been published.
+
+---
 
 ## License
 

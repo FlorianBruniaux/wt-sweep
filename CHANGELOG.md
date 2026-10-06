@@ -129,6 +129,8 @@ the Cargo package version is a development version.
 
 ### Changed
 
+- Separate README sections with horizontal rules in both languages, split navigation
+  into two rows, and display the read-only status in a GitHub note.
 - Align the English/French README, acceptance plan and progress entry points with
   the merged T01-T09 triage. Add a roadmap separating large-repository collection
   work from the gated backup and removal phases, with dated delivery evidence.
