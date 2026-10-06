@@ -188,3 +188,13 @@ et ses [scénarios de routage](../harness/skills/wt-sweep/evals/scenarios.json),
 régénérez avec `python3 -B scripts/sync-ai.py --write`. Les copies Claude et Codex
 ne s’éditent pas séparément. Le [guide du harnais](harness.md) détaille les
 contrôles et leurs limites. Aucun hook global n’est installé par ce dépôt.
+
+## Une collecte ciblée après un budget atteint
+
+Après lecture du rapport, l’assistant peut proposer `--worktree` avec le chemin
+absolu exact d’une ligne à vérifier. Cette option réduit les lectures de fichiers,
+d’histoire et de contexte ; `--path-prefix` seul ne fait que filtrer l’affichage.
+Le [tutoriel de collecte ciblée](tutorial.fr.md#approfondir-un-worktree-après-une-analyse-partielle)
+fournit le bloc de commandes. Vérifier la présence de l’option dans l’aide du
+binaire utilisé. Garder les deux rapports et expliquer les contrôles qui restent
+incomplets après la relance.

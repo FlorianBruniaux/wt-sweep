@@ -7,7 +7,28 @@ use std::os::unix::fs::MetadataExt;
 type FamilyKey = (u64, u64, BytePath);
 type CommitKey = (FamilyKey, String);
 type TargetKey = (FamilyKey, BytePath);
-type RelationKey = (FamilyKey, String, String);
+// Resolved aliases share a graph only within the same physical family.
+type WalkKey = (FamilyKey, String);
+struct TargetWalk {
+    frontier: VecDeque<String>,
+    pending: BTreeSet<String>,
+    // Membership is evidence only after object verification and commit parsing.
+    seen: BTreeSet<String>,
+    terminal_reason: Option<String>,
+}
+impl TargetWalk {
+    fn result(&self, source: &str) -> Option<(&str, Option<String>)> {
+        if self.seen.contains(source) {
+            Some(("ancestor", None))
+        } else if let Some(reason) = &self.terminal_reason {
+            Some(("unknown", Some(reason.clone())))
+        } else if self.frontier.is_empty() {
+            Some(("not_ancestor", None))
+        } else {
+            None
+        }
+    }
+}
 struct Row {
     family: usize,
     path: BytePath,
@@ -20,9 +41,6 @@ struct Job {
     row: usize,
     observation: usize,
     initialized: bool,
-    queue: VecDeque<String>,
-    visited: BTreeSet<String>,
-    steps: usize,
     done: bool,
 }
 impl Job {
@@ -31,9 +49,6 @@ impl Job {
             row,
             observation,
             initialized: false,
-            queue: VecDeque::new(),
-            visited: BTreeSet::new(),
-            steps: 0,
             done: false,
         }
     }
@@ -43,7 +58,7 @@ pub(super) struct HistoryRun {
     limits: ReviewLimits,
     commits: BTreeMap<CommitKey, Result<Commit, SweepError>>,
     targets: BTreeMap<TargetKey, Result<String, SweepError>>,
-    relations: BTreeMap<RelationKey, (String, Option<String>)>,
+    walks: BTreeMap<WalkKey, TargetWalk>,
     started: Instant,
     collected_time: Duration,
     queued_ids: usize,
@@ -76,11 +91,26 @@ impl HistoryRun {
         &mut self,
         family: &Family,
         operation: GitRead,
-        result: &Result<T, SweepError>,
+        result: &mut Result<T, SweepError>,
+        child_timeout: Duration,
+        phase_timeout: Duration,
     ) {
-        if result.as_ref().is_err_and(|e| e.code == "git_timeout")
-            && stops_family_history(&operation)
+        if !result.as_ref().is_err_and(|e| e.code == "git_timeout") {
+            return;
+        }
+        if child_timeout < ControlledGit::default().timeout_limit()
+            && self.started.elapsed() >= phase_timeout
         {
+            // A shortened phase allowance does not establish backend failure.
+            // Cached facts still require the usual fresh final validity checks.
+            let reason = "history time budget exhausted during Git read";
+            self.metrics
+                .stop_reason
+                .get_or_insert_with(|| reason.into());
+            *result = Err(error(reason));
+            return;
+        }
+        if stops_family_history(&operation) {
             self.metrics
                 .stop_reason
                 .get_or_insert_with(|| family_timeout_reason(&operation));
@@ -127,12 +157,18 @@ impl HistoryRun {
                 .object_bytes
                 .saturating_sub(self.metrics.object_bytes as usize),
         );
-        let result = git.read(
+        let mut result = git.read(
             &family.common_dir.to_path()?,
             GitRead::Commit { oid: oid.into() },
         );
         self.metrics.spawned_processes += git.spawned_processes();
-        self.remember_timeout(family, GitRead::Commit { oid: oid.into() }, &result);
+        self.remember_timeout(
+            family,
+            GitRead::Commit { oid: oid.into() },
+            &mut result,
+            git.timeout_limit(),
+            self.limits.timeout,
+        );
         let result = result.and_then(|raw| {
             self.metrics.object_bytes += raw.len() as u64;
             verify_object("commit", oid, &raw)?;
@@ -160,22 +196,22 @@ impl HistoryRun {
         self.metrics.target_resolution_attempts += 1;
         let git =
             ControlledGit::with_timeout(self.limits.timeout.saturating_sub(self.started.elapsed()));
-        let result = resolve(&git, &family.common_dir.to_path()?, reference);
+        let mut result = resolve(&git, &family.common_dir.to_path()?, reference);
         self.metrics.spawned_processes += git.spawned_processes();
         self.remember_timeout(
             family,
             GitRead::ResolveCommit {
                 reference: reference.clone(),
             },
-            &result,
+            &mut result,
+            git.timeout_limit(),
+            self.limits.timeout,
         );
         self.targets.insert(key, result.clone());
         result
     }
-    fn complete(&mut self, job: &mut Job, family: &Family, result: &str, reason: Option<String>) {
+    fn complete(&mut self, job: &mut Job, _family: &Family, result: &str, reason: Option<String>) {
         job.done = true;
-        self.queued_ids = self.queued_ids.saturating_sub(job.queue.len());
-        job.queue.clear();
         if reason.as_ref().is_some_and(|r| r.contains("budget"))
             && self.metrics.stop_reason.is_none()
         {
@@ -186,17 +222,14 @@ impl HistoryRun {
         observation.result = result.into();
         observation.stop_reason = reason.clone();
         observation.finished_unix_ms = now_ms();
-        if let (Some(source), Some(target)) = (&row.source, &observation.target_oid) {
-            self.relations.insert(
-                (
-                    Self::family_key(family),
-                    source.to_ascii_lowercase(),
-                    target.to_ascii_lowercase(),
-                ),
-                (result.into(), reason),
-            );
-        }
     }
+    fn stop_walk(&mut self, walk: &mut TargetWalk, reason: String) {
+        self.queued_ids -= walk.frontier.len();
+        walk.frontier.clear();
+        walk.pending.clear();
+        walk.terminal_reason = Some(reason);
+    }
+
     fn turn(&mut self, job: &mut Job, inventory: &Inventory) {
         let family = &inventory.families[self.rows[job.row].family];
         if let Some(reason) = self.stopped(family) {
@@ -237,38 +270,57 @@ impl HistoryRun {
                 }
             };
             self.rows[job.row].observations[job.observation].target_oid = Some(target.clone());
-            if let Some((result, reason)) = self
-                .relations
-                .get(&(Self::family_key(family), source.clone(), target.clone()))
-                .cloned()
-            {
-                self.metrics.cache_hits += 1;
-                self.complete(job, family, &result, reason);
-                return;
-            }
             if target == source {
                 self.complete(job, family, "identical_commit", None);
                 return;
             }
-            if self.queued_ids >= self.limits.traversal_steps.min(65536) {
-                self.complete(
-                    job,
-                    family,
-                    "unknown",
-                    Some("history frontier memory budget reached".into()),
-                );
-                return;
+            let key = (Self::family_key(family), target.clone());
+            if !self.walks.contains_key(&key) {
+                let mut walk = TargetWalk {
+                    frontier: VecDeque::new(),
+                    pending: BTreeSet::new(),
+                    seen: BTreeSet::new(),
+                    terminal_reason: None,
+                };
+                if self.queued_ids >= self.limits.traversal_steps.min(65536) {
+                    walk.terminal_reason = Some("history frontier memory budget reached".into());
+                } else {
+                    walk.frontier.push_back(target.clone());
+                    walk.pending.insert(target);
+                    self.queued_ids += 1;
+                }
+                self.walks.insert(key, walk);
             }
-            job.queue.push_back(target);
-            self.queued_ids += 1;
             job.initialized = true;
         }
-        while let Some(oid) = job.queue.front().cloned() {
-            // Already observed identity spends no read or traversal budget.
-            if job.visited.contains(&oid) {
-                job.queue.pop_front();
-                self.queued_ids -= 1;
-                continue;
+        let Some(target) = self.rows[job.row].observations[job.observation]
+            .target_oid
+            .clone()
+        else {
+            self.complete(
+                job,
+                family,
+                "unknown",
+                Some("resolved target OID unavailable".into()),
+            );
+            return;
+        };
+        let key = (Self::family_key(family), target);
+        // Take just this graph while expanding it, keeping all accounting run-wide.
+        let Some(mut walk) = self.walks.remove(&key) else {
+            self.complete(
+                job,
+                family,
+                "unknown",
+                Some("target graph unavailable".into()),
+            );
+            return;
+        };
+        loop {
+            // Verified positives and a complete graph remain usable after read budgets.
+            if let Some((result, reason)) = walk.result(&source) {
+                self.complete(job, family, result, reason);
+                break;
             }
             // A slice yields; it must not turn resumable work into a cached refusal.
             if self.metrics.object_read_attempts - reads
@@ -276,63 +328,68 @@ impl HistoryRun {
                 || self.metrics.object_bytes - bytes >= self.limits.slice_object_bytes as u64
                 || self.metrics.traversal_steps - steps >= self.limits.slice_traversal_steps as u64
             {
-                return;
+                break;
             }
+            // Traversal/time bound even cached expansions. Read/byte budgets are
+            // checked by read_commit only when a new object must be collected.
             if self.started.elapsed() >= self.limits.timeout
                 || self.metrics.traversal_steps >= self.limits.traversal_steps as u64
             {
-                self.complete(
-                    job,
-                    family,
-                    "unknown",
-                    Some("history time or traversal step budget reached".into()),
+                self.stop_walk(
+                    &mut walk,
+                    "history time or traversal step budget reached".into(),
                 );
-                return;
+                continue;
             }
-            if job.steps >= self.limits.per_target_steps {
-                self.complete(
-                    job,
-                    family,
-                    "unknown",
-                    Some("per-target history traversal step budget reached".into()),
+            if walk.seen.len() >= self.limits.per_target_steps {
+                self.stop_walk(
+                    &mut walk,
+                    "per-target history traversal step budget reached".into(),
                 );
-                return;
+                continue;
             }
+            let Some(oid) = walk.frontier.front().cloned() else {
+                continue;
+            };
             let commit = match self.read_commit(family, &oid) {
                 Ok(commit) => commit,
                 Err(e) => {
-                    self.complete(job, family, "unknown", Some(e.to_string()));
-                    return;
+                    self.stop_walk(&mut walk, e.to_string());
+                    continue;
                 }
             };
-            job.queue.pop_front();
+            walk.frontier.pop_front();
+            walk.pending.remove(&oid);
             self.queued_ids -= 1;
-            job.visited.insert(oid.clone());
-            job.steps += 1;
+            walk.seen.insert(oid);
             self.metrics.traversal_steps += 1;
-            if oid == source {
-                self.complete(job, family, "ancestor", None);
-                return;
-            }
-            if commit.parents.len()
+            let mut unique = BTreeSet::new();
+            let parents: Vec<_> = commit
+                .parents
+                .into_iter()
+                .filter(|parent| {
+                    !walk.seen.contains(parent)
+                        && !walk.pending.contains(parent)
+                        && unique.insert(parent.clone())
+                })
+                .collect();
+            if parents.len()
                 > self
                     .limits
                     .traversal_steps
                     .min(65536)
                     .saturating_sub(self.queued_ids)
             {
-                self.complete(
-                    job,
-                    family,
-                    "unknown",
-                    Some("history frontier memory budget reached".into()),
-                );
-                return;
+                self.stop_walk(&mut walk, "history frontier memory budget reached".into());
+                continue;
             }
-            self.queued_ids += commit.parents.len();
-            job.queue.extend(commit.parents);
+            self.queued_ids += parents.len();
+            for parent in parents {
+                walk.pending.insert(parent.clone());
+                walk.frontier.push_back(parent);
+            }
         }
-        self.complete(job, family, "not_ancestor", None);
+        self.walks.insert(key, walk);
     }
     pub fn collect(
         inventory: &Inventory,
@@ -346,7 +403,7 @@ impl HistoryRun {
             limits: limits.clone(),
             commits: BTreeMap::new(),
             targets: BTreeMap::new(),
-            relations: BTreeMap::new(),
+            walks: BTreeMap::new(),
             started: Instant::now(),
             collected_time: Duration::ZERO,
             queued_ids: 0,
@@ -472,14 +529,16 @@ impl HistoryRun {
         self.metrics.target_resolution_attempts += 1;
         let git =
             ControlledGit::with_timeout(remaining_time.saturating_sub(self.started.elapsed()));
-        let result = resolve(&git, &family.common_dir.to_path()?, reference);
+        let mut result = resolve(&git, &family.common_dir.to_path()?, reference);
         self.metrics.spawned_processes += git.spawned_processes();
         self.remember_timeout(
             family,
             GitRead::ResolveCommit {
                 reference: reference.clone(),
             },
-            &result,
+            &mut result,
+            git.timeout_limit(),
+            remaining_time,
         );
         cache.insert(key, result.clone());
         result
@@ -700,4 +759,234 @@ fn invalidate(observation: &mut HistoryObservation, reason: String) {
     }
     observation.result = "unknown".into();
     observation.stop_reason = Some(reason);
+}
+
+#[cfg(all(test, unix))]
+#[allow(clippy::unwrap_used, clippy::expect_used)]
+mod deadline_tests {
+    use super::*;
+    use std::{
+        path::{Path, PathBuf},
+        process::{Command, Stdio},
+        sync::atomic::{AtomicU64, Ordering},
+    };
+    static NEXT: AtomicU64 = AtomicU64::new(0);
+    struct Fixture(PathBuf);
+    impl Fixture {
+        fn new() -> Self {
+            let path = PathBuf::from(format!(
+                "/private/tmp/wt-sweep-history-deadline-{}-{}",
+                std::process::id(),
+                NEXT.fetch_add(1, Ordering::Relaxed)
+            ));
+            fs::create_dir(&path).unwrap();
+            let f = Self(path);
+            f.git(&["init", "--template=", "-b", "main"]);
+            fs::write(f.0.join("file"), b"synthetic history\n").unwrap();
+            f.git(&["add", "file"]);
+            f.git(&["commit", "-m", "fixture"]);
+            f
+        }
+        fn git(&self, args: &[&str]) -> String {
+            let mut command = Command::new("/usr/bin/git");
+            command
+                .env_clear()
+                .env("PATH", "/usr/bin:/bin")
+                .env("GIT_CONFIG_NOSYSTEM", "1")
+                .env("GIT_CONFIG_SYSTEM", "/dev/null")
+                .env("GIT_CONFIG_GLOBAL", "/dev/null")
+                .env("GIT_ALLOW_PROTOCOL", "")
+                .env("GIT_NO_LAZY_FETCH", "1")
+                .env("GIT_AUTHOR_NAME", "Fixture")
+                .env("GIT_AUTHOR_EMAIL", "fixture@example.invalid")
+                .env("GIT_COMMITTER_NAME", "Fixture")
+                .env("GIT_COMMITTER_EMAIL", "fixture@example.invalid")
+                .args([
+                    "-c",
+                    "core.hooksPath=/dev/null",
+                    "-c",
+                    "core.fsmonitor=false",
+                    "-c",
+                    "gc.auto=0",
+                    "-c",
+                    "maintenance.auto=false",
+                    "-C",
+                ])
+                .arg(&self.0)
+                .args(args);
+            String::from_utf8(bounded(command))
+                .unwrap()
+                .trim_end_matches('\n')
+                .into()
+        }
+        fn block(&self, path: &Path) {
+            fs::rename(path, path.with_extension("before")).unwrap();
+            let mut command = Command::new("/usr/bin/mkfifo");
+            command.env_clear().arg(path);
+            bounded(command);
+        }
+        fn run(&self, targets: &[BytePath]) -> (Inventory, HistoryRun) {
+            let inventory = crate::git::scan_family(&self.0).unwrap();
+            let bound = FamilyTargets::bind(&inventory, TargetInput::Simple(targets)).unwrap();
+            let run = HistoryRun::collect(
+                &inventory,
+                &bound,
+                &ReviewLimits::default(),
+                &BTreeMap::new(),
+                &mut |_| {},
+            )
+            .unwrap();
+            (inventory, run)
+        }
+    }
+    fn bounded(mut command: Command) -> Vec<u8> {
+        let mut child = command
+            .stdin(Stdio::null())
+            .stdout(Stdio::piped())
+            .stderr(Stdio::piped())
+            .spawn()
+            .unwrap();
+        let started = Instant::now();
+        while child.try_wait().unwrap().is_none() {
+            if started.elapsed() >= Duration::from_secs(15) {
+                let _ = child.kill();
+                let _ = child.wait();
+                panic!("owned history fixture child exceeded deadline");
+            }
+            std::thread::sleep(Duration::from_millis(5));
+        }
+        let out = child.wait_with_output().unwrap();
+        assert!(
+            out.status.success(),
+            "{}",
+            String::from_utf8_lossy(&out.stderr)
+        );
+        out.stdout
+    }
+    impl Drop for Fixture {
+        fn drop(&mut self) {
+            let _ = fs::remove_dir_all(&self.0);
+        }
+    }
+    fn near_deadline(run: &mut HistoryRun) {
+        run.started = Instant::now() - (run.limits.timeout - Duration::from_millis(200));
+    }
+
+    #[test]
+    fn shortened_history_commit_and_target_deadlines_do_not_quarantine_family() {
+        for commit_read in [true, false] {
+            let f = Fixture::new();
+            let main = BytePath::from_bytes(b"refs/heads/main");
+            let (inventory, mut run) = f.run(&[main]);
+            let family = &inventory.families[0];
+            let head = family.worktrees[0].head.as_ref().unwrap();
+            let tree = f.git(&["rev-parse", "HEAD^{tree}"]);
+            let extra = f.git(&["commit-tree", &tree, "-m", "uncached"]);
+            let blocked_ref = BytePath::from_bytes(b"refs/heads/blocked");
+            f.git(&["update-ref", "refs/heads/blocked", &extra]);
+            let blocked = if commit_read {
+                f.0.join(".git/objects").join(&extra[..2]).join(&extra[2..])
+            } else {
+                f.0.join(".git/refs/heads/blocked")
+            };
+            f.block(&blocked);
+            near_deadline(&mut run);
+            crate::git::take_child_read_journal();
+            let failure = if commit_read {
+                run.read_commit(family, &extra).err().unwrap()
+            } else {
+                run.resolve_target(family, &blocked_ref).unwrap_err()
+            };
+            let reads = crate::git::take_child_read_journal();
+            assert_eq!(reads.len(), 1, "must exercise actual Git child timeout");
+            assert!(
+                run.stopped_families.is_empty(),
+                "short phase deadline quarantined family"
+            );
+            assert!(
+                failure.to_string().contains("history time budget"),
+                "{failure}"
+            );
+            assert!(run.cached_commit(family, head).unwrap().is_ok());
+            assert!(run.read_commit(family, &extra).is_err());
+            assert!(
+                crate::git::take_child_read_journal().is_empty(),
+                "expired history spawned dependent child"
+            );
+        }
+    }
+
+    #[test]
+    fn shortened_final_history_deadline_preserves_fresh_proof_and_demotes_blocked_cached_fact() {
+        let f = Fixture::new();
+        f.git(&["branch", "zz_blocked"]);
+        let targets = [
+            BytePath::from_bytes(b"refs/heads/main"),
+            BytePath::from_bytes(b"refs/heads/zz_blocked"),
+        ];
+        let (inventory, mut run) = f.run(&targets);
+        assert!(
+            run.rows[0]
+                .observations
+                .iter()
+                .all(|o| o.result == "identical_commit")
+        );
+        // Fresh family validation precedes the final target deadline. Only the
+        // later explicit target ref is made unreadable, in the owned fixture.
+        let family = &inventory.families[0];
+        let live = crate::git::scan_family(&f.0).unwrap().families.remove(0);
+        let final_families =
+            BTreeMap::from([((family.identity.device, family.identity.inode), Ok(live))]);
+        f.block(&f.0.join(".git/refs/heads/zz_blocked"));
+        run.collected_time = run.limits.timeout - Duration::from_millis(200);
+        crate::git::take_child_read_journal();
+        run.finish(&inventory, &mut [], &final_families).unwrap();
+        let reads = crate::git::take_child_read_journal();
+        assert_eq!(
+            reads.len(),
+            2,
+            "fresh main validation and one blocked child required"
+        );
+        assert!(
+            run.stopped_families.is_empty(),
+            "final phase deadline quarantined family"
+        );
+        let stable = &run.rows[0].observations[0];
+        assert_eq!(
+            stable.result, "identical_commit",
+            "fresh independent proof was erased"
+        );
+        assert!(stable.stop_reason.is_none());
+        let blocked = &run.rows[0].observations[1];
+        assert_eq!(
+            blocked.result, "unknown",
+            "unvalidated cached fact stayed current"
+        );
+        assert_eq!(blocked.observed_result.as_deref(), Some("identical_commit"));
+        assert!(blocked.stop_reason.as_deref().unwrap().contains("budget"));
+        assert_eq!(run.metrics.completed_targets, 1);
+        assert_eq!(run.metrics.incomplete_targets, 1);
+    }
+
+    #[test]
+    fn actual_history_backend_timeout_still_quarantines_family_and_refuses_dependents() {
+        let f = Fixture::new();
+        let (inventory, mut run) = f.run(&[BytePath::from_bytes(b"refs/heads/main")]);
+        let family = &inventory.families[0];
+        f.git(&["branch", "blocked"]);
+        f.block(&f.0.join(".git/refs/heads/blocked"));
+        crate::git::take_child_read_journal();
+        let failure = run
+            .resolve_target(family, &BytePath::from_bytes(b"refs/heads/blocked"))
+            .unwrap_err();
+        assert_eq!(failure.code, "git_timeout");
+        assert_eq!(crate::git::take_child_read_journal().len(), 1);
+        assert_eq!(run.stopped_families.len(), 1);
+        let head = family.worktrees[0].head.as_ref().unwrap();
+        assert!(
+            run.read_commit(family, head).is_err(),
+            "quarantine allowed cached evidence promotion"
+        );
+        assert!(crate::git::take_child_read_journal().is_empty());
+    }
 }

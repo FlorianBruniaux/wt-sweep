@@ -382,3 +382,42 @@ fn shortened_local_deadline_does_not_quarantine_healthy_worktree_in_same_family(
     );
     Ok(())
 }
+
+#[test]
+fn local_allowance_reserves_time_for_later_worktrees() -> TestResult {
+    let f = Fixture::new()?;
+    f.git(&f.0, &["init", "-b", "main"])?;
+    fs::write(f.0.join("tracked"), b"base")?;
+    f.git(&f.0, &["add", "."])?;
+    f.git(&f.0, &["commit", "-m", "fixture"])?;
+    let mut inventory = crate::git::scan_family(&f.0)?;
+    let original = inventory.families[0].worktrees[0].clone();
+    inventory.families[0].worktrees = (0..50)
+        .map(|n| {
+            let mut w = original.clone();
+            w.path = BytePath::from_path(&f.0.join(format!("owned-{n}")));
+            w
+        })
+        .collect();
+    let mut allowances = Vec::new();
+    local_summaries_collect(
+        &inventory,
+        24 * 1024 * 1024,
+        &BTreeMap::new(),
+        |w, limits| {
+            allowances.push(limits.timeout);
+            Ok(crate::local::SummaryOutcome {
+                summary: unavailable_local_summary(w, "injected no-I/O collector".into())?,
+                first_git_timeout: None,
+            })
+        },
+    )?;
+    assert_eq!(allowances.len(), 50);
+    assert!(
+        allowances[0] <= Duration::from_millis(2400),
+        "first worktree consumed allowance reserved for others: {:?}",
+        allowances[0]
+    );
+    assert!(allowances[49] <= Duration::from_secs(30));
+    Ok(())
+}

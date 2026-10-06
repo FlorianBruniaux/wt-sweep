@@ -206,6 +206,46 @@ fn ordinary_index_25001_shared_blobs_is_clean_and_summary_stays_compact() {
     );
 }
 #[test]
+fn distinct_flat_blobs_are_complete_and_detect_staged_and_unstaged_changes() {
+    for format in ["sha1", "sha256"] {
+        let f = Fixture::new(format);
+        for n in 0..1024 {
+            fs::write(f.0.join(format!("file{n:04}")), format!("distinct {n}\n"))
+                .unwrap_or_else(|e| panic!("{e}"));
+        }
+        f.commit();
+        let clean = f.summary();
+        assert!(
+            clean.head_complete && clean.index_complete && clean.disk_complete,
+            "{format}: {clean:?}"
+        );
+        for count in [
+            &clean.staged,
+            &clean.unstaged,
+            &clean.conflicts,
+            &clean.untracked,
+            &clean.ignored,
+        ] {
+            assert!(count.complete, "{format}: {clean:?}");
+            assert_eq!(count.observed, 0);
+        }
+        fs::write(f.0.join("file0000"), b"staged change\n").unwrap_or_else(|e| panic!("{e}"));
+        f.git(&["add", "file0000"]);
+        fs::write(f.0.join("file0001"), b"disk change\n").unwrap_or_else(|e| panic!("{e}"));
+        let dirty = f.summary();
+        assert!(
+            dirty.head_complete && dirty.index_complete && dirty.disk_complete,
+            "{format}: {dirty:?}"
+        );
+        assert!(
+            dirty.staged.complete && dirty.unstaged.complete,
+            "{format}: {dirty:?}"
+        );
+        assert_eq!((dirty.staged.observed, dirty.unstaged.observed), (1, 1));
+        assert!(dirty.gaps.is_empty(), "{format}: {dirty:?}");
+    }
+}
+#[test]
 fn executable_symlink_and_index_flags_do_not_hide_resident_changes() {
     use std::os::unix::fs::{PermissionsExt, symlink};
     for flag in ["--assume-unchanged", "--skip-worktree"] {
@@ -247,6 +287,31 @@ fn missing_staged_blob_preserves_index_and_staged_count() {
     assert!(s.staged.complete);
     assert!(!s.unstaged.complete);
     assert!(!s.gaps.is_empty());
+}
+#[test]
+fn missing_blob_batch_preserves_other_blobs_and_observed_disk_changes() {
+    for format in ["sha1", "sha256"] {
+        let f = Fixture::new(format);
+        for n in 0..128 {
+            fs::write(f.0.join(format!("file{n:03}")), format!("distinct {n}\n"))
+                .unwrap_or_else(|e| panic!("{e}"));
+        }
+        f.commit();
+        let oid =
+            String::from_utf8(f.git(&["rev-parse", ":file000"])).unwrap_or_else(|e| panic!("{e}"));
+        let oid = oid.trim();
+        fs::remove_file(f.0.join(format!(".git/objects/{}/{}", &oid[..2], &oid[2..])))
+            .unwrap_or_else(|e| panic!("{e}"));
+        fs::write(f.0.join("file127"), b"changed disk bytes\n").unwrap_or_else(|e| panic!("{e}"));
+        let s = f.summary();
+        assert!(
+            s.index_complete && s.staged.complete && s.disk_complete,
+            "{format}: {s:?}"
+        );
+        assert!(!s.head_complete && !s.unstaged.complete, "{format}: {s:?}");
+        assert_eq!((s.staged.observed, s.unstaged.observed), (0, 1));
+        assert!(!s.gaps.is_empty());
+    }
 }
 #[test]
 fn cancelled_or_small_budgets_cannot_claim_exact_zero() {
@@ -665,4 +730,78 @@ fn verified_conflict_positive_survives_unrelated_gitlink_refusal() {
     assert_eq!(refused.conflicts.observed, 0);
     assert!(!refused.conflicts.complete && !refused.index_complete);
     assert!(refused.gaps.iter().any(|g| g.reason.contains("checksum")));
+}
+
+#[test]
+fn unavailable_directory_tree_preserves_unknown_head_in_both_formats() {
+    for format in ["sha1", "sha256"] {
+        for fault in ["missing", "corrupt"] {
+            let f = Fixture::new(format);
+            for n in 0..2 {
+                let dir = f.0.join(format!("dir{n}"));
+                fs::create_dir(&dir).unwrap_or_else(|e| panic!("{e}"));
+                fs::write(dir.join("file"), format!("distinct {n}\n"))
+                    .unwrap_or_else(|e| panic!("{e}"));
+            }
+            f.commit();
+            let object_path = |oid: Vec<u8>| {
+                let oid = String::from_utf8(oid).unwrap_or_else(|e| panic!("{e}"));
+                let oid = oid.trim();
+                f.0.join(format!(".git/objects/{}/{}", &oid[..2], &oid[2..]))
+            };
+            let first = object_path(f.git(&["rev-parse", "HEAD:dir0"]));
+            if fault == "missing" {
+                fs::remove_file(first).unwrap_or_else(|e| panic!("{e}"));
+            } else {
+                let other = object_path(f.git(&["rev-parse", "HEAD:dir1"]));
+                fs::remove_file(&first).unwrap_or_else(|e| panic!("{e}"));
+                fs::write(first, fs::read(other).unwrap_or_else(|e| panic!("{e}")))
+                    .unwrap_or_else(|e| panic!("{e}"));
+            }
+            let summary = f.summary();
+            assert!(
+                !summary.head_complete && !summary.staged.complete,
+                "{format} {fault}: {summary:?}"
+            );
+            assert!(
+                summary.index_complete && summary.disk_complete && summary.unstaged.complete,
+                "{format} {fault}: {summary:?}"
+            );
+            assert_eq!(summary.unstaged.observed, 0);
+            assert!(
+                summary
+                    .gaps
+                    .iter()
+                    .any(|gap| gap.reason.contains("HEAD tree unavailable")),
+                "{summary:?}"
+            );
+        }
+    }
+}
+#[test]
+fn directory_tree_frontier_keeps_depth_and_path_limits_incomplete() {
+    let f = Fixture::new("sha1");
+    for n in 0..2 {
+        let dir = f.0.join(format!("dir{n}"));
+        fs::create_dir(&dir).unwrap_or_else(|e| panic!("{e}"));
+        fs::write(dir.join("file"), format!("distinct {n}\n")).unwrap_or_else(|e| panic!("{e}"));
+    }
+    f.commit();
+    for limits in [
+        SummaryLimits {
+            max_depth: 0,
+            ..SummaryLimits::default()
+        },
+        SummaryLimits {
+            max_paths: 2,
+            ..SummaryLimits::default()
+        },
+    ] {
+        let summary = collect_summary(&f.worktree(), &limits).unwrap_or_else(|e| panic!("{e}"));
+        assert!(
+            !summary.head_complete && !summary.staged.complete,
+            "{summary:?}"
+        );
+        assert!(!summary.gaps.is_empty());
+    }
 }

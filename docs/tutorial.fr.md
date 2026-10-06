@@ -291,3 +291,31 @@ réversible ; il ne les anonymise pas.
 Le [guide de dépannage](getting-started.md#troubleshooting) détaille les refus.
 Pour signaler un échec, conservez commande, code, versions et révision testée,
 avec un extrait expurgé selon les [consignes de contribution](../CONTRIBUTING.md#report-a-problem).
+
+## Approfondir un worktree après une analyse partielle
+
+Une limite de collecte ne signifie pas que le worktree est propre. Pour reprendre
+les contrôles d’un chemin précis, lancer ce bloc depuis le checkout de `wt-sweep`
+après compilation. Saisir le chemin exact affiché dans le rapport précédent.
+
+```sh
+(
+  set -eu
+  printf 'Chemin absolu du dépôt : '
+  IFS= read -r repo_path
+  printf 'Ref cible confirmée (refs/heads/... ou refs/remotes/...) : '
+  IFS= read -r target_ref
+  printf 'Chemin absolu du worktree à approfondir : '
+  IFS= read -r worktree_path
+  report_dir="$(mktemp -d /private/tmp/wt-sweep-report.XXXXXX)"
+  ./target/release/wt-sweep review --repo "$repo_path" --target "$target_ref" \
+    --worktree "$worktree_path" --path-prefix "$worktree_path" \
+    --summary --run-dir "$report_dir"
+  printf 'Rapports : %s\n' "$report_dir"
+)
+```
+
+Ce passage réserve les lectures de fichiers et d’histoire au chemin choisi.
+L’inventaire complet et les contrôles d’identité restent présents ; les autres
+lignes portent leurs preuves manquantes. Les plafonds par worktree continuent
+à s’appliquer. Le nouveau rapport ne complète pas rétroactivement l’ancien.

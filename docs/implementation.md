@@ -10,8 +10,10 @@ moteur de nettoyage.
 
 ## Triage T01-T09
 
-Ces lots sont fusionnés dans `main` depuis le 06/10/2026. Le prochain travail
-concerne le coût de collecte sur gros dépôt, avec mesure et critères de sortie
+Ces lots sont fusionnés dans `main` depuis le 06/10/2026. Le lot suivant corrige
+les lectures unitaires d’objets locaux et les parcours répétés des cibles Git.
+Les lectures restent bornées ; les preuves sont dans le
+[registre de collecte](collection-performance.md), avec les critères de sortie
 dans la [feuille de route](roadmap.md#prochain-travail--compléter-lanalyse-des-gros-dépôts).
 
 La reprise de triage s’appuie sur le [plan v2](superpowers/plans/2026-10-05-worktree-triage-v2.md).

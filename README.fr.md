@@ -147,6 +147,8 @@ du raisonnement et le recours limité à des sous-agents.
 Le [guide de l’assistant et ses prompts](docs/assistant-skill.md) couvre une
 nouvelle revue, la reprise d’un rapport et un test local sur des dépôts jetables.
 
+Pour une ligne incomplète, la [collecte ciblée](docs/tutorial.fr.md#approfondir-un-worktree-après-une-analyse-partielle) réserve les lectures au chemin exact du worktree. Le rapport conserve les autres lignes et leurs contrôles manquants.
+
 ## Fonctionnalités
 
 <details>
@@ -254,12 +256,14 @@ conservés dans leur version française d’origine.
 
 ## Feuille de route et validation
 
-Le triage T01-T09 est fusionné dans `main`. L'analyse du gros dépôt essayé reste
-partielle : sur 48 worktrees, 3 `keep`, 45 `verify` et aucun candidat après
-épuisement des budgets locaux et d'histoire. La [feuille de route](docs/roadmap.md)
-donne la priorité à la mesure et à la réduction de ce coût de collecte.
-L'exclusion des écritures concurrentes n'est pas démontrée ; la sauvegarde,
-la restauration et la suppression restent indisponibles.
+Le triage T01-T09 est fusionné dans `main`. Le [lot de collecte](docs/collection-performance.md)
+groupe les lectures d’objets, partage les parcours des cibles et permet un passage
+ciblé. Le dernier essai complet compte 49 worktrees : 4 `keep`, 45 `verify` et
+aucun candidat ; tous les résumés locaux restent partiels. Un passage ciblé a
+vérifié une ascendance et trouvé des fichiers ignorés, donc retenu ce worktree.
+La [feuille de route](docs/roadmap.md) suit les plafonds d’objets et d’histoire privée
+restants. L’exclusion des écritures concurrentes n’est pas démontrée ; sauvegarde,
+restauration et suppression restent indisponibles.
 
 <details>
 <summary>Étapes d’implémentation et validations consignées</summary>
@@ -268,7 +272,7 @@ la restauration et la suppression restent indisponibles.
 | --- | --- |
 | U1–U4 : découverte et revue | Implémentées et testées localement sur macOS ; les limites des preuves restent explicites. |
 | T01-T09 : triage des worktrees | Fusionné ; revue en une commande, verdicts C1-C5, état local, histoire privée, cibles, filtres et rapports. |
-| Couverture des gros dépôts | Encore partielle sur l'essai consigné ; le coût de collecte est le prochain sujet. |
+| Couverture des gros dépôts | Lectures groupées et passage ciblé disponibles ; l’essai du gros dépôt reste partiel. |
 | E1 : exclure les écritures concurrentes | **Non démontré.** Les expériences existantes mettent en défaut les approches proposées par verrouillage et renommage. |
 | U5 : sauvegarde durable et restauration indépendante | Bloquée par E1 et par l’absence d’un contrat de préservation complet. |
 | U6–U7 : suppression | Indisponible, dans l’attente de validations sur des dépôts jetables, d’une revue indépendante et d’une approbation humaine portant sur les actions exactes. |

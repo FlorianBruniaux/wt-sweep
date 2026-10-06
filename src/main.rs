@@ -26,6 +26,7 @@ Global discovery reports gaps and does not establish a machine-wide snapshot.
 --local hashes local files and index within explicit budgets; gaps remain visible.
 review and plan report readable progress on stderr and keep JSON on stdout.
 --summary prints verdicts, collection coverage and remaining checks.
+--worktree PATH focuses evidence collection; unselected rows remain explicitly incomplete.
 --run-dir creates an isolated run below an existing directory outside inspected targets.
 apply is unavailable until conservation and approval gates are verified.
 ";
@@ -149,7 +150,7 @@ fn command_help(command: &str) -> Result<(), String> {
             "Discovery requires an explicit scope. --local additionally hashes local content within budgets.\nProgress is on stderr. Gaps and unfinished scope remain in the inventory.\n"
         }
         "plan" | "review" => {
-            "REVIEW OPTIONS:\n  --target FULL_REF... | --target-map FILE\n  --filter-repo PATH  --path-prefix PATH  --branch FULL_REF\n  --local-state clean|dirty|unknown  --verdict keep|cleanup_candidate|verify\n  --group-by repo|directory  --forge FILE\n  --changelog-path RELATIVE... | --no-context\n  --summary  --format json|table  --out FILE | --run-dir BASE\n\nTargets must be explicit; no target leaves integration unknown.\nFilters select rows after judgement and retain source coverage in JSON views.\n--summary cannot be combined with --format json. Progress is on stderr.\n--run-dir needs an existing directory outside inspected targets.\nreview saves inventory.json, review.json, report.txt and run.json together.\nplan reuses a saved inventory and saves review.json, report.txt and run.json.\nA cleanup_candidate still requires confirmation of its use. apply is unavailable.\n"
+            "REVIEW OPTIONS:\n  --target FULL_REF... | --target-map FILE\n  --worktree ABSOLUTE_PATH (collect evidence for this exact recorded worktree)\n  --filter-repo PATH  --path-prefix PATH  --branch FULL_REF\n  --local-state clean|dirty|unknown  --verdict keep|cleanup_candidate|verify\n  --group-by repo|directory  --forge FILE\n  --changelog-path RELATIVE... | --no-context\n  --summary  --format json|table  --out FILE | --run-dir BASE\n\nTargets must be explicit; no target leaves integration unknown.\nFilters select rows after judgement and retain source coverage in JSON views.\n--worktree narrows history/local/private/context reads; full inventory and identity checks remain.\nOther rows explicitly retain missing evidence. Add --path-prefix for a focused display.\n--summary cannot be combined with --format json. Progress is on stderr.\n--run-dir needs an existing directory outside inspected targets.\nreview saves inventory.json, review.json, report.txt and run.json together.\nplan reuses a saved inventory and saves review.json, report.txt and run.json.\nA cleanup_candidate still requires confirmation of its use. apply is unavailable.\n"
         }
         _ => {
             "Offline evidence only. No network command is executed by these subcommands.\ncommandes prints capture guidance; ingerer reads captured raw data and its receipt.\n"
@@ -349,6 +350,7 @@ fn collect_local(inventory: &mut Inventory, publication_limits: &PublicationLimi
 }
 
 const PLAN_OPTIONS: &[&str] = &[
+    "--worktree",
     "--target",
     "--target-map",
     "--changelog-path",
@@ -451,7 +453,10 @@ fn review_settings(opts: &Options) -> Result<ReviewSettings, String> {
     if opts.contains_key("--no-context") && opts.contains_key("--changelog-path") {
         return Err("--no-context and --changelog-path are mutually exclusive".into());
     }
-    let mut review_options = ReviewOptions::default();
+    let mut review_options = ReviewOptions {
+        worktree: one(opts, "--worktree").map(|p| BytePath::from_path(&p)),
+        ..ReviewOptions::default()
+    };
     review_options.context.enabled = !opts.contains_key("--no-context");
     if let Some(paths) = opts.get("--changelog-path") {
         review_options.context.changelog_paths = paths

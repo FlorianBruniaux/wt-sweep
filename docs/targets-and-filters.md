@@ -80,3 +80,22 @@ empty selection retains source failures and all repository bindings.
 To collect less, start a new `scan --repo` or narrow the explicit scan roots.
 A filtered report cannot be saved inside a hidden worktree either: destination
 checks still use the full inventory.
+
+## Complete the evidence for one worktree
+
+`--worktree` changes the collection scope. It requires the exact absolute path
+recorded by discovery. `--path-prefix` only changes the displayed rows. Combine
+them to investigate one incomplete worktree while retaining the full source:
+
+```sh
+wt-sweep review --repo "$repo_path" --target "$target_ref" \
+  --worktree "$worktree_path" --path-prefix "$worktree_path" \
+  --summary --run-dir "$report_dir"
+```
+
+Set these variables to the confirmed repository, ref, recorded worktree path and
+an existing report directory outside the source. The command creates a fresh run;
+it neither resumes old reads nor overwrites the earlier report. Unselected rows
+keep their identities and current control results, with local/history/private
+checks explicitly uncollected. Shared stashes describe the selected repository
+family. Per-worktree object, byte and history-depth limits still apply.

@@ -17,6 +17,35 @@ réussie avant fusion de la vérification du commit fusionné. La
 [feuille de route](roadmap.md) garde le diagnostic de performance prioritaire.
 E1 reste non démontrée et `apply` indisponible.
 
+## Collecte des gros dépôts, 06/10/2026
+
+Les lectures locales d’arbres et de blobs sont groupées et dimensionnées avant
+exécution. Le graphe d’une cible vérifiée est partagé entre worktrees de la même
+famille physique. Le temps local restant est réparti entre les worktrees ;
+`--worktree` permet un passage concentré sur un chemin, tout en conservant
+l’inventaire et les omissions explicites. Les README, le tutoriel, les contrats,
+l’aide CLI et les instructions Claude/Codex générées décrivent ce comportement.
+
+Les fixtures distinctes passent avec 23 processus Git pour 1 024 blobs et au plus
+40 lectures d’objets pour 1 024 dossiers. Un graphe partagé de 12 commits demande
+12 expansions. Les délais de phase d’histoire et d’histoire privée n’effacent
+plus les preuves indépendantes comme le ferait un vrai timeout du backend.
+Les revalidations manquantes restent inconnues.
+
+Le dernier passage complet compte 49 worktrees : 4 `keep`, 45 `verify`, aucun
+candidat. Il conserve trois ascendances vérifiées, sans fausse quarantaine ;
+les 49 résumés locaux restent partiels. Le passage ciblé vérifie une ascendance
+et observe au moins 4 969 fichiers ignorés, donc classe ce worktree `keep`. Les plafonds d’objets et d’histoire privée
+laissent encore des contrôles incomplets. Le [registre de collecte](collection-performance.md)
+détaille les fixtures, la revue indépendante et les limites des mesures réelles.
+
+Validation du lot : 303 tests Rust réussis, 2 ignorés ; 260 tests Python réussis
+sur 266, 6 ignorés ; six expériences de conservation réussies. Formatage, Clippy,
+builds et synchronisation des 22 fichiers générés passent. Le contrôle
+documentaire couvre 31 fichiers, 327 liens locaux et 38 blocs shell. La revue
+indépendante est statique ; les suites intégrées ont été exécutées par
+l’intégrateur. La validation distante reste distincte de ces résultats locaux.
+
 ## Bilan console, 06/10/2026
 
 `--summary` affiche les verdicts, la couverture du périmètre source, le nombre de

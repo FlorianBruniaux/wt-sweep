@@ -13,7 +13,13 @@ and retains the historical U1-U4 results.
 - Preserve `keep`, `cleanup_candidate` and `verify` with their C1-C5 conditions.
   Positive retention reasons take priority. Missing evidence remains unknown;
   completed discovery does not imply complete local or history collection.
-- Large-repository collection still reaches its budgets. Measure the affected
+- Local summaries use finite Git batches with size checks and per-object OID
+  verification. Commit history shares a target walk within one physical family.
+  Preserve unknowns at the remaining byte/object/depth/time caps.
+- `--worktree` narrows expensive evidence collection to an exact recorded path.
+  Keep the original inventory and all rows; distinguish deliberate omissions
+  from budget exhaustion. Display filters alone do not reduce collection work.
+- Large-repository collection can still reach its budgets. Measure the affected
   phase before optimizing; do not relax evidence requirements to yield candidates.
 - See `docs/contracts.md` and `docs/targets-and-filters.md` before changing schemas,
   per-family targets or views. Filters must retain the source evidence and coverage.

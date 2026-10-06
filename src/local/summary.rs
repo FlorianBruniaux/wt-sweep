@@ -56,6 +56,7 @@ fn observe(count: &mut LocalCount, path: &BytePath) {
         count.samples_omitted += 1;
     }
 }
+type TreePosition = (String, Vec<u8>, usize);
 struct Collector<'a> {
     s: LocalSummary,
     limits: &'a SummaryLimits,
@@ -168,6 +169,145 @@ impl Collector<'_> {
             .map_err(|e| io::Error::other(e.to_string()))?;
         Ok(bytes)
     }
+    fn blob_digest(&self, oid: &str, kind: &str, raw: &[u8]) -> Result<String, String> {
+        if kind != "blob" || raw.len() as u64 > self.limits.max_file_bytes {
+            return Err("expected blob within summary object byte limit".into());
+        }
+        crate::review::verify_object("blob", oid, raw).map_err(|e| e.to_string())?;
+        Ok(format!("{:x}", Sha256::digest(raw)))
+    }
+    fn blob_batch(&mut self, fd: &OwnedFd, path: &Path, oids: &[String]) {
+        if oids.is_empty() {
+            return;
+        }
+        let result = self
+            .git(
+                fd,
+                path,
+                GitRead::Objects {
+                    oids: oids.to_vec(),
+                },
+            )
+            .and_then(|raw| {
+                crate::git::parse_objects(&raw, oids).map_err(|e| io::Error::other(e.to_string()))
+            });
+        match result {
+            Ok(objects) => {
+                for (oid, object) in oids.iter().zip(objects) {
+                    let digest = object
+                        .and_then(|object| self.blob_digest(oid, &object.kind, &object.bytes));
+                    self.blobs.insert(oid.clone(), digest);
+                }
+            }
+            Err(error) => {
+                for oid in oids {
+                    self.blobs.insert(oid.clone(), Err(error.to_string()));
+                }
+            }
+        }
+    }
+    fn prefetch_blobs<'a>(
+        &mut self,
+        fd: &OwnedFd,
+        path: &Path,
+        oids: impl Iterator<Item = &'a str>,
+    ) {
+        // The cache and selection are bounded by the existing object budget.
+        // Reserve each distinct OID once, including unavailable objects.
+        let remaining = self.limits.max_objects.saturating_sub(self.objects);
+        let mut selected = BTreeSet::new();
+        for oid in oids {
+            if self.check().is_err() {
+                break;
+            }
+            if selected.len() < remaining && !self.blobs.contains_key(oid) {
+                selected.insert(oid.to_owned());
+            }
+        }
+        self.objects += selected.len();
+        let selected: Vec<_> = selected.into_iter().collect();
+        for oid in &selected {
+            self.blobs
+                .insert(oid.clone(), Err("blob batch not completed".into()));
+        }
+        const OUTPUT_LIMIT: usize = 8 * 1024 * 1024;
+        for oids in selected.chunks(128) {
+            let metadata = self
+                .git(
+                    fd,
+                    path,
+                    GitRead::ObjectInfo {
+                        oids: oids.to_vec(),
+                    },
+                )
+                .and_then(|raw| {
+                    crate::git::parse_object_info(&raw, oids)
+                        .map_err(|e| io::Error::other(e.to_string()))
+                });
+            let metadata = match metadata {
+                Ok(metadata) => metadata,
+                Err(error) => {
+                    for oid in oids {
+                        self.blobs.insert(oid.clone(), Err(error.to_string()));
+                    }
+                    if self.git_failed || self.stopped {
+                        break;
+                    }
+                    continue;
+                }
+            };
+            let mut payload = Vec::new();
+            let mut payload_bytes = 0usize;
+            for (oid, info) in oids.iter().zip(metadata) {
+                let info = match info {
+                    Ok(info)
+                        if info.kind == "blob"
+                            && info.size as u64 <= self.limits.max_file_bytes =>
+                    {
+                        info
+                    }
+                    Ok(_) => {
+                        self.blobs.insert(
+                            oid.clone(),
+                            Err("expected blob within summary object byte limit".into()),
+                        );
+                        continue;
+                    }
+                    Err(error) => {
+                        self.blobs.insert(oid.clone(), Err(error));
+                        continue;
+                    }
+                };
+                // Exact batch header, payload and terminator. A scalar read
+                // retains objects fitting the old output cap without framing.
+                let framed = info
+                    .size
+                    .saturating_add(oid.len() + " blob ".len() + info.size.to_string().len() + 2);
+                if framed > OUTPUT_LIMIT {
+                    let digest = if info.size <= OUTPUT_LIMIT {
+                        self.git(fd, path, GitRead::Blob { oid: oid.clone() })
+                            .map_err(|e| e.to_string())
+                            .and_then(|raw| self.blob_digest(oid, "blob", &raw))
+                    } else {
+                        Err("summary object exceeds Git output byte limit".into())
+                    };
+                    self.blobs.insert(oid.clone(), digest);
+                    continue;
+                }
+                if payload_bytes.saturating_add(framed) > OUTPUT_LIMIT {
+                    self.blob_batch(fd, path, &payload);
+                    payload.clear();
+                    payload_bytes = 0;
+                }
+                payload.push(oid.clone());
+                payload_bytes += framed;
+            }
+            self.blob_batch(fd, path, &payload);
+            if self.git_failed || self.stopped {
+                break;
+            }
+        }
+    }
     fn blob(&mut self, fd: &OwnedFd, path: &Path, oid: &str) -> io::Result<String> {
         if let Some(result) = self.blobs.get(oid) {
             return result.clone().map_err(io::Error::other);
@@ -258,6 +398,94 @@ impl Collector<'_> {
         });
         Ok(value)
     }
+    fn tree_entries(
+        &mut self,
+        raw: &[u8],
+        position: &TreePosition,
+        hash_size: usize,
+        records: &mut usize,
+        result: &mut BTreeMap<BytePath, IndexEntry>,
+        stack: &mut Vec<TreePosition>,
+    ) -> io::Result<()> {
+        let (_, prefix, depth) = position;
+        let mut offset = 0;
+        while offset < raw.len() {
+            self.check()?;
+            *records += 1;
+            if *records > self.limits.max_paths {
+                return Err(io::Error::other("HEAD tree path limit reached"));
+            }
+            let space = raw[offset..]
+                .iter()
+                .position(|b| *b == b' ')
+                .ok_or_else(|| io::Error::other("invalid tree mode"))?
+                + offset;
+            let mode = u32::from_str_radix(text(&raw[offset..space])?, 8)
+                .map_err(|_| io::Error::other("invalid tree mode"))?;
+            let start = space + 1;
+            let end = raw[start..]
+                .iter()
+                .position(|b| *b == 0)
+                .ok_or_else(|| io::Error::other("invalid tree path"))?
+                + start;
+            let name = &raw[start..end];
+            if !valid_relative(name) || name.contains(&b'/') || name == b".git" {
+                return Err(io::Error::other("unsafe HEAD tree path"));
+            }
+            let bytes = raw
+                .get(end + 1..end + 1 + hash_size)
+                .ok_or_else(|| io::Error::other("short tree OID"))?;
+            let oid = bytes.iter().map(|b| format!("{b:02x}")).collect::<String>();
+            offset = end + 1 + hash_size;
+            self.reserve_path(prefix.len().saturating_add(name.len()))?;
+            let mut full = prefix.to_vec();
+            full.extend_from_slice(name);
+            let bp = BytePath::from_bytes(&full);
+            if mode == 0o40000 {
+                full.push(b'/');
+                stack.push((oid, full, depth + 1));
+            } else if matches!(mode, 0o100644 | 0o100755 | 0o120000) {
+                if result
+                    .insert(
+                        bp.clone(),
+                        IndexEntry {
+                            path: bp,
+                            mode,
+                            oid,
+                            stage: 0,
+                        },
+                    )
+                    .is_some()
+                {
+                    return Err(io::Error::other("duplicate tree path"));
+                }
+            } else {
+                return Err(io::Error::other("gitlink or unsupported HEAD tree type"));
+            }
+        }
+        Ok(())
+    }
+    fn tree_payload(
+        &mut self,
+        fd: &OwnedFd,
+        path: &Path,
+        positions: &[TreePosition],
+    ) -> io::Result<Vec<(String, Vec<u8>)>> {
+        let oids: Vec<_> = positions
+            .iter()
+            .map(|position| position.0.clone())
+            .collect();
+        let raw = self.git(fd, path, GitRead::Objects { oids: oids.clone() })?;
+        crate::git::parse_objects(&raw, &oids)
+            .map_err(|e| io::Error::other(e.to_string()))?
+            .into_iter()
+            .map(|object| {
+                object
+                    .map(|object| (object.kind, object.bytes))
+                    .map_err(io::Error::other)
+            })
+            .collect()
+    }
     fn trees(
         &mut self,
         fd: &OwnedFd,
@@ -268,65 +496,105 @@ impl Collector<'_> {
         let mut result = BTreeMap::new();
         let mut stack = vec![(tree.to_owned(), Vec::new(), 0usize)];
         let mut records = 0usize;
-        while let Some((oid, prefix, depth)) = stack.pop() {
-            if depth > self.limits.max_depth {
-                return Err(io::Error::other("HEAD tree depth limit reached"));
+        const OUTPUT_LIMIT: usize = 8 * 1024 * 1024;
+        while !stack.is_empty() {
+            self.check()?;
+            let count = stack
+                .len()
+                .min(128)
+                .min(self.limits.max_objects.saturating_sub(self.objects));
+            if count == 0 {
+                return Err(io::Error::other("summary object limit reached"));
             }
-            let raw = self.object(fd, path, "tree", &oid)?;
-            let mut offset = 0;
-            while offset < raw.len() {
-                self.check()?;
-                records += 1;
-                if records > self.limits.max_paths {
-                    return Err(io::Error::other("HEAD tree path limit reached"));
+            let mut frontier = Vec::with_capacity(count);
+            for _ in 0..count {
+                let position = stack
+                    .pop()
+                    .ok_or_else(|| io::Error::other("missing tree frontier"))?;
+                if position.2 > self.limits.max_depth {
+                    return Err(io::Error::other("HEAD tree depth limit reached"));
                 }
-                let space = raw[offset..]
-                    .iter()
-                    .position(|b| *b == b' ')
-                    .ok_or_else(|| io::Error::other("invalid tree mode"))?
-                    + offset;
-                let mode = u32::from_str_radix(text(&raw[offset..space])?, 8)
-                    .map_err(|_| io::Error::other("invalid tree mode"))?;
-                let start = space + 1;
-                let end = raw[start..]
-                    .iter()
-                    .position(|b| *b == 0)
-                    .ok_or_else(|| io::Error::other("invalid tree path"))?
-                    + start;
-                let name = &raw[start..end];
-                if !valid_relative(name) || name.contains(&b'/') || name == b".git" {
-                    return Err(io::Error::other("unsafe HEAD tree path"));
-                }
-                let bytes = raw
-                    .get(end + 1..end + 1 + hash_size)
-                    .ok_or_else(|| io::Error::other("short tree OID"))?;
-                let oid = bytes.iter().map(|b| format!("{b:02x}")).collect::<String>();
-                offset = end + 1 + hash_size;
-                self.reserve_path(prefix.len().saturating_add(name.len()))?;
-                let mut full = prefix.clone();
-                full.extend_from_slice(name);
-                let bp = BytePath::from_bytes(&full);
-                if mode == 0o40000 {
-                    full.push(b'/');
-                    stack.push((oid, full, depth + 1));
-                } else if matches!(mode, 0o100644 | 0o100755 | 0o120000) {
-                    if result
-                        .insert(
-                            bp.clone(),
-                            IndexEntry {
-                                path: bp,
-                                mode,
-                                oid,
-                                stage: 0,
-                            },
-                        )
-                        .is_some()
-                    {
-                        return Err(io::Error::other("duplicate tree path"));
+                frontier.push(position);
+            }
+            self.objects += count;
+            let oids: Vec<_> = frontier.iter().map(|position| position.0.clone()).collect();
+            let metadata = self.git(fd, path, GitRead::ObjectInfo { oids: oids.clone() })?;
+            let metadata = crate::git::parse_object_info(&metadata, &oids)
+                .map_err(|e| io::Error::other(e.to_string()))?;
+            let mut start = 0usize;
+            while start < frontier.len() {
+                let mut end = start;
+                let mut bytes = 0usize;
+                while end < frontier.len() {
+                    let info = metadata[end]
+                        .as_ref()
+                        .map_err(|e| io::Error::other(e.clone()))?;
+                    if info.kind != "tree" || info.size as u64 > self.limits.max_file_bytes {
+                        return Err(io::Error::other(
+                            "expected tree within summary object byte limit",
+                        ));
                     }
-                } else {
-                    return Err(io::Error::other("gitlink or unsupported HEAD tree type"));
+                    let framed = info.size.saturating_add(
+                        frontier[end].0.len() + " tree ".len() + info.size.to_string().len() + 2,
+                    );
+                    if bytes.saturating_add(framed) > OUTPUT_LIMIT {
+                        break;
+                    }
+                    bytes += framed;
+                    end += 1;
                 }
+                if end == start {
+                    let info = metadata[start]
+                        .as_ref()
+                        .map_err(|e| io::Error::other(e.clone()))?;
+                    if info.size > OUTPUT_LIMIT {
+                        return Err(io::Error::other(
+                            "summary object exceeds Git output byte limit",
+                        ));
+                    }
+                    let raw = self.git(
+                        fd,
+                        path,
+                        GitRead::Tree {
+                            oid: frontier[start].0.clone(),
+                        },
+                    )?;
+                    crate::review::verify_object("tree", &frontier[start].0, &raw)
+                        .map_err(|e| io::Error::other(e.to_string()))?;
+                    self.tree_entries(
+                        &raw,
+                        &frontier[start],
+                        hash_size,
+                        &mut records,
+                        &mut result,
+                        &mut stack,
+                    )?;
+                    end += 1;
+                } else {
+                    for (position, object) in frontier[start..end].iter().zip(self.tree_payload(
+                        fd,
+                        path,
+                        &frontier[start..end],
+                    )?) {
+                        if object.0 != "tree" || object.1.len() as u64 > self.limits.max_file_bytes
+                        {
+                            return Err(io::Error::other(
+                                "expected tree within summary object byte limit",
+                            ));
+                        }
+                        crate::review::verify_object("tree", &position.0, &object.1)
+                            .map_err(|e| io::Error::other(e.to_string()))?;
+                        self.tree_entries(
+                            &object.1,
+                            position,
+                            hash_size,
+                            &mut records,
+                            &mut result,
+                            &mut stack,
+                        )?;
+                    }
+                }
+                start = end;
             }
         }
         Ok(result)
@@ -939,6 +1207,15 @@ fn run(c: &mut Collector<'_>, w: &Worktree, path: &Path) -> io::Result<()> {
             }
         }
     }
+    c.prefetch_blobs(
+        &root,
+        path,
+        head_tree
+            .values()
+            .chain(index.values())
+            .filter(|entry| entry.mode != 0o160000)
+            .map(|entry| entry.oid.as_str()),
+    );
     for entry in head_tree.values() {
         if let Err(e) = c.blob(&root, path, &entry.oid) {
             c.s.head_complete = false;
@@ -1316,3 +1593,7 @@ mod timeout_tests {
         assert!(c.first_git_timeout.is_none());
     }
 }
+
+#[cfg(test)]
+#[path = "summary_batch_tests.rs"]
+mod batch_tests;

@@ -17,7 +17,7 @@ wt-sweep scan (--repo PATH | --root PATH... | --all)
   [--out FILE | --run-dir BASE]
 
 wt-sweep plan --inventory FILE [--target FULL_REF... | --target-map FILE]
-  [--filter-repo PATH] [--path-prefix PATH] [--branch FULL_REF]
+  [--worktree ABSOLUTE_PATH] [--filter-repo PATH] [--path-prefix PATH] [--branch FULL_REF]
   [--local-state clean|dirty|unknown] [--verdict keep|cleanup_candidate|verify]
   [--group-by repo|directory] [--forge FILE]
   [--changelog-path RELATIVE... | --no-context] [--summary] [--format json|table]
@@ -107,6 +107,7 @@ overwritten or removed.
 | `--inventory FILE` | Required saved `wt-sweep.inventory/1` artifact. |
 | `--target FULL_REF` | Explicit integration ref under `refs/heads/` or `refs/remotes/`; repeat for several. Requires one physical repository family. No default is guessed. |
 | `--target-map FILE` | `wt-sweep.targets/1` mapping of physical families to explicit refs. Cannot combine with `--target`. Missing families get no target. |
+| `--worktree ABSOLUTE_PATH` | Collect history, local files, private history and context for one exact recorded path. Full inventory, registration/control checks and unselected rows remain. This is a fresh targeted collection, not a resumed snapshot. |
 | `--filter-repo PATH` | Select a family by its exact common directory or a registered main/linked checkout path in the input inventory. No alias resolution. |
 | `--path-prefix PATH` | Select absolute path components: `/a` includes `/a/one`, not `/ab`. Parent traversal is refused. |
 | `--branch FULL_REF` | Match exact branch bytes, for example `refs/heads/feature`. |
@@ -128,7 +129,8 @@ not set priority under collection budgets. Filters intersect and run after analy
 explicit grouping, JSON becomes `wt-sweep.review-view/1`: the complete source
 review, all historical family bindings and coverage remain in it. Text reports
 show selected/source totals, even when no row matches. Use a narrower scan scope
-to reduce collection work; a display filter does not reduce it. See
+to reduce discovery work, or `--worktree` to focus evidence collection; a display
+filter alone does not reduce either. See
 [targets and filters](targets-and-filters.md) for commands and map creation. The three verdicts and their required evidence are described
 in [triage policy](contracts.md#triage-policy). See also [counter semantics](contracts.md#current-local-summary).
 
@@ -197,10 +199,25 @@ A timeout while checking ignore rules, a file-read error or an unsupported index
 does not disable independent Git integration checks. The family stop is conservative:
 one blocked object can leave other worktrees in that family unexamined for this run.
 
-A local-summary deadline is separate from that backend timeout. If the remaining
-local allowance shortens a Git call and expires during it, only that summary
-stops, with an explicit time-budget gap. Later worktrees can still be collected
-within the aggregate review budget. No incomplete summary becomes a clean result.
+Local-summary, commit-history and private-history deadlines are separate from
+that backend timeout. If the remaining phase allowance shortens a Git call and
+expires during it, the exhausted phase stops with an explicit time-budget gap.
+It does not quarantine independently collected evidence from the same family.
+Missing final checks remain incomplete; cached facts do not become current
+without revalidation. Later local summaries can still be collected within the
+aggregate review budget. No incomplete summary becomes a clean result.
+
+Local tree and blob reads use batches of at most 128 OIDs. A metadata pass sizes
+payloads to stay within the 8 MiB transport limit. Each returned payload still
+passes type and OID verification; a missing or malformed response stays unknown.
+The graph shares verified target ancestry within one run and physical family.
+It does not carry a completed proof into a later run.
+
+The first of 50 present worktrees receives at most 120 / 50 seconds for its local
+summary. Unused time remains available to later worktrees. This improves access
+to the budget; it does not guarantee that every summary finishes. A targeted
+`--worktree` retry spends the local allowance on one path while still checking
+the surrounding registrations and preserving the original inventory.
 
 | Scope | Default ceiling |
 | --- | --- |
@@ -211,8 +228,8 @@ within the aggregate review budget. No incomplete summary becomes a clean result
 | Local manifests across one scan | 25,000 combined entries; 256 MiB published hashed content; 24 MiB compact manifests; 120 seconds |
 | Current controls per review | 4,096 source entries; 64 KiB per file; 4 MiB source bytes including final checks; 4 MiB output; 60 seconds of control collection work. |
 | Current local summary per worktree | 100,000 index entries; 32 MiB raw index; 100,000 paths; 32 MiB cumulative path bytes; 128 MiB read; 32 MiB per file; 4,096 objects; depth 256; 64 KiB summary; 30 seconds |
-| Current local summaries across one review | 120 seconds for starting bounded collections; at most 24 MiB of serialized summaries, including unavailable placeholders; remaining summaries explicitly omitted |
-| Commit-history phase | 2,048 object-read attempts; 32 MiB returned object bytes; 65,536 traversal steps; 512 steps per target; 60 seconds collection plus final revalidation |
+| Current local summaries across one review | 120 seconds shared across remaining present worktrees (up to 30 seconds each); at most 24 MiB of serialized summaries, including unavailable placeholders; remaining summaries explicitly omitted |
+| Commit-history phase | 2,048 object-read attempts; 32 MiB returned object bytes; 65,536 traversal steps; 512 unique expansions per physical family and resolved target OID; 60 seconds collection plus final revalidation |
 | One history turn | Yields after 4 object-read attempts, 64 KiB returned bytes or 16 traversal steps; one bounded object may cross the byte threshold; unfinished traversals resume on a later turn |
 | History targets and jobs | At most 128 distinct explicit targets; 4,096 jobs assigned across worktrees by target ordinal; omitted jobs remain unknown |
 | Final target revalidation | At most 4,096 fresh ref reads; missing revalidation invalidates current claims |

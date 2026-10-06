@@ -15,9 +15,14 @@ use std::path::{Path, PathBuf};
 use std::process::{Child, Command, Stdio};
 use std::time::{Duration, Instant};
 
+mod batch;
+pub(crate) use batch::{parse_object_info, parse_objects};
+
 /// Closed set: new reads require reviewing their executable and network behavior.
 #[derive(Clone, Debug)]
 pub enum GitRead {
+    ObjectInfo { oids: Vec<String> },
+    Objects { oids: Vec<String> },
     CommonDir,
     GitDir,
     TopLevel,
@@ -156,6 +161,34 @@ impl ControlledGit {
             matches!(&read, GitRead::RemoteUrls | GitRead::IgnorePaths { .. });
         let mut input = Vec::new();
         let operation = match read {
+            GitRead::ObjectInfo { oids } | GitRead::Objects { oids } => {
+                if oids.is_empty()
+                    || oids.len() > 128
+                    || oids.iter().any(|oid| {
+                        !matches!(oid.len(), 40 | 64)
+                            || !oid.bytes().all(|b| b.is_ascii_hexdigit())
+                            || oid.bytes().all(|b| b == b'0')
+                    })
+                {
+                    return Err(SweepError::new(
+                        "git_argument",
+                        "git_batch",
+                        repo,
+                        "object batches require 1..128 complete nonzero hexadecimal OIDs",
+                    ));
+                }
+                for oid in oids {
+                    input.extend_from_slice(oid.as_bytes());
+                    input.push(b'\n');
+                }
+                let flag = if matches!(observed_read, GitRead::ObjectInfo { .. }) {
+                    "--batch-check"
+                } else {
+                    "--batch"
+                };
+                command.args(["cat-file", flag]);
+                "git_batch"
+            }
             GitRead::ObjectFormat => {
                 command.args(["rev-parse", "--show-object-format"]);
                 "git_object_format"

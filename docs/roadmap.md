@@ -5,10 +5,12 @@
 État du 06/10/2026 : T01 à T09 sont fusionnés dans `main` par la
 [PR #1](https://github.com/FlorianBruniaux/wt-sweep/pull/1), commit
 `ddda77ddba24566328a83dad79b74d943cecd8e5`. Le triage en lecture seule est livré.
-L'objectif « quels worktrees puis-je nettoyer ? » reste partiellement satisfait
-sur le gros dépôt essayé : 3 `keep`, 45 `verify`, aucun `cleanup_candidate`.
-Les budgets de collecte locale et d'histoire laissent les 48 lignes avec des
-inconnues. Aucun résumé local n'est complet sur HEAD, index et disque.
+Le checkpoint initial portait sur 48 worktrees. Le dernier essai du lot de
+collecte ci-dessous porte sur 49 : 4 `keep`, 45 `verify`, aucun candidat. Les
+49 résumés locaux restent partiels. Un passage ciblé conserve une ascendance
+vérifiée et observe au moins 4 969 fichiers ignorés ; ce worktree devient `keep`.
+L'objectif « quels worktrees puis-je nettoyer ? » reste donc partiellement
+satisfait sur ce gros dépôt, même après réduction du coût des lectures.
 
 ## Livré
 
@@ -36,28 +38,36 @@ dans le [registre courant](progress.md#skill-wt-sweep-06102026).
 
 ## Prochain travail : compléter l'analyse des gros dépôts
 
-1. **Mesurer les lectures qui épuisent les budgets.** Sur une fixture
-   représentative, relever séparément graphe, résumé local et vérification
-   approfondie : durée, appels Git, objets/octets et worktrees entièrement
-   analysés. Le diagnostic doit distinguer le coût des sous-processus du volume
-   de fichiers et d'histoire.
-2. **Corriger le coût démontré et rejouer les cas de tri.** Comparer avant/après
-   sur la même fixture : conservation des verdicts à preuves égales, cas positifs
-   de candidats, rétention du travail local et inconnues après refus ou limite.
-   Relancer ensuite le dépôt réel explicitement choisi et publier la couverture
-   obtenue. Zéro candidat peut être correct ; l'acceptation porte sur une analyse
-   complète ou sur la cause précise de chaque preuve manquante.
+Le lot de collecte du 06/10 groupe les lectures d’arbres et de blobs, partage le
+parcours de chaque cible Git et répartit le budget local entre les worktrees.
+`--worktree` permet un nouveau passage ciblé, avec conservation de l’inventaire
+original. Les régressions et les limites restantes sont suivies dans le
+[registre de collecte](collection-performance.md). Les étapes ci-dessous restent
+les critères de mesure et de validation ; les plafonds ne sont pas des preuves
+de complétude.
+
+1. **Reproduire les plafonds restants.** Ajouter une fixture dépassant 4 096
+   objets distincts et une histoire privée comparable au cas réel. Mesurer le
+   temps et les lectures par phase, y compris les revalidations. Les fixtures
+   actuelles à 1 024 contenus prouvent le gain des lots, pas la couverture du dépôt réel.
+2. **Choisir une collecte qui termine ce cas.** Comparer partage des objets déjà
+   vérifiés, reprise bornée et limites explicitement configurables. Conserver
+   revalidation finale, mémoire bornée et refus après erreur ; toute extension
+   doit produire un cas positif complet et préserver les cas de travail local.
+   Rejouer ensuite le dépôt explicitement choisi, avec des causes précises pour
+   les preuves encore manquantes. Augmenter le délai seul ne lève pas le plafond d’objets.
 3. **Valider une découverte multi-racines réelle.** Choisir les racines, comparer
    avec les familles connues, puis contrôler doublons, inscriptions extérieures
    et zones inaccessibles. Le scan global réel reste une exécution distincte,
    explicitement demandée.
 
-Les extensions X01 (reprise), X02 (lectures Git groupées) et X03 (autre format
-d'index) du [plan T01-T09](superpowers/plans/2026-10-05-worktree-triage-v2.md)
-restent conditionnelles. Le déclencheur X02 sur la fixture de 100 worktrees n'a
-pas été rencontré. La découverte réelle s'est achevée et son index v2 est pris
-en charge : ni X01 ni X03 n'est justifiée par ce seul essai. Le diagnostic
-ci-dessus doit établir le besoin avant de choisir une extension.
+X02 (lectures Git groupées) est désormais utilisé par le résumé local : les
+fixtures à 1 024 contenus distincts ou dossiers distincts reproduisent le coût
+que la fixture initiale à contenu partagé ne montrait pas. Les extensions X01
+(reprise) et X03 (autre format d’index) du [plan T01-T09](superpowers/plans/2026-10-05-worktree-triage-v2.md)
+restent conditionnelles. La découverte réelle s’est achevée et l’index v2 est
+pris en charge. Une collecte ciblée est un nouveau run, pas une reprise X01.
+Le support d’un autre format d’index demande un cas concret et ses fixtures.
 
 ## Nettoyage automatique : chantier séparé
 

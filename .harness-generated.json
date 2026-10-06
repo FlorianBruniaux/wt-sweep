@@ -19,8 +19,8 @@
     ".codex/agents/sweep-reviewer.toml": "ae0093b5f45f7dd4725bed46571678e2d92f8bad10c15df1acda85226289e366",
     ".codex/agents/sweep-test-engineer.toml": "eacf0dfd55c2cec03a7c510627c8e5457dcf51cfd7cf496f34595bd4b0f6d9e3",
     ".codex/config.toml": "e77e41da883ae8393d3f7cd4f2bef92eaf4740fc5c2039ad987d3c31d24075d2",
-    "AGENTS.md": "e37dbe2b378763a47e2a091a2ee01e380957cb41c77a3e6a81d2ac1592179e94",
-    "CLAUDE.md": "e37dbe2b378763a47e2a091a2ee01e380957cb41c77a3e6a81d2ac1592179e94"
+    "AGENTS.md": "6dff5ac344016b399b8392a7cdaa904de038a0c11076ba5cb257846cac3f94bd",
+    "CLAUDE.md": "6dff5ac344016b399b8392a7cdaa904de038a0c11076ba5cb257846cac3f94bd"
   },
   "schema": "wt-sweep.harness/1"
 }
