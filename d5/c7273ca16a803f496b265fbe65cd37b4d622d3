@@ -1,0 +1,81 @@
+.claude/agents/sweep-explorer.md
+  s_160b3107588443::t_ecc37c4fb7e10e 12-14
+.claude/agents/sweep-implementer.md
+  s_160b3107588443::t_1bf7ea62d5b2f3 14-17
+.claude/agents/sweep-reviewer.md
+  s_160b3107588443::t_427d91a8d60edc 11-14
+.claude/agents/sweep-test-engineer.md
+  s_9e80b85afcc43a::t_e05907995b2396 15-19
+.codex/agents/sweep-explorer.toml
+  s_160b3107588443::t_b49b55484bc8d9 5
+.codex/agents/sweep-implementer.toml
+  s_160b3107588443::t_b979bb5044e37b 5
+.codex/agents/sweep-reviewer.toml
+  s_160b3107588443::t_b4db96ee024b3e 5
+.codex/agents/sweep-test-engineer.toml
+  s_9e80b85afcc43a::t_22a96a328e0e66 5
+.harness-generated.json
+  s_9e80b85afcc43a::t_f7458e9a7c33ea 3-10,12-13
+AGENTS.md
+  s_9e80b85afcc43a::t_980f4093cf5883 3-19,58,64,66
+CHANGELOG.md
+  s_160b3107588443::t_4f3989e6853f7d 132-138
+CLAUDE.md
+  s_9e80b85afcc43a::t_74b6910c88eed7 3-19,58,64,66
+CONTRIBUTING.md
+  s_9e80b85afcc43a::t_ce8d5e7aef4913 7,9-10
+README.fr.md
+  s_160b3107588443::t_e1e268d9a642d6 245-250,258-259
+README.md
+  s_160b3107588443::t_d32c20567c51e0 229-233,241-242
+docs/README.md
+  s_9e80b85afcc43a::t_6c720c597d9ad9 32,39-40,48-50
+docs/finish-ledger.md
+  s_160b3107588443::t_f37044d292eea0 3-6,207-226
+docs/harness.md
+  s_9e80b85afcc43a::t_3e39a264332578 22-35,61-66
+docs/implementation.md
+  s_160b3107588443::t_2d5f0bfe9baa6a 5-6,13-16
+docs/plan.md
+  s_160b3107588443::t_82bcfb27717871 5-14
+docs/progress.md
+  s_160b3107588443::t_03c76f94f88185 3-23
+docs/roadmap.md
+  s_160b3107588443::t_a674b9205733cc 1-65
+docs/superpowers/plans/2026-10-05-worktree-triage-v2.md
+  s_160b3107588443::t_7e7204db5252de 11-14
+harness/agents/sweep-explorer.md
+  s_160b3107588443::t_ec0883736bca04 4-6
+harness/agents/sweep-implementer.md
+  s_160b3107588443::t_411df4f3b70d62 6-9
+harness/agents/sweep-reviewer.md
+  s_160b3107588443::t_cabe19d842c40f 3-6
+harness/agents/sweep-test-engineer.md
+  s_9e80b85afcc43a::t_e68d4c1f88420c 7-11
+harness/instructions.md
+  s_9e80b85afcc43a::t_ec24f9252923fe 3-19,58,64,66
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "d5c7273ca16a803f496b265fbe65cd37b4d622d3",
+  "prompts": {},
+  "sessions": {
+    "s_160b3107588443": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a106f2-069b-7be2-aa09-88b1bbf2331e",
+        "model": "gpt-6-astra"
+      },
+      "human_author": "Florian BRUNIAUX <florian@bruniaux.com>"
+    },
+    "s_9e80b85afcc43a": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a0f3be-9233-7710-ac57-7b3f9fa5c15c",
+        "model": "gpt-6-astra"
+      },
+      "human_author": "Florian BRUNIAUX <florian@bruniaux.com>"
+    }
+  }
+}
