@@ -1,0 +1,25 @@
+{
+  "skill": "wt-sweep",
+  "positive": [
+    "Quels worktrees Git puis-je nettoyer dans ce dépôt ? Fais un bilan des fichiers locaux et de l'intégration.",
+    "Analyse mes worktrees avec wt-sweep et classe les dossiers à conserver, candidats et à vérifier.",
+    "Inventory Git worktrees under these selected directories and suggest what needs preserving before cleanup.",
+    "Read this saved wt-sweep review.json in small batches without scanning the repositories again.",
+    "Pourquoi le rapport wt-sweep marque mes worktrees verify et UNKNOWN ? Explique les preuves manquantes.",
+    "Compare the worktree heads against refs/heads/develop with wt-sweep and explain the cleanup candidates.",
+    "Dresse un bilan des worktrees par répertoire, avec branche, changements non commités et fichiers ignorés.",
+    "Review shared stashes and uncommitted work before suggesting worktree cleanup with wt-sweep.",
+    "Reprends ce dossier run de wt-sweep et propose les prochaines vérifications pour les worktrees restants.",
+    "Discover repositories in these roots, choose integration targets per family, then review their worktrees.",
+    "Le budget d'historique de wt-sweep est épuisé, explique quels worktrees restent à vérifier.",
+    "Prepare a read-only worktree cleanup review, retaining incomplete evidence and original CLI verdicts."
+  ],
+  "negative": [
+    "Crée un nouveau worktree Git pour développer cette fonctionnalité.",
+    "Resolve merge conflicts in my feature branch and run its unit tests.",
+    "Supprime le cache de compilation et lance git gc pour libérer de la place.",
+    "Write a commit message for this README change.",
+    "Implement a new CLI subcommand in wt-sweep with regression tests.",
+    "Audit the architecture of the wt-sweep Rust source code."
+  ]
+}

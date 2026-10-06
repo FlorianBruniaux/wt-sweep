@@ -9,6 +9,17 @@ the Cargo package version is a development version.
 
 ### Added
 
+- Task-based model and reasoning profiles for the `wt-sweep` skill, with
+  host-capability checks, inherited-setting fallbacks and at most two read-only
+  subagents for independent report reading or verification.
+
+- Repository `wt-sweep` skill for Claude Code and Codex: scoped CLI review,
+  saved-report interpretation in pages, and evidence-based conservation and
+  verification suggestions before cleanup. Includes French usage documentation
+  and English/French routing scenarios.
+- Shared skill generation from `harness/skills`, with resource/link checks and
+  preservation of changed generated files and unrelated project skills.
+
 - Structured `--summary` console recap with verdicts, source coverage, local
   checks completed or missing, remaining decision checks and grouped collection
   limits. Saved runs print the full report path in a separate block.

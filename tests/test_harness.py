@@ -55,6 +55,99 @@ class HarnessTests(unittest.TestCase):
             self.assertNotIn("model", codex)
         tomllib.loads((self.root / ".codex/config.toml").read_text())
 
+    def add_skill(self):
+        (self.root / "harness/skills.json").write_text(json.dumps([{
+            "name": "fixture-skill", "files": ["SKILL.md", "references/commands.md", "evals/scenarios.json"]
+        }]))
+        skill = self.root / "harness/skills/fixture-skill"
+        (skill / "references").mkdir(parents=True)
+        (skill / "evals").mkdir()
+        (skill / "SKILL.md").write_text('---\nname: fixture-skill\ndescription: "Inspect owned fixtures"\n---\nRead [commands](references/commands.md).\n')
+        (skill / "references/commands.md").write_text("Fixture commands.\n")
+        (skill / "evals/scenarios.json").write_text(json.dumps({"skill": "fixture-skill", "positive": [f"fixture {n}" for n in range(8)], "negative": ["other", "unrelated"]}))
+        return skill
+
+    def test_skill_bundle_reaches_both_hosts_and_updates_from_one_source(self):
+        skill = self.add_skill()
+        self.generate()
+        for host in (".agents", ".claude"):
+            for relative in ("SKILL.md", "references/commands.md", "evals/scenarios.json"):
+                self.assertEqual((self.root / host / "skills/fixture-skill" / relative).read_bytes(),
+                                 (skill / relative).read_bytes())
+        (skill / "references/commands.md").write_text("Updated command.\n")
+        self.assertNotEqual(self.run_sync("--check").returncode, 0)
+        self.assertEqual(self.run_sync("--write").returncode, 0)
+        self.assertEqual((self.root / ".agents/skills/fixture-skill/references/commands.md").read_text(), "Updated command.\n")
+
+    def test_skill_invalid_manifest_and_evaluations_refuse_before_writing(self):
+        skill = self.add_skill()
+        manifest = self.root / "harness/skills.json"
+        original = manifest.read_text()
+        for resource in ("../instructions.md", "/private/tmp/outside", "references//commands.md"):
+            with self.subTest(resource=resource):
+                data = json.loads(original)
+                data[0]["files"].append(resource)
+                manifest.write_text(json.dumps(data))
+                self.assertNotEqual(self.run_sync("--write").returncode, 0)
+                self.assertFalse((self.root / "AGENTS.md").exists())
+        manifest.write_text(original)
+        scenarios = skill / "evals/scenarios.json"
+        data = json.loads(scenarios.read_text())
+        data["positive"] = ["only one"]
+        scenarios.write_text(json.dumps(data))
+        self.assertNotEqual(self.run_sync("--write").returncode, 0)
+        self.assertFalse((self.root / "AGENTS.md").exists())
+
+    def test_skill_conflicting_projection_refuses_entire_batch(self):
+        self.add_skill()
+        self.generate()
+        (self.root / ".claude/skills/fixture-skill/SKILL.md").write_text("Local edit\n")
+        (self.root / "harness/instructions.md").write_text("Changed instructions\n")
+        before = self.snapshot()
+        self.assertNotEqual(self.run_sync("--write").returncode, 0)
+        self.assertEqual(self.snapshot(), before)
+
+    def test_skill_missing_resource_or_escaped_link_refuses_before_writing(self):
+        skill = self.add_skill()
+        for target in ("references/missing.md", "../outside.md"):
+            with self.subTest(target=target):
+                (skill / "SKILL.md").write_text('---\nname: fixture-skill\ndescription: "Inspect owned fixtures"\n---\nRead [required](' + target + ').\n')
+                self.assertNotEqual(self.run_sync("--write").returncode, 0)
+                self.assertFalse((self.root / "AGENTS.md").exists())
+
+    def test_skill_symlinked_resource_refuses_without_following(self):
+        skill = self.add_skill()
+        resource = skill / "references/commands.md"
+        resource.unlink()
+        outside = Path(self.temp.name) / "outside.md"
+        outside.write_text("Do not change\n")
+        resource.symlink_to(outside)
+        self.assertNotEqual(self.run_sync("--write").returncode, 0)
+        self.assertFalse((self.root / "AGENTS.md").exists())
+        self.assertEqual(outside.read_text(), "Do not change\n")
+
+    def test_skill_output_directory_symlink_is_refused(self):
+        self.add_skill()
+        outside = Path(self.temp.name) / "outside"
+        outside.mkdir()
+        (self.root / ".agents").symlink_to(outside, target_is_directory=True)
+        self.assertNotEqual(self.run_sync("--write").returncode, 0)
+        self.assertEqual(list(outside.iterdir()), [])
+        self.assertFalse((self.root / "AGENTS.md").exists())
+
+    def test_unrelated_skills_are_preserved_but_extra_owned_files_refuse(self):
+        self.add_skill()
+        unrelated = self.root / ".agents/skills/another/SKILL.md"
+        unrelated.parent.mkdir(parents=True)
+        unrelated.write_text("Unrelated skill\n")
+        self.generate()
+        self.assertEqual(unrelated.read_text(), "Unrelated skill\n")
+        extra = self.root / ".claude/skills/fixture-skill/extra.md"
+        extra.write_text("Preserve this file\n")
+        before = self.snapshot()
+        self.assertNotEqual(self.run_sync("--write").returncode, 0)
+        self.assertEqual(self.snapshot(), before)
+
     def test_check_and_repeated_generation_leave_bytes_unchanged(self):
         self.generate()
         before = self.snapshot()

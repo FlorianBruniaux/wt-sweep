@@ -247,6 +247,10 @@ dépôts jamais découverts. Consultez les [limites et codes de sortie](cli.md).
 
 ## Prompt à donner à un assistant
 
+Claude Code et Codex peuvent utiliser directement le [skill du dépôt](assistant-skill.md).
+Il fournit le parcours progressif et des prompts plus courts. Le prompt ci-dessous
+reste utilisable par un assistant qui ne charge pas les skills du projet.
+
 Remplacez les trois valeurs avant de copier ce prompt dans un assistant qui
 dispose d’un terminal sur votre Mac. Worktree Sweep n’utilise aucun modèle.
 

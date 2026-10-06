@@ -14,6 +14,7 @@ dates of their observations.
 | Document | Contents |
 | --- | --- |
 | [Tutoriel en français](tutorial.fr.md) | One-command review, disposable trial, tests, advanced replay and a copyable assistant prompt. |
+| [Assistant skill (French)](assistant-skill.md) | Claude/Codex invocation, progressive report reading, cleanup suggestions and local verification. |
 | [Getting started](getting-started.md) | macOS setup, disposable demo, report interpretation and troubleshooting. |
 | [CLI reference](cli.md) | Implemented commands, output rules, exit codes and collection limits. |
 | [Targets and filters](targets-and-filters.md) | Select refs per repository and inspect a subset while retaining source evidence. |

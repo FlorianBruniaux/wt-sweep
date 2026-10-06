@@ -67,9 +67,15 @@ python3 -B -m unittest discover -s experiments/exclusion -p 'test_*.py' -v
 python3 -B scripts/sync-ai.py --check
 ```
 
-Edit canonical instructions and agent definitions under `harness/`, then run
+The repository user skill `wt-sweep` supports read-only CLI analysis and cleanup
+suggestions; see `docs/assistant-skill.md`. Its canonical bundle lives under
+`harness/skills/wt-sweep`, declared by `harness/skills.json`, and is generated into
+`.claude/skills` and `.agents/skills`. Preserve its original CLI verdicts and
+incomplete evidence. It never authorizes removal.
+
+Edit canonical instructions, agent definitions and skills under `harness/`, then run
 `python3 -B scripts/sync-ai.py --write`. Inspect the generated diff and rerun checks.
-Do not edit `AGENTS.md`, `CLAUDE.md` or generated host agents independently.
+Do not edit `AGENTS.md`, `CLAUDE.md` or generated host agents and skills independently.
 The generator refuses changed generated preimages; reconcile them explicitly.
 
 Update `CHANGELOG.md` for repository changes. Report changed files, observed

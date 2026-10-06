@@ -1,16 +1,26 @@
 {
   "files": {
+    ".agents/skills/wt-sweep/SKILL.md": "c4a22e00004c4f0cb694bc22a28ee48f3b0be619d01fa428d0b39789c167a0a8",
+    ".agents/skills/wt-sweep/evals/scenarios.json": "ce7f7ac960e93c29ef68e2c15250d10d2655e366ef14d2d28fb1a273fded1ef4",
+    ".agents/skills/wt-sweep/references/commands.md": "abcebf93d5a9c5436f18ddf25fb9eb09c95f67f076629a8e217ac9a7ac129d2b",
+    ".agents/skills/wt-sweep/references/model-policy.md": "34a60fabf541a90314bbb381a6a9b7ebeaa80556b049a2c055779e9bc4511ab9",
+    ".agents/skills/wt-sweep/references/reports.md": "b073a24c3efd76b19c4a3b3c863a3da39d498d4cfebc065ffe7fb3432a8d018d",
     ".claude/agents/sweep-explorer.md": "46c2d4512cee265900fee0c2fb8100b6bdb9e57a5b1a382f7b3e394bd406240c",
     ".claude/agents/sweep-implementer.md": "4fcfa842d3a5f821aed9b62bd8fb9a66d0a673092cb47648e96b2d9a2a52d4a0",
     ".claude/agents/sweep-reviewer.md": "fb4ce9e5de5b1b94ae8336d42f6dea9b5689628c2783e0282002eee3ad0d4fed",
     ".claude/agents/sweep-test-engineer.md": "e8cc83dbcafc00e066c6b0189a1b963cd78b971754ef8783ba68918424a8f848",
+    ".claude/skills/wt-sweep/SKILL.md": "c4a22e00004c4f0cb694bc22a28ee48f3b0be619d01fa428d0b39789c167a0a8",
+    ".claude/skills/wt-sweep/evals/scenarios.json": "ce7f7ac960e93c29ef68e2c15250d10d2655e366ef14d2d28fb1a273fded1ef4",
+    ".claude/skills/wt-sweep/references/commands.md": "abcebf93d5a9c5436f18ddf25fb9eb09c95f67f076629a8e217ac9a7ac129d2b",
+    ".claude/skills/wt-sweep/references/model-policy.md": "34a60fabf541a90314bbb381a6a9b7ebeaa80556b049a2c055779e9bc4511ab9",
+    ".claude/skills/wt-sweep/references/reports.md": "b073a24c3efd76b19c4a3b3c863a3da39d498d4cfebc065ffe7fb3432a8d018d",
     ".codex/agents/sweep-explorer.toml": "e092671ccf3d12d248ec9c62ede0919b0230be7dc603026966bde8fc5d9a39ec",
     ".codex/agents/sweep-implementer.toml": "53b5ee5d34bbe732dee7e26ad8437f5bfa98c5d1596ea0906442805266e6ec4c",
     ".codex/agents/sweep-reviewer.toml": "ae0093b5f45f7dd4725bed46571678e2d92f8bad10c15df1acda85226289e366",
     ".codex/agents/sweep-test-engineer.toml": "eacf0dfd55c2cec03a7c510627c8e5457dcf51cfd7cf496f34595bd4b0f6d9e3",
     ".codex/config.toml": "e77e41da883ae8393d3f7cd4f2bef92eaf4740fc5c2039ad987d3c31d24075d2",
-    "AGENTS.md": "9bc32dae874bb96ecc37c8a3bf533e93ae306550e8d1a7fdcd4c390e5025d1c1",
-    "CLAUDE.md": "9bc32dae874bb96ecc37c8a3bf533e93ae306550e8d1a7fdcd4c390e5025d1c1"
+    "AGENTS.md": "e37dbe2b378763a47e2a091a2ee01e380957cb41c77a3e6a81d2ac1592179e94",
+    "CLAUDE.md": "e37dbe2b378763a47e2a091a2ee01e380957cb41c77a3e6a81d2ac1592179e94"
   },
   "schema": "wt-sweep.harness/1"
 }

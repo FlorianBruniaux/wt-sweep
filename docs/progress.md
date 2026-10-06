@@ -36,6 +36,78 @@ Le rendu du rapport existant de 50 worktrees donne 3 à conserver, 0 candidat et
 47 à vérifier, avec 0 contrôle local complet, 4 partiels et 46 non collectés.
 Aucune nouvelle analyse du dépôt réel n’a été lancée pour cette vérification.
 
+## Skill wt-sweep, 06/10/2026
+
+Le [skill utilisateur](assistant-skill.md) est intégré au harnais du dépôt.
+Il vérifie l’aide CLI, choisit le périmètre et les cibles explicites, lit les
+rapports par pages et propose des actions de conservation ou de vérification.
+Les README anglais/français, le tutoriel et la feuille de route le référencent.
+`apply` reste indisponible ; le skill ne produit pas de suppression de remplacement.
+
+La source `harness/skills/wt-sweep` est projetée à l’identique dans les dossiers
+natifs Claude et Codex. Les 20 fichiers générés sont synchronisés. Les tests du
+générateur couvrent aussi les ressources absentes, liens sortants, préimages
+modifiées et skills voisins à préserver.
+
+Essai comportemental sur une famille Git jetable : le principal est `keep` et
+le lié propre `cleanup_candidate`. L’ajout d’un fichier non suivi fait passer le
+lié à `keep`. La lecture paginée conserve les deux identités ; une vue filtrée
+à un candidat garde le total source de deux. Les longueurs et SHA-256 des artefacts
+correspondent au reçu. Les manifestes de fichiers et métadonnées avant/après
+restent identiques, hors atime exclu par l’oracle. Aucun dépôt réel n’a été scanné.
+
+Routage BM25 local vérifié pour les deux clients : 12 scénarios positifs et
+6 négatifs, skill éligible, seuil de qualité global satisfait. F1 de calibration
+0,923 ; F1 d’évaluation croisée 0,649 ; F1 global 0,739. Ces scores ne constituent
+pas une absence de faux positifs. Les 12 sondes de routage exécutées par client
+passent : quatre demandes positives nouvelles en français/anglais et huit
+négatives, dont les six du corpus. Les caches réels ont été reconstruits pour ce
+checkout, après essai dans un cache temporaire. Aucun hook ou réglage global
+n’a changé.
+
+Validation locale : formatage, Clippy et compilation réussis ; 280 tests Rust
+réussis, 2 ignorés. La suite Python a exécuté 260 cas : 254 réussis et 6 ignorés.
+Les deux tests du parcours du skill et les 14 tests du générateur ont aussi été
+exécutés séparément avec succès après les derniers ajustements. Les 6 tests
+RETEX passent. Le contrôle documentaire couvre 28 documents, 306 liens locaux
+et 33 blocs shell. Ces résultats ne prouvent pas une exécution de la CI distante.
+
+La présence des projections et le routage sont observés. Le chargement et
+l’invocation du nouveau skill dans une session native fraîche restent `UNKNOWN`.
+L’essai CLI ci-dessus est un test des recettes, pas une évaluation d’un modèle
+chargé automatiquement par le client.
+
+## Choix des modèles du skill, 06/10/2026
+
+La [politique de modèles](../harness/skills/wt-sweep/references/model-policy.md)
+précise quatre profils, de l’extraction factuelle à la revue indépendante. Elle
+vérifie les capacités du client avant de demander un modèle ou un niveau de
+raisonnement, respecte les choix de l’utilisateur et distingue une recommandation,
+une invocation acceptée et un réglage effectif confirmé. Les réglages persistants
+et les modèles des rôles de développement restent inchangés.
+
+Deux sous-agents au maximum peuvent lire des lots indépendants de rapports déjà
+collectés, sous réserve des places disponibles. Le coordinateur garde la collecte,
+les stashes partagés et la synthèse. Une preuve absente n’est pas un motif pour
+augmenter le raisonnement. Les recommandations de profils n’ont pas fait l’objet
+d’un benchmark de qualité ou de coût.
+
+Une revue séparée a été exécutée avec `gpt-6.1-sol` et `high` demandés au lancement.
+Le sous-agent a relu les règles et six scénarios : rapport simple, lots parallèles,
+contrôle indisponible, budget Git épuisé, retour partiel ou verdict altéré, choix
+explicite de l’utilisateur avec une place occupée. Aucun défaut actionnable n’a
+été signalé. L’acceptation des arguments est observée ; cette revue ne mesure ni
+le modèle effectif du fournisseur, ni le chargement natif du skill, ni sa qualité
+comparée sur des rapports réels.
+
+Après cet ajustement documentaire, les 14 tests du générateur et les 2 tests du
+parcours CLI passent. Les 22 fichiers générés sont synchronisés. Les deux caches
+BM25 ont été reconstruits : skill éligible, seuil global satisfait, 12 sondes sur
+12 réussies par client. Le contrôle documentaire couvre 29 documents, 312 liens
+locaux et 33 blocs shell. Les suites produit complètes
+ne sont pas rejouées pour ce changement d’instructions ; leurs résultats au
+commit précédent sont consignés ci-dessus.
+
 ## Historique U1-U4 et RETEX, 04-05/10/2026
 
 Les sections suivantes conservent les résultats, l'état Git et les limites de
