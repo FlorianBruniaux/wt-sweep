@@ -77,6 +77,37 @@ l’invocation du nouveau skill dans une session native fraîche restent `UNKNOW
 L’essai CLI ci-dessus est un test des recettes, pas une évaluation d’un modèle
 chargé automatiquement par le client.
 
+## Choix des modèles du skill, 06/10/2026
+
+La [politique de modèles](../harness/skills/wt-sweep/references/model-policy.md)
+précise quatre profils, de l’extraction factuelle à la revue indépendante. Elle
+vérifie les capacités du client avant de demander un modèle ou un niveau de
+raisonnement, respecte les choix de l’utilisateur et distingue une recommandation,
+une invocation acceptée et un réglage effectif confirmé. Les réglages persistants
+et les modèles des rôles de développement restent inchangés.
+
+Deux sous-agents au maximum peuvent lire des lots indépendants de rapports déjà
+collectés, sous réserve des places disponibles. Le coordinateur garde la collecte,
+les stashes partagés et la synthèse. Une preuve absente n’est pas un motif pour
+augmenter le raisonnement. Les recommandations de profils n’ont pas fait l’objet
+d’un benchmark de qualité ou de coût.
+
+Une revue séparée a été exécutée avec `gpt-6.1-sol` et `high` demandés au lancement.
+Le sous-agent a relu les règles et six scénarios : rapport simple, lots parallèles,
+contrôle indisponible, budget Git épuisé, retour partiel ou verdict altéré, choix
+explicite de l’utilisateur avec une place occupée. Aucun défaut actionnable n’a
+été signalé. L’acceptation des arguments est observée ; cette revue ne mesure ni
+le modèle effectif du fournisseur, ni le chargement natif du skill, ni sa qualité
+comparée sur des rapports réels.
+
+Après cet ajustement documentaire, les 14 tests du générateur et les 2 tests du
+parcours CLI passent. Les 22 fichiers générés sont synchronisés. Les deux caches
+BM25 ont été reconstruits : skill éligible, seuil global satisfait, 12 sondes sur
+12 réussies par client. Le contrôle documentaire couvre 29 documents, 312 liens
+locaux et 33 blocs shell. Les suites produit complètes
+ne sont pas rejouées pour ce changement d’instructions ; leurs résultats au
+commit précédent sont consignés ci-dessus.
+
 ## Historique U1-U4 et RETEX, 04-05/10/2026
 
 Les sections suivantes conservent les résultats, l'état Git et les limites de

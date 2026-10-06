@@ -141,7 +141,8 @@ Le dépôt inclut le skill `wt-sweep` pour lire les rapports par petits groupes 
 proposer les actions de conservation ou de vérification utiles. Ouvrez Claude
 Code ou Codex dans ce checkout, invoquez `/wt-sweep` ou `$wt-sweep`, puis donnez
 le chemin du dépôt et la référence d’intégration confirmée. Le skill conserve
-les verdicts de la CLI et leurs limites. La suppression reste indisponible.
+les verdicts de la CLI et leurs limites. La suppression reste indisponible. Le guide décrit aussi le choix du modèle,
+du raisonnement et le recours limité à des sous-agents.
 
 Le [guide de l’assistant et ses prompts](docs/assistant-skill.md) couvre une
 nouvelle revue, la reprise d’un rapport et un test local sur des dépôts jetables.

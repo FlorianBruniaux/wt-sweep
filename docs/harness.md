@@ -126,3 +126,11 @@ ne modifie ni ses règles, ni ses hooks, ni les skills globaux. Vérifier ensuit
 l’essai observé figure dans [progress.md](progress.md#skill-wt-sweep-06102026).
 La génération, le routage, l’invocation native et l’effet produit restent quatre
 preuves distinctes.
+
+
+Le skill inclut une [politique de modèles et de délégation](../harness/skills/wt-sweep/references/model-policy.md).
+Elle sélectionne les paramètres disponibles à l’invocation d’un sous-agent,
+sans modifier les modèles hérités des quatre rôles de développement ni la
+configuration globale. Un réglage recommandé mais indisponible reste signalé
+comme non appliqué. La concurrence de ce parcours est plafonnée à deux enfants,
+sous réserve de la limite réelle du client.

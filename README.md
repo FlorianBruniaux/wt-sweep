@@ -132,7 +132,8 @@ The repository includes a `wt-sweep` skill for reading reports in small batches
 and suggesting conservation or verification steps. Start Claude Code or Codex
 in this checkout, invoke `/wt-sweep` or `$wt-sweep`, and provide the repository
 path and confirmed integration ref. The skill preserves CLI verdicts and missing
-evidence. Cleanup execution remains unavailable.
+evidence. Cleanup execution remains unavailable. Model/effort profiles and bounded
+subagent delegation are described in the guide.
 
 See the [assistant guide and example prompts](docs/assistant-skill.md) for a
 fresh review, an existing report and a disposable local test.

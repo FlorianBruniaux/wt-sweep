@@ -28,6 +28,32 @@ missing information that changes the scope or integration comparison.
 State the scope, target refs and whether observations are fresh or saved.
 Completion: the user can see what will be inspected and what remains unspecified.
 
+## Choose model, effort and delegation
+
+Before reading a large report or spawning a child, apply the
+[model and delegation policy](references/model-policy.md). Use the normal review
+profile by default; factual extraction can use the lighter profile, while
+contradictory interpretations can justify higher effort or an independent check.
+Missing evidence needs another observation, not more thinking.
+
+Resolve models and controls from the active host. Apply supported child model
+and effort overrides when delegation is useful and permitted. A skill instruction
+does not switch the parent model. If the host exposes no applicable control,
+continue with the inherited model and report the recommendation as unapplied.
+Respect explicit user model choices, budgets and restrictions. Never change
+provider, permissions or persistent settings to satisfy a profile.
+
+Use at most two concurrent children within the host's available limit. Give each
+one an explicit read-only assignment, exact run and source digest, disjoint paths
+or a bounded verification question. Keep collection under one coordinator;
+children read saved evidence and do not run extra scans. A narrow request stays
+with one agent. Reconcile results against the original CLI evidence before
+publishing the recap.
+
+Completion: state the chosen profile and reason, what model/effort was actually
+requested or observed, and whether work remains with the parent or is delegated.
+Never report a recommended setting as an applied one.
+
 ## 2. Discover the available CLI
 
 Read [command recipes](references/commands.md). Resolve the wt-sweep checkout

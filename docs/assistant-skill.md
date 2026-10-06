@@ -96,6 +96,45 @@ Pour plusieurs racines, demandez leur inventaire puis confirmez les cibles par
 famille. Le skill peut examiner chaque famille séparément ou employer la table
 de cibles prévue par la CLI. Il ne devine pas une branche commune à tous les dépôts.
 
+## Modèle, raisonnement et sous-agents
+
+Le skill choisit un profil selon le travail, puis vérifie ce que le client peut
+appliquer. Les réglages suivants sont des points de départ à évaluer, pas un
+classement mesuré des modèles.
+
+| Travail | Codex, si disponible | Claude Code, si disponible |
+| --- | --- | --- |
+| Extraction de faits déjà collectés | GPT-6 Luna, `low` | Haiku, sans effort imposé s’il n’est pas pris en charge |
+| Analyse courante et bilan | GPT-6.1 Sol, `medium` | Sonnet, `medium` si pris en charge |
+| Interprétation contradictoire à examiner | GPT-6.1 Sol, `high` | Sonnet, `high` si pris en charge |
+| Revue indépendante utile après investigation | GPT-6 Astra, `high` | Opus, `high` si pris en charge |
+
+Pour un petit rapport, un seul agent suffit. Pour des lots indépendants, le skill
+peut déléguer la lecture à deux sous-agents au maximum, dans la limite des places
+réellement disponibles. Le coordinateur collecte une seule fois, répartit les
+lignes ou familles, puis vérifie les retours contre les artefacts d’origine.
+Les sous-agents ne relancent pas de scans et ne créent pas d’autres sous-agents.
+
+Le skill applique les paramètres de modèle et de raisonnement exposés par l’outil
+de délégation. Quand un contrôle manque, il conserve le réglage hérité et indique
+la recommandation non appliquée. Il ne modifie aucun réglage persistant et ne
+prétend pas changer le modèle de la session par une instruction textuelle.
+Vos choix de modèle, limites de budget et restrictions gardent la priorité.
+
+Un budget Git épuisé demande de nouvelles observations ou une correction de la
+collecte. Un modèle plus puissant ne transforme pas ces données absentes en preuve.
+Les [règles détaillées du skill](../harness/skills/wt-sweep/references/model-policy.md)
+précisent les déclencheurs, les paramètres par client et le retour attendu.
+
+Vous pouvez ajouter au prompt :
+
+```text
+Choisis le modèle et le niveau de raisonnement adaptés à chaque tâche.
+Délègue uniquement les lectures indépendantes ou une contre-vérification utile,
+avec deux sous-agents au maximum. Indique les réglages demandés, ceux réellement
+confirmés par le client et les lots restant à lire.
+```
+
 ## Bilan attendu
 
 Le résumé commence par les nombres à conserver, candidats et à vérifier, puis
