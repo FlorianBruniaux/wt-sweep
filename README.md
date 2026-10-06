@@ -112,7 +112,7 @@ A saved manifest records observations, not file contents.
 ### Read the result
 
 Each row names the worktree, branch, full HEAD, local changes, history and verdict.
-The detail explains the reasons and the next checks; `--summary` gives five lines.
+The detail explains the reasons and the next checks; `--summary` groups verdicts, coverage and remaining checks in a console recap.
 
 | Verdict | Meaning |
 | --- | --- |
@@ -140,7 +140,7 @@ See the [decision contract](docs/contracts.md#triage-policy) and
 | Local file manifests | Inspect file hashes, metadata, index entries and selected worktree administration. | `scan --local` |
 | Git relationships | Observe identical commits, ancestry and identical trees against named refs. | `plan --target FULL_REF` |
 | Offline forge evidence | Import captured GitHub/GitLab data with provenance, without contacting a forge. | `forge ingerer` |
-| Human and machine output | Read the detailed report or five-line summary; retain full path bytes and OIDs in JSON. | `--summary`, `--format json` |
+| Human and machine output | Read the detailed report or structured console recap; retain full path bytes and OIDs in JSON. | `--summary`, `--format json` |
 | Separate runs | Keep concurrent reports in distinct directories with artifact hashes and publication timestamps. | `--run-dir BASE` |
 
 Global discovery is also available through `scan --all` and `review --all`. It uses visible mounted

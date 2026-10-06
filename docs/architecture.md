@@ -56,7 +56,7 @@ fixture, but a scan does not capture an atomic snapshot.
 | [review](../src/review.rs) | Collect current controls, graph facts, private history, verified integration and optional context; associate forge facts, then judge without I/O. |
 | [view](../src/view.rs) | Select and group reviewed rows while retaining source totals, bindings and gaps. |
 | [cancel](../src/cancel.rs) | Propagate interruption to bounded collection and publication. |
-| [presentation](../src/presentation.rs) | Escaped descriptions, detailed report and five-line summary. |
+| [presentation](../src/presentation.rs) | Escaped descriptions, detailed evidence report and structured console recap. |
 | [output](../src/output.rs) | Bounded artifact reads, canonical digests and exclusive publication outside inspected boundaries. |
 | [run](../src/run.rs) | Publish one run directory and its artifact receipt; review binds inventory, review and text together. |
 

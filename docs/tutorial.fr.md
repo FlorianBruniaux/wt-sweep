@@ -69,7 +69,8 @@ Chaque nouveau dossier `run-*` contient :
 | `report.txt` | Le détail des lignes choisies, avec totaux et lacunes source. |
 | `run.json` | Le reçu et les hashes des trois artefacts. |
 
-Le résumé de cinq lignes ne remplace pas le détail. Le chemin d’exécution est
+Le bilan console distingue verdicts, couverture et contrôles restants.
+Il ne remplace pas le détail. Le chemin d’exécution est
 affiché lors de la publication. Un reçu lie les octets qu’il énumère ; une erreur
 de synchronisation finale laisse la durabilité inconnue. Aucun fichier de cette
 liste ne constitue une sauvegarde des worktrees.
@@ -146,10 +147,14 @@ Résultats attendus sur une collecte complète de cette fixture :
 | Avec cible | Principal et worktree contenant la note | Worktree lié propre, usage à confirmer | Aucun |
 | Sans cible | Les mêmes deux worktrees | Aucun | Worktree lié propre, cible manquante |
 
-Le premier résumé doit commencer par `Worktrees: 3`, puis
-`Keep: 2; cleanup candidates: 1; verify: 0`. Sans cible, la deuxième ligne devient
-`Keep: 2; cleanup candidates: 0; verify: 1`. L’absence d’export forge reste
-inconnue ; le reçu peut être `partial` malgré le code `0`.
+La section `RESULTS` doit afficher `Keep: 2`, `Cleanup candidates: 1` et
+`Needs verification: 0`. Sans cible, elle affiche respectivement 2, 0 et 1.
+`COVERAGE` distingue les contrôles locaux complets, partiels et non collectés.
+Une découverte complète ne signifie pas que l’analyse des fichiers ou de
+l’historique est complète. `CHECKS STILL NEEDED` indique les conditions manquantes ;
+`COLLECTION LIMITS` regroupe les limites de collecte observées.
+Le chemin du rapport détaillé figure dans `REPORT`.
+L’absence d’export forge reste inconnue ; le reçu peut être `partial` malgré le code `0`.
 
 `review` collecte le résumé local courant sans manifeste détaillé. La note est
 comptée comme non suivie dans `items[].local_summary`. Pour ses empreintes et

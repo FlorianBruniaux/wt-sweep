@@ -62,17 +62,23 @@ isolated for the fixture.
 )
 ```
 
-The review starts with these three lines on a complete run of this fixture:
+The console recap includes these results on a complete run of this fixture:
 
 ```text
-Worktrees: 3
-Keep: 2; cleanup candidates: 1; verify: 0
-Coverage gaps: 0; Usage: UNKNOWN
+RESULTS
+  Keep: 2
+  Cleanup candidates: 1
+  Needs verification: 0
 ```
 
-The remaining two summary lines identify the detail command or artifact and the
-review digest. Publication also prints the newly created run path.
-Their values vary per run. The main checkout is kept as the repository entry
+`COVERAGE` separates discovery from local checks: complete, partial or not
+collected. `CHECKS STILL NEEDED` counts worktrees missing each decision condition;
+`COLLECTION LIMITS` groups recurring budget and timeout diagnostics when present.
+With filters, verdicts describe the selection and coverage still describes the
+whole source review. Usage by agents or terminals is always reported as not checked.
+
+`REPORT` gives the saved `report.txt` path. The full report and JSON retain the
+technical evidence and digests. The main checkout is kept as the repository entry
 point. The linked `worktree` is kept because of `notes.txt`. The linked
 `clean-worktree` can qualify as a candidate; its usage still needs confirmation.
 All three HEADs match the target, which alone does not preserve the local note.

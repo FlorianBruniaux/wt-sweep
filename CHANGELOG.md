@@ -9,6 +9,12 @@ the Cargo package version is a development version.
 
 ### Added
 
+- Structured `--summary` console recap with verdicts, source coverage, local
+  checks completed or missing, remaining decision checks and grouped collection
+  limits. Saved runs print the full report path in a separate block.
+- Readable discovery and review progress on stderr. JSON output and decision
+  rules are unchanged; full reports retain technical evidence and digests.
+
 - Add `review` to discover and judge worktrees in one command, preserving the input
   inventory beside the review and report in a single run with artifact hashes.
 - Add command-specific help and an explicit diagnostic for historical review/1
