@@ -1,0 +1,83 @@
+.agents/skills/wt-sweep/SKILL.md
+  s_160b3107588443::t_66bb0fe5ef28b6 1-110
+.agents/skills/wt-sweep/evals/scenarios.json
+  s_160b3107588443::t_13f211129c578b 1-25
+.agents/skills/wt-sweep/references/commands.md
+  s_9e80b85afcc43a::t_bf7aece4a111c2 1-116
+.agents/skills/wt-sweep/references/reports.md
+  s_9e80b85afcc43a::t_5b44604d732994 1-74
+.claude/skills/wt-sweep/SKILL.md
+  s_160b3107588443::t_fab77cdc58ba02 1-110
+.claude/skills/wt-sweep/evals/scenarios.json
+  s_160b3107588443::t_833c38436dc88f 1-25
+.claude/skills/wt-sweep/references/commands.md
+  s_9e80b85afcc43a::t_a9cab649895720 1-116
+.claude/skills/wt-sweep/references/reports.md
+  s_9e80b85afcc43a::t_1f97f202eee7d5 1-74
+.harness-generated.json
+  s_9e80b85afcc43a::t_8860b2ae94d548 3-6,11-14,20-21
+AGENTS.md
+  s_9e80b85afcc43a::t_45f83399eb0e43 70-76,78
+CHANGELOG.md
+  s_160b3107588443::t_64999673b77f3d 12-18
+CLAUDE.md
+  s_9e80b85afcc43a::t_34a5d57e1f5006 70-76,78
+README.fr.md
+  s_160b3107588443::t_ee056241e2a8eb 138-148
+README.md
+  s_160b3107588443::t_35f26a8c2f94c5 129-139
+docs/README.md
+  s_160b3107588443::t_60f24269a0f008 17
+docs/assistant-skill.md
+  s_160b3107588443::t_645b50955a3d44 1-151
+docs/harness.md
+  s_160b3107588443::t_c102417553c1ca 5-9,78-79,89-128
+docs/progress.md
+  s_160b3107588443::t_080694a2f9ab37 39-79
+docs/roadmap.md
+  s_160b3107588443::t_33f6fe0f094bab 29-36
+docs/tutorial.fr.md
+  s_160b3107588443::t_0ffeda5269c1d0 250-253
+harness/instructions.md
+  s_160b3107588443::t_17323a834623c3 70-76,78
+harness/skills.json
+  s_160b3107588443::t_005151de2f7a9b 1-11
+harness/skills/wt-sweep/SKILL.md
+  s_160b3107588443::t_d4c53ed5931e5f 1-110
+harness/skills/wt-sweep/evals/scenarios.json
+  s_160b3107588443::t_45b41fd56f7ef4 1-25
+harness/skills/wt-sweep/references/commands.md
+  s_160b3107588443::t_2a2e1a5b925197 1-116
+harness/skills/wt-sweep/references/reports.md
+  s_160b3107588443::t_5d6b813b6a2b3f 1-74
+scripts/sync-ai.py
+  s_160b3107588443::t_eafe409bca2dd7 6,33-96,134
+tests/test_harness.py
+  s_160b3107588443::t_96a2993c8cffd7 58-150
+tests/test_skill_workflow.py
+  s_9e80b85afcc43a::t_17c754cf125db2 1-104
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "1128f0ee1ba68b48956ced8ac3a5d0ca9227eadf",
+  "prompts": {},
+  "sessions": {
+    "s_160b3107588443": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a106f2-069b-7be2-aa09-88b1bbf2331e",
+        "model": "gpt-6-astra"
+      },
+      "human_author": "Florian BRUNIAUX <florian@bruniaux.com>"
+    },
+    "s_9e80b85afcc43a": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a0f3be-9233-7710-ac57-7b3f9fa5c15c",
+        "model": "gpt-6-astra"
+      },
+      "human_author": "Florian BRUNIAUX <florian@bruniaux.com>"
+    }
+  }
+}
