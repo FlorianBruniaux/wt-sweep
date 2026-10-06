@@ -12,6 +12,7 @@ fn observations() -> Observations {
         shared_stashes: Vec::new(),
         inventory,
         history_metrics: Default::default(),
+        collection_metrics: None,
         items: vec![ReviewItem {
             worktree_state: None,
             decision: None,

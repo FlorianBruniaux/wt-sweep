@@ -8,13 +8,28 @@ définit les lots et responsabilités ; leur validation exige les preuves du
 registre. Garder la comparaison des alternatives ouverte avant de développer le
 moteur de nettoyage.
 
+## Collecte bornée A1-A6
+
+L’intégrateur possède les profils `standard|thorough`, les contrats optionnels de
+métriques et le raccordement CLI. Les collecteurs gardent leurs limites finies,
+les vérifications d’OID et les revalidations. Le lot documentaire aligne CLI,
+tutoriel et skill sur le passage standard, la lecture des faits sauvegardés puis
+la reprise ciblée thorough. Une augmentation de budget n’est pas une preuve de
+complétude ni une autorisation de retrait.
+
+Le skill reste limité au dépôt. La source canonique est
+`harness/skills/wt-sweep/SKILL.md` avec ses références ; l’intégrateur génère les
+projections Claude et Codex et vérifie leur routage. Les mesures et contrôles
+observés restent dans le [registre de collecte](collection-performance.md),
+séparés des plafonds définis par le code.
+
 ## Triage T01-T09
 
 Ces lots sont fusionnés dans `main` depuis le 06/10/2026. Le lot suivant corrige
 les lectures unitaires d’objets locaux et les parcours répétés des cibles Git.
 Les lectures restent bornées ; les preuves sont dans le
 [registre de collecte](collection-performance.md), avec les critères de sortie
-dans la [feuille de route](roadmap.md#prochain-travail--compléter-lanalyse-des-gros-dépôts).
+dans la [feuille de route](roadmap.md#collecte-des-gros-dépôts--a1-a6).
 
 La reprise de triage s’appuie sur le [plan v2](superpowers/plans/2026-10-05-worktree-triage-v2.md).
 Elle ajoute cibles par famille, histoire du graphe, résumé local courant, histoire

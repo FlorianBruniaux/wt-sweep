@@ -151,7 +151,11 @@ subagent delegation are described in the guide.
 See the [assistant guide and example prompts](docs/assistant-skill.md) for a
 fresh review, an existing report and a disposable local test.
 
-For an incomplete row, use the [targeted collection recipe](docs/targets-and-filters.md#complete-the-evidence-for-one-worktree) to reserve evidence reads for its exact path. Other rows and their missing checks remain in the report.
+Start with the default `standard` budget, then inspect the saved facts. For a
+row stopped by those caps, use the [targeted collection recipe](docs/targets-and-filters.md#complete-the-evidence-for-one-worktree)
+with `--worktree` and `--budget thorough`. Read that new result before choosing a
+whole-family thorough run. Other rows and their missing checks remain visible.
+The larger finite caps include ignored files and do not guarantee completion.
 
 ---
 
@@ -262,12 +266,13 @@ records are retained in French.
 ## Roadmap and validation
 
 T01-T09 triage is merged into `main`. The [collection changes](docs/collection-performance.md)
-batch object reads, share target walks and support focused retries. The latest
-whole-repository trial still returned 4 `keep`, 45 `verify` and no candidate from
-49 worktrees, with every local summary partial. A focused retry verified ancestry
-and found ignored files, retaining that worktree. The [roadmap](docs/roadmap.md)
-tracks the remaining object and private-history limits. Writer exclusion remains
-unproven, so backup, restore and removal are unavailable.
+batch object reads, share target walks and expose finite `standard|thorough`
+budgets. The completed thorough trial of one live family found 50 worktrees:
+49 `keep`, no candidate and one `verify`. Ten local summaries were complete,
+40 partial. Retention reasons do not imply exhaustive analysis, and incomplete
+zero counts do not mean clean. Phase metrics and the [roadmap](docs/roadmap.md)
+retain the remaining evidence limits. Writer exclusion is unproven, so backup,
+restore and removal are unavailable.
 
 <details>
 <summary>Implementation stages and recorded validation</summary>

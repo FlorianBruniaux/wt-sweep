@@ -112,7 +112,13 @@ impl Reader<'_> {
         let existing = self.cache.get(&key).cloned().or_else(|| {
             self.raw
                 .cache
-                .get(&(family.common_dir.clone(), kind.into(), oid.into()))
+                .get(&(
+                    family.identity.device,
+                    family.identity.inode,
+                    family.common_dir.clone(),
+                    kind.into(),
+                    oid.into(),
+                ))
                 .cloned()
         });
         if let Some(bytes) = existing {

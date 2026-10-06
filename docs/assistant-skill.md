@@ -90,11 +90,33 @@ Une page de lecture n’est pas une collecte supplémentaire. Un filtre d’affi
 n’accélère pas la collecte. Si un budget fixe a bloqué l’analyse, relancer la même
 commande ne constitue pas une solution. Le skill doit expliquer la limite et
 proposer une nouvelle exécution seulement si elle peut apporter une autre preuve.
+Il commence avec `--budget standard`, inspecte les faits sauvés, puis propose un
+passage ciblé `--worktree` avec `--budget thorough` si les plafonds standard sont
+la cause des données manquantes. Il examine ce résultat avant de lancer toute la
+famille avec le profil plus large. Les plafonds accrus ne garantissent pas que
+la collecte termine et ne retirent aucun fichier ignoré du périmètre.
 Les rapports de plusieurs exécutions conservent leurs dates et leurs périmètres.
 
 Pour plusieurs racines, demandez leur inventaire puis confirmez les cibles par
 famille. Le skill peut examiner chaque famille séparément ou employer la table
 de cibles prévue par la CLI. Il ne devine pas une branche commune à tous les dépôts.
+
+## Compléter une collecte bornée
+
+```text
+$wt-sweep Lis ce run et explique les limites de collecte par phase.
+Distingue les worktrees keep déjà retenus des verify restant à résoudre.
+Vérifie collection_metrics si ce champ existe, les plafonds appliqués et les
+causes d’arrêt. Si le profil standard a atteint un plafond, propose une nouvelle
+revue ciblée du chemin exact avec --budget thorough, dans une nouvelle sortie.
+Inspecte ce résultat avant toute revue thorough de la famille complète.
+Conserve les rapports précédents et leurs inconnues ; ne supprime rien.
+```
+
+`collection_metrics` sépare profil, plafonds appliqués, temps et compteurs de
+chaque phase. Un ancien rapport peut ne pas contenir ce champ. Son absence ne
+prouve ni une collecte rapide ni un travail nul. Le modèle et son niveau de
+raisonnement restent un choix distinct du budget de la CLI.
 
 ## Modèle, raisonnement et sous-agents
 

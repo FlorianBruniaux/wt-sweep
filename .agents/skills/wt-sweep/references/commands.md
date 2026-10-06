@@ -38,6 +38,7 @@ review_status=0
   --repo "$repo_path" \
   --target "$target_ref" \
   --group-by directory \
+  --budget standard \
   --format json \
   --run-dir "$report_dir" > "$report_dir/console.json" || review_status=$?
 printf 'Exit status: %s\nReports: %s\n' "$review_status" "$report_dir"
@@ -52,6 +53,28 @@ before accepting the output. `0` can still describe incomplete observations;
 
 Use `--summary` instead of `--format json` for a person reading the console.
 They cannot be combined. Avoid `--out` when the agent expects stdout to be JSON.
+
+## Retry a capped worktree
+
+Read the saved run before collecting again. If its standard cap is the cause,
+set `worktree_path` to the exact recorded path and use a new output base:
+
+```sh
+thorough_dir="$(mktemp -d /private/tmp/wt-sweep-thorough.XXXXXX)"
+review_status=0
+"$sweep_bin" review --repo "$repo_path" --target "$target_ref" \
+  --worktree "$worktree_path" --path-prefix "$worktree_path" \
+  --budget thorough --format json --run-dir "$thorough_dir" \
+  > "$thorough_dir/console.json" || review_status=$?
+printf 'Exit status: %s\nReports: %s\n' "$review_status" "$thorough_dir"
+```
+
+Inspect this run before selecting the whole family for thorough collection.
+`--worktree` focuses evidence I/O; `--path-prefix` only filters display. The
+original inventory and other rows remain in the saved source with their gaps.
+`plan --inventory` accepts the same budget selector. Profile ceilings are in the
+checkout's `docs/cli.md`; larger allowances still retain ignored files and may
+stop with unknown evidence. A new run is not a resumed snapshot.
 
 ## Discover before choosing per-repository targets
 

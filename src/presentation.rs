@@ -471,6 +471,25 @@ fn detail_rows(
             omitted.families, omitted.worktrees, omitted.local_inventories, omitted.markers
         );
     }
+    if let Some(collection) = &review.collection_metrics {
+        let _ = writeln!(
+            output,
+            "Collection budget: {}",
+            text(&collection.budget_profile, 80)
+        );
+        for (name, value) in &collection.applied_limits {
+            let _ = writeln!(output, "Applied limit {name}: {value}");
+        }
+        for phase in &collection.phases {
+            let _ = writeln!(
+                output,
+                "Collection phase {}: {} ms; {:?}",
+                text(&phase.name, 80),
+                phase.elapsed_ms,
+                phase.counters
+            );
+        }
+    }
     let metrics = &review.history_metrics;
     let _ = writeln!(
         output,

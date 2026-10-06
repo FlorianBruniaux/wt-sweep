@@ -805,3 +805,80 @@ fn directory_tree_frontier_keeps_depth_and_path_limits_incomplete() {
         assert!(!summary.gaps.is_empty());
     }
 }
+
+#[test]
+fn expanded_profile_covers_more_than_4096_distinct_blobs_without_hiding_changes() {
+    let f = Fixture::new("sha1");
+    for n in 0..4097 {
+        fs::write(f.0.join(format!("file{n:04}")), format!("distinct {n}\n"))
+            .unwrap_or_else(|e| panic!("{e}"));
+    }
+    f.commit();
+    let worktree = f.worktree();
+    let limits = SummaryLimits::thorough();
+    let standard = collect_summary(&worktree, &SummaryLimits::default())
+        .unwrap_or_else(|e| panic!("standard: {e}"));
+    assert!(!standard.head_complete && !standard.unstaged.complete);
+    assert!(
+        standard
+            .gaps
+            .iter()
+            .any(|gap| gap.reason.contains("object limit"))
+    );
+    let summary =
+        collect_summary(&worktree, &limits).unwrap_or_else(|e| panic!("expanded clean: {e}"));
+    assert!(
+        summary.head_complete && summary.index_complete && summary.disk_complete,
+        "{summary:?}"
+    );
+    for count in [
+        &summary.staged,
+        &summary.unstaged,
+        &summary.conflicts,
+        &summary.untracked,
+        &summary.ignored,
+    ] {
+        assert!(count.complete);
+        assert_eq!(count.observed, 0);
+    }
+    assert!(summary.gaps.is_empty());
+    fs::write(f.0.join("file0000"), b"staged replacement\n").unwrap_or_else(|e| panic!("{e}"));
+    f.git(&["add", "file0000"]);
+    fs::write(f.0.join("file0001"), b"resident replacement\n").unwrap_or_else(|e| panic!("{e}"));
+    let dirty =
+        collect_summary(&worktree, &limits).unwrap_or_else(|e| panic!("expanded dirty: {e}"));
+    assert!(
+        dirty.staged.complete && dirty.unstaged.complete,
+        "{dirty:?}"
+    );
+    assert_eq!((dirty.staged.observed, dirty.unstaged.observed), (1, 1));
+    let staged_oid =
+        String::from_utf8(f.git(&["rev-parse", ":file0000"])).unwrap_or_else(|e| panic!("{e}"));
+    let staged_oid = staged_oid.trim();
+    fs::remove_file(f.0.join(format!(
+        ".git/objects/{}/{}",
+        &staged_oid[..2],
+        &staged_oid[2..]
+    )))
+    .unwrap_or_else(|e| panic!("{e}"));
+    let missing = collect_summary(&worktree, &limits)
+        .unwrap_or_else(|e| panic!("expanded missing staged blob: {e}"));
+    assert!(
+        missing.index_complete && missing.staged.complete && missing.head_complete,
+        "{missing:?}"
+    );
+    assert_eq!(missing.staged.observed, 1);
+    assert!(!missing.unstaged.complete);
+    assert!(!missing.gaps.is_empty());
+    let index_path = f.0.join(".git/index");
+    let mut raw = fs::read(&index_path).unwrap_or_else(|e| panic!("{e}"));
+    raw[20] ^= 1;
+    fs::write(index_path, raw).unwrap_or_else(|e| panic!("{e}"));
+    let corrupt =
+        collect_summary(&worktree, &limits).unwrap_or_else(|e| panic!("expanded corrupt: {e}"));
+    assert!(
+        !corrupt.index_complete && !corrupt.staged.complete && !corrupt.unstaged.complete,
+        "{corrupt:?}"
+    );
+    assert!(!corrupt.gaps.is_empty());
+}

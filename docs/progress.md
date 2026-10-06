@@ -10,12 +10,56 @@ la [PR #1](https://github.com/FlorianBruniaux/wt-sweep/pull/1), commit `ddda77d`
 `cleanup_candidate` et `verify`, avec cibles, faits locaux, histoire et conditions
 manquantes. Le [checkpoint T01-T09](finish-ledger.md#triage-t01-t09) contient les
 vérifications finales et l'essai réel : 48 worktrees, 3 `keep`, 45 `verify`, aucun
-candidat. Les budgets empêchent encore une analyse complète de ce gros dépôt.
+candidat. Ce résultat historique précède les profils de collecte décrits ci-dessous.
 
 La [livraison GitHub](finish-ledger.md#livraison-github-du-06102026) sépare la CI
 réussie avant fusion de la vérification du commit fusionné. La
 [feuille de route](roadmap.md) garde le diagnostic de performance prioritaire.
 E1 reste non démontrée et `apply` indisponible.
+
+## Profils et grands scénarios A1-A6, 06/10/2026
+
+Le lot ajoute les profils finis `standard|thorough`, les plafonds appliqués et
+les métriques par phase. Les vérifications approfondies groupent les blobs ;
+l’histoire privée partage son parcours et donne 32 expansions prioritaires aux
+ancres déjà utiles. Le transport Git attend les descripteurs disponibles au
+lieu de temporiser entre chaque petite rafale de sortie. C1-C5 restent inchangées.
+
+Le scénario synthétique de 4 200 blobs distincts, 600 commits et 32 racines privées
+obtient un candidat complet. Une famille de 50 worktrees donne 48 candidats et
+deux rétentions justifiées, avec conservation indépendante de la source. Sur
+une sonde constante de 64 Mio répartis entre 16 enfants Git, la collecte passe
+de 46 540 ms à 500 ms. Ce résultat de transport ne mesure pas la revue complète.
+
+Le nouveau passage réel ciblé établit une ascendance, couvre les deux racines
+privées et classe le worktree `keep` : une modification non commitée et au moins
+33 741 fichiers ignorés sont observés. Les 52 213 chemins examinés ne constituent
+pas un inventaire complet ; le plafond local d’octets laisse C2, C3 et C5
+incomplètes. La phase privée dure 5 063 ms sur ce passage, contre 240 473 ms sur
+le diagnostic précédent. Le dépôt évolue entre les deux observations.
+
+Les README, contrats, tutoriel, aide CLI, roadmap et skill expliquent le passage
+ciblé et les limites restantes. Les projections Claude/Codex sont synchronisées ;
+le routage BM25 est vérifié sur les deux clients. Le chargement dans une nouvelle
+session native reste non vérifié. Le [registre de collecte](collection-performance.md)
+conserve les observations distinctes et leurs identités de binaire.
+
+Le passage familial thorough conserve les 50 lignes : 49 `keep`, un `verify`,
+aucun candidat. L’histoire des commits est collectée pour les 50 ; dix résumés
+locaux sont complets et quarante restent partiels. Les phases locale et privée
+atteignent leurs plafonds. Les 49 rétentions ont des motifs observés, dont des
+fichiers ignorés ; elles ne signifient pas 49 analyses exhaustives. Le dernier
+`verify` garde notamment un index intent-to-add non pris en charge et une
+histoire privée incomplète. Les artefacts du run sont vérifiés contre leur reçu.
+
+La revue indépendante est statique : elle couvre C1-C5, les budgets, les témoins
+privés, l’attente des flux Git et la conservation des causes d’arrêt. Aucun
+constat de cette revue ne reste ouvert. Formatage et Clippy passent. La suite
+Rust finale compte 324 réussites et deux cas ignorés ; la suite Python compte
+271 réussites et six cas ignorés. Les 6 expériences d’exclusion passent,
+sans démontrer E1. Le binaire release est reconstruit ; le
+[registre de validation](finish-ledger.md#complétion-des-gros-dépôts-a1-a6)
+conserve son empreinte et les limites des contrôles.
 
 ## Collecte des gros dépôts, 06/10/2026
 

@@ -9,6 +9,8 @@ use std::time::{Duration, Instant};
 
 pub mod context;
 pub mod control;
+#[cfg(all(test, unix))]
+mod deep_batch_tests;
 mod history;
 pub mod private;
 #[cfg(all(test, unix))]
@@ -16,13 +18,96 @@ mod summary_deadline_tests;
 pub mod targets;
 use targets::{FamilyTargets, TargetInput};
 
-#[derive(Clone, Debug, Default)]
+#[derive(Clone, Debug)]
 pub struct ReviewOptions {
     /// Collect expensive evidence only for this exact recorded worktree.
     pub worktree: Option<BytePath>,
     pub evidence: ReviewLimits,
+    pub budget_profile: &'static str,
+    pub local: crate::local::SummaryLimits,
+    pub local_timeout: Duration,
+    pub private: private::PrivateHistoryLimits,
     pub controls: control::ControlLimits,
     pub context: ContextOptions,
+}
+impl Default for ReviewOptions {
+    fn default() -> Self {
+        Self {
+            worktree: None,
+            evidence: ReviewLimits::default(),
+            budget_profile: "standard",
+            local: crate::local::SummaryLimits::default(),
+            local_timeout: Duration::from_secs(120),
+            private: private::PrivateHistoryLimits::default(),
+            controls: control::ControlLimits::default(),
+            context: ContextOptions::default(),
+        }
+    }
+}
+impl ReviewOptions {
+    pub fn with_budget(profile: &str) -> Result<Self, SweepError> {
+        match profile {
+            "standard" => Ok(Self::default()),
+            "thorough" => Ok(Self {
+                budget_profile: "thorough",
+                evidence: ReviewLimits::thorough(),
+                local: crate::local::SummaryLimits::thorough(),
+                local_timeout: Duration::from_secs(900),
+                private: private::PrivateHistoryLimits::thorough(),
+                ..Self::default()
+            }),
+            _ => Err(error("budget must be standard or thorough")),
+        }
+    }
+    fn metrics(&self) -> CollectionMetrics {
+        let r = &self.evidence;
+        let l = &self.local;
+        let p = &self.private;
+        CollectionMetrics {
+            budget_profile: self.budget_profile.into(),
+            phases: Vec::new(),
+            applied_limits: [
+                ("history_object_reads", r.object_read_attempts as u64),
+                ("history_object_bytes", r.object_bytes as u64),
+                ("history_traversal_steps", r.traversal_steps as u64),
+                ("history_per_target_steps", r.per_target_steps as u64),
+                ("history_timeout_ms", r.timeout.as_millis() as u64),
+                ("deep_object_reads", r.deep_object_read_attempts as u64),
+                ("deep_object_bytes", r.deep_object_bytes as u64),
+                ("deep_traversal_steps", r.deep_traversal_steps as u64),
+                ("deep_per_target_steps", r.deep_per_target_steps as u64),
+                ("local_max_objects", l.max_objects as u64),
+                ("local_max_total_bytes", l.max_total_bytes),
+                ("local_worktree_timeout_ms", l.timeout.as_millis() as u64),
+                (
+                    "local_phase_timeout_ms",
+                    self.local_timeout.as_millis() as u64,
+                ),
+                ("private_object_reads", p.object_reads as u64),
+                ("private_object_bytes", p.object_bytes as u64),
+                ("private_traversal_steps", p.traversal_steps as u64),
+                ("private_per_root_steps", p.per_root_steps as u64),
+                ("private_pending_oids", p.pending_oids as u64),
+                ("private_timeout_ms", p.timeout.as_millis() as u64),
+                ("private_git_processes", p.git_processes as u64),
+            ]
+            .into_iter()
+            .map(|(k, v)| (k.into(), v))
+            .collect(),
+        }
+    }
+}
+fn record_phase(
+    metrics: &mut CollectionMetrics,
+    name: &str,
+    started: Instant,
+    counters: impl IntoIterator<Item = (&'static str, u64)>,
+) {
+    metrics.phases.push(CollectionPhase {
+        name: name.into(),
+        elapsed_ms: started.elapsed().as_millis() as u64,
+        counters: counters.into_iter().map(|(k, v)| (k.into(), v)).collect(),
+    });
 }
 #[derive(Clone, Debug)]
 pub struct ContextOptions {
@@ -94,6 +179,12 @@ pub fn enrich_with_options(
     callback: &mut dyn FnMut(ProgressEvent),
 ) -> Result<Observations, SweepError> {
     options.context.validate()?;
+    if options.local_timeout.is_zero() || options.local_timeout > Duration::from_secs(900) {
+        return Err(error("invalid local phase timeout"));
+    }
+    if !["standard", "thorough"].contains(&options.budget_profile) {
+        return Err(error("budget must be standard or thorough"));
+    }
     let limits = &options.evidence;
     let control_limits = &options.controls;
     collect_with_options(
@@ -104,6 +195,7 @@ pub fn enrich_with_options(
         control_limits,
         &options.context,
         options.worktree.as_ref(),
+        options,
         hooks,
         callback,
     )
@@ -146,26 +238,40 @@ impl Default for ReviewLimits {
     }
 }
 impl ReviewLimits {
+    pub fn thorough() -> Self {
+        Self {
+            object_read_attempts: 65536,
+            object_bytes: 128 * 1024 * 1024,
+            traversal_steps: 262144,
+            per_target_steps: 65536,
+            timeout: Duration::from_secs(300),
+            deep_object_read_attempts: 65536,
+            deep_object_bytes: 256 * 1024 * 1024,
+            deep_traversal_steps: 262144,
+            deep_per_target_steps: 65536,
+            ..Self::default()
+        }
+    }
     fn validate(&self) -> Result<(), SweepError> {
         for (value, cap) in [
-            (self.object_read_attempts, 2048),
-            (self.object_bytes, 32 * 1024 * 1024),
+            (self.object_read_attempts, 65536),
+            (self.object_bytes, 128 * 1024 * 1024),
             (self.traversal_steps, 262144),
-            (self.per_target_steps, 4096),
+            (self.per_target_steps, 65536),
             (self.slice_object_read_attempts, 2048),
             (self.slice_object_bytes, 32 * 1024 * 1024),
             (self.slice_traversal_steps, 4096),
             (self.target_jobs, 4096),
-            (self.deep_object_read_attempts, 2048),
-            (self.deep_object_bytes, 32 * 1024 * 1024),
+            (self.deep_object_read_attempts, 65536),
+            (self.deep_object_bytes, 256 * 1024 * 1024),
             (self.deep_traversal_steps, 262144),
-            (self.deep_per_target_steps, 4096),
+            (self.deep_per_target_steps, 65536),
         ] {
             if value == 0 || value > cap {
                 return Err(error("invalid review work-unit limit"));
             }
         }
-        if self.timeout.is_zero() || self.timeout > Duration::from_secs(60) {
+        if self.timeout.is_zero() || self.timeout > Duration::from_secs(300) {
             return Err(error("invalid review timeout limit"));
         }
         Ok(())
@@ -356,9 +462,12 @@ fn verify_forge(export: &ForgeExport) -> Result<(), SweepError> {
     Ok(())
 }
 
+type DeepObjectKey = (u64, u64, BytePath, String, String);
 struct ObjectReader {
     git: ControlledGit,
-    cache: BTreeMap<(BytePath, String, String), Rc<Vec<u8>>>,
+    cache: BTreeMap<DeepObjectKey, Rc<Vec<u8>>>,
+    verified_trees: BTreeSet<DeepObjectKey>,
+    cache_hits: u64,
     reads_left: usize,
     bytes_left: usize,
     started: Instant,
@@ -375,6 +484,8 @@ impl ObjectReader {
         Self {
             git: ControlledGit::default(),
             cache: BTreeMap::new(),
+            verified_trees: BTreeSet::new(),
+            cache_hits: 0,
             reads_left: limits.deep_object_read_attempts,
             bytes_left: limits.deep_object_bytes,
             steps_left: limits.deep_traversal_steps,
@@ -382,6 +493,138 @@ impl ObjectReader {
             timeout: limits.timeout,
             started: Instant::now(),
         }
+    }
+    fn key(common: &Path, kind: &str, oid: &str) -> Result<DeepObjectKey, SweepError> {
+        use std::os::unix::fs::MetadataExt;
+        let meta = std::fs::symlink_metadata(common).map_err(|e| error(e.to_string()))?;
+        if !meta.is_dir() {
+            return Err(error(
+                "deep object administration is not a physical directory",
+            ));
+        }
+        Ok((
+            meta.dev(),
+            meta.ino(),
+            BytePath::from_path(common),
+            kind.into(),
+            oid.to_ascii_lowercase(),
+        ))
+    }
+    fn blobs(&mut self, common: &Path, oids: &[String]) -> Result<(), SweepError> {
+        const OUTPUT: usize = 8 * 1024 * 1024;
+        for chunk in oids.chunks(128) {
+            if self.expired() {
+                return Err(error("whole-review time budget reached"));
+            }
+            let mut needed = Vec::new();
+            for oid in chunk {
+                if self.cache.contains_key(&Self::key(common, "blob", oid)?) {
+                    self.cache_hits += 1;
+                } else {
+                    needed.push(oid.clone());
+                }
+            }
+            if needed.is_empty() {
+                continue;
+            }
+            if needed.len() > self.reads_left {
+                return Err(error("whole-review object budget reached"));
+            }
+            let info = self
+                .git
+                .read(
+                    common,
+                    GitRead::ObjectInfo {
+                        oids: needed.clone(),
+                    },
+                )
+                .map_err(|mut e| {
+                    e.message = format!(
+                        "{}; requested blob batch [{}]",
+                        e.message,
+                        needed.join(", ")
+                    );
+                    e
+                })?;
+            let info = crate::git::parse_object_info(&info, &needed)?;
+            let mut payload = Vec::new();
+            let mut framed_bytes = 0usize;
+            let mut raw_bytes = 0usize;
+            for (oid, info) in needed.into_iter().zip(info) {
+                let info = info.map_err(error)?;
+                if info.kind != "blob" {
+                    return Err(error("expected blob in deep verification"));
+                }
+                let framed = info
+                    .size
+                    .saturating_add(oid.len() + 6 + info.size.to_string().len() + 2);
+                if framed > OUTPUT {
+                    self.blob_batch(common, &payload)?;
+                    payload.clear();
+                    framed_bytes = 0;
+                    raw_bytes = 0;
+                    self.read(common, "blob", &oid)?;
+                    continue;
+                }
+                if framed_bytes.saturating_add(framed) > OUTPUT {
+                    self.blob_batch(common, &payload)?;
+                    payload.clear();
+                    framed_bytes = 0;
+                    raw_bytes = 0;
+                }
+                raw_bytes = raw_bytes.saturating_add(info.size);
+                if raw_bytes > self.bytes_left {
+                    return Err(error("whole-review byte budget reached"));
+                }
+                payload.push(oid);
+                framed_bytes += framed;
+            }
+            self.blob_batch(common, &payload)?;
+        }
+        Ok(())
+    }
+    fn blob_batch(&mut self, common: &Path, oids: &[String]) -> Result<(), SweepError> {
+        if oids.is_empty() {
+            return Ok(());
+        }
+        if self.expired() {
+            return Err(error("whole-review time budget reached"));
+        }
+        if oids.len() > self.reads_left {
+            return Err(error("whole-review object budget reached"));
+        }
+        self.reads_left -= oids.len();
+        let raw = self
+            .git
+            .read(
+                common,
+                GitRead::Objects {
+                    oids: oids.to_vec(),
+                },
+            )
+            .map_err(|mut e| {
+                e.message = format!("{}; requested blob batch [{}]", e.message, oids.join(", "));
+                e
+            })?;
+        let objects = crate::git::parse_objects(&raw, oids)?;
+        for (oid, object) in oids.iter().zip(objects) {
+            let object = object.map_err(error)?;
+            if object.kind != "blob" {
+                return Err(error("expected blob in deep verification"));
+            }
+            let Some(left) = self.bytes_left.checked_sub(object.bytes.len()) else {
+                self.bytes_left = 0;
+                return Err(error("whole-review byte budget reached"));
+            };
+            self.bytes_left = left;
+            verify_object("blob", oid, &object.bytes)?;
+            if self.expired() {
+                return Err(error("whole-review time budget reached"));
+            }
+            self.cache
+                .insert(Self::key(common, "blob", oid)?, Rc::new(object.bytes));
+        }
+        Ok(())
     }
     fn expired(&self) -> bool {
         self.started.elapsed() >= self.timeout
@@ -400,20 +643,21 @@ impl ObjectReader {
         if self.expired() {
             return Err(error("whole-review time budget reached"));
         }
-        if !valid_oid(oid) {
-            return Err(error("invalid object OID"));
-        }
-        let canonical = oid.to_ascii_lowercase();
-        let oid = canonical.as_str();
-        let key = (BytePath::from_path(common), kind.into(), oid.into());
-        if let Some(bytes) = self.cache.get(&key) {
-            return Ok(bytes.clone());
-        }
         if self.reads_left == 0 {
             return Err(error("whole-review object budget reached"));
         }
         if self.bytes_left == 0 {
             return Err(error("whole-review byte budget reached"));
+        }
+        if !valid_oid(oid) {
+            return Err(error("invalid object OID"));
+        }
+        let canonical = oid.to_ascii_lowercase();
+        let oid = canonical.as_str();
+        let key = Self::key(common, kind, oid)?;
+        if let Some(bytes) = self.cache.get(&key) {
+            self.cache_hits += 1;
+            return Ok(bytes.clone());
         }
         self.reads_left -= 1;
         let operation = match kind {
@@ -602,6 +846,14 @@ fn relation(
 }
 
 fn inspect_tree(reader: &mut ObjectReader, common: &Path, oid: &str) -> Result<(), SweepError> {
+    if reader.expired() {
+        return Err(error("whole-review time budget reached"));
+    }
+    let root_key = ObjectReader::key(common, "tree", oid)?;
+    if reader.verified_trees.contains(&root_key) {
+        reader.cache_hits += 1;
+        return Ok(());
+    }
     let width = oid.len() / 2;
     let mut queue = VecDeque::from([oid.to_ascii_lowercase()]);
     let mut seen = BTreeSet::new();
@@ -615,6 +867,7 @@ fn inspect_tree(reader: &mut ObjectReader, common: &Path, oid: &str) -> Result<(
         }
         let raw = reader.read(common, "tree", &oid)?;
         let mut rest = raw.as_slice();
+        let mut blobs = BTreeSet::new();
         while !rest.is_empty() {
             let end = rest
                 .iter()
@@ -646,11 +899,13 @@ fn inspect_tree(reader: &mut ObjectReader, common: &Path, oid: &str) -> Result<(
             if mode == b"40000" {
                 queue.push_back(BytePath::from_bytes(child).hex);
             } else if mode != b"160000" {
-                reader.read(common, "blob", &BytePath::from_bytes(child).hex)?;
+                blobs.insert(BytePath::from_bytes(child).hex);
             }
             rest = &rest[end + 1 + width..];
         }
+        reader.blobs(common, &blobs.into_iter().collect::<Vec<_>>())?;
     }
+    reader.verified_trees.insert(root_key);
     Ok(())
 }
 
@@ -675,6 +930,7 @@ fn unavailable_local_summary(
 
 #[derive(Default)]
 struct LocalCollection {
+    metrics: BTreeMap<&'static str, u64>,
     summaries: BTreeMap<BytePath, Option<LocalSummary>>,
     stopped_families: BTreeMap<(u64, u64), GitRead>,
 }
@@ -707,13 +963,6 @@ fn family_timeout_reason(operation: &GitRead) -> String {
     )
 }
 
-fn current_local_summaries(
-    inventory: &Inventory,
-    stopped_families: &BTreeMap<(u64, u64), GitRead>,
-) -> Result<LocalCollection, SweepError> {
-    local_summaries_with_stopped_families(inventory, 24 * 1024 * 1024, stopped_families)
-}
-
 #[cfg(test)]
 fn local_summaries_with_byte_budget(
     inventory: &Inventory,
@@ -721,6 +970,7 @@ fn local_summaries_with_byte_budget(
 ) -> Result<LocalCollection, SweepError> {
     local_summaries_with_stopped_families(inventory, budget, &BTreeMap::new())
 }
+#[cfg(test)]
 fn local_summaries_with_stopped_families(
     inventory: &Inventory,
     budget: usize,
@@ -734,10 +984,31 @@ fn local_summaries_with_stopped_families(
     )
 }
 
+#[cfg(test)]
 fn local_summaries_collect(
     inventory: &Inventory,
     budget: usize,
     stopped_families: &BTreeMap<(u64, u64), GitRead>,
+    collect: impl FnMut(
+        &Worktree,
+        &crate::local::SummaryLimits,
+    ) -> Result<crate::local::SummaryOutcome, SweepError>,
+) -> Result<LocalCollection, SweepError> {
+    local_summaries_collect_with_limits(
+        inventory,
+        budget,
+        stopped_families,
+        &crate::local::SummaryLimits::default(),
+        Duration::from_secs(120),
+        collect,
+    )
+}
+fn local_summaries_collect_with_limits(
+    inventory: &Inventory,
+    budget: usize,
+    stopped_families: &BTreeMap<(u64, u64), GitRead>,
+    limits: &crate::local::SummaryLimits,
+    phase_timeout: Duration,
     mut collect: impl FnMut(
         &Worktree,
         &crate::local::SummaryLimits,
@@ -773,7 +1044,7 @@ fn local_summaries_collect(
                 output.summaries.insert(worktree.path.clone(), None);
                 continue;
             }
-            let remaining = Duration::from_secs(120).saturating_sub(started.elapsed());
+            let remaining = phase_timeout.saturating_sub(started.elapsed());
             let unavailable = if remaining.is_zero() {
                 Some("whole-review local collection time budget reached")
             } else if worktree.bare || !matches!(worktree.path_state, DirState::Present) {
@@ -786,13 +1057,22 @@ fn local_summaries_collect(
             } else if let Some(reason) = unavailable {
                 unavailable_local_summary(worktree, reason.into())?
             } else {
-                let mut limits = crate::local::SummaryLimits::default();
+                let mut limits = limits.clone();
                 // Reserve a share for every remaining present worktree. Unused
                 // time stays available to later rows; a focused retry gets its full cap.
                 let shares = u32::try_from(remaining_worktrees).unwrap_or(u32::MAX);
                 limits.timeout = limits.timeout.min(remaining / shares);
                 match collect(worktree, &limits) {
                     Ok(outcome) => {
+                        for (name, value) in [
+                            ("object_reads", outcome.metrics.object_reads),
+                            ("object_bytes", outcome.metrics.object_bytes),
+                            ("git_processes", outcome.metrics.git_processes),
+                            ("cache_hits", outcome.metrics.cache_hits),
+                            ("paths_checked", outcome.metrics.paths_checked),
+                        ] {
+                            *output.metrics.entry(name).or_default() += value;
+                        }
                         if let Some(operation) = outcome.first_git_timeout
                             && stops_family_history(&operation)
                         {
@@ -989,6 +1269,7 @@ pub fn enrich_with_target_input_and_controls(
             evidence: limits.clone(),
             controls: control_limits.clone(),
             context: ContextOptions::default(),
+            ..ReviewOptions::default()
         },
         hooks,
         callback,
@@ -1003,6 +1284,7 @@ fn collect_with_options(
     control_limits: &control::ControlLimits,
     context_options: &ContextOptions,
     selected_worktree: Option<&BytePath>,
+    options: &ReviewOptions,
     hooks: &dyn control::ControlHooks,
     callback: &mut dyn FnMut(ProgressEvent),
 ) -> Result<Observations, SweepError> {
@@ -1034,8 +1316,12 @@ fn collect_with_options(
         verify_forge(export)?;
     }
     let started_unix_ms = now_ms();
+    let mut collection_metrics = options.metrics();
+    let phase_started = Instant::now();
     progress(callback, "controls", 0, None);
     let mut controls = control::ControlRun::collect(inventory, control_limits, hooks)?;
+    record_phase(&mut collection_metrics, "controls", phase_started, []);
+    let phase_started = Instant::now();
     let mut history = history::HistoryRun::collect(
         &evidence_inventory,
         &family_targets,
@@ -1043,14 +1329,44 @@ fn collect_with_options(
         &controls.stopped_families,
         callback,
     )?;
+    record_phase(
+        &mut collection_metrics,
+        "history",
+        phase_started,
+        [
+            ("object_reads", history.metrics.object_read_attempts),
+            ("object_bytes", history.metrics.object_bytes),
+            ("traversal_steps", history.metrics.traversal_steps),
+            ("cache_hits", history.metrics.cache_hits),
+            ("git_processes", history.metrics.spawned_processes),
+        ],
+    );
+    let phase_started = Instant::now();
     progress(callback, "local", 0, None);
     let LocalCollection {
         summaries: mut local_summaries,
         stopped_families,
-    } = current_local_summaries(&evidence_inventory, &history.stopped_families)?;
+        metrics: local_metrics,
+    } = local_summaries_collect_with_limits(
+        &evidence_inventory,
+        24 * 1024 * 1024,
+        &history.stopped_families,
+        &options.local,
+        options.local_timeout,
+        crate::local::collect_summary_for_review,
+    )?;
+    record_phase(
+        &mut collection_metrics,
+        "local",
+        phase_started,
+        local_metrics,
+    );
     history.stopped_families.extend(stopped_families.clone());
+    let phase_started = Instant::now();
     progress(callback, "deep", 0, None);
     let mut reader = ObjectReader::with_limits(limits);
+    let mut deep_auxiliary_processes = 0;
+    let mut deep_object_processes = 0;
     let mut items = Vec::new();
     let mut identities = BTreeSet::new();
     for family in &inventory.families {
@@ -1064,6 +1380,7 @@ fn collect_with_options(
         }
         // Timeout telemetry is scoped to this physical family; object budgets/cache remain global.
         let git = ControlledGit::default();
+        deep_object_processes += reader.git.spawned_processes();
         reader.git = ControlledGit::default();
         let family_id = (family.identity.device, family.identity.inode);
         let family_timeout = history.stopped_families.get(&family_id);
@@ -1309,6 +1626,7 @@ fn collect_with_options(
             }
             items.push(item);
         }
+        deep_auxiliary_processes += git.spawned_processes();
     }
     for item in &mut items {
         if selected_worktree.is_some_and(|selected| selected != &item.path) {
@@ -1333,14 +1651,56 @@ fn collect_with_options(
                 .push("current local summary incomplete; inspect local counts and gaps".into());
         }
     }
+    record_phase(
+        &mut collection_metrics,
+        "deep",
+        phase_started,
+        [
+            (
+                "object_reads",
+                (limits.deep_object_read_attempts - reader.reads_left) as u64,
+            ),
+            (
+                "object_bytes",
+                (limits.deep_object_bytes - reader.bytes_left) as u64,
+            ),
+            (
+                "traversal_steps",
+                (limits.deep_traversal_steps - reader.steps_left) as u64,
+            ),
+            (
+                "git_processes",
+                reader.git.spawned_processes() + deep_object_processes + deep_auxiliary_processes,
+            ),
+            ("cache_hits", reader.cache_hits),
+        ],
+    );
+    let phase_started = Instant::now();
     progress(callback, "private_history", 0, None);
     let mut private = private::PrivateHistoryRun::collect(
         &evidence_inventory,
         &family_targets,
-        &Default::default(),
+        &options.private,
         &crate::local::NativeHooks,
         &history.stopped_families,
     )?;
+    let private_metrics = private.metrics();
+    record_phase(
+        &mut collection_metrics,
+        "private_history",
+        phase_started,
+        [
+            ("object_reads", private_metrics.object_read_attempts),
+            ("object_bytes", private_metrics.object_bytes),
+            ("git_processes", private_metrics.git_processes),
+            ("cache_hits", private_metrics.object_cache_hits),
+            ("traversal_steps", private_metrics.traversal_steps),
+            ("anchors_verified", private_metrics.anchors_verified),
+            ("roots_enumerated", private_metrics.roots_enumerated),
+        ],
+    );
+    let phase_started = Instant::now();
+    let history_processes_before_final = history.metrics.spawned_processes;
     history
         .stopped_families
         .extend(private.stopped_families.clone());
@@ -1401,7 +1761,29 @@ fn collect_with_options(
         }
     }
     control::bound_item_states(&mut items, control_limits.output_bytes)?;
+    let private_after = private.metrics();
+    record_phase(
+        &mut collection_metrics,
+        "revalidation",
+        phase_started,
+        [
+            (
+                "history_git_processes",
+                history
+                    .metrics
+                    .spawned_processes
+                    .saturating_sub(history_processes_before_final),
+            ),
+            (
+                "private_git_processes",
+                private_after
+                    .git_processes
+                    .saturating_sub(private_metrics.git_processes),
+            ),
+        ],
+    );
     let evidence_finished_unix_ms = now_ms();
+    let phase_started = Instant::now();
     let context = if context_options.enabled {
         progress(callback, "context", items.len() as u64, None);
         let context_items: Vec<_> = items
@@ -1421,6 +1803,9 @@ fn collect_with_options(
     } else {
         None
     };
+    if context_options.enabled {
+        record_phase(&mut collection_metrics, "context", phase_started, []);
+    }
     let shared_stashes = private.output.shared_stashes;
 
     let history_metrics = history.metrics;
@@ -1436,6 +1821,7 @@ fn collect_with_options(
         shared_stashes,
         inventory: inventory.clone(),
         history_metrics,
+        collection_metrics: Some(collection_metrics),
         items,
         forge: forge.cloned(),
         started_unix_ms,
@@ -1714,6 +2100,7 @@ pub fn judge(facts: &Observations) -> Result<Review, SweepError> {
         context: facts.context.clone(),
         shared_stashes: facts.shared_stashes.clone(),
         history_metrics: facts.history_metrics.clone(),
+        collection_metrics: facts.collection_metrics.clone(),
         schema: REVIEW_SCHEMA.into(),
         policy_version: "triage/1".into(),
         inventory_sha256: canonical_digest(&facts.inventory)?,

@@ -160,7 +160,12 @@ du raisonnement et le recours limité à des sous-agents.
 Le [guide de l’assistant et ses prompts](docs/assistant-skill.md) couvre une
 nouvelle revue, la reprise d’un rapport et un test local sur des dépôts jetables.
 
-Pour une ligne incomplète, la [collecte ciblée](docs/tutorial.fr.md#approfondir-un-worktree-après-une-analyse-partielle) réserve les lectures au chemin exact du worktree. Le rapport conserve les autres lignes et leurs contrôles manquants.
+Commencez avec le profil `standard`, puis inspectez les faits sauvegardés. Pour
+une ligne arrêtée par ces plafonds, la [collecte ciblée](docs/tutorial.fr.md#approfondir-un-worktree-après-une-analyse-partielle)
+combine `--worktree` et `--budget thorough`. Lisez ce nouveau résultat avant une
+revue thorough de toute la famille. Les autres lignes et leurs preuves manquantes
+restent visibles. Ces plafonds plus grands incluent les fichiers ignorés ; ils ne
+garantissent pas une collecte complète.
 
 ---
 
@@ -278,12 +283,13 @@ conservés dans leur version française d’origine.
 ## Feuille de route et validation
 
 Le triage T01-T09 est fusionné dans `main`. Le [lot de collecte](docs/collection-performance.md)
-groupe les lectures d’objets, partage les parcours des cibles et permet un passage
-ciblé. Le dernier essai complet compte 49 worktrees : 4 `keep`, 45 `verify` et
-aucun candidat ; tous les résumés locaux restent partiels. Un passage ciblé a
-vérifié une ascendance et trouvé des fichiers ignorés, donc retenu ce worktree.
-La [feuille de route](docs/roadmap.md) suit les plafonds d’objets et d’histoire privée
-restants. L’exclusion des écritures concurrentes n’est pas démontrée ; sauvegarde,
+groupe les lectures d’objets, partage les parcours des cibles et expose les profils
+bornés `standard|thorough`. La recette thorough d’une famille vivante est terminée :
+50 worktrees, 49 `keep`, aucun candidat et un `verify`. Dix résumés locaux sont
+complets, 40 partiels. Les raisons de conserver ne signifient pas une analyse
+exhaustive ; des zéros incomplets ne prouvent pas la propreté. Les métriques et
+la [feuille de route](docs/roadmap.md) conservent les limites de preuve restantes.
+L’exclusion des écritures concurrentes n’est pas démontrée ; sauvegarde,
 restauration et suppression restent indisponibles.
 
 <details>

@@ -26,7 +26,10 @@ what makes the check independent.
 
 A timeout, exhausted budget, missing object or uncollected local files does not
 justify raising model effort. State the missing observation and the useful next
-collection step, if one exists. Higher reasoning effort cannot fill that gap.
+collection step, if one exists. A targeted `--worktree --budget thorough` run
+can address an exhausted standard allowance after inspection of the saved facts.
+Collection profiles are CLI caps, separate from model reasoning or token budgets.
+Higher reasoning effort cannot fill a missing observation.
 Do not select `xhigh`, `max` or `ultra` routinely. No cost, accuracy or throughput
 improvement has been measured for these profiles on wt-sweep.
 

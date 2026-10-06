@@ -220,6 +220,45 @@ separately. Local and deep work are not
 included. Failed I/O bytes and total operating-system work are not measured by
 `object_bytes`. See [resource limits](cli.md#resource-limits).
 
+## Collection profiles and diagnostics
+
+Version-2 reviews may contain top-level `collection_metrics`. Older artifacts
+without this field retain their canonical representation; absence means metrics
+were not recorded. These diagnostics never enter C1-C5 or classification.
+
+`budget_profile` records the requested `standard` or `thorough` profile.
+`applied_limits` records effective core ceilings in explicit units, including
+local per-worktree and phase milliseconds. Library callers may use smaller
+limits; the recorded values, rather than the profile name, describe that run.
+Additional fixed input/output, file, path and root caps remain documented in
+[CLI resource limits](cli.md#resource-limits).
+
+Each `phases[]` entry contains `name`, `elapsed_ms` and `counters`. Phases cover
+controls, history, local files, deep verification, private history, final
+revalidation and optional context. Discovery and publication are excluded, so
+summing phases does not give total command time. Context is recorded after the
+decision interval and does not extend its consistency claims. Empty counter maps
+mean that only elapsed time was measured.
+
+Counters retain their phase-specific meaning:
+
+- History and private `object_reads` count attempted reads; local counts decoded
+  object payloads offered to verification. Deep counts charged read attempts.
+- `object_bytes` counts returned or decoded object payload bytes charged by the
+  phase, not all I/O or memory. Protocol framing and filesystem metadata are not
+  included.
+- `git_processes` counts actual child launches, including failed reads. Final
+  checks record separate history and private Git-process deltas.
+- Local `cache_hits` includes repeated cached refusals as well as successful
+  object reuse. `paths_checked` counts main disk metadata attempts, excluding
+  `.git`. A zero value can mean collection stopped before walking disk paths.
+
+Deep objects and complete verified trees are reused only inside the current
+review, keyed by physical family identity, path, object type and full OID.
+Private ancestry is shared within the same family. Cached immutable objects do
+not replace final checks of refs, administration, indexes or local files. No
+persistent cache or continuation from a previous report is implemented.
+
 ## Optional commit and changelog context
 
 Version-2 reviews may contain top-level `context`, with its own interval, rows,
@@ -344,9 +383,17 @@ hashes and completeness. File hashes cover their bytes; directory hashes cover
 the directory identity and type, then its sorted membership, entry identities
 and types. An absent source is recorded
 separately from a failed read. `enumeration_complete` concerns the roots and their
-sources; `anchors_complete` concerns eligible named refs. A failed anchor does
-not erase coverage already verified through another current anchor. It does
-prevent a complete negative when that anchor could cover the root.
+sources; `anchors_complete` concerns eligible named-ref enumeration and observed
+anchor failures. It does not assert that every named ref's object was eagerly
+read. Direct identity roots are verified first; other roots use one bounded
+ancestry union for the physical family. Anchors already covering a root receive
+at most 32 priority expansions, charged to the same budgets, before the ordinary
+frontier resumes. No pending route is discarded by that scheduling change.
+
+A failed anchor does not erase coverage already verified through another current
+anchor. It prevents a complete negative when that anchor could cover the root.
+Only exhausted, error-free traversal with complete eligible-ref enumeration can
+establish `not_preserved_by_retained_refs`; a budget stop remains `unknown`.
 
 A final source or anchor change invalidates the current result. `observed_result`
 retains the earlier outcome; when it was `covered`, `anchor` describes the earlier

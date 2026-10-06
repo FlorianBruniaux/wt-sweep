@@ -1105,3 +1105,85 @@ fn target_ref_aliases_share_graph_but_revalidate_their_original_refs() {
     assert_eq!(facts.history_metrics.traversal_steps, chain.len() as u64);
     assert_eq!(facts.history_metrics.target_resolution_attempts, 4);
 }
+
+// One bounded fixture import avoids thousands of setup processes. Production
+// evidence still traverses and verifies each immutable commit independently.
+fn imported_chain(f: &Fixture, length: usize) -> String {
+    let base = f.git(&["rev-parse", "main"]);
+    let mut input = String::new();
+    for n in 1..=length {
+        let parent = if n == 1 {
+            base.clone()
+        } else {
+            format!(":{}", n - 1)
+        };
+        input.push_str(&format!("commit refs/heads/integration\nmark :{n}\ncommitter Fixture <fixture@example.invalid> {n} +0000\ndata 1\nx\nfrom {parent}\n\n"));
+    }
+    let stream = f.0.join("owned-chain-import");
+    fs::write(&stream, input).unwrap();
+    let mut child = Command::new("/usr/bin/git")
+        .env_clear()
+        .env("PATH", "/usr/bin:/bin")
+        .env("GIT_CONFIG_NOSYSTEM", "1")
+        .env("GIT_CONFIG_GLOBAL", "/dev/null")
+        .env("GIT_ALLOW_PROTOCOL", "")
+        .env("GIT_NO_LAZY_FETCH", "1")
+        .args(["-c", "core.hooksPath=/dev/null", "-c", "gc.auto=0", "-C"])
+        .arg(&f.0)
+        .args(["fast-import", "--quiet"])
+        .stdin(std::process::Stdio::from(fs::File::open(&stream).unwrap()))
+        .stdout(std::process::Stdio::null())
+        .stderr(std::process::Stdio::from(
+            fs::File::create(f.0.join("owned-chain-errors")).unwrap(),
+        ))
+        .spawn()
+        .unwrap();
+    let started = std::time::Instant::now();
+    loop {
+        if let Some(status) = child.try_wait().unwrap() {
+            assert!(
+                status.success(),
+                "{}",
+                fs::read_to_string(f.0.join("owned-chain-errors")).unwrap()
+            );
+            break;
+        }
+        if started.elapsed() > std::time::Duration::from_secs(15) {
+            let _ = child.kill();
+            let _ = child.wait();
+            panic!("owned chain import exceeded deadline");
+        }
+        std::thread::sleep(std::time::Duration::from_millis(5));
+    }
+    f.git(&["rev-parse", "integration"])
+}
+
+#[test]
+fn thorough_history_proves_ancestor_beyond_standard_per_target_cap() {
+    let f = Fixture::new();
+    imported_chain(&f, 520);
+    let inventory = scan_family(&f.0).unwrap();
+    let targets = [BytePath::from_bytes(b"refs/heads/integration")];
+    let normal = wt_sweep::review::ReviewLimits {
+        deep_object_read_attempts: 1,
+        ..Default::default()
+    };
+    let partial =
+        wt_sweep::review::enrich_with_limits(&inventory, &targets, None, &normal).unwrap();
+    assert_eq!(partial.items[0].history[0].result, "unknown");
+    assert!(
+        partial.items[0].history[0]
+            .stop_reason
+            .as_deref()
+            .unwrap()
+            .contains("per-target")
+    );
+    let limits = wt_sweep::review::ReviewLimits {
+        deep_object_read_attempts: 1,
+        ..wt_sweep::review::ReviewLimits::thorough()
+    };
+    let complete =
+        wt_sweep::review::enrich_with_limits(&inventory, &targets, None, &limits).unwrap();
+    assert_eq!(complete.items[0].history[0].result, "ancestor");
+    assert!(complete.items[0].history[0].stop_reason.is_none());
+}

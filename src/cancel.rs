@@ -50,7 +50,10 @@ fn native_install() -> Result<(), i32> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use std::process::Command;
+    use std::{
+        process::Command,
+        time::{Duration, Instant},
+    };
 
     #[test]
     #[allow(clippy::expect_used)]
@@ -67,7 +70,16 @@ mod tests {
                     .expect("send owned signal")
                     .success()
             );
-            assert!(requested());
+            // kill's successful exit acknowledges sending the process signal,
+            // not completion of the handler on another test-runner thread.
+            let deadline = Instant::now() + Duration::from_secs(2);
+            while !requested() && Instant::now() < deadline {
+                std::thread::sleep(Duration::from_millis(1));
+            }
+            assert!(
+                requested(),
+                "owned SIGINT was not delivered before deadline"
+            );
             return;
         }
         let output = Command::new(std::env::current_exe().expect("test executable"))

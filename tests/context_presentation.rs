@@ -10,6 +10,7 @@ fn report() -> Review {
         inventory: Inventory::new(ScanScope::Repo { path: path.clone() }),
         shared_stashes: vec![],
         history_metrics: Default::default(),
+        collection_metrics: None,
         items: vec![],
         forge: None,
         started_unix_ms: 10,

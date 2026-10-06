@@ -5,12 +5,11 @@
 État du 06/10/2026 : T01 à T09 sont fusionnés dans `main` par la
 [PR #1](https://github.com/FlorianBruniaux/wt-sweep/pull/1), commit
 `ddda77ddba24566328a83dad79b74d943cecd8e5`. Le triage en lecture seule est livré.
-Le checkpoint initial portait sur 48 worktrees. Le dernier essai du lot de
-collecte ci-dessous porte sur 49 : 4 `keep`, 45 `verify`, aucun candidat. Les
-49 résumés locaux restent partiels. Un passage ciblé conserve une ascendance
-vérifiée et observe au moins 4 969 fichiers ignorés ; ce worktree devient `keep`.
-L'objectif « quels worktrees puis-je nettoyer ? » reste donc partiellement
-satisfait sur ce gros dépôt, même après réduction du coût des lectures.
+La recette A6 de la famille choisie est terminée : 50 worktrees, 49 `keep`, aucun
+candidat et un `verify`, avec artefacts vérifiés. Dix résumés locaux sont complets
+et 40 restent partiels ; les 49 raisons de conserver ne signifient pas 49
+analyses exhaustives. Le triage ne propose aucun retrait de cette famille.
+Les plafonds et l’index de la ligne restante gardent des preuves inconnues.
 
 ## Livré
 
@@ -32,34 +31,48 @@ une release binaire.
 
 Le [skill du dépôt](assistant-skill.md) fournit un parcours de revue et de lecture
 progressive pour Claude et Codex, avec des suggestions de conservation et de
-vérification. Il ne résout pas les budgets de collecte et ne débloque pas `apply`.
+vérification. Il explique les plafonds de collecte et peut préparer un passage ciblé
+`--budget thorough` après lecture d’un run standard. Il ne débloque pas `apply`.
 Les preuves de génération, de routage et d’utilisation de la CLI sont distinguées
 dans le [registre courant](progress.md#skill-wt-sweep-06102026).
 
-## Prochain travail : compléter l'analyse des gros dépôts
+## Collecte des gros dépôts : A1-A6
 
-Le lot de collecte du 06/10 groupe les lectures d’arbres et de blobs, partage le
-parcours de chaque cible Git et répartit le budget local entre les worktrees.
-`--worktree` permet un nouveau passage ciblé, avec conservation de l’inventaire
-original. Les régressions et les limites restantes sont suivies dans le
-[registre de collecte](collection-performance.md). Les étapes ci-dessous restent
-les critères de mesure et de validation ; les plafonds ne sont pas des preuves
-de complétude.
+Les lots A1-A5 ont leurs positifs sur fixtures : 4 200 blobs distincts, 600
+commits et 32 racines privées aboutissent à un candidat avec preuves complètes.
+Une famille de 50 worktrees conserve deux `keep` et établit 48 candidats. Ces
+résultats et leur oracle de conservation concernent les fixtures possédées ;
+ils ne certifient pas le dépôt réel. A6 a ensuite exécuté les passages ciblés
+et la revue de la famille complète, avec les limites détaillées ci-dessous.
 
-1. **Reproduire les plafonds restants.** Ajouter une fixture dépassant 4 096
-   objets distincts et une histoire privée comparable au cas réel. Mesurer le
-   temps et les lectures par phase, y compris les revalidations. Les fixtures
-   actuelles à 1 024 contenus prouvent le gain des lots, pas la couverture du dépôt réel.
-2. **Choisir une collecte qui termine ce cas.** Comparer partage des objets déjà
-   vérifiés, reprise bornée et limites explicitement configurables. Conserver
-   revalidation finale, mémoire bornée et refus après erreur ; toute extension
-   doit produire un cas positif complet et préserver les cas de travail local.
-   Rejouer ensuite le dépôt explicitement choisi, avec des causes précises pour
-   les preuves encore manquantes. Augmenter le délai seul ne lève pas le plafond d’objets.
-3. **Valider une découverte multi-racines réelle.** Choisir les racines, comparer
-   avec les familles connues, puis contrôler doublons, inscriptions extérieures
-   et zones inaccessibles. Le scan global réel reste une exécution distincte,
-   explicitement demandée.
+| Lot | État observable |
+| --- | --- |
+| A1 : dépasser les anciens plafonds | Fixture positive au-delà de 4 096 objets et d’une histoire de 512 étapes, avec les trois verdicts conservés. |
+| A2 : collecte locale | HEAD/index/disque et cinq zéros complets sur le grand positif ; fichiers non suivis conservés comme raison de `keep`. |
+| A3 : histoire privée | 32 racines couvertes ; les refs directement utiles évitent une expansion inutile. Un suivi borné par quantum réduit les lectures sur sa fixture. |
+| A4 : profils explicites | `standard|thorough` exposés sur `review` et `plan`, avec plafonds finis et métriques de phase. |
+| A5 : famille de 50 | 48 candidats simples et deux `keep`, inventaire et conservation inchangés. |
+| A6 : recette réelle | Terminée en lecture seule : 50 lignes, 49 `keep`, aucun candidat, un `verify` ; dix résumés locaux complets et 40 partiels. Artefacts vérifiés, plafonds et conditions manquantes conservés. |
+
+Commencer par standard, inspecter les faits sauvés, puis choisir un worktree
+exact pour thorough avant une nouvelle revue de toute la famille. Les plafonds
+ne mesurent pas le débit ; les métriques ne remplacent pas C1-C5. La priorité des
+ancres privées et le transport Git ont leurs régressions ciblées. La sonde
+constante de transport passe de 46 540 à 500 ms pour 64 MiB et 16 enfants ; le
+second réel ciblé examine 52 213 chemins et retient le worktree. Son état local
+reste incomplet au plafond d’octets. Ces mesures ne prouvent pas la complétude
+de toute la famille ni une accélération d’énumération. Le [checkpoint de collecte](collection-performance.md#checkpoint-a1-a6--fixtures-et-recette-réelle)
+sépare les mesures synthétiques, les passages ciblés et le bilan de famille.
+Les phases locale et privée atteignent leurs plafonds. L’unique ligne `verify`
+garde une ascendance mais une entrée d’index `intent-to-add` non interprétée et
+une histoire privée incomplète ; ses zéros incomplets ne prouvent pas la propreté.
+Le dépôt évolue entre passages : aucune comparaison réelle n’est un benchmark
+contrôlé à données constantes.
+
+Une découverte multi-racines réelle demeure une exécution distincte : choisir
+les racines, comparer les familles connues, vérifier doublons, inscriptions
+extérieures et zones inaccessibles. Le scan global réel exige son périmètre
+explicitement demandé.
 
 X02 (lectures Git groupées) est désormais utilisé par le résumé local : les
 fixtures à 1 024 contenus distincts ou dossiers distincts reproduisent le coût
@@ -68,6 +81,8 @@ que la fixture initiale à contenu partagé ne montrait pas. Les extensions X01
 restent conditionnelles. La découverte réelle s’est achevée et l’index v2 est
 pris en charge. Une collecte ciblée est un nouveau run, pas une reprise X01.
 Le support d’un autre format d’index demande un cas concret et ses fixtures.
+L’entrée `intent-to-add` du dernier run garde ses sémantiques inconnues même
+avec le format v2 ; elle demande son propre contrôle.
 
 ## Nettoyage automatique : chantier séparé
 

@@ -19,6 +19,11 @@ and retains the historical U1-U4 results.
 - `--worktree` narrows expensive evidence collection to an exact recorded path.
   Keep the original inventory and all rows; distinguish deliberate omissions
   from budget exhaustion. Display filters alone do not reduce collection work.
+- `--budget standard|thorough` selects finite collection allowances. Inspect
+  `collection_metrics`, local gaps and source coverage before a focused thorough
+  retry. Recorded phase counters are diagnostics, never decision evidence.
+  Private roots share a verified graph within one physical family. Keep final
+  ref and administration checks fresh, including on cache hits.
 - Large-repository collection can still reach its budgets. Measure the affected
   phase before optimizing; do not relax evidence requirements to yield candidates.
 - See `docs/contracts.md` and `docs/targets-and-filters.md` before changing schemas,

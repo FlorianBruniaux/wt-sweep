@@ -41,6 +41,7 @@ fn candidate() -> Observations {
         inventory,
         shared_stashes: vec![],
         history_metrics: Default::default(),
+        collection_metrics: None,
         forge: None,
         started_unix_ms: 100,
         finished_unix_ms: 200,
