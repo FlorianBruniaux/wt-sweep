@@ -1,0 +1,53 @@
+CHANGELOG.md
+  s_160b3107588443::t_0d68d8417e5f94 12-17
+README.fr.md
+  s_160b3107588443::t_c276d3c54fef8f 124,152
+README.md
+  s_160b3107588443::t_f74023a8e22ab8 115,143
+docs/architecture.md
+  s_160b3107588443::t_78cda0c8b7efa9 59
+docs/cli.md
+  s_160b3107588443::t_688beae48c9480 91,119,161,184-187
+docs/getting-started.md
+  s_160b3107588443::t_e706df47dd67c0 65,68-71,74-81
+docs/progress.md
+  s_160b3107588443::t_3f4a32ccb3237a 20-38
+docs/retex-sessions.md
+  s_160b3107588443::t_df13c425a235f3 53
+docs/tutorial.fr.md
+  s_160b3107588443::t_5cd8838af9da97 72-73,150-157
+src/main.rs
+  s_160b3107588443::t_f8275efe98239b 27-28,239,504,523,532-534,624-626,628-630
+src/presentation.rs
+  s_160b3107588443::t_8617fb076da420 5-7,537
+src/presentation/console.rs
+  s_160b3107588443::t_08864a28f9dc67 1-332
+tests/test_discovery_publication.py
+  s_160b3107588443::t_1ce220a5668b3a 191-195,382,409-410
+tests/test_enriched.py
+  s_160b3107588443::t_8616de2b9ee88d 266,353-361
+tests/test_review_command.py
+  s_160b3107588443::t_fc7aa1feeae14d 263,287-288,295,309-310,345,352
+tests/test_scale.py
+  s_160b3107588443::t_ea374287f46025 317,319,351,353
+tests/triage_presentation.rs
+  s_160b3107588443::t_4e67438d102e9b 66,68-74,154,156-254,257-258
+tests/views.rs
+  s_160b3107588443::t_5c9f2648547ee1 145,148,150-151,279-280
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "6f53ba4db4cf3d421a9d51b4c8bed90019c0a9e6",
+  "prompts": {},
+  "sessions": {
+    "s_160b3107588443": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a106f2-069b-7be2-aa09-88b1bbf2331e",
+        "model": "gpt-6-astra"
+      },
+      "human_author": "Florian BRUNIAUX <florian@bruniaux.com>"
+    }
+  }
+}
