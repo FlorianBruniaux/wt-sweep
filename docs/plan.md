@@ -2,12 +2,16 @@
 
 [Index documentaire](README.md) · [Architecture](architecture.md) · [Référence CLI](cli.md)
 
-Synthèse de conception consolidée le 04/10/2026. Les critères ci-dessous restent
-la cible d'acceptation. Le [registre d'implémentation](progress.md) distingue les
-comportements U1 à U4 testés localement des critères encore ouverts.
-Les [retours des sessions de ménage](retex-sessions.md) précisent les prochains
-lots complémentaires : rapport descriptif, inventaire local enrichi et identité
-d'exécution. Ils ne modifient pas les conditions d'accès à U5 à U7.
+Contrat initial U1-U7 et E1, consolidé le 04/10/2026. U1-U4, les ajouts
+[RETEX](retex-sessions.md) et le [triage T01-T09](superpowers/plans/2026-10-05-worktree-triage-v2.md)
+sont livrés. La [feuille de route](roadmap.md) indique le travail restant ; le
+[registre de validation](finish-ledger.md#triage-t01-t09) distingue les preuves
+locales, la livraison GitHub et les limites de l'essai réel.
+
+Les sections du MVP ci-dessous conservent le contrat historique `review/1`.
+Le contrat courant `review/2`, ses verdicts et C1-C5 sont définis dans les
+[contrats des artefacts](contracts.md#triage-policy) et le plan T01-T09.
+Les conditions E1 et U5-U7 restent ouvertes ; le triage ne les remplace pas.
 
 ## Choisir ce qu'il faut construire
 

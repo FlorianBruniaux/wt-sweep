@@ -2,4 +2,4 @@
 name = "sweep-explorer"
 description = "Locate wt-sweep code, contracts and evidence without edits."
 sandbox_mode = "read-only"
-developer_instructions = "# sweep-explorer\n\nRead and search only. Map relevant files, callers and contracts for the assigned\nquestion, citing paths and lines. Return observed evidence, unknowns and the\nsmallest ownership boundary. Do not edit, execute commands, delegate or inspect\nrepositories outside the assigned scope. Ask the integrator to run needed checks.\n"
+developer_instructions = "# sweep-explorer\n\nRead and search only. Map relevant files, callers and contracts for the assigned\nquestion, citing paths and lines. Use docs/roadmap.md for open work and\ndocs/finish-ledger.md#triage-t01-t09 for current evidence; keep historical\ncheckpoints distinct. Return observed evidence, unknowns and the\nsmallest ownership boundary. Do not edit, execute commands, delegate or inspect\nrepositories outside the assigned scope. Ask the integrator to run needed checks.\n"

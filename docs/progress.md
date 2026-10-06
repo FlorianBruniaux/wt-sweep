@@ -1,6 +1,26 @@
 # Résultats d'implémentation
 
-[Index documentaire](README.md) · [Contrats des artefacts](contracts.md)
+[Index documentaire](README.md) · [Contrats des artefacts](contracts.md) · [Feuille de route](roadmap.md)
+
+## État courant au 06/10/2026
+
+U1-U4 et T01-T09 sont livrés en lecture seule. Le triage a rejoint `main` par
+la [PR #1](https://github.com/FlorianBruniaux/wt-sweep/pull/1), commit `ddda77d`.
+`review` regroupe découverte et revue ; le rapport distingue `keep`,
+`cleanup_candidate` et `verify`, avec cibles, faits locaux, histoire et conditions
+manquantes. Le [checkpoint T01-T09](finish-ledger.md#triage-t01-t09) contient les
+vérifications finales et l'essai réel : 48 worktrees, 3 `keep`, 45 `verify`, aucun
+candidat. Les budgets empêchent encore une analyse complète de ce gros dépôt.
+
+La [livraison GitHub](finish-ledger.md#livraison-github-du-06102026) sépare la CI
+réussie avant fusion de la vérification du commit fusionné. La
+[feuille de route](roadmap.md) garde le diagnostic de performance prioritaire.
+E1 reste non démontrée et `apply` indisponible.
+
+## Historique U1-U4 et RETEX, 04-05/10/2026
+
+Les sections suivantes conservent les résultats, l'état Git et les limites de
+leurs dates d'observation. Leurs chiffres ne décrivent pas le triage courant.
 
 Le 04/10/2026, le MVP macOS U1 à U4 est implémenté et vérifié sur des familles
 Git jetables : inventaire, découverte, rapport local et import forge. La table

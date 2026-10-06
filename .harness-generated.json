@@ -1,16 +1,16 @@
 {
   "files": {
-    ".claude/agents/sweep-explorer.md": "afd63faf5ba372265e7396aa0ac343222167d6e86266772454685ebb85c5802f",
-    ".claude/agents/sweep-implementer.md": "c6996d94a22b9cf059606e2ad6e90af2bf7e9ac680428d556c113e5bccdd9e18",
-    ".claude/agents/sweep-reviewer.md": "85a4430b91a094cefa8757d57da5fcebc541e8889e545766c97e716e732f6ad3",
-    ".claude/agents/sweep-test-engineer.md": "96d40a02e916b2a7212cf58b255add51a15e023bc00ce897c46573d08760cf53",
-    ".codex/agents/sweep-explorer.toml": "5fdf6b4b3d6fb10162691450b01e91eaf709104c29bc69ced3cce931a868c971",
-    ".codex/agents/sweep-implementer.toml": "452baa9c0ec1fa2886ed442c15d1f9972180c3880d6489a0982ac410bfd9d1ef",
-    ".codex/agents/sweep-reviewer.toml": "1fbf67918c6f88e72c329a454a709c0477ba17d3d2e2424f1d34776f17dc38bd",
-    ".codex/agents/sweep-test-engineer.toml": "068872115ba8265d74f97538764cbbf4f9a8d893b7e57b8d13bce9efe6a7201f",
+    ".claude/agents/sweep-explorer.md": "46c2d4512cee265900fee0c2fb8100b6bdb9e57a5b1a382f7b3e394bd406240c",
+    ".claude/agents/sweep-implementer.md": "4fcfa842d3a5f821aed9b62bd8fb9a66d0a673092cb47648e96b2d9a2a52d4a0",
+    ".claude/agents/sweep-reviewer.md": "fb4ce9e5de5b1b94ae8336d42f6dea9b5689628c2783e0282002eee3ad0d4fed",
+    ".claude/agents/sweep-test-engineer.md": "e8cc83dbcafc00e066c6b0189a1b963cd78b971754ef8783ba68918424a8f848",
+    ".codex/agents/sweep-explorer.toml": "e092671ccf3d12d248ec9c62ede0919b0230be7dc603026966bde8fc5d9a39ec",
+    ".codex/agents/sweep-implementer.toml": "53b5ee5d34bbe732dee7e26ad8437f5bfa98c5d1596ea0906442805266e6ec4c",
+    ".codex/agents/sweep-reviewer.toml": "ae0093b5f45f7dd4725bed46571678e2d92f8bad10c15df1acda85226289e366",
+    ".codex/agents/sweep-test-engineer.toml": "eacf0dfd55c2cec03a7c510627c8e5457dcf51cfd7cf496f34595bd4b0f6d9e3",
     ".codex/config.toml": "e77e41da883ae8393d3f7cd4f2bef92eaf4740fc5c2039ad987d3c31d24075d2",
-    "AGENTS.md": "801e08b600786424e60ba6a7496666d9bd3b0641d1f4e9d706668a363e99779c",
-    "CLAUDE.md": "801e08b600786424e60ba6a7496666d9bd3b0641d1f4e9d706668a363e99779c"
+    "AGENTS.md": "9bc32dae874bb96ecc37c8a3bf533e93ae306550e8d1a7fdcd4c390e5025d1c1",
+    "CLAUDE.md": "9bc32dae874bb96ecc37c8a3bf533e93ae306550e8d1a7fdcd4c390e5025d1c1"
   },
   "schema": "wt-sweep.harness/1"
 }
