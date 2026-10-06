@@ -1,0 +1,21 @@
+.github/workflows/ci.yml
+  s_160b3107588443::t_d6e1608f769116 14
+CHANGELOG.md
+  s_160b3107588443::t_42772d92c49db2 160-162
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "bfeb7967d4528fb204b885368240e227102c48c0",
+  "prompts": {},
+  "sessions": {
+    "s_160b3107588443": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a106f2-069b-7be2-aa09-88b1bbf2331e",
+        "model": "gpt-6-astra"
+      },
+      "human_author": "Florian BRUNIAUX <florian@bruniaux.com>"
+    }
+  }
+}
