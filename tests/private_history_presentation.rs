@@ -52,6 +52,7 @@ fn facts() -> Observations {
         context: None,
         inventory: Inventory::new(ScanScope::Repo { path }),
         history_metrics: HistoryMetrics::default(),
+        collection_metrics: None,
         shared_stashes: vec![FamilyStashes {
             common_dir: common,
             identity: Identity {

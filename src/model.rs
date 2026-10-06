@@ -533,6 +533,22 @@ pub struct HistoryMetrics {
     pub stop_reason: Option<String>,
 }
 
+/// Collection telemetry is diagnostic only; it never satisfies a decision condition.
+#[derive(Clone, Debug, Default, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct CollectionMetrics {
+    pub budget_profile: String,
+    pub applied_limits: std::collections::BTreeMap<String, u64>,
+    pub phases: Vec<CollectionPhase>,
+}
+#[derive(Clone, Debug, Default, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct CollectionPhase {
+    pub name: String,
+    pub elapsed_ms: u64,
+    pub counters: std::collections::BTreeMap<String, u64>,
+}
+
 /// File hashes or directory membership digests from bounded administration reads.
 #[derive(Clone, Debug, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
@@ -678,6 +694,7 @@ pub struct Observations {
     pub inventory: Inventory,
     pub shared_stashes: Vec<FamilyStashes>,
     pub history_metrics: HistoryMetrics,
+    pub collection_metrics: Option<CollectionMetrics>,
     pub items: Vec<ReviewItem>,
     pub forge: Option<ForgeExport>,
     pub started_unix_ms: u64,
@@ -694,6 +711,8 @@ pub struct Review {
     pub shared_stashes: Vec<FamilyStashes>,
     #[serde(default)]
     pub history_metrics: HistoryMetrics,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub collection_metrics: Option<CollectionMetrics>,
     pub policy_version: String,
     pub inventory_sha256: String,
     pub digest_sha256: String,

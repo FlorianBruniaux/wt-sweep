@@ -51,8 +51,22 @@ impl Default for PrivateHistoryLimits {
     }
 }
 impl PrivateHistoryLimits {
+    pub fn thorough() -> Self {
+        Self {
+            roots: 4096,
+            anchors: 4096,
+            pending_oids: 65536,
+            object_reads: 65536,
+            object_bytes: 128 * 1024 * 1024,
+            traversal_steps: 262144,
+            per_root_steps: 65536,
+            git_processes: 65536,
+            timeout: Duration::from_secs(300),
+            ..Self::default()
+        }
+    }
     fn validate(&self) -> Result<(), SweepError> {
-        let d = Self::default();
+        let d = Self::thorough();
         for (v, max) in [
             (self.source_entries, d.source_entries),
             (self.source_bytes, d.source_bytes),
@@ -135,6 +149,16 @@ struct FamilySources<'a> {
     histories: Vec<(BytePath, PathBuf, Vec<usize>)>,
     stash_sources: Vec<usize>,
 }
+#[derive(Clone, Debug, Default)]
+pub(super) struct PrivateHistoryMetrics {
+    pub(super) object_read_attempts: u64,
+    pub(super) object_bytes: u64,
+    pub(super) git_processes: u64,
+    pub(super) object_cache_hits: u64,
+    pub(super) traversal_steps: u64,
+    pub(super) anchors_verified: u64,
+    pub(super) roots_enumerated: u64,
+}
 pub(super) struct PrivateHistoryRun<'a> {
     pub(super) output: PrivateHistoryCollection,
     families: Vec<FamilySources<'a>>,
@@ -144,6 +168,8 @@ pub(super) struct PrivateHistoryRun<'a> {
     pub(super) stopped_families: BTreeMap<FamilyId, GitRead>,
     objects: BTreeMap<ObjectKey, ObjectResult>,
     reads: usize,
+    cache_hits: usize,
+    anchors_verified: usize,
     bytes: usize,
     steps: usize,
     processes: usize,
@@ -328,6 +354,17 @@ fn parse_path(raw: &[u8]) -> Result<PathBuf, SweepError> {
     Ok(p)
 }
 impl<'a> PrivateHistoryRun<'a> {
+    pub(super) fn metrics(&self) -> PrivateHistoryMetrics {
+        PrivateHistoryMetrics {
+            object_read_attempts: self.reads as u64,
+            object_bytes: self.bytes as u64,
+            git_processes: self.processes as u64,
+            object_cache_hits: self.cache_hits as u64,
+            traversal_steps: self.steps as u64,
+            anchors_verified: self.anchors_verified as u64,
+            roots_enumerated: self.roots as u64,
+        }
+    }
     fn id(f: &Family) -> FamilyId {
         (f.identity.device, f.identity.inode)
     }
@@ -374,6 +411,7 @@ impl<'a> PrivateHistoryRun<'a> {
         let oid = canonical.as_str();
         let key = (Self::id(f), kind.into(), oid.into());
         if let Some(raw) = self.objects.get(&key) {
+            self.cache_hits += 1;
             return raw.clone();
         }
         if self.reads >= self.limits.object_reads || self.bytes >= self.limits.object_bytes {
@@ -563,76 +601,173 @@ impl<'a> PrivateHistoryRun<'a> {
             }
         }
     }
-    fn coverage(&mut self, f: &Family, h: &mut PrivateHistory, anchors: &[RetainedAnchor]) {
-        for root in &mut h.roots {
-            if let Err(e) = self.commit(f, &root.oid) {
-                root.reason = Some(format!(
-                    "private root is unavailable or not a verified commit: {e}"
-                ));
-                continue;
-            }
-            // A direct retained identity is considered before a potentially costly graph.
-            if let Some(anchor) = anchors.iter().find(|a| a.oid == root.oid) {
-                root.result = "covered".into();
-                root.anchor = Some(anchor.clone());
-                continue;
-            }
-            let mut complete = h.anchors_complete;
-            let mut reason = None;
-            let mut spent = 0;
-            'anchors: for anchor in anchors {
-                let mut queue = VecDeque::from([anchor.oid.clone()]);
-                let mut visited = BTreeSet::new();
-                while let Some(oid) = queue.pop_front() {
-                    if visited.contains(&oid) {
+    fn coverage(
+        &mut self,
+        f: &Family,
+        histories: &mut [(BytePath, PrivateHistory)],
+        anchors: &[RetainedAnchor],
+    ) {
+        let mut anchor_oids: BTreeMap<String, Vec<usize>> = BTreeMap::new();
+        for (index, anchor) in anchors.iter().enumerate() {
+            anchor_oids
+                .entry(anchor.oid.clone())
+                .or_default()
+                .push(index);
+        }
+        let mut verified_anchors = BTreeSet::new();
+        let mut roots = BTreeSet::new();
+        // Direct identities get first use of the object allowance across the family.
+        // They need neither a complete anchor set nor a graph walk. Remaining roots
+        // are verified before unrelated anchor objects are explored.
+        for direct in [true, false] {
+            for (_, h) in histories.iter_mut() {
+                for root in &mut h.roots {
+                    let indices = anchor_oids.get(&root.oid);
+                    if indices.is_some() != direct {
                         continue;
                     }
-                    if spent >= self.limits.per_root_steps
-                        || self.steps >= self.limits.traversal_steps
-                        || queue.len() + visited.len() >= self.limits.pending_oids
-                    {
-                        complete = false;
-                        reason = Some("private ancestry traversal budget reached".into());
-                        break;
+                    if let Err(e) = self.commit(f, &root.oid) {
+                        root.reason = Some(format!(
+                            "private root is unavailable or not a verified commit: {e}"
+                        ));
+                        continue;
                     }
-                    spent += 1;
-                    self.steps += 1;
-                    visited.insert(oid.clone());
-                    match self.commit(f, &oid) {
-                        Ok(commit) => {
-                            if oid == root.oid {
-                                root.result = "covered".into();
-                                root.anchor = Some(anchor.clone());
-                                break 'anchors;
-                            }
-                            for parent in commit.parents {
-                                if queue.len() + visited.len() >= self.limits.pending_oids {
-                                    complete = false;
-                                    reason =
-                                        Some("private ancestry pending OID budget reached".into());
-                                    break;
-                                }
-                                queue.push_back(parent);
-                            }
-                        }
-                        Err(e) => {
-                            complete = false;
-                            reason = Some(format!(
-                                "retained anchor traversal incomplete or unsupported: {e}"
-                            ));
-                        }
+                    if let Some(indices) = indices {
+                        verified_anchors.extend(indices.iter().copied());
+                        root.result = "covered".into();
+                        root.anchor = Some(anchors[indices[0]].clone());
+                    } else {
+                        roots.insert(root.oid.clone());
                     }
                 }
             }
-            if root.result != "covered" {
-                if complete {
+        }
+        // Each verified vertex records a witness anchor. Parents are admitted only
+        // from verified commits, so a partial union still supports positive paths.
+        // Missing objects or a dropped frontier permanently forbid union negatives.
+        // A small family-wide scheduling quantum favors paths from anchors that
+        // already cover a private root. It spends the ordinary budgets and adds no
+        // second graph/cache. Any unfinished priority frontier joins the full union.
+        const WARM_STEPS: usize = 32;
+        let mut warm = VecDeque::new();
+        let mut warm_steps = 0;
+        let mut queue = VecDeque::new();
+        let mut scheduled = BTreeSet::new();
+        let mut covered = BTreeMap::new();
+        let mut incomplete = None;
+        let mut invalid_anchor = false;
+        for priority in [true, false] {
+            for (oid, indices) in &anchor_oids {
+                if verified_anchors.contains(&indices[0]) != priority {
+                    continue;
+                }
+                if scheduled.len() >= self.limits.pending_oids {
+                    incomplete = Some("private ancestry pending OID budget reached".to_string());
+                    break;
+                }
+                scheduled.insert(oid.clone());
+                if priority {
+                    warm.push_back((oid.clone(), indices[0]));
+                } else {
+                    queue.push_back((oid.clone(), indices[0]));
+                }
+            }
+        }
+        for root in &roots {
+            let mut spent = 0;
+            while !covered.contains_key(root) && (!queue.is_empty() || !warm.is_empty()) {
+                if spent >= self.limits.per_root_steps
+                    || self.steps >= self.limits.traversal_steps
+                    || self.started.elapsed() >= self.limits.timeout
+                {
+                    break;
+                }
+                if warm_steps >= WARM_STEPS {
+                    queue.append(&mut warm);
+                }
+                let priority = !warm.is_empty();
+                let next = if priority {
+                    warm_steps += 1;
+                    warm.pop_front()
+                } else {
+                    queue.pop_front()
+                };
+                let Some((oid, witness)) = next else {
+                    break;
+                };
+                spent += 1;
+                self.steps += 1;
+                match self.commit(f, &oid) {
+                    Ok(commit) => {
+                        if let Some(indices) = anchor_oids.get(&oid) {
+                            verified_anchors.extend(indices.iter().copied());
+                        }
+                        covered.insert(oid, witness);
+                        for parent in commit.parents {
+                            if scheduled.contains(&parent) {
+                                // A parent may already be a cold anchor. Move its
+                                // existing slot, never duplicate or uncharge it.
+                                if priority
+                                    && warm_steps < WARM_STEPS
+                                    && let Some(index) =
+                                        queue.iter().position(|(oid, _)| *oid == parent)
+                                    && let Some(entry) = queue.remove(index)
+                                {
+                                    warm.push_back(entry);
+                                }
+                                continue;
+                            }
+                            if scheduled.len() >= self.limits.pending_oids {
+                                incomplete.get_or_insert_with(|| {
+                                    "private ancestry pending OID budget reached".into()
+                                });
+                                continue;
+                            }
+                            scheduled.insert(parent.clone());
+                            if priority {
+                                warm.push_back((parent, witness));
+                            } else {
+                                queue.push_back((parent, witness));
+                            }
+                        }
+                    }
+                    Err(e) => {
+                        invalid_anchor |= anchor_oids.contains_key(&oid);
+                        incomplete.get_or_insert_with(|| {
+                            format!("retained anchor traversal incomplete or unsupported: {e}")
+                        });
+                    }
+                }
+            }
+        }
+        self.anchors_verified += verified_anchors.len();
+        for (_, h) in histories {
+            h.anchors_complete &= !invalid_anchor;
+            for root in &mut h.roots {
+                if root.result == "covered" || !roots.contains(&root.oid) {
+                    continue;
+                }
+                if let Some(witness) = covered.get(&root.oid) {
+                    root.result = "covered".into();
+                    root.anchor = Some(anchors[*witness].clone());
+                    root.reason = None;
+                } else if queue.is_empty()
+                    && warm.is_empty()
+                    && incomplete.is_none()
+                    && h.anchors_complete
+                {
                     root.result = "not_preserved_by_retained_refs".into();
                 } else {
-                    root.reason = Some(
-                        reason.unwrap_or_else(|| "retained anchor enumeration incomplete".into()),
-                    );
+                    root.reason = Some(incomplete.clone().unwrap_or_else(|| {
+                        if queue.is_empty() && warm.is_empty() {
+                            "retained anchor enumeration incomplete".into()
+                        } else {
+                            "private ancestry traversal budget reached".into()
+                        }
+                    }));
                 }
             }
+            h.finished_unix_ms = now_ms();
         }
     }
     pub(super) fn collect(
@@ -659,6 +794,8 @@ impl<'a> PrivateHistoryRun<'a> {
             stopped_families: stopped.clone(),
             objects: BTreeMap::new(),
             reads: 0,
+            cache_hits: 0,
+            anchors_verified: 0,
             bytes: 0,
             steps: 0,
             processes: 0,
@@ -840,11 +977,6 @@ impl<'a> PrivateHistoryRun<'a> {
         }
         anchors.sort_by(|a, b| a.reference.cmp(&b.reference));
         let mut anchors_complete = backend_ok && anchor_gaps.is_empty();
-        for anchor in &anchors {
-            if self.commit(f, &anchor.oid).is_err() {
-                anchors_complete = false;
-            }
-        }
         let mut anchor_proofs = BTreeMap::new();
         for anchor in &anchors {
             let mut name = anchor.reference.bytes()?;
@@ -963,7 +1095,6 @@ impl<'a> PrivateHistoryRun<'a> {
                         .map(|i| sources.records[*i].clone())
                         .collect();
                     h.gaps.extend(anchor_gaps.clone());
-                    self.coverage(f, &mut h, &anchors);
                     h.roots.sort_by(|a, b| a.oid.cmp(&b.oid));
                     h.finished_unix_ms = now_ms();
                     histories.push((worktree.path.clone(), dir, indices));
@@ -974,6 +1105,21 @@ impl<'a> PrivateHistoryRun<'a> {
                 }
             }
             self.output.histories.insert(worktree.path.clone(), h);
+            self.bound_output()?;
+        }
+        let mut collected = f
+            .worktrees
+            .iter()
+            .filter_map(|worktree| {
+                self.output
+                    .histories
+                    .remove(&worktree.path)
+                    .map(|h| (worktree.path.clone(), h))
+            })
+            .collect::<Vec<_>>();
+        self.coverage(f, &mut collected, &anchors);
+        for (path, history) in collected {
+            self.output.histories.insert(path, history);
             self.bound_output()?;
         }
         let stash_first = sources.records.len();
@@ -1780,3 +1926,131 @@ fn invalidate_private(h: &mut PrivateHistory, reason: &str) {
 #[cfg(all(test, unix))]
 #[path = "private_deadline_tests.rs"]
 mod deadline_tests;
+
+#[cfg(all(test, unix))]
+#[allow(clippy::unwrap_used, clippy::expect_used)]
+mod priority_tests {
+    use super::*;
+    use std::process::{Command, Stdio};
+
+    struct Fixture(PathBuf);
+    impl Fixture {
+        fn new() -> Self {
+            let path = PathBuf::from(format!(
+                "/private/tmp/wt-sweep-private-priority-{}-{}",
+                std::process::id(),
+                std::time::SystemTime::now()
+                    .duration_since(std::time::UNIX_EPOCH)
+                    .unwrap()
+                    .as_nanos()
+            ));
+            fs::create_dir(&path).unwrap();
+            let fixture = Self(path);
+            fixture.git(&["init", "--template=", "-b", "main"]);
+            fs::write(fixture.0.join("file"), b"synthetic\n").unwrap();
+            fixture.git(&["add", "file"]);
+            fixture.git(&["commit", "-m", "root"]);
+            fixture
+        }
+        fn git(&self, args: &[&str]) -> String {
+            let mut child = Command::new("/usr/bin/git")
+                .env_clear()
+                .env("PATH", "/usr/bin:/bin")
+                .env("GIT_CONFIG_NOSYSTEM", "1")
+                .env("GIT_CONFIG_GLOBAL", "/dev/null")
+                .env("GIT_ALLOW_PROTOCOL", "")
+                .env("GIT_NO_LAZY_FETCH", "1")
+                .env("GIT_AUTHOR_NAME", "Fixture")
+                .env("GIT_AUTHOR_EMAIL", "fixture@example.invalid")
+                .env("GIT_COMMITTER_NAME", "Fixture")
+                .env("GIT_COMMITTER_EMAIL", "fixture@example.invalid")
+                .args(["-c", "core.hooksPath=/dev/null", "-c", "gc.auto=0", "-C"])
+                .arg(&self.0)
+                .args(args)
+                .stdin(Stdio::null())
+                .stdout(Stdio::piped())
+                .stderr(Stdio::piped())
+                .spawn()
+                .unwrap();
+            let started = Instant::now();
+            while child.try_wait().unwrap().is_none() {
+                if started.elapsed() >= Duration::from_secs(15) {
+                    let _ = child.kill();
+                    let _ = child.wait();
+                    panic!("owned priority fixture Git exceeded deadline");
+                }
+                std::thread::sleep(Duration::from_millis(5));
+            }
+            let output = child.wait_with_output().unwrap();
+            assert!(
+                output.status.success(),
+                "{}",
+                String::from_utf8_lossy(&output.stderr)
+            );
+            String::from_utf8(output.stdout).unwrap().trim().into()
+        }
+    }
+    impl Drop for Fixture {
+        fn drop(&mut self) {
+            let _ = fs::remove_dir_all(&self.0);
+        }
+    }
+
+    #[test]
+    fn useful_anchor_priority_counts_native_children() {
+        let fixture = Fixture::new();
+        let root = fixture.git(&["rev-parse", "main"]);
+        let tree = fixture.git(&["rev-parse", "main^{tree}"]);
+        let middle = fixture.git(&["commit-tree", &tree, "-p", &root, "-m", "middle"]);
+        let head = fixture.git(&["commit-tree", &tree, "-p", &middle, "-m", "head"]);
+        fixture.git(&["update-ref", "refs/heads/main", &head]);
+        fs::write(fixture.0.join(".git/ORIG_HEAD"), format!("{root}\n")).unwrap();
+        for n in 0..64 {
+            let oid = fixture.git(&["commit-tree", &tree, "-m", &format!("independent {n}")]);
+            fs::write(
+                fixture.0.join(format!(".git/refs/heads/noise-{n}")),
+                format!("{oid}\n"),
+            )
+            .unwrap();
+        }
+        let inventory = crate::git::scan_family(&fixture.0).unwrap();
+        let targets =
+            FamilyTargets::bind_with(&inventory, TargetInput::Simple(&[]), &NativeHooks).unwrap();
+        crate::git::take_child_read_journal();
+        let mut run = PrivateHistoryRun::collect(
+            &inventory,
+            &targets,
+            &PrivateHistoryLimits::default(),
+            &NativeHooks,
+            &BTreeMap::new(),
+        )
+        .unwrap();
+        let children = crate::git::take_child_read_journal();
+        let commit_oids = children
+            .iter()
+            .filter_map(|(_, op)| match op {
+                GitRead::Commit { oid } => Some(oid.clone()),
+                _ => None,
+            })
+            .collect::<Vec<_>>();
+        // This journal is recorded at the actual child boundary, independently of
+        // the private collector's counters and caches. No unrelated OID is read.
+        assert_eq!(commit_oids.len(), 3, "{commit_oids:?}");
+        assert_eq!(
+            commit_oids.into_iter().collect::<BTreeSet<_>>(),
+            BTreeSet::from([root, middle, head])
+        );
+        assert_eq!(run.metrics().object_read_attempts, 3);
+        assert_eq!(run.metrics().traversal_steps, 3);
+        assert_eq!(run.metrics().anchors_verified, 1);
+        assert_eq!(run.metrics().git_processes, children.len() as u64);
+        run.finish(&inventory, &BTreeMap::new()).unwrap();
+        assert!(
+            run.output
+                .histories
+                .values()
+                .flat_map(|h| &h.roots)
+                .all(|root| root.result == "covered")
+        );
+    }
+}

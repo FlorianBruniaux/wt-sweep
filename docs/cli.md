@@ -17,7 +17,7 @@ wt-sweep scan (--repo PATH | --root PATH... | --all)
   [--out FILE | --run-dir BASE]
 
 wt-sweep plan --inventory FILE [--target FULL_REF... | --target-map FILE]
-  [--worktree ABSOLUTE_PATH] [--filter-repo PATH] [--path-prefix PATH] [--branch FULL_REF]
+  [--budget standard|thorough] [--worktree ABSOLUTE_PATH] [--filter-repo PATH] [--path-prefix PATH] [--branch FULL_REF]
   [--local-state clean|dirty|unknown] [--verdict keep|cleanup_candidate|verify]
   [--group-by repo|directory] [--forge FILE]
   [--changelog-path RELATIVE... | --no-context] [--summary] [--format json|table]
@@ -107,6 +107,7 @@ overwritten or removed.
 | `--inventory FILE` | Required saved `wt-sweep.inventory/1` artifact. |
 | `--target FULL_REF` | Explicit integration ref under `refs/heads/` or `refs/remotes/`; repeat for several. Requires one physical repository family. No default is guessed. |
 | `--target-map FILE` | `wt-sweep.targets/1` mapping of physical families to explicit refs. Cannot combine with `--target`. Missing families get no target. |
+| `--budget PROFILE` | `standard` by default; `thorough` selects larger finite local, history, deep-object and private-history allowances. Available on `review` and `plan`, not `scan` or forge commands. |
 | `--worktree ABSOLUTE_PATH` | Collect history, local files, private history and context for one exact recorded path. Full inventory, registration/control checks and unselected rows remain. This is a fresh targeted collection, not a resumed snapshot. |
 | `--filter-repo PATH` | Select a family by its exact common directory or a registered main/linked checkout path in the input inventory. No alias resolution. |
 | `--path-prefix PATH` | Select absolute path components: `/a` includes `/a/one`, not `/ab`. Parent traversal is refused. |
@@ -183,6 +184,18 @@ does not establish successful publication.
 
 ## Resource limits
 
+`--budget standard` preserves the default ceilings below. Start there, read the
+saved gaps and `collection_metrics`, then retry one exact `--worktree` with
+`--budget thorough` when an object, byte, traversal or phase ceiling caused
+missing evidence. Use a new run directory. A whole-family thorough run is a
+separate, explicitly chosen collection after inspecting that focused result.
+The larger caps are allowances, not throughput or completion guarantees.
+
+Neither profile excludes ignored or hidden content. Controls, index/path limits,
+private roots/anchors/source-entry limits, optional context and publication caps
+remain bounded. A missing object, access failure, changed identity or unsupported
+index can still leave evidence unknown with `thorough`.
+
 `review` and `plan` write readable progress to stderr. The final `--summary` recap
 separates discovery, local collection and decision checks, and groups recurring
 history budgets, local budgets and Git timeouts. Other item-specific gaps remain
@@ -219,7 +232,7 @@ to the budget; it does not guarantee that every summary finishes. A targeted
 `--worktree` retry spends the local allowance on one path while still checking
 the surrounding registrations and preserving the original inventory.
 
-| Scope | Default ceiling |
+| Scope | Standard ceiling |
 | --- | --- |
 | Root/global discovery | 1,000,000 entries, 100,000 directories, depth 256, 60 seconds |
 | Discovery observation records | Soft 24 MiB serialized-record budget. Collection stops after the bounded operation that crosses it; pending traversal storage has separate entry limits. This is not a resident-memory ceiling. |
@@ -252,12 +265,66 @@ complete source and digest contract; narrow the scan scope and retry.
 The whole-scan content budget counts published hashed content, not all possible
 rereads. Limit hits produce explicit gaps or a command refusal. Deadlines bound
 controlled work; a syscall blocked in the kernel may not return immediately.
-These ceilings are not performance measurements. Only `--workers` is exposed
-as a resource-setting CLI option.
+These ceilings are not performance measurements. `--workers` controls metadata
+concurrency; `--budget` selects the review allowances below. Neither adds a
+resumable checkpoint or a deadline override.
 
 Commit subjects are bounded to 240 bytes. Human output escapes control bytes
 and bounds descriptive titles and links. Descriptions never affect classification;
 the JSON retains the full HEAD and evidence needed to interpret the result.
+
+## Thorough allowances
+
+All values not listed here retain the standard ceiling. MiB means 1,048,576
+bytes. Traversal steps and object reads count different operations.
+
+| Review phase | Standard | Thorough |
+| --- | --- | --- |
+| Local objects per worktree | 4,096 | 65,536 |
+| Local cumulative bytes per worktree | 128 MiB | 512 MiB |
+| Local worktree timeout / shared phase timeout | 30 s / 120 s | 120 s / 900 s |
+| Commit-history reads / returned bytes | 2,048 / 32 MiB | 65,536 / 128 MiB |
+| Commit-history total steps / steps per target | 65,536 / 512 | 262,144 / 65,536 |
+| Commit-history phase allowance | 60 s | 300 s |
+| Deep-object reads / returned bytes | 2,048 / 32 MiB | 65,536 / 256 MiB |
+| Deep total steps / steps per target | 65,536 / 512 | 262,144 / 65,536 |
+| Deep phase allowance | 60 s | 300 s |
+| Private-history reads / returned bytes | 2,048 / 32 MiB | 65,536 / 128 MiB |
+| Private-history total steps / steps per root | 65,536 / 512 | 262,144 / 65,536 |
+| Private pending OIDs / Git processes | 4,096 / 4,096 | 65,536 / 65,536 |
+| Private-history phase allowance | 60 s | 300 s |
+
+Private source entries, roots and anchors remain capped at 4,096. Controlled Git
+calls still have their own timeout and output cap. Local time is shared across
+remaining worktrees up to each worktree's individual ceiling. A larger family
+can therefore give each worktree less than its maximum allowance.
+
+## Collection metrics and console results
+
+Current `wt-sweep.review/2` reports can include optional `collection_metrics`:
+`budget_profile`, a numeric `applied_limits` map, and `phases` entries with
+`name`, `elapsed_ms` and `counters`. The phases describe controls, commit history,
+local files, deep objects, private history, final revalidation and optional
+context when enabled. Counter keys
+are phase-specific; an absent key does not mean zero work.
+
+Applied limits state what was allowed. Counters state what was observed.
+Elapsed time does not tell which cap stopped collection; read the matching gaps
+and stop reasons. Object-read attempts, returned bytes, Git process counts and
+cache hits are distinct measurements. Do not compare them as interchangeable
+units or treat a large count as proof of complete evidence.
+
+These phase timings include optional context when enabled, but exclude
+discovery and publication; they are not the whole command duration. `history_metrics` remains the history-specific record.
+Existing version-2 reports without `collection_metrics` remain readable by the
+current reader; missing metrics mean no recorded telemetry. Older strict readers
+may need an update to accept the new optional field.
+
+The console's `Resolved verdicts` counts `keep` plus `cleanup_candidate`, with
+`verify` listed separately. A positive retention reason can resolve `keep` even
+when other candidate conditions remain unknown. `CHECKS STILL NEEDED` lists
+conditions for unresolved rows; `COLLECTION TIME` shows recorded phase timings.
+All source gaps remain in JSON and the detailed report.
 
 ## Exit codes
 

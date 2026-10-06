@@ -152,7 +152,10 @@ La section `RESULTS` doit afficher `Keep: 2`, `Cleanup candidates: 1` et
 `COVERAGE` distingue les contrôles locaux complets, partiels et non collectés.
 Une découverte complète ne signifie pas que l’analyse des fichiers ou de
 l’historique est complète. `CHECKS STILL NEEDED` indique les conditions manquantes ;
-`COLLECTION LIMITS` regroupe les limites de collecte observées.
+`COLLECTION LIMITS` regroupe les limites de collecte observées. `Resolved
+verdicts` compte les `keep` et candidats ; un `keep` peut conserver des contrôles
+incomplets sans redevenir `verify`. `CHECKS STILL NEEDED` décrit les lignes
+encore à résoudre. `COLLECTION TIME` donne les temps enregistrés par phase.
 Le chemin du rapport détaillé figure dans `REPORT`.
 L’absence d’export forge reste inconnue ; le reçu peut être `partial` malgré le code `0`.
 
@@ -269,7 +272,7 @@ Reste dans ce périmètre. Ne lance ni découverte globale, ni fetch, prune, gc,
 
 Donne les commandes réellement exécutées, leurs codes de sortie, les chemins d’artefacts et leur reçu. Pour chaque worktree, présente chemin, branche, HEAD complet, verdict, raisons et conditions manquantes. Distingue faits observés, relations du graphe et preuves approfondies d’intégration. Décris fichiers locaux, histoire privée, stashes partagés et contexte de commits/changelog lorsqu’ils ont été observés, avec leurs limites.
 
-Explique les compteurs complets, bornes minimales et inconnus. Pour une vue filtrée, conserve totaux et lacunes source. Après interruption ou limite, donne la raison, la portée restante et une commande de relance ciblée vers une nouvelle sortie. Une progression seule n’est pas un rapport sauvegardé.
+Explique les compteurs complets, bornes minimales et inconnus. Pour une vue filtrée, conserve totaux et lacunes source. Après interruption ou limite, donne la raison, la portée restante et une commande de relance ciblée vers une nouvelle sortie. Une progression seule n’est pas un rapport sauvegardé. Commence avec le profil standard. Si les plafonds causent les preuves manquantes, inspecte les faits sauvés puis propose un nouveau passage ciblé --worktree avec --budget thorough. Examine ce résultat avant une collecte thorough de la famille complète. Distingue plafonds autorisés, temps par phase et lectures réellement observées ; un plafond accru ne garantit pas la complétude.
 
 Ne transforme ni cleanup_candidate en autorisation de suppression, ni un manifeste en sauvegarde. L’usage des candidats reste à confirmer. Les archives review/1 sont historiques et ne satisfont pas les contrôles courants C5. Termine par les vérifications humaines requises et les limites réellement observées. Ne déduis pas une couverture machine de cet essai par dépôt.
 ```
@@ -294,9 +297,11 @@ avec un extrait expurgé selon les [consignes de contribution](../CONTRIBUTING.m
 
 ## Approfondir un worktree après une analyse partielle
 
-Une limite de collecte ne signifie pas que le worktree est propre. Pour reprendre
-les contrôles d’un chemin précis, lancer ce bloc depuis le checkout de `wt-sweep`
-après compilation. Saisir le chemin exact affiché dans le rapport précédent.
+Commencez avec `standard`, le profil par défaut, puis lisez le rapport sauvegardé.
+Une limite de collecte ne signifie pas que le worktree est propre. Si le plafond
+standard explique les preuves manquantes, le bloc suivant réserve les lectures
+à un chemin précis avec le profil `thorough`. Lancez-le depuis le checkout de
+`wt-sweep` après compilation et saisissez le chemin exact du rapport précédent.
 
 ```sh
 (
@@ -310,7 +315,7 @@ après compilation. Saisir le chemin exact affiché dans le rapport précédent.
   report_dir="$(mktemp -d /private/tmp/wt-sweep-report.XXXXXX)"
   ./target/release/wt-sweep review --repo "$repo_path" --target "$target_ref" \
     --worktree "$worktree_path" --path-prefix "$worktree_path" \
-    --summary --run-dir "$report_dir"
+    --budget thorough --summary --run-dir "$report_dir"
   printf 'Rapports : %s\n' "$report_dir"
 )
 ```
@@ -319,3 +324,14 @@ Ce passage réserve les lectures de fichiers et d’histoire au chemin choisi.
 L’inventaire complet et les contrôles d’identité restent présents ; les autres
 lignes portent leurs preuves manquantes. Les plafonds par worktree continuent
 à s’appliquer. Le nouveau rapport ne complète pas rétroactivement l’ancien.
+
+Lisez `collection_metrics`, lorsqu’il existe : `budget_profile` nomme le profil,
+`applied_limits` indique les plafonds autorisés, et `phases` sépare temps et
+compteurs. Le contexte facultatif est chronométré lorsqu’il est activé ; les temps
+de phase excluent la découverte et la publication. Les lectures d’objets, octets et sous-processus ne sont pas la même
+mesure. Gardez les causes d’arrêt et les lacunes avec ces chiffres.
+
+Inspectez ce passage ciblé avant de choisir une revue `thorough` de la famille
+complète. Les plafonds plus grands restent finis ; ils ne garantissent pas le
+débit ni la complétude. Ils n’excluent ni fichiers ignorés ni dossiers cachés.
+Les [limites par profil](cli.md#thorough-allowances) précisent les différences.

@@ -224,3 +224,59 @@ Lors du contrôle du 06/10 à 06:37 Europe/Paris, la
 était encore en cours, après formatage et Clippy réussis. Ce relevé daté ne
 remplace pas le statut courant du workflow. Aucun paquet ni binaire n'a été
 publié. Les limites de l'essai réel et les conditions E1/U5-U7 restent ouvertes.
+
+
+## Complétion des gros dépôts A1-A6
+
+Le développement utilise le checkout isolé `codex/large-repo-completion`.
+L’intégrateur possède les contrats, le CLI, la collecte approfondie et la
+livraison. Un agent écrit les oracles CLI indépendants, un autre la collecte
+locale et le transport, un troisième l’histoire privée. La documentation et
+le skill ont leur propriétaire distinct. Les relectures ne sont pas faites par
+l’auteur de l’implémentation concernée.
+
+Le lancement des nouveaux agents a accepté `gpt-6.1-sol/high` pour les oracles et
+`gpt-6-astra/high` pour la revue. Les agents déjà présents ont été repris dans
+leur rôle. Ces paramètres demandés ne constituent ni mesure comparative des
+modèles ni attestation du fournisseur effectif. Les profils recommandés du skill
+restent séparés des réglages de cette session de développement.
+
+Les positifs couvrent le candidat à 4 200 blobs distincts et 600 commits, puis
+la famille de 50 worktrees. Les témoins négatifs couvrent objets absents ou
+corrompus, travail non commité et histoire privée exclusive. La revue a trouvé
+un sous-comptage des processus approfondis et un délai public non validé ; les
+deux régressions ont échoué puis passé après correction. Les essais réels ont
+ensuite conduit à corriger la temporisation des flux Git et à prioriser les
+ancres privées déjà utiles, avec nouveaux témoins positifs et négatifs.
+
+Le dernier passage ciblé donne une rétention justifiée et des preuves Git
+courantes, mais garde ses lacunes locales. Aucun worktree réel n’est retiré,
+aucun fetch n’est exécuté et aucun scan global n’est déclenché. Le passage
+familial conserve 50 lignes et donne 49 `keep`, un `verify`, aucun
+candidat. Dix inventaires locaux sont complets et quarante restent partiels ;
+les phases locale et privée atteignent leurs plafonds. Le reçu et les empreintes
+des artefacts sont vérifiés.
+
+Validation finale observée sur le code livré :
+
+- Formatage et Clippy avec avertissements refusés : réussite.
+- Rust : 324 tests réussis, deux ignorés.
+- Python CLI : 271 tests réussis, six ignorés sur 277 cas recensés.
+- Expériences d’exclusion : 6 tests réussis ; E1 reste non démontrée.
+- Génération Claude/Codex : 22 fichiers synchronisés. Les deux sondes positives
+  et les deux négatives de routage passent pour chaque client. L’activation dans
+  une nouvelle session native reste non vérifiée.
+- Documentation : liens locaux, ancres et syntaxe des exemples shell vérifiés.
+
+Les six cas Python ignorés demandent soit des archives privées historiques,
+soit des noms de fichiers non UTF-8 refusés par ce système. Les deux cas Rust
+ignorés sont une reprise historique privée et un point d’entrée de sous-processus
+exercé par son test parent. Les suites ne valident pas ces archives absentes.
+
+Le binaire release final porte le SHA-256
+`a45fa0341f00cd5813723dc995b35ad16275b685abb3055189cbeef622a15770`.
+Les essais réels utilisaient le binaire figé identifié dans le
+[registre de collecte](collection-performance.md#checkpoint-a1-a6--fixtures-et-recette-réelle).
+Les corrections finales conservent les causes d’arrêt et les OID demandés dans
+les erreurs groupées ; leurs régressions passent dans les suites ci-dessus.
+La validation locale et le statut de la CI du commit publié restent distincts.

@@ -9,6 +9,17 @@ the Cargo package version is a development version.
 
 ### Added
 
+- `review` and `plan --budget standard|thorough` select finite collection
+  allowances. Standard preserves the previous defaults; thorough permits larger
+  local inventories, commit graphs and private-history checks. Applied limits
+  and phase counters are recorded in optional `collection_metrics`.
+- Large end-to-end Git fixtures cover a complete candidate with 4,200 distinct
+  blobs and 600 commits, private roots, missing/corrupt objects and a family of
+  50 worktrees. Their independent oracle checks source conservation.
+- Console recaps separate resolved verdicts from incomplete candidate evidence,
+  show collection time by phase and count missing checks on unresolved rows.
+  The assistant skill documents focused retries and their evidence limits.
+
 - `review` and `plan --worktree ABSOLUTE_PATH` focus history, local, private
   history and context collection on one recorded worktree. Other rows and the
   original inventory remain in the report with explicit missing evidence.
@@ -151,6 +162,12 @@ the Cargo package version is a development version.
 
 ### Changed
 
+- Deep candidate checks batch distinct blobs and reuse verified trees within the
+  current physical family and review, under the same object-integrity checks.
+- Private-history checks share one bounded ancestry union. Already useful
+  anchors receive up to 32 priority expansions before the ordinary frontier
+  resumes; complete negatives still require every required route to finish.
+
 - Separate README sections with horizontal rules in both languages, split navigation
   into two rows, and display the read-only status in a GitHub note.
 
@@ -198,6 +215,19 @@ the Cargo package version is a development version.
 - Kept local handoffs outside tracked source to avoid distributing private paths.
 
 ### Fixed
+
+- Git output collection waits for readable/writable descriptors instead of
+  sleeping after each producer burst. Input/output caps, deadlines, failed
+  exit checks and process-group cleanup remain enforced.
+- Count deep Git processes across all families and auxiliary reads; refuse
+  invalid public local-phase deadlines before collection starts.
+- Restore exhausted object/byte refusals before reading repository identity.
+- Preserve the original local byte-limit reason instead of reporting a later
+  check of an already stopped collector as a timeout.
+- Retain the requested full object IDs when a deep blob batch fails, without
+  attributing a batch timeout to an unverified individual object.
+- Wait for actual SIGINT-handler delivery in the isolated signal test after
+  sending one signal; the production handler is unchanged.
 
 - Separate commit-history and private-history phase deadlines from full Git-call
   timeouts. Budget exhaustion leaves the affected checks incomplete without

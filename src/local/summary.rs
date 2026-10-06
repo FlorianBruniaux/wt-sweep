@@ -34,9 +34,34 @@ impl Default for SummaryLimits {
         }
     }
 }
+impl SummaryLimits {
+    /// Explicit larger collection allowance; standard review retains its defaults.
+    pub fn thorough() -> Self {
+        Self {
+            max_objects: 65_536,
+            max_total_bytes: 512 * 1024 * 1024,
+            timeout: Duration::from_secs(120),
+            ..Self::default()
+        }
+    }
+}
+#[derive(Debug, Default)]
+pub(crate) struct SummaryMetrics {
+    /// Decoded payloads offered to object verification, including refused payloads.
+    pub object_reads: u64,
+    /// Raw payload bytes; excludes batch framing and metadata responses.
+    pub object_bytes: u64,
+    /// Children actually spawned, including failed reads.
+    pub git_processes: u64,
+    /// Same-run blob results reused by HEAD, index or disk comparisons.
+    pub cache_hits: u64,
+    /// Main disk metadata attempts, excluding administration markers.
+    pub paths_checked: u64,
+}
 pub(crate) struct SummaryOutcome {
     pub summary: LocalSummary,
     pub first_git_timeout: Option<GitRead>,
+    pub metrics: SummaryMetrics,
 }
 pub(crate) fn collect_summary_for_review(
     w: &Worktree,
@@ -59,6 +84,7 @@ fn observe(count: &mut LocalCount, path: &BytePath) {
 type TreePosition = (String, Vec<u8>, usize);
 struct Collector<'a> {
     s: LocalSummary,
+    metrics: SummaryMetrics,
     limits: &'a SummaryLimits,
     hooks: &'a dyn LocalHooks,
     started: Instant,
@@ -90,7 +116,12 @@ impl Collector<'_> {
         }
     }
     fn check(&mut self) -> io::Result<()> {
-        if self.stopped || self.hooks.cancelled() || self.started.elapsed() >= self.limits.timeout {
+        if self.stopped {
+            return Err(io::Error::other(
+                "summary collection already stopped; see earlier gaps",
+            ));
+        }
+        if self.hooks.cancelled() || self.started.elapsed() >= self.limits.timeout {
             self.stopped = true;
             return Err(io::Error::other("summary cancelled or deadline reached"));
         }
@@ -125,6 +156,10 @@ impl Collector<'_> {
         let git = ControlledGit::with_timeout(remaining);
         let facet_limited = git.timeout_limit() < backend_cap;
         let result = git.read_from_directory(fd, path, op.clone());
+        self.metrics.git_processes = self
+            .metrics
+            .git_processes
+            .saturating_add(git.spawned_processes());
         let bytes = match result {
             Ok(bytes) => bytes,
             Err(e) => {
@@ -162,6 +197,7 @@ impl Collector<'_> {
             _ => GitRead::Blob { oid: oid.into() },
         };
         let bytes = self.git(fd, path, op)?;
+        self.note_object(&bytes);
         if bytes.len() as u64 > self.limits.max_file_bytes {
             return Err(io::Error::other("summary object byte limit reached"));
         }
@@ -169,7 +205,12 @@ impl Collector<'_> {
             .map_err(|e| io::Error::other(e.to_string()))?;
         Ok(bytes)
     }
-    fn blob_digest(&self, oid: &str, kind: &str, raw: &[u8]) -> Result<String, String> {
+    fn note_object(&mut self, raw: &[u8]) {
+        self.metrics.object_reads = self.metrics.object_reads.saturating_add(1);
+        self.metrics.object_bytes = self.metrics.object_bytes.saturating_add(raw.len() as u64);
+    }
+    fn blob_digest(&mut self, oid: &str, kind: &str, raw: &[u8]) -> Result<String, String> {
+        self.note_object(raw);
         if kind != "blob" || raw.len() as u64 > self.limits.max_file_bytes {
             return Err("expected blob within summary object byte limit".into());
         }
@@ -217,7 +258,8 @@ impl Collector<'_> {
         let remaining = self.limits.max_objects.saturating_sub(self.objects);
         let mut selected = BTreeSet::new();
         for oid in oids {
-            if self.check().is_err() {
+            if let Err(error) = self.check() {
+                self.gap(path, error.to_string());
                 break;
             }
             if selected.len() < remaining && !self.blobs.contains_key(oid) {
@@ -310,6 +352,7 @@ impl Collector<'_> {
     }
     fn blob(&mut self, fd: &OwnedFd, path: &Path, oid: &str) -> io::Result<String> {
         if let Some(result) = self.blobs.get(oid) {
+            self.metrics.cache_hits = self.metrics.cache_hits.saturating_add(1);
             return result.clone().map_err(io::Error::other);
         }
         let value = self
@@ -481,7 +524,10 @@ impl Collector<'_> {
             .into_iter()
             .map(|object| {
                 object
-                    .map(|object| (object.kind, object.bytes))
+                    .map(|object| {
+                        self.note_object(&object.bytes);
+                        (object.kind, object.bytes)
+                    })
                     .map_err(io::Error::other)
             })
             .collect()
@@ -559,6 +605,7 @@ impl Collector<'_> {
                             oid: frontier[start].0.clone(),
                         },
                     )?;
+                    self.note_object(&raw);
                     crate::review::verify_object("tree", &frontier[start].0, &raw)
                         .map_err(|e| io::Error::other(e.to_string()))?;
                     self.tree_entries(
@@ -733,6 +780,7 @@ impl Collector<'_> {
                     self.disk_gap(&p, e.to_string());
                     break;
                 }
+                self.metrics.paths_checked = self.metrics.paths_checked.saturating_add(1);
                 let st = match statat(&fd, &name, AtFlags::SYMLINK_NOFOLLOW) {
                     Ok(v) => v,
                     Err(e) => {
@@ -828,7 +876,11 @@ impl Collector<'_> {
                     Err(e) => self.disk_gap(&p, format!("entry revalidation unavailable: {e}")),
                 }
                 if let Some(entry) = tracked {
-                    let expected = self.blobs.get(&entry.oid).and_then(|r| r.as_ref().ok());
+                    let cached = self.blobs.get(&entry.oid);
+                    if cached.is_some() {
+                        self.metrics.cache_hits = self.metrics.cache_hits.saturating_add(1);
+                    }
+                    let expected = cached.and_then(|r| r.as_ref().ok());
                     if mode != entry.mode
                         || digest.as_ref().zip(expected).is_some_and(|(a, b)| a != b)
                     {
@@ -897,7 +949,7 @@ fn collect_outcome(
 ) -> Result<SummaryOutcome, SweepError> {
     crate::residency::ensure_no_materialization()?;
     let path = w.path.to_path()?;
-    let ceiling = SummaryLimits::default();
+    let ceiling = SummaryLimits::thorough();
     if l.max_index_entries > ceiling.max_index_entries
         || l.max_index_bytes > ceiling.max_index_bytes
         || l.max_paths > ceiling.max_paths
@@ -917,6 +969,7 @@ fn collect_outcome(
         ));
     }
     let mut c = Collector {
+        metrics: SummaryMetrics::default(),
         s: LocalSummary {
             started_unix_ms: now_ms(),
             temporal_consistency: "not_guaranteed".into(),
@@ -999,6 +1052,7 @@ fn collect_outcome(
     Ok(SummaryOutcome {
         summary: c.s,
         first_git_timeout: c.first_git_timeout,
+        metrics: c.metrics,
     })
 }
 fn resolve(c: &mut Collector<'_>, root: &OwnedFd, path: &Path) -> io::Result<String> {
@@ -1387,6 +1441,7 @@ mod timeout_tests {
         let limits = SummaryLimits::default();
         let mut c = Collector {
             s: LocalSummary::default(),
+            metrics: SummaryMetrics::default(),
             limits: &limits,
             hooks: &hooks,
             started: Instant::now() - (limits.timeout - Duration::from_millis(100)),
@@ -1434,6 +1489,7 @@ mod timeout_tests {
         let healthy_fd = open_absolute_directory(&healthy.0).unwrap_or_else(|e| panic!("{e}"));
         let mut other = Collector {
             s: LocalSummary::default(),
+            metrics: SummaryMetrics::default(),
             limits: &limits,
             hooks: &hooks,
             started: Instant::now(),
@@ -1469,6 +1525,8 @@ mod timeout_tests {
         );
         assert!(!outcome.summary.head_complete && !outcome.summary.index_complete);
         assert!(!outcome.summary.gaps.is_empty());
+        assert_eq!(outcome.metrics.git_processes, 1);
+        assert_eq!(outcome.metrics.object_reads, 0);
     }
     #[test]
     fn timeout_keeps_full_blob_oid_and_ignore_paths_without_reclassifying_budgets() {
@@ -1487,6 +1545,7 @@ mod timeout_tests {
             let limits = SummaryLimits::default();
             let mut c = Collector {
                 s: LocalSummary::default(),
+                metrics: SummaryMetrics::default(),
                 limits: &limits,
                 hooks: &hooks,
                 started: Instant::now(),
@@ -1524,6 +1583,7 @@ mod timeout_tests {
         };
         let mut c = Collector {
             s: LocalSummary::default(),
+            metrics: SummaryMetrics::default(),
             limits: &limits,
             hooks: &hooks,
             started: Instant::now(),
@@ -1540,6 +1600,93 @@ mod timeout_tests {
         assert!(c.object(&fd, &f.0, "blob", &oid).is_err());
         assert!(c.first_git_timeout.is_none());
     }
+    #[test]
+    fn cancelled_prefetch_records_initial_cause_without_spawning_git() {
+        struct CancelAfterOne(std::cell::Cell<usize>);
+        impl LocalHooks for CancelAfterOne {
+            fn cancelled(&self) -> bool {
+                let checks = self.0.get();
+                self.0.set(checks + 1);
+                checks > 0
+            }
+        }
+        let f = Fixture::new();
+        let fd = open_absolute_directory(&f.0).unwrap_or_else(|e| panic!("{e}"));
+        let hooks = CancelAfterOne(std::cell::Cell::new(0));
+        let limits = SummaryLimits::default();
+        let mut c = Collector {
+            s: LocalSummary::default(),
+            metrics: SummaryMetrics::default(),
+            limits: &limits,
+            hooks: &hooks,
+            started: Instant::now(),
+            bytes: 0,
+            objects: 0,
+            paths: 0,
+            path_bytes: 0,
+            stopped: false,
+            git_failed: false,
+            first_git_timeout: None,
+            diagnostic_bytes: 0,
+            blobs: BTreeMap::new(),
+        };
+        let oids = ["ab".repeat(20), "cd".repeat(20)];
+        crate::git::take_child_read_journal();
+        c.prefetch_blobs(&fd, &f.0, oids.iter().map(String::as_str));
+        assert!(c.stopped);
+        assert_eq!(c.metrics.git_processes, 0);
+        assert!(crate::git::take_child_read_journal().is_empty());
+        assert!(
+            c.s.gaps
+                .iter()
+                .any(|gap| gap.reason.contains("summary cancelled")),
+            "initial cancellation was lost: {:?}",
+            c.s.gaps
+        );
+        assert!(c.first_git_timeout.is_none());
+    }
+
+    #[test]
+    fn byte_budget_stop_does_not_invent_cancellation_or_deadline() {
+        let limits = SummaryLimits {
+            max_total_bytes: 1,
+            ..SummaryLimits::default()
+        };
+        let hooks = NativeHooks;
+        let mut c = Collector {
+            s: LocalSummary::default(),
+            metrics: SummaryMetrics::default(),
+            limits: &limits,
+            hooks: &hooks,
+            started: Instant::now(),
+            bytes: 0,
+            objects: 0,
+            paths: 0,
+            path_bytes: 0,
+            stopped: false,
+            git_failed: false,
+            first_git_timeout: None,
+            diagnostic_bytes: 0,
+            blobs: BTreeMap::new(),
+        };
+        let error = c
+            .charge(2)
+            .err()
+            .unwrap_or_else(|| panic!("byte ceiling was accepted"));
+        c.gap(Path::new("resident"), error.to_string());
+        observe(&mut c.s.staged, &BytePath::from_bytes(b"known-staged"));
+        let later = c
+            .check()
+            .err()
+            .unwrap_or_else(|| panic!("stopped collector resumed"));
+        for invented in ["cancel", "deadline", "timeout"] {
+            assert!(!later.to_string().contains(invented), "{later}");
+        }
+        assert_eq!(c.s.gaps[0].reason, "summary total byte limit reached");
+        assert_eq!(c.s.staged.observed, 1);
+        assert!(c.first_git_timeout.is_none());
+    }
+
     #[test]
     fn completed_ignore_batch_positives_survive_later_byte_budget_failure() {
         let f = Fixture::new();
@@ -1571,6 +1718,7 @@ mod timeout_tests {
         let hooks = NativeHooks;
         let mut c = Collector {
             s: LocalSummary::default(),
+            metrics: SummaryMetrics::default(),
             limits: &limits,
             hooks: &hooks,
             started: Instant::now(),

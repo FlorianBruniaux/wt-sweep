@@ -5,6 +5,7 @@ fn graph_evidence_is_labeled_separately_and_does_not_promote_classification()
 -> Result<(), SweepError> {
     let path = BytePath::from_bytes(b"/synthetic/worktree");
     let mut facts = Observations {
+        collection_metrics: None,
         context: None,
         shared_stashes: Vec::new(),
         inventory: Inventory::new(ScanScope::Repo { path: path.clone() }),

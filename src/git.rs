@@ -6,7 +6,7 @@ use std::cell::{Cell, RefCell};
 use std::collections::BTreeSet;
 use std::fs::{self, File};
 use std::io::{self, Read, Write};
-use std::os::fd::OwnedFd;
+use std::os::fd::{AsRawFd, OwnedFd};
 use std::os::unix::ffi::OsStringExt;
 use std::os::unix::fs::MetadataExt;
 use std::os::unix::net::UnixStream;
@@ -438,6 +438,49 @@ fn read_ready(stream: &mut UnixStream, bytes: &mut Vec<u8>, budget: usize) -> io
     Ok(false)
 }
 
+#[allow(unsafe_code)]
+fn wait_for_io(
+    stdout: Option<&UnixStream>,
+    stderr: Option<&UnixStream>,
+    stdin: Option<&UnixStream>,
+    timeout: Duration,
+) -> io::Result<bool> {
+    let mut descriptors: [libc::pollfd; 3] = std::array::from_fn(|_| libc::pollfd {
+        fd: -1,
+        events: 0,
+        revents: 0,
+    });
+    let mut count = 0;
+    for (stream, events) in [
+        (stdout, libc::POLLIN),
+        (stderr, libc::POLLIN),
+        (stdin, libc::POLLOUT),
+    ] {
+        if let Some(stream) = stream {
+            descriptors[count] = libc::pollfd {
+                fd: stream.as_raw_fd(),
+                events,
+                revents: 0,
+            };
+            count += 1;
+        }
+    }
+    let millis = timeout.as_millis().min(i32::MAX as u128) as i32;
+    // SAFETY: the slice contains at most three initialized pollfd values, and
+    // every borrowed stream remains alive throughout the syscall. No completed
+    // output stream is included; persistent EOF/HUP cannot cause a busy loop.
+    let ready = unsafe { libc::poll(descriptors.as_mut_ptr(), count as libc::nfds_t, millis) };
+    if ready < 0 {
+        let error = io::Error::last_os_error();
+        if error.kind() == io::ErrorKind::Interrupted {
+            // The caller rechecks its deadline before the next finite I/O batch.
+            return Ok(false);
+        }
+        return Err(error);
+    }
+    Ok(ready > 0)
+}
+
 #[cfg(test)]
 fn run_bounded(
     command: Command,
@@ -503,6 +546,9 @@ fn run_bounded_inner(
     let mut written = 0usize;
     let started = Instant::now();
     loop {
+        if started.elapsed() >= timeout {
+            return Err(error("git_timeout", "Git read deadline exceeded".into()));
+        }
         if let Some(writer) = stdin.as_mut() {
             for _ in 0..32 {
                 if written == input.len() {
@@ -550,7 +596,19 @@ fn run_bounded_inner(
         if started.elapsed() >= timeout {
             return Err(error("git_timeout", "Git read deadline exceeded".into()));
         }
-        std::thread::sleep(Duration::from_millis(5));
+        // macOS socketpairs commonly buffer only 8KiB. Sleeping after EAGAIN
+        // throttles each producer burst; readiness wakes as soon as more I/O
+        // is possible while the short ceiling still polls child exit/deadline.
+        let wait = timeout
+            .saturating_sub(started.elapsed())
+            .min(Duration::from_millis(5));
+        wait_for_io(
+            (!out_done).then_some(&stdout),
+            (!err_done).then_some(&stderr),
+            stdin.as_ref(),
+            wait,
+        )
+        .map_err(|e| error("output_io", e.to_string()))?;
     }
     let status = status.ok_or_else(|| error("git_wait", "missing Git exit status".into()))?;
     if !status.success() {
@@ -1276,5 +1334,89 @@ mod tests {
         .unwrap_or_else(|| panic!("failed exit accepted"));
         assert_eq!(error.code, "git_exit");
         assert!(error.message.contains("broken"));
+    }
+    #[test]
+    fn io_wait_selects_live_output_and_pending_input_and_excludes_completed_streams() {
+        let (mut output, mut producer) = UnixStream::pair().unwrap_or_else(|e| panic!("{e}"));
+        let (error, _error_producer) = UnixStream::pair().unwrap_or_else(|e| panic!("{e}"));
+        producer
+            .write_all(b"resident output")
+            .unwrap_or_else(|e| panic!("{e}"));
+        assert!(
+            wait_for_io(Some(&output), Some(&error), None, Duration::from_millis(20))
+                .unwrap_or_else(|e| panic!("{e}"))
+        );
+        let mut bytes = [0u8; 15];
+        output
+            .read_exact(&mut bytes)
+            .unwrap_or_else(|e| panic!("{e}"));
+        assert_eq!(&bytes, b"resident output");
+        let (input, _consumer) = UnixStream::pair().unwrap_or_else(|e| panic!("{e}"));
+        assert!(
+            wait_for_io(None, None, Some(&input), Duration::from_millis(20))
+                .unwrap_or_else(|e| panic!("{e}"))
+        );
+        drop(producer);
+        assert!(
+            wait_for_io(Some(&output), None, None, Duration::from_millis(20))
+                .unwrap_or_else(|e| panic!("{e}"))
+        );
+        assert!(
+            !wait_for_io(None, None, None, Duration::from_millis(1))
+                .unwrap_or_else(|e| panic!("{e}")),
+            "completed stream HUP must not keep waking the runner"
+        );
+    }
+
+    #[test]
+    fn bounded_runner_transfers_large_partial_input_and_aggregates_stderr_limit() {
+        let input = vec![b'x'; 1024 * 1024];
+        let mut command = Command::new("/bin/cat");
+        command.env_clear();
+        let output = run_bounded_inner(
+            command,
+            Path::new("/private/tmp"),
+            "test_partial_input",
+            Duration::from_secs(5),
+            (input.len() + 1) as u64,
+            false,
+            (&input, None),
+        )
+        .unwrap_or_else(|e| panic!("{e}"));
+        assert_eq!(output, input);
+        let mut command = Command::new("/bin/sh");
+        command
+            .env_clear()
+            .args(["-c", "printf 123456; printf abcdef >&2"]);
+        let error = run_bounded(
+            command,
+            Path::new("/private/tmp"),
+            "test_combined_limit",
+            Duration::from_secs(1),
+            10,
+        )
+        .err()
+        .unwrap_or_else(|| panic!("combined stdout+stderr limit was ignored"));
+        assert_eq!(error.code, "git_output_limit");
+    }
+    #[test]
+    fn bounded_runner_streams_32mib_round_trip_within_its_deadline() {
+        let mut input = vec![b'x'; 32 * 1024 * 1024];
+        input[0] = 0;
+        let end = input.len() - 1;
+        input[end] = 255;
+        let mut command = Command::new("/bin/cat");
+        command.env_clear();
+        let output = run_bounded_inner(
+            command,
+            Path::new("/private/tmp"),
+            "test_streaming_deadline",
+            Duration::from_secs(10),
+            (input.len() + 1) as u64,
+            false,
+            (&input, None),
+        )
+        .unwrap_or_else(|e| panic!("finite binary stream did not complete: {e}"));
+        assert_eq!(output, input);
     }
 }

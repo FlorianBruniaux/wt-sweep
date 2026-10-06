@@ -1,6 +1,6 @@
 ---
 name: wt-sweep
-description: "Use to inventory Git worktrees in chosen repositories or directories, interpret saved wt-sweep reports, investigate keep/verify verdicts and missing evidence, or suggest worktree cleanup preparation. Analyse les worktrees, fichiers locaux, stashes et preuves Git par étapes. Read-only; not for creating worktrees, resolving merge conflicts, or executing deletion."
+description: "Use to inventory Git worktrees in chosen repositories or directories, interpret saved wt-sweep reports, investigate keep/verify verdicts and missing evidence, retry capped worktree collection with standard/thorough budgets, or suggest worktree cleanup preparation. Analyse les worktrees, fichiers locaux, stashes et preuves Git par étapes. Read-only; not for creating worktrees, resolving merge conflicts, or executing deletion."
 ---
 
 # Worktree review with wt-sweep
@@ -89,13 +89,22 @@ results. An interrupted or partial run remains partial even if it has a receipt.
    observed reason, missing check, proposed next action.
 
 Filters select the displayed view after judgement. They do not reduce collection
-cost. Repeating the same command cannot remove a fixed history budget. Do not
-invent `--resume`, timeout or budget options. When another run can supply useful
-new evidence, state why, retain the old run and label the new observation time.
+cost. Start fresh collection with `--budget standard`, then read the saved gaps
+and optional `collection_metrics`. If standard object, byte, traversal or phase
+caps caused the missing evidence, retry one exact recorded `--worktree` with
+`--budget thorough` in a new run. Inspect that focused result before proposing a
+whole-family thorough review. Missing objects, access failures, changed identities
+or unsupported indexes need their own checks; more allowance does not fix them.
+
+Retain the earlier report and label each observation time. The two profiles are
+finite allowances, not throughput or completeness guarantees. Neither excludes
+ignored files. Do not invent `--resume`, custom timeout or arbitrary budget flags.
 Separate runs are not one atomic snapshot.
 
 Completion: every displayed row is either reviewed or explicitly left pending;
-filtered totals and source totals remain distinguishable.
+filtered/source totals, chosen budget and observed collection stops remain
+distinguishable. Any retry names the exact worktree and why its new allowance
+can supply useful evidence.
 
 ## 4. Turn evidence into suggestions
 

@@ -18,7 +18,7 @@ impl Fixture {
         f.git(&["init", "-q", "-b", "main"]);
         f
     }
-    fn git(&self, args: &[&str]) {
+    fn git(&self, args: &[&str]) -> Vec<u8> {
         let output = Command::new("/usr/bin/git")
             .env_clear()
             .env("PATH", "/usr/bin:/bin")
@@ -34,6 +34,7 @@ impl Fixture {
             .output()
             .unwrap_or_else(|e| panic!("{e}"));
         assert!(output.status.success(), "{:?}", output.stderr);
+        output.stdout
     }
 }
 impl Drop for Fixture {
@@ -213,4 +214,98 @@ fn distinct_directory_trees_bound_actual_git_children_and_stay_complete() {
     );
     assert!(summary.staged.complete && summary.unstaged.complete);
     assert_eq!((summary.staged.observed, summary.unstaged.observed), (0, 0));
+}
+
+#[test]
+fn summary_metrics_count_payload_reads_and_same_run_digest_reuse() {
+    let f = Fixture::new();
+    for name in ["a", "b"] {
+        fs::write(f.0.join(name), b"shared\n").unwrap_or_else(|e| panic!("{e}"));
+    }
+    f.git(&["add", "."]);
+    f.git(&["commit", "-q", "-m", "fixture"]);
+    let worktree = crate::git::scan_family(&f.0)
+        .unwrap_or_else(|e| panic!("{e}"))
+        .families[0]
+        .worktrees[0]
+        .clone();
+    let payload_bytes = f.git(&["cat-file", "commit", "HEAD"]).len()
+        + f.git(&["cat-file", "tree", "HEAD^{tree}"]).len()
+        + 7;
+    crate::git::take_child_read_journal();
+    let outcome = collect_summary_for_review(&worktree, &SummaryLimits::default())
+        .unwrap_or_else(|e| panic!("{e}"));
+    let reads = crate::git::take_child_read_journal();
+    assert!(
+        outcome.summary.head_complete
+            && outcome.summary.index_complete
+            && outcome.summary.disk_complete
+    );
+    // One commit, one root tree and one shared blob are actual payload reads.
+    assert_eq!(outcome.metrics.object_reads, 3);
+    assert_eq!(outcome.metrics.object_bytes, payload_bytes as u64);
+    assert_eq!(outcome.metrics.git_processes, reads.len() as u64);
+    // Two HEAD lookups, two index lookups, two resident-content comparisons.
+    assert_eq!(outcome.metrics.cache_hits, 6);
+    assert_eq!(outcome.metrics.paths_checked, 2);
+}
+
+#[test]
+fn thorough_profile_respects_lower_caps_cancellation_and_absolute_ceiling() {
+    struct Cancel;
+    impl LocalHooks for Cancel {
+        fn cancelled(&self) -> bool {
+            true
+        }
+    }
+    let f = Fixture::new();
+    fs::write(f.0.join("file"), b"resident\n").unwrap_or_else(|e| panic!("{e}"));
+    f.git(&["add", "."]);
+    f.git(&["commit", "-q", "-m", "fixture"]);
+    let worktree = crate::git::scan_family(&f.0)
+        .unwrap_or_else(|e| panic!("{e}"))
+        .families[0]
+        .worktrees[0]
+        .clone();
+    let limited = collect_summary(
+        &worktree,
+        &SummaryLimits {
+            max_objects: 0,
+            ..SummaryLimits::thorough()
+        },
+    )
+    .unwrap_or_else(|e| panic!("{e}"));
+    assert!(!limited.head_complete && !limited.staged.complete && !limited.unstaged.complete);
+    assert!(!limited.gaps.is_empty());
+    crate::git::take_child_read_journal();
+    let cancelled = collect_outcome(&worktree, &SummaryLimits::thorough(), &Cancel)
+        .unwrap_or_else(|e| panic!("{e}"));
+    assert!(
+        !cancelled.summary.head_complete
+            && !cancelled.summary.index_complete
+            && !cancelled.summary.disk_complete
+    );
+    assert!(!cancelled.summary.gaps.is_empty());
+    assert_eq!(cancelled.metrics.git_processes, 0);
+    assert!(crate::git::take_child_read_journal().is_empty());
+    for excessive in [
+        SummaryLimits {
+            max_objects: 65_537,
+            ..SummaryLimits::thorough()
+        },
+        SummaryLimits {
+            max_total_bytes: 512 * 1024 * 1024 + 1,
+            ..SummaryLimits::thorough()
+        },
+        SummaryLimits {
+            timeout: Duration::from_secs(121),
+            ..SummaryLimits::thorough()
+        },
+    ] {
+        let error = match collect_summary(&worktree, &excessive) {
+            Err(error) => error,
+            Ok(_) => panic!("above-ceiling summary was accepted"),
+        };
+        assert_eq!(error.code, "local_limits");
+    }
 }

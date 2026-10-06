@@ -214,6 +214,8 @@ finally:
         self.assertRegex(" ".join(linked["unknowns"]), r"(?i)(timeout|timed out)",
                          "target-only FIFO fixture must execute and time out in deep proof")
         self.assertIn(blob_oid, " ".join(linked["unknowns"]), "timed-out object identity lost")
+        self.assertIn("requested blob batch", " ".join(linked["unknowns"]),
+                      "batch failure must label all requested OIDs without claiming the culprit")
 
     def test_fifo_alternates_pointer_cannot_prove_integration(self):
         inventory = self.save_inventory()

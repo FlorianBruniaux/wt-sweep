@@ -35,6 +35,24 @@ machine snapshot. Also inspect `not_collected`, `history_metrics`, row `unknowns
 observation intervals and per-phase completeness. Zero observed files with
 incomplete collection means “at least zero observed”, not “clean”.
 
+## Collection metrics
+
+When present, `collection_metrics.budget_profile` records standard or thorough;
+`applied_limits` records allowances, and `phases` records names, elapsed
+milliseconds and phase-specific counters. Keep limits separate from observed
+work. A read attempt, returned object bytes, Git processes and cache hits count
+different things. An absent counter is not zero.
+
+Controls, history, local, deep, private-history, revalidation and enabled
+optional-context phase timings exclude discovery and publication. They do not establish total command
+duration. Compare each phase with its gaps and stop reasons, not elapsed time
+alone. `history_metrics` remains history-specific. Older version-2 reports can
+omit collection metrics; report telemetry unavailable rather than inventing it.
+
+The console's `Resolved verdicts` counts keep plus candidates. A keep reason
+remains resolved even if candidate conditions are incomplete. Verify rows still
+need evidence; retention reasons and missing conditions are separate facts.
+
 ## Decisions and missing conditions
 
 Copy `classification`, `decision.keep_reasons` and `decision.missing_conditions` from the

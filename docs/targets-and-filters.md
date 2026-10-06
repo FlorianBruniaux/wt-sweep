@@ -99,3 +99,22 @@ it neither resumes old reads nor overwrites the earlier report. Unselected rows
 keep their identities and current control results, with local/history/private
 checks explicitly uncollected. Shared stashes describe the selected repository
 family. Per-worktree object, byte and history-depth limits still apply.
+
+Start with the default `standard` profile. Read the saved source gaps and its
+optional `collection_metrics`: a time stop, object cap and byte cap need different
+interpretations. If the standard allowance is the remaining cause, retry the
+same exact selected path with larger finite caps in a new base:
+
+```sh
+thorough_dir="$(mktemp -d /private/tmp/wt-sweep-thorough.XXXXXX)"
+wt-sweep review --repo "$repo_path" --target "$target_ref" \
+  --worktree "$worktree_path" --path-prefix "$worktree_path" \
+  --budget thorough --summary --run-dir "$thorough_dir"
+```
+
+Inspect that run before choosing a whole-family thorough review. This is a new
+observation, not a continuation of the standard run. Display filters still do
+not reduce collection. `plan --inventory` accepts the same budget selector.
+Larger allowances do not bypass access failures, missing objects, changed
+identities or unsupported index interpretation. Ignored files remain included.
+See [profile ceilings and metrics](cli.md#thorough-allowances).

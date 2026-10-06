@@ -138,13 +138,23 @@ fn render(review: &Review, rows: &[&ReviewItem], filtered: bool) -> String {
     } else if incomplete > 0 {
         let _ = writeln!(
             output,
-            "Decision checks: incomplete for {incomplete}/{total} worktrees"
+            "Candidate evidence incomplete: {incomplete}/{total} worktrees (retained worktrees can have incomplete checks)"
         );
     } else {
         let _ = writeln!(
             output,
-            "Decision checks: complete for {total} recorded worktrees"
+            "Candidate evidence complete: {total} recorded worktrees"
         );
+    }
+    let _ = writeln!(
+        output,
+        "Resolved verdicts: {}/{}; {} still need verification",
+        keep + candidates,
+        rows.len(),
+        verify
+    );
+    if let Some(metrics) = &review.collection_metrics {
+        let _ = writeln!(output, "Collection budget: {}", metrics.budget_profile);
     }
     let _ = writeln!(
         output,
@@ -208,7 +218,7 @@ fn render(review: &Review, rows: &[&ReviewItem], filtered: bool) -> String {
             omitted.worktrees, omitted.families, omitted.local_inventories, omitted.markers
         );
     }
-    let _ = writeln!(output, "\nCHECKS STILL NEEDED (all recorded worktrees)");
+    let _ = writeln!(output, "\nCHECKS STILL NEEDED (unresolved worktrees)");
     let mut missing = false;
     for (code, description) in [
         ("C1", "Current identity, locks and Git operations"),
@@ -220,6 +230,7 @@ fn render(review: &Review, rows: &[&ReviewItem], filtered: bool) -> String {
         let n = review
             .items
             .iter()
+            .filter(|i| i.classification == "verify")
             .filter(|i| {
                 i.decision
                     .as_ref()
@@ -232,7 +243,30 @@ fn render(review: &Review, rows: &[&ReviewItem], filtered: bool) -> String {
         }
     }
     if !missing {
-        let _ = writeln!(output, "  None for the recorded decision checks.");
+        let _ = writeln!(
+            output,
+            "  None for unresolved worktrees. Retention reasons remain in the detail."
+        );
+    }
+    if let Some(metrics) = &review.collection_metrics {
+        let _ = writeln!(output, "\nCOLLECTION TIME");
+        for phase in &metrics.phases {
+            let title = match phase.name.as_str() {
+                "controls" => "Identity and protections",
+                "history" => "Commit history",
+                "local" => "Local files",
+                "deep" => "Candidate object verification",
+                "private_history" => "Private history",
+                "revalidation" => "Final checks",
+                "context" => "Optional context",
+                _ => "Other checks",
+            };
+            let _ = writeln!(
+                output,
+                "  {title}: {:.1}s",
+                phase.elapsed_ms as f64 / 1000.0
+            );
+        }
     }
     let limits = limits(review);
     if !limits.is_empty() {
@@ -249,7 +283,7 @@ fn render(review: &Review, rows: &[&ReviewItem], filtered: bool) -> String {
             } else {
                 let _ = writeln!(
                     output,
-                    "\nNEXT CHECK\n  Retry one worktree with --worktree ABSOLUTE_PATH.\n  This gives it the per-worktree allowance. Object and byte caps still apply."
+                    "\nNEXT CHECK\n  Retry one worktree with --worktree ABSOLUTE_PATH.\n  Add --budget thorough for larger finite allowances. Object and byte caps still apply."
                 );
             }
         }

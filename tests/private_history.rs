@@ -1273,3 +1273,316 @@ fn private_root_is_preserved_by_retained_child_with_uppercase_parent() {
     );
     assert_eq!(root.anchor.as_ref().unwrap().oid, child);
 }
+
+#[test]
+fn direct_private_root_does_not_spend_its_only_read_on_unrelated_anchors() {
+    let f = Fixture::new();
+    let linked = f.linked("linked");
+    let base = f.git(&["rev-parse", "main"]);
+    let tree = f.git(&["rev-parse", "main^{tree}"]);
+    let unrelated = f.git(&["commit-tree", &tree, "-m", "unrelated retained root"]);
+    f.git(&["update-ref", "refs/heads/aaa-unrelated", &unrelated]);
+    let limits = PrivateHistoryLimits {
+        object_reads: 1,
+        ..Default::default()
+    };
+    let facts = collect_with_limits(&scan_family(&f.0).unwrap(), &[], &limits).unwrap();
+    let h = &facts.histories[&BytePath::from_path(&linked)];
+    let root = h.roots.iter().find(|r| r.oid == base).unwrap();
+    assert_eq!(root.result, "covered", "{:?}", root.reason);
+    assert_eq!(
+        root.anchor.as_ref().unwrap().reference,
+        BytePath::from_bytes(b"refs/heads/main")
+    );
+}
+
+#[test]
+fn private_roots_share_one_verified_family_walk() {
+    let f = Fixture::new();
+    let linked = f.linked("linked");
+    let base = f.git(&["rev-parse", "main"]);
+    let tree = f.git(&["rev-parse", "main^{tree}"]);
+    let mut chain = vec![base];
+    for n in 0..12 {
+        chain.push(f.git(&[
+            "commit-tree",
+            &tree,
+            "-p",
+            chain.last().unwrap(),
+            "-m",
+            &format!("shared {n}"),
+        ]));
+    }
+    f.git(&["update-ref", "refs/heads/main", chain.last().unwrap()]);
+    let dir = PathBuf::from(Fixture::at(&linked, &["rev-parse", "--absolute-git-dir"]));
+    fs::create_dir_all(dir.join("refs/worktree")).unwrap();
+    for (n, oid) in chain.iter().enumerate().step_by(2) {
+        fs::write(
+            dir.join(format!("refs/worktree/root-{n}")),
+            format!("{oid}\n"),
+        )
+        .unwrap();
+    }
+    let limits = PrivateHistoryLimits {
+        traversal_steps: 13,
+        per_root_steps: 13,
+        ..Default::default()
+    };
+    let facts = collect_with_limits(&scan_family(&f.0).unwrap(), &[], &limits).unwrap();
+    let h = &facts.histories[&BytePath::from_path(&linked)];
+    assert!(h.roots.len() >= 6);
+    assert!(
+        h.roots.iter().all(|r| r.result == "covered"),
+        "{:?}",
+        h.roots
+    );
+}
+
+// One bounded fixture import avoids thousands of setup processes. Production
+// evidence still traverses and verifies each immutable commit independently.
+fn imported_chain(f: &Fixture, length: usize) -> String {
+    let base = f.git(&["rev-parse", "main"]);
+    let mut input = String::new();
+    for n in 1..=length {
+        let parent = if n == 1 {
+            base.clone()
+        } else {
+            format!(":{}", n - 1)
+        };
+        input.push_str(&format!("commit refs/heads/integration\nmark :{n}\ncommitter Fixture <fixture@example.invalid> {n} +0000\ndata 1\nx\nfrom {parent}\n\n"));
+    }
+    let stream = f.0.join("owned-chain-import");
+    fs::write(&stream, input).unwrap();
+    let mut child = Command::new("/usr/bin/git")
+        .env_clear()
+        .env("PATH", "/usr/bin:/bin")
+        .env("GIT_CONFIG_NOSYSTEM", "1")
+        .env("GIT_CONFIG_GLOBAL", "/dev/null")
+        .env("GIT_ALLOW_PROTOCOL", "")
+        .env("GIT_NO_LAZY_FETCH", "1")
+        .args(["-c", "core.hooksPath=/dev/null", "-c", "gc.auto=0", "-C"])
+        .arg(&f.0)
+        .args(["fast-import", "--quiet"])
+        .stdin(std::process::Stdio::from(fs::File::open(&stream).unwrap()))
+        .stdout(std::process::Stdio::null())
+        .stderr(std::process::Stdio::from(
+            fs::File::create(f.0.join("owned-chain-errors")).unwrap(),
+        ))
+        .spawn()
+        .unwrap();
+    let started = std::time::Instant::now();
+    loop {
+        if let Some(status) = child.try_wait().unwrap() {
+            assert!(
+                status.success(),
+                "{}",
+                fs::read_to_string(f.0.join("owned-chain-errors")).unwrap()
+            );
+            break;
+        }
+        if started.elapsed() > std::time::Duration::from_secs(15) {
+            let _ = child.kill();
+            let _ = child.wait();
+            panic!("owned chain import exceeded deadline");
+        }
+        std::thread::sleep(std::time::Duration::from_millis(5));
+    }
+    f.git(&["rev-parse", "integration"])
+}
+
+#[test]
+fn thorough_private_history_covers_chain_beyond_legacy_pending_cap() {
+    let f = Fixture::new();
+    let linked = f.linked("linked");
+    let base = f.git(&["rev-parse", "main"]);
+    let tip = imported_chain(&f, 4100);
+    f.git(&["update-ref", "refs/heads/main", &tip]);
+    f.git(&["update-ref", "-d", "refs/heads/integration"]);
+    let inventory = scan_family(&f.0).unwrap();
+    let standard = collect_with_limits(&inventory, &[], &Default::default()).unwrap();
+    let root = standard.histories[&BytePath::from_path(&linked)]
+        .roots
+        .iter()
+        .find(|r| r.oid == base)
+        .unwrap();
+    assert_eq!(root.result, "unknown");
+    assert!(root.reason.as_deref().unwrap().contains("budget"));
+    let complete = collect_with_limits(&inventory, &[], &PrivateHistoryLimits::thorough()).unwrap();
+    let h = &complete.histories[&BytePath::from_path(&linked)];
+    assert!(h.enumeration_complete && h.anchors_complete, "{:?}", h.gaps);
+    let root = h.roots.iter().find(|r| r.oid == base).unwrap();
+    assert_eq!(root.result, "covered", "{:?}", root.reason);
+    assert_eq!(root.anchor.as_ref().unwrap().oid, tip);
+}
+
+#[test]
+fn incomplete_shared_union_keeps_a_positive_but_never_invents_a_negative() {
+    let f = Fixture::new();
+    let linked = f.linked("linked");
+    let base = f.git(&["rev-parse", "main"]);
+    let tree = f.git(&["rev-parse", "main^{tree}"]);
+    let exclusive = f.git(&["commit-tree", &tree, "-p", &base, "-m", "private only"]);
+    let retained = f.git(&["commit-tree", &tree, "-p", &base, "-m", "retained child"]);
+    f.git(&["update-ref", "refs/heads/main", &retained]);
+    let dir = PathBuf::from(Fixture::at(&linked, &["rev-parse", "--absolute-git-dir"]));
+    fs::create_dir_all(dir.join("refs/worktree")).unwrap();
+    fs::write(
+        dir.join("refs/worktree/exclusive"),
+        format!("{exclusive}\n"),
+    )
+    .unwrap();
+    let inventory = scan_family(&f.0).unwrap();
+    fs::write(
+        f.0.join(".git/refs/heads/missing"),
+        format!("{}\n", "a".repeat(40)),
+    )
+    .unwrap();
+    let facts = collect_with_limits(&inventory, &[], &Default::default()).unwrap();
+    let h = &facts.histories[&BytePath::from_path(&linked)];
+    assert!(!h.anchors_complete);
+    let positive = h.roots.iter().find(|r| r.oid == base).unwrap();
+    assert_eq!(positive.result, "covered", "{:?}", positive.reason);
+    assert_eq!(positive.anchor.as_ref().unwrap().oid, retained);
+    let unresolved = h.roots.iter().find(|r| r.oid == exclusive).unwrap();
+    assert_eq!(unresolved.result, "unknown");
+    assert!(unresolved.reason.as_deref().unwrap().contains("incomplete"));
+}
+
+#[test]
+fn direct_private_identity_precedes_unavailable_private_roots() {
+    let f = Fixture::new();
+    let base = f.git(&["rev-parse", "main"]);
+    let inventory = scan_family(&f.0).unwrap();
+    fs::create_dir_all(f.0.join(".git/refs/worktree")).unwrap();
+    let missing = format!("{}1", "0".repeat(39));
+    fs::write(
+        f.0.join(".git/refs/worktree/missing"),
+        format!("{missing}\n"),
+    )
+    .unwrap();
+    let limits = PrivateHistoryLimits {
+        object_reads: 1,
+        ..Default::default()
+    };
+    let facts = collect_with_limits(&inventory, &[], &limits).unwrap();
+    let h = &facts.histories[&BytePath::from_path(&f.0)];
+    assert_eq!(
+        h.roots.iter().find(|r| r.oid == base).unwrap().result,
+        "covered"
+    );
+    assert_eq!(
+        h.roots.iter().find(|r| r.oid == missing).unwrap().result,
+        "unknown"
+    );
+}
+
+#[test]
+fn useful_anchor_nearby_root_uses_only_three_commit_reads() {
+    let f = Fixture::new();
+    let root = f.git(&["rev-parse", "main"]);
+    let tree = f.git(&["rev-parse", "main^{tree}"]);
+    let middle = f.git(&["commit-tree", &tree, "-p", &root, "-m", "middle"]);
+    let head = f.git(&["commit-tree", &tree, "-p", &middle, "-m", "useful head"]);
+    f.git(&["update-ref", "refs/heads/main", &head]);
+    fs::write(f.0.join(".git/ORIG_HEAD"), format!("{root}\n")).unwrap();
+    for n in 0..64 {
+        let oid = f.git(&[
+            "commit-tree",
+            &tree,
+            "-m",
+            &format!("independent retained {n}"),
+        ]);
+        fs::write(
+            f.0.join(format!(".git/refs/heads/noise-{n}")),
+            format!("{oid}\n"),
+        )
+        .unwrap();
+    }
+    let facts = collect_with_limits(
+        &scan_family(&f.0).unwrap(),
+        &[],
+        &PrivateHistoryLimits {
+            object_reads: 3,
+            ..Default::default()
+        },
+    )
+    .unwrap();
+    let h = &facts.histories[&BytePath::from_path(&f.0)];
+    assert_eq!(h.roots.len(), 2);
+    assert!(
+        h.roots.iter().all(|r| r.result == "covered"),
+        "{:?}",
+        h.roots
+    );
+    assert!(
+        h.roots
+            .iter()
+            .all(|r| r.anchor.as_ref().unwrap().oid == head)
+    );
+}
+
+#[test]
+fn warm_quantum_preserves_other_anchor_fallback_and_complete_negatives() {
+    let f = Fixture::new();
+    let head = imported_chain(&f, 40);
+    f.git(&["update-ref", "refs/heads/main", &head]);
+    f.git(&["update-ref", "-d", "refs/heads/integration"]);
+    // Retain only HEAD and the explicit private roots in this fixture.
+    fs::remove_dir_all(f.0.join(".git/logs")).unwrap();
+    let tree = f.git(&["rev-parse", "main^{tree}"]);
+    let other_root = f.git(&["commit-tree", &tree, "-m", "other root"]);
+    let other_anchor = f.git(&[
+        "commit-tree",
+        &tree,
+        "-p",
+        &other_root,
+        "-m",
+        "other anchor",
+    ]);
+    let exclusive = f.git(&["commit-tree", &tree, "-m", "exclusive root"]);
+    fs::write(
+        f.0.join(".git/refs/heads/other"),
+        format!("{other_anchor}\n"),
+    )
+    .unwrap();
+    fs::create_dir_all(f.0.join(".git/refs/worktree")).unwrap();
+    fs::write(
+        f.0.join(".git/refs/worktree/other"),
+        format!("{other_root}\n"),
+    )
+    .unwrap();
+    fs::write(
+        f.0.join(".git/refs/worktree/exclusive"),
+        format!("{exclusive}\n"),
+    )
+    .unwrap();
+    let inventory = scan_family(&f.0).unwrap();
+    let complete = collect_with_limits(&inventory, &[], &Default::default()).unwrap();
+    let h = &complete.histories[&BytePath::from_path(&f.0)];
+    assert!(h.anchors_complete && h.enumeration_complete);
+    let other = h.roots.iter().find(|r| r.oid == other_root).unwrap();
+    assert_eq!(other.result, "covered", "{:?}", other.reason);
+    assert_eq!(other.anchor.as_ref().unwrap().oid, other_anchor);
+    assert_eq!(
+        h.roots.iter().find(|r| r.oid == exclusive).unwrap().result,
+        "not_preserved_by_retained_refs"
+    );
+    let partial = collect_with_limits(
+        &inventory,
+        &[],
+        &PrivateHistoryLimits {
+            traversal_steps: 32,
+            ..Default::default()
+        },
+    )
+    .unwrap();
+    let h = &partial.histories[&BytePath::from_path(&f.0)];
+    assert_eq!(
+        h.roots.iter().find(|r| r.oid == exclusive).unwrap().result,
+        "unknown"
+    );
+    assert_eq!(
+        h.roots.iter().find(|r| r.oid == other_root).unwrap().result,
+        "unknown"
+    );
+}

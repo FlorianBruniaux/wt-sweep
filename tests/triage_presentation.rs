@@ -8,6 +8,7 @@ fn report() -> Result<Review, SweepError> {
         }),
         shared_stashes: vec![],
         history_metrics: Default::default(),
+        collection_metrics: None,
         items: vec![],
         forge: None,
         started_unix_ms: 10,
@@ -188,7 +189,7 @@ fn complete_discovery_does_not_hide_partial_or_uncollected_local_checks() -> Res
         "WORKTREE SWEEP",
         "RESULTS",
         "Discovery: complete",
-        "Decision checks: incomplete for 2/3 worktrees",
+        "Candidate evidence incomplete: 2/3 worktrees",
         "Local checks complete: 0",
         "Local checks partial: 1",
         "Local checks not collected: 2",
@@ -327,5 +328,28 @@ fn focused_run_names_private_budget_without_suggesting_identical_retry() -> Resu
         "{summary}"
     );
     assert!(!summary.contains("Retry one worktree"), "{summary}");
+    Ok(())
+}
+
+#[test]
+fn recap_distinguishes_justified_retention_from_unresolved_checks() -> Result<(), SweepError> {
+    let rendered = wt_sweep::presentation::summary(&report()?);
+    assert!(rendered.contains("Resolved verdicts: 2/3"), "{rendered}");
+    let checks = rendered
+        .split("CHECKS STILL NEEDED (unresolved worktrees)")
+        .nth(1)
+        .unwrap_or("");
+    assert!(
+        checks.contains("Current identity, locks and Git operations: 1"),
+        "{rendered}"
+    );
+    assert!(
+        checks.contains("Private history preserved by named refs: 1"),
+        "{rendered}"
+    );
+    assert!(
+        !checks.contains("Complete, clean local files:"),
+        "keep-only C3 leaked into unresolved checks: {rendered}"
+    );
     Ok(())
 }
