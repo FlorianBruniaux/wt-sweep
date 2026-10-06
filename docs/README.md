@@ -30,6 +30,7 @@ dates of their observations.
 | [Architecture](architecture.md) | Module responsibilities, data flow, read boundaries and test strategy. |
 | [Native boundaries](native-boundaries.md) | Three reviewed private unsafe boundaries and their evidence limits. |
 | [AI development harness](harness.md) | Canonical instructions, generated host files and separate checks for native activation. |
+| [Collection measurements](collection-performance.md) | Distinct-content regressions, shared traversal, targeted collection and observed coverage. |
 | [Implementation results](progress.md) | Current checkpoint links followed by the dated U1-U4 validation record. |
 | [Finishing ledger](finish-ledger.md) | Historical RETEX checkpoint, current triage checks, repository trial and remaining gates. |
 

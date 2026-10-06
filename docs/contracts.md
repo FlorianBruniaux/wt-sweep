@@ -212,7 +212,11 @@ reason explains why it is no longer current. Job-cap omissions are counted in
 `history_metrics` describes the history phase only: first-pass worktrees, complete
 and incomplete target results, object-read attempts, returned object payload
 bytes, traversal steps, cache hits, target-resolution attempts, actual Git child
-processes and elapsed collection/revalidation time. Local and deep work are not
+processes and elapsed collection/revalidation time. Traversal steps count unique verified
+expansions per physical family and target OID, shared across worktrees and alias
+refs. A partial traversal can establish an encountered ancestor, but only a
+complete error-free traversal can establish non-ancestry. Each ref is revalidated
+separately. Local and deep work are not
 included. Failed I/O bytes and total operating-system work are not measured by
 `object_bytes`. See [resource limits](cli.md#resource-limits).
 
@@ -254,6 +258,16 @@ records its size; `excerpt_truncated` records an excerpt limit. Excerpts use
 BytePath encoding and escaped human output. Output-budget omissions remain
 explicit, including when a whole row cannot fit. A statement such as “all work
 merged” in a changelog is descriptive text and has no role in C1-C5.
+
+## Targeted evidence collection
+
+With `--worktree`, the source review still binds the full original inventory and
+keeps every recorded row. History, local summaries, private history and optional
+context are collected for the selected exact path. Registration and control
+checks still cover the original scope. Other rows name their deliberate omission
+in `unknowns`; missing required conditions prevent candidate classification.
+A display filter can select the chosen row without discarding those omissions.
+This is a new observation interval, not a checkpoint resume.
 
 ## Current local summary
 

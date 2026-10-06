@@ -138,6 +138,8 @@ subagent delegation are described in the guide.
 See the [assistant guide and example prompts](docs/assistant-skill.md) for a
 fresh review, an existing report and a disposable local test.
 
+For an incomplete row, use the [targeted collection recipe](docs/targets-and-filters.md#complete-the-evidence-for-one-worktree) to reserve evidence reads for its exact path. Other rows and their missing checks remain in the report.
+
 ## Features
 
 <details>
@@ -238,10 +240,12 @@ records are retained in French.
 
 ## Roadmap and validation
 
-T01-T09 triage is merged into `main`. Large-repository analysis remains partial:
-the recorded 48-worktree trial returned 3 `keep`, 45 `verify` and no candidate
-after local and history budgets were reached. The [roadmap](docs/roadmap.md)
-prioritizes measuring and reducing that collection cost. Writer exclusion remains
+T01-T09 triage is merged into `main`. The [collection changes](docs/collection-performance.md)
+batch object reads, share target walks and support focused retries. The latest
+whole-repository trial still returned 4 `keep`, 45 `verify` and no candidate from
+49 worktrees, with every local summary partial. A focused retry verified ancestry
+and found ignored files, retaining that worktree. The [roadmap](docs/roadmap.md)
+tracks the remaining object and private-history limits. Writer exclusion remains
 unproven, so backup, restore and removal are unavailable.
 
 <details>
@@ -251,7 +255,7 @@ unproven, so backup, restore and removal are unavailable.
 | --- | --- |
 | U1–U4: discovery and review | Implemented and tested locally on macOS; evidence limits remain explicit. |
 | T01-T09: worktree triage | Merged; one-command review, C1-C5 verdicts, local and private history, targets, filters and reports. |
-| Large-repository coverage | Still partial in the recorded trial; collection performance is the next work item. |
+| Large-repository coverage | Object reads are batched and retries can target one worktree; the recorded large-repository trial remains partial. |
 | E1: exclude concurrent writers | **Not demonstrated.** Existing experiments defeat the proposed locking and rename approaches. |
 | U5: durable backup and independent restore | Blocked on E1 and a complete preservation contract. |
 | U6–U7: removal | Unavailable, pending fixture validation, independent review and exact human approval. |

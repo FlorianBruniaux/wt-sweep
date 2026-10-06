@@ -18,6 +18,8 @@ use targets::{FamilyTargets, TargetInput};
 
 #[derive(Clone, Debug, Default)]
 pub struct ReviewOptions {
+    /// Collect expensive evidence only for this exact recorded worktree.
+    pub worktree: Option<BytePath>,
     pub evidence: ReviewLimits,
     pub controls: control::ControlLimits,
     pub context: ContextOptions,
@@ -101,6 +103,7 @@ pub fn enrich_with_options(
         limits,
         control_limits,
         &options.context,
+        options.worktree.as_ref(),
         hooks,
         callback,
     )
@@ -682,6 +685,8 @@ fn stops_family_history(operation: &GitRead) -> bool {
 
 fn family_timeout_reason(operation: &GitRead) -> String {
     let operation = match operation {
+        GitRead::Objects { .. } => "Objects".into(),
+        GitRead::ObjectInfo { .. } => "ObjectInfo".into(),
         GitRead::Commit { oid } => format!("Commit {oid}"),
         GitRead::Tree { oid } => format!("Tree {oid}"),
         GitRead::Blob { oid } => format!("Blob {oid}"),
@@ -745,12 +750,22 @@ fn local_summaries_collect(
     };
     let mut families = BTreeSet::new();
     let mut summary_bytes = 0usize;
+    let mut pending = inventory
+        .families
+        .iter()
+        .flat_map(|f| &f.worktrees)
+        .filter(|w| !w.bare && matches!(w.path_state, DirState::Present))
+        .count();
     for family in &inventory.families {
         let family_id = (family.identity.device, family.identity.inode);
         if !family.common_dir.to_path()?.is_absolute() || !families.insert(family_id) {
             return Err(error("invalid or duplicate inventory family"));
         }
         for worktree in &family.worktrees {
+            let remaining_worktrees = pending.max(1);
+            if !worktree.bare && matches!(worktree.path_state, DirState::Present) {
+                pending = pending.saturating_sub(1);
+            }
             if output.summaries.contains_key(&worktree.path) {
                 return Err(error("duplicate worktree path in inventory"));
             }
@@ -772,7 +787,10 @@ fn local_summaries_collect(
                 unavailable_local_summary(worktree, reason.into())?
             } else {
                 let mut limits = crate::local::SummaryLimits::default();
-                limits.timeout = limits.timeout.min(remaining);
+                // Reserve a share for every remaining present worktree. Unused
+                // time stays available to later rows; a focused retry gets its full cap.
+                let shares = u32::try_from(remaining_worktrees).unwrap_or(u32::MAX);
+                limits.timeout = limits.timeout.min(remaining / shares);
                 match collect(worktree, &limits) {
                     Ok(outcome) => {
                         if let Some(operation) = outcome.first_git_timeout
@@ -967,6 +985,7 @@ pub fn enrich_with_target_input_and_controls(
         input,
         forge,
         &ReviewOptions {
+            worktree: None,
             evidence: limits.clone(),
             controls: control_limits.clone(),
             context: ContextOptions::default(),
@@ -983,11 +1002,34 @@ fn collect_with_options(
     limits: &ReviewLimits,
     control_limits: &control::ControlLimits,
     context_options: &ContextOptions,
+    selected_worktree: Option<&BytePath>,
     hooks: &dyn control::ControlHooks,
     callback: &mut dyn FnMut(ProgressEvent),
 ) -> Result<Observations, SweepError> {
     limits.validate()?;
     let family_targets = FamilyTargets::bind_with(inventory, input, hooks)?;
+    let mut evidence_inventory = inventory.clone();
+    if let Some(selected) = selected_worktree {
+        if !selected.to_path()?.is_absolute()
+            || inventory
+                .families
+                .iter()
+                .flat_map(|f| &f.worktrees)
+                .filter(|w| &w.path == selected)
+                .count()
+                != 1
+        {
+            return Err(error(
+                "worktree must match exactly one recorded path (absolute, byte-exact)",
+            ));
+        }
+        for family in &mut evidence_inventory.families {
+            family.worktrees.retain(|w| &w.path == selected);
+        }
+        evidence_inventory
+            .families
+            .retain(|f| !f.worktrees.is_empty());
+    }
     if let Some(export) = forge {
         verify_forge(export)?;
     }
@@ -995,7 +1037,7 @@ fn collect_with_options(
     progress(callback, "controls", 0, None);
     let mut controls = control::ControlRun::collect(inventory, control_limits, hooks)?;
     let mut history = history::HistoryRun::collect(
-        inventory,
+        &evidence_inventory,
         &family_targets,
         limits,
         &controls.stopped_families,
@@ -1005,7 +1047,7 @@ fn collect_with_options(
     let LocalCollection {
         summaries: mut local_summaries,
         stopped_families,
-    } = current_local_summaries(inventory, &history.stopped_families)?;
+    } = current_local_summaries(&evidence_inventory, &history.stopped_families)?;
     history.stopped_families.extend(stopped_families.clone());
     progress(callback, "deep", 0, None);
     let mut reader = ObjectReader::with_limits(limits);
@@ -1130,6 +1172,12 @@ fn collect_with_options(
                 if let Err(e) = &current {
                     item.unknowns.push(e.to_string());
                 }
+                items.push(item);
+                continue;
+            }
+            if selected_worktree.is_some_and(|selected| selected != &worktree.path) {
+                item.unknowns
+                    .push("Not selected for evidence collection (--worktree).".into());
                 items.push(item);
                 continue;
             }
@@ -1263,6 +1311,13 @@ fn collect_with_options(
         }
     }
     for item in &mut items {
+        if selected_worktree.is_some_and(|selected| selected != &item.path) {
+            let omitted = "Not selected for evidence collection (--worktree).";
+            if !item.unknowns.iter().any(|reason| reason == omitted) {
+                item.unknowns.push(omitted.into());
+            }
+            continue;
+        }
         if item.local_summary.is_none() {
             item.unknowns.push(
                 "current local summary omitted: whole-review local summary byte budget reached"
@@ -1280,7 +1335,7 @@ fn collect_with_options(
     }
     progress(callback, "private_history", 0, None);
     let mut private = private::PrivateHistoryRun::collect(
-        inventory,
+        &evidence_inventory,
         &family_targets,
         &Default::default(),
         &crate::local::NativeHooks,
@@ -1311,16 +1366,18 @@ fn collect_with_options(
             }
         }
     }
-    history.finish(inventory, &mut items, &controls.final_families)?;
+    history.finish(&evidence_inventory, &mut items, &controls.final_families)?;
     progress(callback, "private_revalidate", items.len() as u64, None);
-    private.finish(inventory, &history.stopped_families)?;
+    private.finish(&evidence_inventory, &history.stopped_families)?;
     history
         .stopped_families
         .extend(private.stopped_families.clone());
-    history.reconcile_stopped(inventory, &mut items);
+    history.reconcile_stopped(&evidence_inventory, &mut items);
     for item in &mut items {
         item.private_history = private.output.histories.remove(&item.path);
-        if item.private_history.is_none() {
+        if item.private_history.is_none()
+            && selected_worktree.is_none_or(|selected| selected == &item.path)
+        {
             item.unknowns
                 .push("private history not collected: output byte budget reached".into());
         }
@@ -1347,9 +1404,14 @@ fn collect_with_options(
     let evidence_finished_unix_ms = now_ms();
     let context = if context_options.enabled {
         progress(callback, "context", items.len() as u64, None);
+        let context_items: Vec<_> = items
+            .iter()
+            .filter(|item| selected_worktree.is_none_or(|selected| selected == &item.path))
+            .cloned()
+            .collect();
         Some(context::collect(
-            inventory,
-            &items,
+            &evidence_inventory,
+            &context_items,
             &family_targets,
             &history,
             &reader,

@@ -258,3 +258,74 @@ fn repeated_limits_are_grouped_and_console_does_not_mutate_evidence()
     assert_eq!(serde_json::to_vec(&report)?, before);
     Ok(())
 }
+
+#[test]
+fn local_object_and_time_caps_have_distinct_retry_guidance() -> Result<(), SweepError> {
+    let mut report = report()?;
+    report.items[0].local_summary = Some(LocalSummary {
+        gaps: vec![Gap {
+            path: report.items[0].path.clone(),
+            reason: "HEAD blob unavailable: summary object limit reached".into(),
+        }],
+        ..Default::default()
+    });
+    report.items[1].local_summary = Some(LocalSummary {
+        gaps: vec![Gap {
+            path: report.items[1].path.clone(),
+            reason: "summary time budget exhausted during Git read".into(),
+        }],
+        ..Default::default()
+    });
+    let before = serde_json::to_vec(&report).map_err(|e| {
+        SweepError::new("test", "serialize", std::path::Path::new(""), e.to_string())
+    })?;
+    let summary = wt_sweep::presentation::summary(&report);
+    assert!(summary.contains("Local object limit reached"), "{summary}");
+    assert!(summary.contains("Local time budget reached"), "{summary}");
+    assert!(summary.contains("--worktree ABSOLUTE_PATH"), "{summary}");
+    assert!(
+        summary.contains("Object and byte caps still apply"),
+        "{summary}"
+    );
+    assert!(!summary.contains("Git timeout"), "{summary}");
+    assert_eq!(
+        before,
+        serde_json::to_vec(&report).map_err(|e| SweepError::new(
+            "test",
+            "serialize",
+            std::path::Path::new(""),
+            e.to_string()
+        ))?
+    );
+    Ok(())
+}
+
+#[test]
+fn focused_run_names_private_budget_without_suggesting_identical_retry() -> Result<(), SweepError> {
+    let mut report = report()?;
+    report.items[0]
+        .unknowns
+        .push("private history Git process or time budget reached".into());
+    report.items[0].local_summary = Some(LocalSummary {
+        gaps: vec![Gap {
+            path: report.items[0].path.clone(),
+            reason: "HEAD blob unavailable: summary object limit reached".into(),
+        }],
+        ..Default::default()
+    });
+    for item in &mut report.items[1..] {
+        item.unknowns
+            .push("Not selected for evidence collection (--worktree).".into());
+    }
+    let summary = wt_sweep::presentation::summary(&report);
+    assert!(
+        summary.contains("Private history collection budget reached"),
+        "{summary}"
+    );
+    assert!(
+        summary.contains("Inspect the selected worktree's gaps"),
+        "{summary}"
+    );
+    assert!(!summary.contains("Retry one worktree"), "{summary}");
+    Ok(())
+}

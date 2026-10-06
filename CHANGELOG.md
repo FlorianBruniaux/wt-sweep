@@ -9,6 +9,11 @@ the Cargo package version is a development version.
 
 ### Added
 
+- `review` and `plan --worktree ABSOLUTE_PATH` focus history, local, private
+  history and context collection on one recorded worktree. Other rows and the
+  original inventory remain in the report with explicit missing evidence.
+
+
 - Task-based model and reasoning profiles for the `wt-sweep` skill, with
   host-capability checks, inherited-setting fallbacks and at most two read-only
   subagents for independent report reading or verification.
@@ -146,6 +151,16 @@ the Cargo package version is a development version.
 
 ### Changed
 
+- Local summaries group tree and blob reads into bounded Git batches, size
+  payloads before reading them and verify each object against its full OID.
+- Commit history shares a verified target traversal across worktrees and alias
+  refs in the same physical family. The per-target step cap counts unique
+  expansions; each ref still receives its own final check.
+- Local collection reserves a share of the remaining time for each remaining
+  worktree. A focused retry gets the normal per-worktree allowance.
+- The console distinguishes local time, object and byte caps and explains a
+  focused retry without implying that per-worktree caps are raised.
+
 - Align the English/French README, acceptance plan and progress entry points with
   the merged T01-T09 triage. Add a roadmap separating large-repository collection
   work from the gated backup and removal phases, with dated delivery evidence.
@@ -180,6 +195,12 @@ the Cargo package version is a development version.
 - Kept local handoffs outside tracked source to avoid distributing private paths.
 
 ### Fixed
+
+- Separate commit-history and private-history phase deadlines from full Git-call
+  timeouts. Budget exhaustion leaves the affected checks incomplete without
+  quarantining unrelated evidence in the same repository family.
+- Failed final private checks now invalidate enumeration completeness, keeping
+  both private coverage and final consistency unknown.
 
 - Give the expanded macOS CI suite 45 minutes: the 15-minute and intermediate
   30-minute job limits interrupted runs. Test commands and product time budgets

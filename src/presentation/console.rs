@@ -94,6 +94,22 @@ fn render(review: &Review, rows: &[&ReviewItem], filtered: bool) -> String {
     } else {
         let _ = writeln!(output, "Worktrees: {total}");
     }
+    let not_requested = review
+        .items
+        .iter()
+        .filter(|item| {
+            item.unknowns
+                .iter()
+                .any(|reason| reason == "Not selected for evidence collection (--worktree).")
+        })
+        .count();
+    if not_requested > 0 {
+        let _ = writeln!(
+            output,
+            "Targeted collection: {} worktree(s); {not_requested} not requested",
+            total - not_requested
+        );
+    }
     let targets: BTreeSet<_> = review
         .items
         .iter()
@@ -221,8 +237,21 @@ fn render(review: &Review, rows: &[&ReviewItem], filtered: bool) -> String {
     let limits = limits(review);
     if !limits.is_empty() {
         let _ = writeln!(output, "\nCOLLECTION LIMITS");
-        for reason in limits {
+        for reason in &limits {
             let _ = writeln!(output, "  - {reason}");
+        }
+        if limits.iter().any(|reason| reason.starts_with("Local ")) {
+            if not_requested > 0 {
+                let _ = writeln!(
+                    output,
+                    "\nNEXT CHECK\n  Inspect the selected worktree's gaps in the report.\n  The focused run still has per-worktree object, byte and time caps."
+                );
+            } else {
+                let _ = writeln!(
+                    output,
+                    "\nNEXT CHECK\n  Retry one worktree with --worktree ABSOLUTE_PATH.\n  This gives it the per-worktree allowance. Object and byte caps still apply."
+                );
+            }
         }
     }
     let _ = writeln!(
@@ -237,7 +266,9 @@ fn limits(review: &Review) -> BTreeSet<&'static str> {
     let mut limits = BTreeSet::new();
     let mut record = |reason: &str| {
         if reason.contains("history") && reason.contains("budget") {
-            limits.insert(if reason.contains("traversal") {
+            limits.insert(if reason.contains("private history") {
+                "Private history collection budget reached"
+            } else if reason.contains("traversal") {
                 "History traversal limit reached"
             } else {
                 "History collection budget reached"
@@ -245,6 +276,19 @@ fn limits(review: &Review) -> BTreeSet<&'static str> {
         }
         if reason.contains("local") && (reason.contains("budget") || reason.contains("deadline")) {
             limits.insert("Local collection budget reached");
+        }
+        if reason.contains("summary time budget")
+            || reason.contains("summary cancelled or deadline")
+        {
+            limits.insert("Local time budget reached");
+        }
+        if reason.contains("summary object limit") {
+            limits.insert("Local object limit reached");
+        }
+        if reason.contains("summary total byte limit")
+            || reason.contains("summary object byte limit")
+        {
+            limits.insert("Local byte limit reached");
         }
         if reason.contains("Git timeout") || reason.contains("git_timeout") {
             limits.insert("Git timeout; some repository checks could not finish");
