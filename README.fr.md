@@ -14,6 +14,8 @@
   </tr>
 </table>
 
+---
+
 **Un outil en ligne de commande pour macOS qui inventorie les worktrees Git et compare leurs commits aux références que vous choisissez.**
 
 [![Vérifications du MVP en lecture seule](https://github.com/FlorianBruniaux/wt-sweep/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/FlorianBruniaux/wt-sweep/actions/workflows/ci.yml)
@@ -21,7 +23,11 @@
 [![Système : macOS](https://img.shields.io/badge/Runtime-macOS-597ee5)](docs/getting-started.md#prerequisites)
 [![Licence : FSL-1.1-ALv2](https://img.shields.io/badge/License-FSL--1.1--ALv2-597ee5)](LICENSE.md)
 
-[Démarrage rapide](#démarrage-rapide) · [Tutoriel et tests](docs/tutorial.fr.md) · [Prompt à copier](docs/tutorial.fr.md#prompt-à-donner-à-un-assistant) · [Fonctionnalités](#fonctionnalités) · [Fonctionnement](#fonctionnement) · [Documentation](#documentation) · [Changelog](CHANGELOG.md) · [Contribuer](CONTRIBUTING.md)
+[Démarrage rapide](#démarrage-rapide) · [Fonctionnalités](#fonctionnalités) · [Fonctionnement](#fonctionnement) · [Documentation](#documentation)
+
+[Tutoriel et tests](docs/tutorial.fr.md) · [Prompt à copier](docs/tutorial.fr.md#prompt-à-donner-à-un-assistant) · [Feuille de route](docs/roadmap.md) · [Changelog](CHANGELOG.md) · [Contribuer](CONTRIBUTING.md)
+
+---
 
 Worktree Sweep (`wt-sweep`) repère les dépôts et leurs worktrees dans le périmètre
 que vous choisissez. Il vérifie les relations Git locales et peut inclure dans
@@ -29,10 +35,11 @@ ses rapports des inventaires de fichiers et des données capturées depuis GitHu
 ou GitLab. Écrit en Rust, il produit du texte et du JSON versionné. Il fonctionne
 localement, sans service, compte de forge ni modèle d’IA.
 
-**État : MVP en lecture seule pour macOS.** La découverte et la revue sont
-implémentées ; la sauvegarde, la restauration et la suppression sont
-indisponibles. `apply` refuse toute invocation. Le nom du projet est provisoire
-et aucune version n’a été publiée.
+> [!NOTE]
+> **État : MVP en lecture seule pour macOS.** La découverte et la revue sont
+> implémentées ; la sauvegarde, la restauration et la suppression sont
+> indisponibles. `apply` refuse toute invocation. Le nom du projet est provisoire
+> et aucune version n’a été publiée.
 
 ![Illustration historique : un HEAD Git identique ne préserve pas les fichiers locaux non suivis.](docs/assets/git-and-local-work.svg)
 
@@ -41,6 +48,8 @@ Illustration historique des preuves. Avec `triage/1`, le contenu non suivi impos
 Reproduisez ce cas avec la [démo sur un dépôt jetable](docs/getting-started.md#disposable-demo).
 Les [sources du visuel et les notes de revue](docs/assets/README.md) comprennent
 le SVG modifiable. L’illustration est en anglais.
+
+---
 
 ## Pourquoi cet outil
 
@@ -55,6 +64,8 @@ de preuve manquants. `review` et `plan` comparent le HEAD, l’index et les fich
 courants. Avec `scan --local`, l’inventaire relève aussi leurs empreintes et
 métadonnées détaillées. Ces relevés aident à examiner ce qui reste dans un worktree ;
 ils ne contiennent aucune sauvegarde des fichiers.
+
+---
 
 ## Démarrage rapide
 
@@ -135,6 +146,8 @@ suffit pas s’il reste des modifications locales ou une histoire propre au refl
 Consultez le [contrat de décision](docs/contracts.md#triage-policy) et le
 [tutoriel](docs/tutorial.fr.md).
 
+---
+
 ## Utiliser avec Claude ou Codex
 
 Le dépôt inclut le skill `wt-sweep` pour lire les rapports par petits groupes et
@@ -148,6 +161,8 @@ Le [guide de l’assistant et ses prompts](docs/assistant-skill.md) couvre une
 nouvelle revue, la reprise d’un rapport et un test local sur des dépôts jetables.
 
 Pour une ligne incomplète, la [collecte ciblée](docs/tutorial.fr.md#approfondir-un-worktree-après-une-analyse-partielle) réserve les lectures au chemin exact du worktree. Le rapport conserve les autres lignes et leurs contrôles manquants.
+
+---
 
 ## Fonctionnalités
 
@@ -172,6 +187,8 @@ avec des volumes injectés, sans scanner la machine de développement.
 Commencez par un dépôt ou des racines choisies.
 
 </details>
+
+---
 
 ## Fonctionnement
 
@@ -237,6 +254,8 @@ de temps, pas un instantané atomique du système de fichiers.
 L’[architecture](docs/architecture.md) et les [contrats de preuve](docs/contracts.md)
 précisent les limites de lecture et de publication des rapports.
 
+---
+
 ## Documentation
 
 | Guide | Contenu |
@@ -253,6 +272,8 @@ précisent les limites de lecture et de publication des rapports.
 Le tutoriel est en français ; les autres guides d’utilisation détaillés sont en
 anglais. Les documents de conception, d’expérimentation et d’implémentation sont
 conservés dans leur version française d’origine.
+
+---
 
 ## Feuille de route et validation
 
@@ -290,6 +311,8 @@ non vérifiés.
 
 </details>
 
+---
+
 ## Développement et état du projet
 
 Consultez [CONTRIBUTING.md](CONTRIBUTING.md) pour la compilation, les commandes
@@ -300,6 +323,8 @@ de comportement avant de construire un moteur de suppression.
 
 Le projet se distribue actuellement par ses sources. La publication Cargo est
 désactivée ; aucun paquet n’a été publié.
+
+---
 
 ## Licence
 

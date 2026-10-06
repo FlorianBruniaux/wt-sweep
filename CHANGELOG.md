@@ -151,6 +151,9 @@ the Cargo package version is a development version.
 
 ### Changed
 
+- Separate README sections with horizontal rules in both languages, split navigation
+  into two rows, and display the read-only status in a GitHub note.
+
 - Local summaries group tree and blob reads into bounded Git batches, size
   payloads before reading them and verify each object against its full OID.
 - Commit history shares a verified target traversal across worktrees and alias
