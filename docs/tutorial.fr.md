@@ -69,7 +69,8 @@ Chaque nouveau dossier `run-*` contient :
 | `report.txt` | Le détail des lignes choisies, avec totaux et lacunes source. |
 | `run.json` | Le reçu et les hashes des trois artefacts. |
 
-Le résumé de cinq lignes ne remplace pas le détail. Le chemin d’exécution est
+Le bilan console distingue verdicts, couverture et contrôles restants.
+Il ne remplace pas le détail. Le chemin d’exécution est
 affiché lors de la publication. Un reçu lie les octets qu’il énumère ; une erreur
 de synchronisation finale laisse la durabilité inconnue. Aucun fichier de cette
 liste ne constitue une sauvegarde des worktrees.
@@ -146,10 +147,14 @@ Résultats attendus sur une collecte complète de cette fixture :
 | Avec cible | Principal et worktree contenant la note | Worktree lié propre, usage à confirmer | Aucun |
 | Sans cible | Les mêmes deux worktrees | Aucun | Worktree lié propre, cible manquante |
 
-Le premier résumé doit commencer par `Worktrees: 3`, puis
-`Keep: 2; cleanup candidates: 1; verify: 0`. Sans cible, la deuxième ligne devient
-`Keep: 2; cleanup candidates: 0; verify: 1`. L’absence d’export forge reste
-inconnue ; le reçu peut être `partial` malgré le code `0`.
+La section `RESULTS` doit afficher `Keep: 2`, `Cleanup candidates: 1` et
+`Needs verification: 0`. Sans cible, elle affiche respectivement 2, 0 et 1.
+`COVERAGE` distingue les contrôles locaux complets, partiels et non collectés.
+Une découverte complète ne signifie pas que l’analyse des fichiers ou de
+l’historique est complète. `CHECKS STILL NEEDED` indique les conditions manquantes ;
+`COLLECTION LIMITS` regroupe les limites de collecte observées.
+Le chemin du rapport détaillé figure dans `REPORT`.
+L’absence d’export forge reste inconnue ; le reçu peut être `partial` malgré le code `0`.
 
 `review` collecte le résumé local courant sans manifeste détaillé. La note est
 comptée comme non suivie dans `items[].local_summary`. Pour ses empreintes et
@@ -242,6 +247,10 @@ dépôts jamais découverts. Consultez les [limites et codes de sortie](cli.md).
 
 ## Prompt à donner à un assistant
 
+Claude Code et Codex peuvent utiliser directement le [skill du dépôt](assistant-skill.md).
+Il fournit le parcours progressif et des prompts plus courts. Le prompt ci-dessous
+reste utilisable par un assistant qui ne charge pas les skills du projet.
+
 Remplacez les trois valeurs avant de copier ce prompt dans un assistant qui
 dispose d’un terminal sur votre Mac. Worktree Sweep n’utilise aucun modèle.
 
@@ -282,3 +291,31 @@ réversible ; il ne les anonymise pas.
 Le [guide de dépannage](getting-started.md#troubleshooting) détaille les refus.
 Pour signaler un échec, conservez commande, code, versions et révision testée,
 avec un extrait expurgé selon les [consignes de contribution](../CONTRIBUTING.md#report-a-problem).
+
+## Approfondir un worktree après une analyse partielle
+
+Une limite de collecte ne signifie pas que le worktree est propre. Pour reprendre
+les contrôles d’un chemin précis, lancer ce bloc depuis le checkout de `wt-sweep`
+après compilation. Saisir le chemin exact affiché dans le rapport précédent.
+
+```sh
+(
+  set -eu
+  printf 'Chemin absolu du dépôt : '
+  IFS= read -r repo_path
+  printf 'Ref cible confirmée (refs/heads/... ou refs/remotes/...) : '
+  IFS= read -r target_ref
+  printf 'Chemin absolu du worktree à approfondir : '
+  IFS= read -r worktree_path
+  report_dir="$(mktemp -d /private/tmp/wt-sweep-report.XXXXXX)"
+  ./target/release/wt-sweep review --repo "$repo_path" --target "$target_ref" \
+    --worktree "$worktree_path" --path-prefix "$worktree_path" \
+    --summary --run-dir "$report_dir"
+  printf 'Rapports : %s\n' "$report_dir"
+)
+```
+
+Ce passage réserve les lectures de fichiers et d’histoire au chemin choisi.
+L’inventaire complet et les contrôles d’identité restent présents ; les autres
+lignes portent leurs preuves manquantes. Les plafonds par worktree continuent
+à s’appliquer. Le nouveau rapport ne complète pas rétroactivement l’ancien.

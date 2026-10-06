@@ -123,7 +123,7 @@ A saved manifest records observations, not file contents.
 ### Read the result
 
 Each row names the worktree, branch, full HEAD, local changes, history and verdict.
-The detail explains the reasons and the next checks; `--summary` gives five lines.
+The detail explains the reasons and the next checks; `--summary` groups verdicts, coverage and remaining checks in a console recap.
 
 | Verdict | Meaning |
 | --- | --- |
@@ -136,6 +136,22 @@ no deletion and does not establish a complete backup. A merged HEAD alone cannot
 qualify while local changes or exclusive reflog history remain.
 See the [decision contract](docs/contracts.md#triage-policy) and
 [disposable demo](docs/getting-started.md#disposable-demo).
+
+---
+
+## Use with Claude or Codex
+
+The repository includes a `wt-sweep` skill for reading reports in small batches
+and suggesting conservation or verification steps. Start Claude Code or Codex
+in this checkout, invoke `/wt-sweep` or `$wt-sweep`, and provide the repository
+path and confirmed integration ref. The skill preserves CLI verdicts and missing
+evidence. Cleanup execution remains unavailable. Model/effort profiles and bounded
+subagent delegation are described in the guide.
+
+See the [assistant guide and example prompts](docs/assistant-skill.md) for a
+fresh review, an existing report and a disposable local test.
+
+For an incomplete row, use the [targeted collection recipe](docs/targets-and-filters.md#complete-the-evidence-for-one-worktree) to reserve evidence reads for its exact path. Other rows and their missing checks remain in the report.
 
 ---
 
@@ -153,7 +169,7 @@ See the [decision contract](docs/contracts.md#triage-policy) and
 | Local file manifests | Inspect file hashes, metadata, index entries and selected worktree administration. | `scan --local` |
 | Git relationships | Observe identical commits, ancestry and identical trees against named refs. | `plan --target FULL_REF` |
 | Offline forge evidence | Import captured GitHub/GitLab data with provenance, without contacting a forge. | `forge ingerer` |
-| Human and machine output | Read the detailed report or five-line summary; retain full path bytes and OIDs in JSON. | `--summary`, `--format json` |
+| Human and machine output | Read the detailed report or structured console recap; retain full path bytes and OIDs in JSON. | `--summary`, `--format json` |
 | Separate runs | Keep concurrent reports in distinct directories with artifact hashes and publication timestamps. | `--run-dir BASE` |
 
 Global discovery is also available through `scan --all` and `review --all`. It uses visible mounted
@@ -245,10 +261,12 @@ records are retained in French.
 
 ## Roadmap and validation
 
-T01-T09 triage is merged into `main`. Large-repository analysis remains partial:
-the recorded 48-worktree trial returned 3 `keep`, 45 `verify` and no candidate
-after local and history budgets were reached. The [roadmap](docs/roadmap.md)
-prioritizes measuring and reducing that collection cost. Writer exclusion remains
+T01-T09 triage is merged into `main`. The [collection changes](docs/collection-performance.md)
+batch object reads, share target walks and support focused retries. The latest
+whole-repository trial still returned 4 `keep`, 45 `verify` and no candidate from
+49 worktrees, with every local summary partial. A focused retry verified ancestry
+and found ignored files, retaining that worktree. The [roadmap](docs/roadmap.md)
+tracks the remaining object and private-history limits. Writer exclusion remains
 unproven, so backup, restore and removal are unavailable.
 
 <details>
@@ -258,7 +276,7 @@ unproven, so backup, restore and removal are unavailable.
 | --- | --- |
 | U1–U4: discovery and review | Implemented and tested locally on macOS; evidence limits remain explicit. |
 | T01-T09: worktree triage | Merged; one-command review, C1-C5 verdicts, local and private history, targets, filters and reports. |
-| Large-repository coverage | Still partial in the recorded trial; collection performance is the next work item. |
+| Large-repository coverage | Object reads are batched and retries can target one worktree; the recorded large-repository trial remains partial. |
 | E1: exclude concurrent writers | **Not demonstrated.** Existing experiments defeat the proposed locking and rename approaches. |
 | U5: durable backup and independent restore | Blocked on E1 and a complete preservation contract. |
 | U6–U7: removal | Unavailable, pending fixture validation, independent review and exact human approval. |

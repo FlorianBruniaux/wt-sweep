@@ -132,7 +132,7 @@ Un manifeste enregistre des observations, pas le contenu des fichiers.
 
 Chaque ligne indique le worktree, sa branche, son HEAD complet, son état local,
 son histoire et son verdict. Le détail explique les raisons et les vérifications
-à faire ; `--summary` donne un résumé de cinq lignes.
+à faire ; `--summary` regroupe les verdicts, la couverture et les vérifications restantes dans la console.
 
 | Verdict | Signification |
 | --- | --- |
@@ -145,6 +145,22 @@ aucune suppression et ne constitue pas une sauvegarde complète. Un HEAD mergé 
 suffit pas s’il reste des modifications locales ou une histoire propre au reflog.
 Consultez le [contrat de décision](docs/contracts.md#triage-policy) et le
 [tutoriel](docs/tutorial.fr.md).
+
+---
+
+## Utiliser avec Claude ou Codex
+
+Le dépôt inclut le skill `wt-sweep` pour lire les rapports par petits groupes et
+proposer les actions de conservation ou de vérification utiles. Ouvrez Claude
+Code ou Codex dans ce checkout, invoquez `/wt-sweep` ou `$wt-sweep`, puis donnez
+le chemin du dépôt et la référence d’intégration confirmée. Le skill conserve
+les verdicts de la CLI et leurs limites. La suppression reste indisponible. Le guide décrit aussi le choix du modèle,
+du raisonnement et le recours limité à des sous-agents.
+
+Le [guide de l’assistant et ses prompts](docs/assistant-skill.md) couvre une
+nouvelle revue, la reprise d’un rapport et un test local sur des dépôts jetables.
+
+Pour une ligne incomplète, la [collecte ciblée](docs/tutorial.fr.md#approfondir-un-worktree-après-une-analyse-partielle) réserve les lectures au chemin exact du worktree. Le rapport conserve les autres lignes et leurs contrôles manquants.
 
 ---
 
@@ -162,7 +178,7 @@ Consultez le [contrat de décision](docs/contracts.md#triage-policy) et le
 | Inventaires de fichiers locaux | Examiner les empreintes, métadonnées, entrées d’index et certains éléments d’administration du worktree. | `scan --local` |
 | Relations Git | Vérifier l’identité de commits, l’ascendance et l’identité d’arbres par rapport aux références nommées. | `plan --target FULL_REF` |
 | Preuves de forge hors ligne | Importer des données capturées depuis GitHub ou GitLab avec leur provenance, sans contacter de forge. | `forge ingerer` |
-| Rapports texte et JSON | Lire le rapport détaillé ou le résumé de cinq lignes ; conserver les octets complets des chemins et les identifiants d’objets Git dans le JSON. | `--summary`, `--format json` |
+| Rapports texte et JSON | Lire le rapport détaillé ou le bilan structuré dans la console ; conserver les octets complets des chemins et les identifiants d’objets Git dans le JSON. | `--summary`, `--format json` |
 | Exécutions séparées | Conserver les rapports concurrents dans des dossiers distincts, avec les empreintes des fichiers produits et les horodatages de publication. | `--run-dir BASE` |
 
 La découverte globale est également disponible via `scan --all` ou `review --all`. Elle utilise
@@ -261,12 +277,14 @@ conservés dans leur version française d’origine.
 
 ## Feuille de route et validation
 
-Le triage T01-T09 est fusionné dans `main`. L'analyse du gros dépôt essayé reste
-partielle : sur 48 worktrees, 3 `keep`, 45 `verify` et aucun candidat après
-épuisement des budgets locaux et d'histoire. La [feuille de route](docs/roadmap.md)
-donne la priorité à la mesure et à la réduction de ce coût de collecte.
-L'exclusion des écritures concurrentes n'est pas démontrée ; la sauvegarde,
-la restauration et la suppression restent indisponibles.
+Le triage T01-T09 est fusionné dans `main`. Le [lot de collecte](docs/collection-performance.md)
+groupe les lectures d’objets, partage les parcours des cibles et permet un passage
+ciblé. Le dernier essai complet compte 49 worktrees : 4 `keep`, 45 `verify` et
+aucun candidat ; tous les résumés locaux restent partiels. Un passage ciblé a
+vérifié une ascendance et trouvé des fichiers ignorés, donc retenu ce worktree.
+La [feuille de route](docs/roadmap.md) suit les plafonds d’objets et d’histoire privée
+restants. L’exclusion des écritures concurrentes n’est pas démontrée ; sauvegarde,
+restauration et suppression restent indisponibles.
 
 <details>
 <summary>Étapes d’implémentation et validations consignées</summary>
@@ -275,7 +293,7 @@ la restauration et la suppression restent indisponibles.
 | --- | --- |
 | U1–U4 : découverte et revue | Implémentées et testées localement sur macOS ; les limites des preuves restent explicites. |
 | T01-T09 : triage des worktrees | Fusionné ; revue en une commande, verdicts C1-C5, état local, histoire privée, cibles, filtres et rapports. |
-| Couverture des gros dépôts | Encore partielle sur l'essai consigné ; le coût de collecte est le prochain sujet. |
+| Couverture des gros dépôts | Lectures groupées et passage ciblé disponibles ; l’essai du gros dépôt reste partiel. |
 | E1 : exclure les écritures concurrentes | **Non démontré.** Les expériences existantes mettent en défaut les approches proposées par verrouillage et renommage. |
 | U5 : sauvegarde durable et restauration indépendante | Bloquée par E1 et par l’absence d’un contrat de préservation complet. |
 | U6–U7 : suppression | Indisponible, dans l’attente de validations sur des dépôts jetables, d’une revue indépendante et d’une approbation humaine portant sur les actions exactes. |

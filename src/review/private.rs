@@ -340,6 +340,7 @@ impl<'a> PrivateHistoryRun<'a> {
         {
             return Err(error("private history Git process or time budget reached"));
         }
+        let backend_cap = ControlledGit::default().timeout_limit();
         let git = ControlledGit::with_output_limit(
             self.limits.timeout.saturating_sub(self.started.elapsed()),
             self.limits
@@ -347,9 +348,17 @@ impl<'a> PrivateHistoryRun<'a> {
                 .saturating_sub(self.bytes)
                 .min(8 * 1024 * 1024),
         );
+        let facet_limited = git.timeout_limit() < backend_cap;
         let result = git.read(path, op.clone());
         self.processes += git.spawned_processes() as usize;
         if result.as_ref().is_err_and(|e| e.code == "git_timeout") {
+            if facet_limited && self.started.elapsed() >= self.limits.timeout {
+                // A shortened phase allowance cannot establish backend failure.
+                // The exhausted phase refuses its own remaining dependent reads.
+                return Err(error(
+                    "private history time budget exhausted during Git read; dependent private reads refused",
+                ));
+            }
             self.stopped_families.entry(Self::id(f)).or_insert(op);
         }
         result
@@ -1708,6 +1717,7 @@ impl<'a> PrivateHistoryRun<'a> {
                         }
                     }
                     if entire_invalid {
+                        h.enumeration_complete = false;
                         h.gaps.push("private history final source/anchor/administration check incomplete or changed".into());
                     }
                     h.finished_unix_ms = now_ms();
@@ -1766,3 +1776,7 @@ fn invalidate_private(h: &mut PrivateHistory, reason: &str) {
         h.gaps.push(reason.into());
     }
 }
+
+#[cfg(all(test, unix))]
+#[path = "private_deadline_tests.rs"]
+mod deadline_tests;

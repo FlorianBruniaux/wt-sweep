@@ -24,7 +24,9 @@ Filters select reviewed rows; JSON views retain the full source and its coverage
 Global discovery reports gaps and does not establish a machine-wide snapshot.
 --workers bounds parallel metadata reads; aggregation order stays deterministic.
 --local hashes local files and index within explicit budgets; gaps remain visible.
-review and plan report phase progress on stderr and keeps JSON on stdout.
+review and plan report readable progress on stderr and keep JSON on stdout.
+--summary prints verdicts, collection coverage and remaining checks.
+--worktree PATH focuses evidence collection; unselected rows remain explicitly incomplete.
 --run-dir creates an isolated run below an existing directory outside inspected targets.
 apply is unavailable until conservation and approval gates are verified.
 ";
@@ -148,7 +150,7 @@ fn command_help(command: &str) -> Result<(), String> {
             "Discovery requires an explicit scope. --local additionally hashes local content within budgets.\nProgress is on stderr. Gaps and unfinished scope remain in the inventory.\n"
         }
         "plan" | "review" => {
-            "REVIEW OPTIONS:\n  --target FULL_REF... | --target-map FILE\n  --filter-repo PATH  --path-prefix PATH  --branch FULL_REF\n  --local-state clean|dirty|unknown  --verdict keep|cleanup_candidate|verify\n  --group-by repo|directory  --forge FILE\n  --changelog-path RELATIVE... | --no-context\n  --summary  --format json|table  --out FILE | --run-dir BASE\n\nTargets must be explicit; no target leaves integration unknown.\nFilters select rows after judgement and retain source coverage in JSON views.\n--summary cannot be combined with --format json. Progress is on stderr.\n--run-dir needs an existing directory outside inspected targets.\nreview saves inventory.json, review.json, report.txt and run.json together.\nplan reuses a saved inventory and saves review.json, report.txt and run.json.\nA cleanup_candidate still requires confirmation of its use. apply is unavailable.\n"
+            "REVIEW OPTIONS:\n  --target FULL_REF... | --target-map FILE\n  --worktree ABSOLUTE_PATH (collect evidence for this exact recorded worktree)\n  --filter-repo PATH  --path-prefix PATH  --branch FULL_REF\n  --local-state clean|dirty|unknown  --verdict keep|cleanup_candidate|verify\n  --group-by repo|directory  --forge FILE\n  --changelog-path RELATIVE... | --no-context\n  --summary  --format json|table  --out FILE | --run-dir BASE\n\nTargets must be explicit; no target leaves integration unknown.\nFilters select rows after judgement and retain source coverage in JSON views.\n--worktree narrows history/local/private/context reads; full inventory and identity checks remain.\nOther rows explicitly retain missing evidence. Add --path-prefix for a focused display.\n--summary cannot be combined with --format json. Progress is on stderr.\n--run-dir needs an existing directory outside inspected targets.\nreview saves inventory.json, review.json, report.txt and run.json together.\nplan reuses a saved inventory and saves review.json, report.txt and run.json.\nA cleanup_candidate still requires confirmation of its use. apply is unavailable.\n"
         }
         _ => {
             "Offline evidence only. No network command is executed by these subcommands.\ncommandes prints capture guidance; ingerer reads captured raw data and its receipt.\n"
@@ -235,27 +237,7 @@ fn collect_inventory(opts: &Options) -> Result<Inventory, String> {
             .ok_or("workers must be an integer between 1 and 8")?;
     }
     let inventory = scan_scope_with_progress(&scope, &limits, &LocalFilesystem, &mut |event| {
-        let current = event
-            .current
-            .as_ref()
-            .map(|path| format!(" current={}", path.display()))
-            .unwrap_or_default();
-        eprintln!(
-            "discovery: phase={} directories={} entries={} families={} pending={} stop={}{}",
-            event.phase.as_str(),
-            event.directories,
-            event.entries,
-            event.families,
-            event
-                .queued_paths
-                .saturating_add(event.metadata_ready_paths),
-            event
-                .stop
-                .as_ref()
-                .map(DiscoveryStop::as_str)
-                .unwrap_or("none"),
-            current
-        );
+        eprintln!("{}", wt_sweep::presentation::discovery_progress(event));
     })
     .map_err(|e| e.to_string())?;
     Ok(inventory)
@@ -368,6 +350,7 @@ fn collect_local(inventory: &mut Inventory, publication_limits: &PublicationLimi
 }
 
 const PLAN_OPTIONS: &[&str] = &[
+    "--worktree",
     "--target",
     "--target-map",
     "--changelog-path",
@@ -470,7 +453,10 @@ fn review_settings(opts: &Options) -> Result<ReviewSettings, String> {
     if opts.contains_key("--no-context") && opts.contains_key("--changelog-path") {
         return Err("--no-context and --changelog-path are mutually exclusive".into());
     }
-    let mut review_options = ReviewOptions::default();
+    let mut review_options = ReviewOptions {
+        worktree: one(opts, "--worktree").map(|p| BytePath::from_path(&p)),
+        ..ReviewOptions::default()
+    };
     review_options.context.enabled = !opts.contains_key("--no-context");
     if let Some(paths) = opts.get("--changelog-path") {
         review_options.context.changelog_paths = paths
@@ -520,20 +506,7 @@ fn produce_review(
         &review_options,
         &wt_sweep::local::NativeHooks,
         &mut |event| {
-            let reason = event
-                .stop_reason
-                .as_deref()
-                .map(|reason| {
-                    format!(
-                        "; {}",
-                        reason
-                            .chars()
-                            .flat_map(char::escape_default)
-                            .collect::<String>()
-                    )
-                })
-                .unwrap_or_default();
-            eprintln!("{}: processed={}{}", event.phase, event.processed, reason);
+            eprintln!("{}", wt_sweep::presentation::review_progress(&event));
         },
     )
     .map_err(|e| e.to_string())?;
@@ -552,7 +525,7 @@ fn produce_review(
         wt_sweep::presentation::detail_bounded(&review, publication_limits.report_bytes)
     }
     .map_err(|e| e.to_string())?;
-    let table = if opts.contains_key("--summary") {
+    let mut table = if opts.contains_key("--summary") {
         if let Some(view) = &view {
             wt_sweep::presentation::view_summary(view)
         } else {
@@ -561,6 +534,9 @@ fn produce_review(
     } else {
         detail.clone()
     };
+    if opts.contains_key("--summary") && !opts.contains_key("--run-dir") {
+        table.push_str("\nDetails: omit --summary, or use --run-dir to save report.txt.\n");
+    }
     let json = if let Some(view) = &view {
         bounded_json(view, publication_limits.json_bytes)
     } else {
@@ -650,14 +626,13 @@ fn deliver(
         if opts.get("--format").is_some_and(|v| v[0] == "json") {
             print(&json)
         } else if opts.contains_key("--summary") {
-            let mut lines: Vec<_> = table.lines().map(str::to_owned).collect();
-            if let Some(detail_line) = lines.get_mut(3) {
-                *detail_line = format!(
-                    "Read-only review; usage to confirm, no removal authorized. Detail: {}",
+            print(
+                format!(
+                    "{table}\nREPORT\n  {}\n",
                     BytePath::from_path(&path.join("report.txt")).display()
-                );
-            }
-            print(format!("{}\n", lines.join("\n")).as_bytes())
+                )
+                .as_bytes(),
+            )
         } else {
             print(format!("{table}Run: {}\n", BytePath::from_path(&path).display()).as_bytes())
         }

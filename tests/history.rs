@@ -926,3 +926,182 @@ fn full_oid_case_alias_in_saved_head_keeps_provenance_and_current_identity() {
     assert_eq!(row.history[0].source_oid.as_deref(), Some(saved.as_str()));
     assert!(row.observations.iter().any(|o| o.relation == "ancestor"));
 }
+
+// Restoring per-source traversal makes this exceed the single target walk budget.
+fn shared_history_fixture() -> (Fixture, Vec<String>, Vec<String>) {
+    let f = Fixture::new();
+    let tree = f.git(&["rev-parse", "HEAD^{tree}"]);
+    let mut chain = vec![f.git(&["rev-parse", "HEAD"])];
+    for n in 1..12 {
+        chain.push(f.git(&[
+            "commit-tree",
+            &tree,
+            "-p",
+            chain.last().unwrap(),
+            "-m",
+            &format!("linear {n}"),
+        ]));
+    }
+    f.git(&["update-ref", "refs/heads/main", chain.last().unwrap()]);
+    for n in [0, 3, 6, 9] {
+        let path = f.0.join(format!("ancestor-{n}"));
+        f.git(&[
+            "worktree",
+            "add",
+            "--detach",
+            path.to_str().unwrap(),
+            &chain[n],
+        ]);
+    }
+    let divergent: Vec<_> = (0..2)
+        .map(|n| {
+            let oid = f.git(&["commit-tree", &tree, "-m", &format!("divergent {n}")]);
+            let path = f.0.join(format!("divergent-{n}"));
+            f.git(&["worktree", "add", "--detach", path.to_str().unwrap(), &oid]);
+            oid
+        })
+        .collect();
+    (f, chain, divergent)
+}
+
+#[test]
+fn distinct_sources_share_one_verified_target_walk_at_exact_total_budget() {
+    let (f, chain, divergent) = shared_history_fixture();
+    let inventory = scan_family(&f.0).unwrap();
+    let limits = wt_sweep::review::ReviewLimits {
+        traversal_steps: chain.len(),
+        per_target_steps: chain.len(),
+        object_read_attempts: chain.len() + divergent.len(),
+        slice_traversal_steps: 2,
+        deep_object_read_attempts: 1,
+        ..Default::default()
+    };
+    let facts = wt_sweep::review::enrich_with_limits(
+        &inventory,
+        &[BytePath::from_bytes(b"refs/heads/main")],
+        None,
+        &limits,
+    )
+    .unwrap();
+    assert_eq!(
+        facts.history_metrics.first_pass_items,
+        inventory.families[0].worktrees.len() as u64
+    );
+    for row in &facts.items {
+        let source = row.head.as_ref().unwrap();
+        let expected = if source == chain.last().unwrap() {
+            "identical_commit"
+        } else if divergent.contains(source) {
+            "not_ancestor"
+        } else {
+            "ancestor"
+        };
+        assert_eq!(
+            row.history[0].result, expected,
+            "source {source} was not decided from a shared verified graph"
+        );
+        assert!(row.history[0].stop_reason.is_none());
+    }
+    assert_eq!(
+        facts.history_metrics.traversal_steps,
+        chain.len() as u64,
+        "target graph was expanded more than once"
+    );
+    assert_eq!(
+        facts.history_metrics.object_read_attempts,
+        (chain.len() + divergent.len()) as u64
+    );
+    assert_eq!(facts.history_metrics.incomplete_targets, 0);
+}
+
+#[test]
+fn reduced_shared_target_cap_retains_seen_positives_and_explicit_unknowns() {
+    let (f, chain, _) = shared_history_fixture();
+    let limits = wt_sweep::review::ReviewLimits {
+        per_target_steps: 4,
+        slice_traversal_steps: 1,
+        deep_object_read_attempts: 1,
+        ..Default::default()
+    };
+    let facts = wt_sweep::review::enrich_with_limits(
+        &scan_family(&f.0).unwrap(),
+        &[BytePath::from_bytes(b"refs/heads/main")],
+        None,
+        &limits,
+    )
+    .unwrap();
+    for row in &facts.items {
+        let source = row.head.as_ref().unwrap();
+        if source == chain.last().unwrap() {
+            assert_eq!(row.history[0].result, "identical_commit");
+        } else if source == &chain[9] {
+            assert_eq!(row.history[0].result, "ancestor");
+        } else {
+            assert_eq!(row.history[0].result, "unknown");
+            assert!(
+                row.history[0]
+                    .stop_reason
+                    .as_deref()
+                    .unwrap()
+                    .contains("per-target")
+            );
+        }
+    }
+    assert_eq!(
+        facts.history_metrics.traversal_steps, 4,
+        "cap was spent again for another source"
+    );
+}
+
+#[test]
+fn target_ref_aliases_share_graph_but_revalidate_their_original_refs() {
+    let (f, chain, divergent) = shared_history_fixture();
+    f.git(&["branch", "alias"]);
+    let targets = [
+        BytePath::from_bytes(b"refs/heads/alias"),
+        BytePath::from_bytes(b"refs/heads/main"),
+    ];
+    let limits = wt_sweep::review::ReviewLimits {
+        per_target_steps: chain.len(),
+        slice_traversal_steps: 2,
+        deep_object_read_attempts: 1,
+        ..Default::default()
+    };
+    let facts = wt_sweep::review::enrich_with_limits_and_progress(
+        &scan_family(&f.0).unwrap(),
+        &targets,
+        None,
+        &limits,
+        &mut |event| {
+            if event.phase == "history_revalidate" {
+                f.git(&["update-ref", "refs/heads/alias", &divergent[0]]);
+            }
+        },
+    )
+    .unwrap();
+    for row in &facts.items {
+        let changed = row
+            .history
+            .iter()
+            .find(|o| o.target_ref == targets[0])
+            .unwrap();
+        let stable = row
+            .history
+            .iter()
+            .find(|o| o.target_ref == targets[1])
+            .unwrap();
+        assert_eq!(changed.result, "unknown");
+        assert!(changed.observed_result.is_some());
+        assert!(changed.stop_reason.as_deref().unwrap().contains("changed"));
+        let expected = if row.head.as_ref().unwrap() == chain.last().unwrap() {
+            "identical_commit"
+        } else if divergent.contains(row.head.as_ref().unwrap()) {
+            "not_ancestor"
+        } else {
+            "ancestor"
+        };
+        assert_eq!(stable.result, expected);
+    }
+    assert_eq!(facts.history_metrics.traversal_steps, chain.len() as u64);
+    assert_eq!(facts.history_metrics.target_resolution_attempts, 4);
+}

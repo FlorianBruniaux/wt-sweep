@@ -1,0 +1,12 @@
+[
+  {
+    "name": "wt-sweep",
+    "files": [
+      "SKILL.md",
+      "references/commands.md",
+      "references/reports.md",
+      "references/model-policy.md",
+      "evals/scenarios.json"
+    ]
+  }
+]

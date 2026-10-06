@@ -17,6 +17,126 @@ réussie avant fusion de la vérification du commit fusionné. La
 [feuille de route](roadmap.md) garde le diagnostic de performance prioritaire.
 E1 reste non démontrée et `apply` indisponible.
 
+## Collecte des gros dépôts, 06/10/2026
+
+Les lectures locales d’arbres et de blobs sont groupées et dimensionnées avant
+exécution. Le graphe d’une cible vérifiée est partagé entre worktrees de la même
+famille physique. Le temps local restant est réparti entre les worktrees ;
+`--worktree` permet un passage concentré sur un chemin, tout en conservant
+l’inventaire et les omissions explicites. Les README, le tutoriel, les contrats,
+l’aide CLI et les instructions Claude/Codex générées décrivent ce comportement.
+
+Les fixtures distinctes passent avec 23 processus Git pour 1 024 blobs et au plus
+40 lectures d’objets pour 1 024 dossiers. Un graphe partagé de 12 commits demande
+12 expansions. Les délais de phase d’histoire et d’histoire privée n’effacent
+plus les preuves indépendantes comme le ferait un vrai timeout du backend.
+Les revalidations manquantes restent inconnues.
+
+Le dernier passage complet compte 49 worktrees : 4 `keep`, 45 `verify`, aucun
+candidat. Il conserve trois ascendances vérifiées, sans fausse quarantaine ;
+les 49 résumés locaux restent partiels. Le passage ciblé vérifie une ascendance
+et observe au moins 4 969 fichiers ignorés, donc classe ce worktree `keep`. Les plafonds d’objets et d’histoire privée
+laissent encore des contrôles incomplets. Le [registre de collecte](collection-performance.md)
+détaille les fixtures, la revue indépendante et les limites des mesures réelles.
+
+Validation du lot : 303 tests Rust réussis, 2 ignorés ; 260 tests Python réussis
+sur 266, 6 ignorés ; six expériences de conservation réussies. Formatage, Clippy,
+builds et synchronisation des 22 fichiers générés passent. Le contrôle
+documentaire couvre 31 fichiers, 327 liens locaux et 38 blocs shell. La revue
+indépendante est statique ; les suites intégrées ont été exécutées par
+l’intégrateur. La validation distante reste distincte de ces résultats locaux.
+
+## Bilan console, 06/10/2026
+
+`--summary` affiche les verdicts, la couverture du périmètre source, le nombre de
+contrôles locaux complets, partiels ou absents et les conditions encore manquantes.
+Les budgets d’historique, budgets locaux et timeouts Git sont regroupés. Les
+messages de progression sont lisibles ; le JSON et les règles de décision restent
+inchangés. Ce changement d’affichage ne résout pas les limites de performance
+observées sur le gros dépôt.
+
+Vérifications locales : 280 tests Rust réussis, 2 ignorés ; formatage, Clippy,
+synchronisation des 12 fichiers d’instructions et 6 tests RETEX réussis.
+La suite Python complète a exécuté 253 cas : 246 réussis, 6 ignorés et une ancienne
+assertion `processed=1` à mettre à jour. Après cette correction et l’accord des
+messages au singulier, les 9 tests du module concerné passent. La suite Python
+complète n’a pas été rejouée après ces derniers changements.
+Le rendu du rapport existant de 50 worktrees donne 3 à conserver, 0 candidat et
+47 à vérifier, avec 0 contrôle local complet, 4 partiels et 46 non collectés.
+Aucune nouvelle analyse du dépôt réel n’a été lancée pour cette vérification.
+
+## Skill wt-sweep, 06/10/2026
+
+Le [skill utilisateur](assistant-skill.md) est intégré au harnais du dépôt.
+Il vérifie l’aide CLI, choisit le périmètre et les cibles explicites, lit les
+rapports par pages et propose des actions de conservation ou de vérification.
+Les README anglais/français, le tutoriel et la feuille de route le référencent.
+`apply` reste indisponible ; le skill ne produit pas de suppression de remplacement.
+
+La source `harness/skills/wt-sweep` est projetée à l’identique dans les dossiers
+natifs Claude et Codex. Les 20 fichiers générés sont synchronisés. Les tests du
+générateur couvrent aussi les ressources absentes, liens sortants, préimages
+modifiées et skills voisins à préserver.
+
+Essai comportemental sur une famille Git jetable : le principal est `keep` et
+le lié propre `cleanup_candidate`. L’ajout d’un fichier non suivi fait passer le
+lié à `keep`. La lecture paginée conserve les deux identités ; une vue filtrée
+à un candidat garde le total source de deux. Les longueurs et SHA-256 des artefacts
+correspondent au reçu. Les manifestes de fichiers et métadonnées avant/après
+restent identiques, hors atime exclu par l’oracle. Aucun dépôt réel n’a été scanné.
+
+Routage BM25 local vérifié pour les deux clients : 12 scénarios positifs et
+6 négatifs, skill éligible, seuil de qualité global satisfait. F1 de calibration
+0,923 ; F1 d’évaluation croisée 0,649 ; F1 global 0,739. Ces scores ne constituent
+pas une absence de faux positifs. Les 12 sondes de routage exécutées par client
+passent : quatre demandes positives nouvelles en français/anglais et huit
+négatives, dont les six du corpus. Les caches réels ont été reconstruits pour ce
+checkout, après essai dans un cache temporaire. Aucun hook ou réglage global
+n’a changé.
+
+Validation locale : formatage, Clippy et compilation réussis ; 280 tests Rust
+réussis, 2 ignorés. La suite Python a exécuté 260 cas : 254 réussis et 6 ignorés.
+Les deux tests du parcours du skill et les 14 tests du générateur ont aussi été
+exécutés séparément avec succès après les derniers ajustements. Les 6 tests
+RETEX passent. Le contrôle documentaire couvre 28 documents, 306 liens locaux
+et 33 blocs shell. Ces résultats ne prouvent pas une exécution de la CI distante.
+
+La présence des projections et le routage sont observés. Le chargement et
+l’invocation du nouveau skill dans une session native fraîche restent `UNKNOWN`.
+L’essai CLI ci-dessus est un test des recettes, pas une évaluation d’un modèle
+chargé automatiquement par le client.
+
+## Choix des modèles du skill, 06/10/2026
+
+La [politique de modèles](../harness/skills/wt-sweep/references/model-policy.md)
+précise quatre profils, de l’extraction factuelle à la revue indépendante. Elle
+vérifie les capacités du client avant de demander un modèle ou un niveau de
+raisonnement, respecte les choix de l’utilisateur et distingue une recommandation,
+une invocation acceptée et un réglage effectif confirmé. Les réglages persistants
+et les modèles des rôles de développement restent inchangés.
+
+Deux sous-agents au maximum peuvent lire des lots indépendants de rapports déjà
+collectés, sous réserve des places disponibles. Le coordinateur garde la collecte,
+les stashes partagés et la synthèse. Une preuve absente n’est pas un motif pour
+augmenter le raisonnement. Les recommandations de profils n’ont pas fait l’objet
+d’un benchmark de qualité ou de coût.
+
+Une revue séparée a été exécutée avec `gpt-6.1-sol` et `high` demandés au lancement.
+Le sous-agent a relu les règles et six scénarios : rapport simple, lots parallèles,
+contrôle indisponible, budget Git épuisé, retour partiel ou verdict altéré, choix
+explicite de l’utilisateur avec une place occupée. Aucun défaut actionnable n’a
+été signalé. L’acceptation des arguments est observée ; cette revue ne mesure ni
+le modèle effectif du fournisseur, ni le chargement natif du skill, ni sa qualité
+comparée sur des rapports réels.
+
+Après cet ajustement documentaire, les 14 tests du générateur et les 2 tests du
+parcours CLI passent. Les 22 fichiers générés sont synchronisés. Les deux caches
+BM25 ont été reconstruits : skill éligible, seuil global satisfait, 12 sondes sur
+12 réussies par client. Le contrôle documentaire couvre 29 documents, 312 liens
+locaux et 33 blocs shell. Les suites produit complètes
+ne sont pas rejouées pour ce changement d’instructions ; leurs résultats au
+commit précédent sont consignés ci-dessus.
+
 ## Historique U1-U4 et RETEX, 04-05/10/2026
 
 Les sections suivantes conservent les résultats, l'état Git et les limites de

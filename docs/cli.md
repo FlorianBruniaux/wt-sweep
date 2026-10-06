@@ -17,7 +17,7 @@ wt-sweep scan (--repo PATH | --root PATH... | --all)
   [--out FILE | --run-dir BASE]
 
 wt-sweep plan --inventory FILE [--target FULL_REF... | --target-map FILE]
-  [--filter-repo PATH] [--path-prefix PATH] [--branch FULL_REF]
+  [--worktree ABSOLUTE_PATH] [--filter-repo PATH] [--path-prefix PATH] [--branch FULL_REF]
   [--local-state clean|dirty|unknown] [--verdict keep|cleanup_candidate|verify]
   [--group-by repo|directory] [--forge FILE]
   [--changelog-path RELATIVE... | --no-context] [--summary] [--format json|table]
@@ -88,7 +88,7 @@ Unavailable paths, contradictory registrations and traversal errors remain
 observations. No repair, pruning or fetch is performed. Relative CLI paths are
 stored as absolute paths so replay from another directory preserves the scope.
 
-Discovery progress goes to stderr. `pending` counts known queued paths, including
+Discovery progress goes to stderr. The displayed pending count covers known queued paths, including
 prefetched metadata; it is not an estimate of all remaining files. Stops distinguish
 interruption, deadline, entry, directory and observation-byte limits. The JSON
 keeps a conservative remaining-scope cover: retry the requested roots, knowing
@@ -107,6 +107,7 @@ overwritten or removed.
 | `--inventory FILE` | Required saved `wt-sweep.inventory/1` artifact. |
 | `--target FULL_REF` | Explicit integration ref under `refs/heads/` or `refs/remotes/`; repeat for several. Requires one physical repository family. No default is guessed. |
 | `--target-map FILE` | `wt-sweep.targets/1` mapping of physical families to explicit refs. Cannot combine with `--target`. Missing families get no target. |
+| `--worktree ABSOLUTE_PATH` | Collect history, local files, private history and context for one exact recorded path. Full inventory, registration/control checks and unselected rows remain. This is a fresh targeted collection, not a resumed snapshot. |
 | `--filter-repo PATH` | Select a family by its exact common directory or a registered main/linked checkout path in the input inventory. No alias resolution. |
 | `--path-prefix PATH` | Select absolute path components: `/a` includes `/a/one`, not `/ab`. Parent traversal is refused. |
 | `--branch FULL_REF` | Match exact branch bytes, for example `refs/heads/feature`. |
@@ -116,7 +117,7 @@ overwritten or removed.
 | `--forge FILE` | Optional normalized `wt-sweep.forge/1` export. Its raw source and receipt, when supplied, must still be readable and match. |
 | `--changelog-path RELATIVE` | Read this tracked path at each recorded HEAD; repeat to replace the default changelog paths. Paths are relative to the repository root. |
 | `--no-context` | Skip optional commit samples and changelog reads. Cannot combine with `--changelog-path`. Decisions and their required checks remain the same. |
-| `--summary` | Print exactly five lines; incompatible with `--format json`. |
+| `--summary` | Print a structured recap of verdicts, source coverage and remaining checks; incompatible with `--format json`. |
 
 The command first collects bounded commit-history results across worktrees, then
 collects current local summaries and checks deep Git relationships
@@ -128,7 +129,8 @@ not set priority under collection budgets. Filters intersect and run after analy
 explicit grouping, JSON becomes `wt-sweep.review-view/1`: the complete source
 review, all historical family bindings and coverage remain in it. Text reports
 show selected/source totals, even when no row matches. Use a narrower scan scope
-to reduce collection work; a display filter does not reduce it. See
+to reduce discovery work, or `--worktree` to focus evidence collection; a display
+filter alone does not reduce either. See
 [targets and filters](targets-and-filters.md) for commands and map creation. The three verdicts and their required evidence are described
 in [triage policy](contracts.md#triage-policy). See also [counter semantics](contracts.md#current-local-summary).
 
@@ -158,7 +160,7 @@ fully local example. Raw inputs are limited to 16 MiB and receipts to 1 MiB.
 | `--format json` | JSON only | None, unless another output option is used |
 | `--out FILE` | Human-readable output, even with `--format json` | New JSON file |
 | `--run-dir BASE` | Selected format; human output also gives the run path | New run directory with JSON, `report.txt`, `run.json` |
-| `plan --summary --run-dir BASE` | Five lines, including the saved detail path | Full detail in `report.txt`, JSON and receipt |
+| `plan --summary --run-dir BASE` | Structured recap, including the saved detail path | Full detail in `report.txt`, JSON and receipt |
 
 `--out` and `--run-dir` are mutually exclusive. `--out` always saves JSON;
 `--summary` changes the human output, not the saved review. Forge ingestion keeps
@@ -181,8 +183,10 @@ does not establish successful publication.
 
 ## Resource limits
 
-`plan` writes phase names, processed counts and stop reasons to stderr. Its JSON
-stdout remains a single report. The first history turn is allocated across
+`review` and `plan` write readable progress to stderr. The final `--summary` recap
+separates discovery, local collection and decision checks, and groups recurring
+history budgets, local budgets and Git timeouts. Other item-specific gaps remain
+in the full report. Its JSON stdout remains a single report. The first history turn is allocated across
 worktrees before any second turn; this is a guarantee about history scheduling,
 not completeness or fairness of the local file collection. Limits may still leave
 results unknown. Caches live only for this execution.
@@ -195,10 +199,25 @@ A timeout while checking ignore rules, a file-read error or an unsupported index
 does not disable independent Git integration checks. The family stop is conservative:
 one blocked object can leave other worktrees in that family unexamined for this run.
 
-A local-summary deadline is separate from that backend timeout. If the remaining
-local allowance shortens a Git call and expires during it, only that summary
-stops, with an explicit time-budget gap. Later worktrees can still be collected
-within the aggregate review budget. No incomplete summary becomes a clean result.
+Local-summary, commit-history and private-history deadlines are separate from
+that backend timeout. If the remaining phase allowance shortens a Git call and
+expires during it, the exhausted phase stops with an explicit time-budget gap.
+It does not quarantine independently collected evidence from the same family.
+Missing final checks remain incomplete; cached facts do not become current
+without revalidation. Later local summaries can still be collected within the
+aggregate review budget. No incomplete summary becomes a clean result.
+
+Local tree and blob reads use batches of at most 128 OIDs. A metadata pass sizes
+payloads to stay within the 8 MiB transport limit. Each returned payload still
+passes type and OID verification; a missing or malformed response stays unknown.
+The graph shares verified target ancestry within one run and physical family.
+It does not carry a completed proof into a later run.
+
+The first of 50 present worktrees receives at most 120 / 50 seconds for its local
+summary. Unused time remains available to later worktrees. This improves access
+to the budget; it does not guarantee that every summary finishes. A targeted
+`--worktree` retry spends the local allowance on one path while still checking
+the surrounding registrations and preserving the original inventory.
 
 | Scope | Default ceiling |
 | --- | --- |
@@ -209,8 +228,8 @@ within the aggregate review budget. No incomplete summary becomes a clean result
 | Local manifests across one scan | 25,000 combined entries; 256 MiB published hashed content; 24 MiB compact manifests; 120 seconds |
 | Current controls per review | 4,096 source entries; 64 KiB per file; 4 MiB source bytes including final checks; 4 MiB output; 60 seconds of control collection work. |
 | Current local summary per worktree | 100,000 index entries; 32 MiB raw index; 100,000 paths; 32 MiB cumulative path bytes; 128 MiB read; 32 MiB per file; 4,096 objects; depth 256; 64 KiB summary; 30 seconds |
-| Current local summaries across one review | 120 seconds for starting bounded collections; at most 24 MiB of serialized summaries, including unavailable placeholders; remaining summaries explicitly omitted |
-| Commit-history phase | 2,048 object-read attempts; 32 MiB returned object bytes; 65,536 traversal steps; 512 steps per target; 60 seconds collection plus final revalidation |
+| Current local summaries across one review | 120 seconds shared across remaining present worktrees (up to 30 seconds each); at most 24 MiB of serialized summaries, including unavailable placeholders; remaining summaries explicitly omitted |
+| Commit-history phase | 2,048 object-read attempts; 32 MiB returned object bytes; 65,536 traversal steps; 512 unique expansions per physical family and resolved target OID; 60 seconds collection plus final revalidation |
 | One history turn | Yields after 4 object-read attempts, 64 KiB returned bytes or 16 traversal steps; one bounded object may cross the byte threshold; unfinished traversals resume on a later turn |
 | History targets and jobs | At most 128 distinct explicit targets; 4,096 jobs assigned across worktrees by target ordinal; omitted jobs remain unknown |
 | Final target revalidation | At most 4,096 fresh ref reads; missing revalidation invalidates current claims |

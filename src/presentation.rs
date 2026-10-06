@@ -2,6 +2,9 @@
 use crate::model::{BytePath, LocalCount, Review, ReviewItem, ReviewView};
 use std::fmt::Write;
 
+mod console;
+pub use console::{discovery_progress, review_progress, summary, view_summary};
+
 fn text(value: &str, limit: usize) -> String {
     let mut output = String::new();
     for character in value.chars().take(limit) {
@@ -512,71 +515,6 @@ fn detail_rows(
     let _ = writeln!(output, "Review SHA-256: {}", review.digest_sha256);
 }
 
-/// Exactly five lines even when a repository contains thousands of worktrees.
-pub fn summary(review: &Review) -> String {
-    let kept = review
-        .items
-        .iter()
-        .filter(|i| i.classification == "keep")
-        .count();
-    let candidates = review
-        .items
-        .iter()
-        .filter(|i| i.classification == "cleanup_candidate")
-        .count();
-    let verify = review.items.len().saturating_sub(kept + candidates);
-    format!(
-        "Worktrees: {}\nKeep: {kept}; cleanup candidates: {candidates}; verify: {verify}\nCoverage gaps: {}{}; Usage: UNKNOWN\nRead-only review; no removal authorized. Detail: plan without --summary or report.txt in --run-dir.\nReview SHA-256: {}\n",
-        review.items.len(),
-        review.coverage.gaps.len(),
-        coverage_suffix(&review.coverage),
-        review.digest_sha256
-    )
-}
-
-/// Selection counts do not replace source totals or source coverage.
-pub fn view_summary(view: &ReviewView) -> String {
-    let selected: std::collections::BTreeSet<_> = view.selected_paths.iter().collect();
-    let rows: Vec<_> = view
-        .source
-        .items
-        .iter()
-        .filter(|i| selected.contains(&i.path))
-        .collect();
-    let kept = rows.iter().filter(|i| i.classification == "keep").count();
-    let candidates = rows
-        .iter()
-        .filter(|i| i.classification == "cleanup_candidate")
-        .count();
-    let verify = rows.len().saturating_sub(kept + candidates);
-    let source_kept = view
-        .source
-        .items
-        .iter()
-        .filter(|i| i.classification == "keep")
-        .count();
-    let source_candidates = view
-        .source
-        .items
-        .iter()
-        .filter(|i| i.classification == "cleanup_candidate")
-        .count();
-    let source_verify = view
-        .source
-        .items
-        .len()
-        .saturating_sub(source_kept + source_candidates);
-    format!(
-        "Worktrees selected: {}/{}\nKeep: {kept}; cleanup candidates: {candidates}; verify: {verify}; source totals: keep={source_kept}, candidates={source_candidates}, verify={source_verify}\nSource coverage gaps: {}; traversal complete: {}{}; Usage: UNKNOWN\nRead-only review; no removal authorized. Detail: plan without --summary or report.txt in --run-dir.\nReview SHA-256: {}; View SHA-256: {}\n",
-        rows.len(),
-        view.source.items.len(),
-        view.source.coverage.gaps.len(),
-        view.source.coverage.traversal_complete,
-        coverage_suffix(&view.source.coverage),
-        view.source.digest_sha256,
-        view.digest_sha256
-    )
-}
 pub fn view_detail(view: &ReviewView) -> Result<String, crate::model::SweepError> {
     let mut output = String::new();
     view_detail_into(&mut output, view)?;
@@ -596,6 +534,7 @@ fn view_detail_into(
         .collect();
     let groups = crate::view::groups(view)?;
     let _ = output.write_str(&view_summary(view));
+    let _ = writeln!(output, "View SHA-256: {}", view.digest_sha256);
     detail_rows(output, &view.source, &rows, Some(&groups));
     for gap in &view.source.coverage.gaps {
         let _ = writeln!(
@@ -713,19 +652,4 @@ pub fn view_detail_bounded(
     let mut output = crate::output::BoundedText::new(limit);
     view_detail_into(&mut output, view)?;
     output.finish()
-}
-
-fn coverage_suffix(coverage: &crate::model::Coverage) -> String {
-    let mut output = String::new();
-    if let Some(remaining) = &coverage.remaining {
-        let _ = write!(
-            output,
-            "; discovery remaining: {}",
-            remaining.reason.as_str()
-        );
-    }
-    if let Some(omitted) = &coverage.publication {
-        let _ = write!(output, "; unpublished worktrees: {}", omitted.worktrees);
-    }
-    output
 }
