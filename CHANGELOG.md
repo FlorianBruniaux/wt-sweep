@@ -157,8 +157,9 @@ the Cargo package version is a development version.
 
 ### Fixed
 
-- Increase the CI job limit from 15 to 30 minutes after both triage runs were
-  cancelled during Python tests. Test commands and product time budgets are unchanged.
+- Give the expanded macOS CI suite 45 minutes: the 15-minute and intermediate
+  30-minute job limits interrupted runs. Test commands and product time budgets
+  are unchanged.
 
 - Distinguish an exhausted local-summary allowance from a full Git-call timeout.
   A slow worktree no longer suppresses later worktrees merely because its own
