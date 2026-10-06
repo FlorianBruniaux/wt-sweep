@@ -126,6 +126,17 @@ qualify while local changes or exclusive reflog history remain.
 See the [decision contract](docs/contracts.md#triage-policy) and
 [disposable demo](docs/getting-started.md#disposable-demo).
 
+## Use with Claude or Codex
+
+The repository includes a `wt-sweep` skill for reading reports in small batches
+and suggesting conservation or verification steps. Start Claude Code or Codex
+in this checkout, invoke `/wt-sweep` or `$wt-sweep`, and provide the repository
+path and confirmed integration ref. The skill preserves CLI verdicts and missing
+evidence. Cleanup execution remains unavailable.
+
+See the [assistant guide and example prompts](docs/assistant-skill.md) for a
+fresh review, an existing report and a disposable local test.
+
 ## Features
 
 <details>

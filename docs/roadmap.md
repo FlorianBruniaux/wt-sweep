@@ -26,6 +26,14 @@ Consulter le [workflow](https://github.com/FlorianBruniaux/wt-sweep/actions/work
 pour le statut d'un commit précis. La publication des sources ne constitue pas
 une release binaire.
 
+## Accompagnement par un assistant
+
+Le [skill du dépôt](assistant-skill.md) fournit un parcours de revue et de lecture
+progressive pour Claude et Codex, avec des suggestions de conservation et de
+vérification. Il ne résout pas les budgets de collecte et ne débloque pas `apply`.
+Les preuves de génération, de routage et d’utilisation de la CLI sont distinguées
+dans le [registre courant](progress.md#skill-wt-sweep-06102026).
+
 ## Prochain travail : compléter l'analyse des gros dépôts
 
 1. **Mesurer les lectures qui épuisent les budgets.** Sur une fixture

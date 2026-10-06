@@ -135,6 +135,17 @@ suffit pas s’il reste des modifications locales ou une histoire propre au refl
 Consultez le [contrat de décision](docs/contracts.md#triage-policy) et le
 [tutoriel](docs/tutorial.fr.md).
 
+## Utiliser avec Claude ou Codex
+
+Le dépôt inclut le skill `wt-sweep` pour lire les rapports par petits groupes et
+proposer les actions de conservation ou de vérification utiles. Ouvrez Claude
+Code ou Codex dans ce checkout, invoquez `/wt-sweep` ou `$wt-sweep`, puis donnez
+le chemin du dépôt et la référence d’intégration confirmée. Le skill conserve
+les verdicts de la CLI et leurs limites. La suppression reste indisponible.
+
+Le [guide de l’assistant et ses prompts](docs/assistant-skill.md) couvre une
+nouvelle revue, la reprise d’un rapport et un test local sur des dépôts jetables.
+
 ## Fonctionnalités
 
 <details>
