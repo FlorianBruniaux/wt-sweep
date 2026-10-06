@@ -1,6 +1,9 @@
 # Registre de finition de Worktree Sweep
 
-[Index documentaire](README.md) · [Guide de démarrage](getting-started.md)
+[Index documentaire](README.md) · [Guide de démarrage](getting-started.md) · [Feuille de route](roadmap.md)
+
+État courant : [triage T01-T09](#triage-t01-t09),
+[livraison GitHub](#livraison-github-du-06102026) et [travail restant](roadmap.md).
 
 Les sections précédant le checkpoint T01-T09 décrivent la clôture historique du
 socle U1-U4 et des ajouts RETEX. Leurs chiffres, digest de binaire, absence de
@@ -201,3 +204,23 @@ les preuves privées, hors des exemples publics. Les guides utilisent des fixtur
 synthétiques ou un chemin fourni par le lecteur. Aucun scan global réel ni
 nettoyage n’a été exécuté. Cet essai ne prouve ni instantané machine, ni exclusion
 d’écrivains, ni conservation exhaustive des fichiers de ce dépôt réel.
+
+## Livraison GitHub du 06/10/2026
+
+La [PR #1](https://github.com/FlorianBruniaux/wt-sweep/pull/1) a été fusionnée dans
+`main`, commit `ddda77ddba24566328a83dad79b74d943cecd8e5`, tête de PR
+`bfeb7967d4528fb204b885368240e227102c48c0`.
+
+La [CI complète du commit 654413f](https://github.com/FlorianBruniaux/wt-sweep/actions/runs/37411615463)
+a réussi : formatage, Clippy, tests Rust, build, 253 cas Python dont 247 passés
+et 6 sautés, 6 témoins E1/RETEX, synchronisation des projections et diff final.
+Le job de PR correspondant a terminé ses tests Python, puis a atteint sa limite
+de 30 minutes avant les derniers contrôles. La tête fusionnée porte le délai
+CI à 45 minutes ; son seul autre changement est le changelog. Le code produit
+et les tests sont identiques à ceux de la CI complète réussie.
+
+Lors du contrôle du 06/10 à 06:37 Europe/Paris, la
+[CI du commit de fusion](https://github.com/FlorianBruniaux/wt-sweep/actions/runs/37414290125)
+était encore en cours, après formatage et Clippy réussis. Ce relevé daté ne
+remplace pas le statut courant du workflow. Aucun paquet ni binaire n'a été
+publié. Les limites de l'essai réel et les conditions E1/U5-U7 restent ouvertes.

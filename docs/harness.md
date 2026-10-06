@@ -19,6 +19,20 @@ rôles de lecture ; Codex déclare un sandbox read-only pour ces rôles. Ces fic
 ne prouvent pas que le client les a chargés ni que l'isolation a été exercée.
 Les trois créneaux de délégation sont un plafond de configuration, pas un lancement.
 
+## Alignement avec le triage livré
+
+Les instructions racine renvoient à la [feuille de route](roadmap.md), au plan
+T01-T09 et au [checkpoint de validation](finish-ledger.md#triage-t01-t09).
+Les quatre rôles reprennent les limites utiles à leur tâche : preuves courantes,
+conditions C1-C5, priorité à la conservation, budgets et couverture des vues.
+`CLAUDE.md`, `AGENTS.md` et les agents des deux clients sont produits depuis
+ces sources communes.
+
+La configuration conserve l'héritage du modèle et le plafond de trois agents.
+Les modèles observés pendant l'implémentation sont consignés dans le registre ;
+ils ne sont pas imposés aux sessions suivantes. Aucun changement de permission,
+hook ou réglage global n'accompagne cette mise à jour.
+
 ## Modifier et vérifier
 
 Depuis la racine, avec Python 3.11 ou ultérieur :
@@ -43,6 +57,12 @@ Après une interruption, conserver les fichiers présents et examiner la dérive
 ne pas forcer l'écrasement. Utiliser le diff et la révision Git de base pour
 reconstituer les préimages, après contrôle des modifications concurrentes.
 Ce mécanisme ne doit pas être réutilisé comme protocole de sauvegarde de worktree.
+
+Vérification du 06/10/2026 après mise à jour du triage : les 12 fichiers sont
+synchronisés et les 7 tests de génération passent avec Python 3.14. Ces tests
+vérifient les projections, la répétition sans changement et les refus de dérive
+ou de chemin invalide dans des dossiers jetables. Le chargement natif reste
+`UNKNOWN`.
 
 ## Chargement natif
 

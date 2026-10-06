@@ -242,9 +242,12 @@ conservés dans leur version française d’origine.
 
 ## Feuille de route et validation
 
-La découverte et la revue sont implémentées. L’exclusion des écritures
-concurrentes n’a pas été démontrée ; la sauvegarde, la restauration et la
-suppression restent donc indisponibles.
+Le triage T01-T09 est fusionné dans `main`. L'analyse du gros dépôt essayé reste
+partielle : sur 48 worktrees, 3 `keep`, 45 `verify` et aucun candidat après
+épuisement des budgets locaux et d'histoire. La [feuille de route](docs/roadmap.md)
+donne la priorité à la mesure et à la réduction de ce coût de collecte.
+L'exclusion des écritures concurrentes n'est pas démontrée ; la sauvegarde,
+la restauration et la suppression restent indisponibles.
 
 <details>
 <summary>Étapes d’implémentation et validations consignées</summary>
@@ -252,6 +255,8 @@ suppression restent donc indisponibles.
 | Étape | État actuel |
 | --- | --- |
 | U1–U4 : découverte et revue | Implémentées et testées localement sur macOS ; les limites des preuves restent explicites. |
+| T01-T09 : triage des worktrees | Fusionné ; revue en une commande, verdicts C1-C5, état local, histoire privée, cibles, filtres et rapports. |
+| Couverture des gros dépôts | Encore partielle sur l'essai consigné ; le coût de collecte est le prochain sujet. |
 | E1 : exclure les écritures concurrentes | **Non démontré.** Les expériences existantes mettent en défaut les approches proposées par verrouillage et renommage. |
 | U5 : sauvegarde durable et restauration indépendante | Bloquée par E1 et par l’absence d’un contrat de préservation complet. |
 | U6–U7 : suppression | Indisponible, dans l’attente de validations sur des dépôts jetables, d’une revue indépendante et d’une approbation humaine portant sur les actions exactes. |

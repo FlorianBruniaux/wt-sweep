@@ -1,7 +1,22 @@
 # Worktree Sweep: repository instructions
 
-Read `README.md`, `docs/plan.md` and `docs/implementation.md` before implementation.
-Consult `docs/progress.md` for implemented behavior, observed checks and open gates.
+Read `README.md`, `docs/roadmap.md`, `docs/plan.md` and
+`docs/implementation.md` before implementation. The completed triage contract is
+`docs/superpowers/plans/2026-10-05-worktree-triage-v2.md`; current evidence is in
+`docs/finish-ledger.md#triage-t01-t09`. `docs/progress.md` links that checkpoint
+and retains the historical U1-U4 results.
+
+## Current workflow
+
+- `review` discovers an explicit scope and collects current evidence in one run.
+  `scan` and `plan` remain available for separate inventory and review.
+- Preserve `keep`, `cleanup_candidate` and `verify` with their C1-C5 conditions.
+  Positive retention reasons take priority. Missing evidence remains unknown;
+  completed discovery does not imply complete local or history collection.
+- Large-repository collection still reaches its budgets. Measure the affected
+  phase before optimizing; do not relax evidence requirements to yield candidates.
+- See `docs/contracts.md` and `docs/targets-and-filters.md` before changing schemas,
+  per-family targets or views. Filters must retain the source evidence and coverage.
 
 ## Product boundaries
 
@@ -40,13 +55,15 @@ part of this harness. Host permissions remain authoritative.
 
 ## Validation and delivery
 
-Run from the repository root:
+Run from the repository root with Python 3.11 or newer (`tomllib` is required):
 
 ```sh
 cargo fmt --all -- --check
 cargo clippy --all-targets --locked --offline -- -D warnings
 cargo test --locked --offline
+cargo build --locked --offline
 python3 -B -m unittest discover -s tests -p 'test_*.py' -v
+python3 -B -m unittest discover -s experiments/exclusion -p 'test_*.py' -v
 python3 -B scripts/sync-ai.py --check
 ```
 

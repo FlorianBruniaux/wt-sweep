@@ -129,6 +129,13 @@ the Cargo package version is a development version.
 
 ### Changed
 
+- Align the English/French README, acceptance plan and progress entry points with
+  the merged T01-T09 triage. Add a roadmap separating large-repository collection
+  work from the gated backup and removal phases, with dated delivery evidence.
+- Regenerate repository Claude/Codex instructions and all four agent roles from
+  canonical sources with the current triage contracts and validation commands.
+  Model inheritance and permissions are unchanged; native loading remains unverified.
+
 - Fresh scan paths are stored as absolute paths. Filesystem publication refuses
   ambiguous legacy relative scopes and inventories with omitted family boundaries.
 - Scan and review share final output-boundary revalidation. Parent directories

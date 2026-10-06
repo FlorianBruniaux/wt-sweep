@@ -226,8 +226,11 @@ records are retained in French.
 
 ## Roadmap and validation
 
-Discovery and review are implemented. Writer exclusion has not been
-demonstrated, so backup, restore and removal remain unavailable.
+T01-T09 triage is merged into `main`. Large-repository analysis remains partial:
+the recorded 48-worktree trial returned 3 `keep`, 45 `verify` and no candidate
+after local and history budgets were reached. The [roadmap](docs/roadmap.md)
+prioritizes measuring and reducing that collection cost. Writer exclusion remains
+unproven, so backup, restore and removal are unavailable.
 
 <details>
 <summary>Implementation stages and recorded validation</summary>
@@ -235,6 +238,8 @@ demonstrated, so backup, restore and removal remain unavailable.
 | Stage | Current state |
 | --- | --- |
 | U1–U4: discovery and review | Implemented and tested locally on macOS; evidence limits remain explicit. |
+| T01-T09: worktree triage | Merged; one-command review, C1-C5 verdicts, local and private history, targets, filters and reports. |
+| Large-repository coverage | Still partial in the recorded trial; collection performance is the next work item. |
 | E1: exclude concurrent writers | **Not demonstrated.** Existing experiments defeat the proposed locking and rename approaches. |
 | U5: durable backup and independent restore | Blocked on E1 and a complete preservation contract. |
 | U6–U7: removal | Unavailable, pending fixture validation, independent review and exact human approval. |

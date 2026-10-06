@@ -2,12 +2,17 @@
 
 [Index documentaire](README.md) · [Contribution](../CONTRIBUTING.md)
 
-Lire le [plan](plan.md) et les [résultats locaux](progress.md). Le présent document
+Lire la [feuille de route](roadmap.md), le [plan](plan.md) et les
+[résultats locaux](progress.md). Le présent document
 définit les lots et responsabilités ; leur validation exige les preuves du
 registre. Garder la comparaison des alternatives ouverte avant de développer le
 moteur de nettoyage.
 
 ## Triage T01-T09
+
+Ces lots sont fusionnés dans `main` depuis le 06/10/2026. Le prochain travail
+concerne le coût de collecte sur gros dépôt, avec mesure et critères de sortie
+dans la [feuille de route](roadmap.md#prochain-travail--compléter-lanalyse-des-gros-dépôts).
 
 La reprise de triage s’appuie sur le [plan v2](superpowers/plans/2026-10-05-worktree-triage-v2.md).
 Elle ajoute cibles par famille, histoire du graphe, résumé local courant, histoire

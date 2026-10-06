@@ -4,8 +4,10 @@
 
 Worktree Sweep is a read-only macOS MVP. Preserve unknowns and original path
 bytes, and keep collection I/O separate from judgement. Read the
-[acceptance plan](docs/plan.md) and
+[roadmap](docs/roadmap.md), [acceptance plan](docs/plan.md) and
 [implementation responsibilities](docs/implementation.md) before changing behavior.
+For triage changes, also read the [C1-C5 contract](docs/contracts.md#triage-policy)
+and [completed T01-T09 plan](docs/superpowers/plans/2026-10-05-worktree-triage-v2.md).
 
 ## Set up and verify
 

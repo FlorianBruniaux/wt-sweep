@@ -8,6 +8,10 @@ et validés localement ; leurs revues indépendantes sont conformes. Le
 [registre final](../../finish-ledger.md#triage-t01-t09) consigne les tests et
 les limites de l’essai réel. Les [contraintes initiales](../../plan.md) et la
 [frontière de suppression](../../decisions/apply-readiness.md) restent applicables.
+Fusionné dans `main` le 06/10/2026 par la
+[PR #1](https://github.com/FlorianBruniaux/wt-sweep/pull/1). La
+[feuille de route](../../roadmap.md) distingue ce périmètre livré du diagnostic
+restant sur les gros dépôts et du futur moteur de retrait.
 
 ## Ce qui change
 
