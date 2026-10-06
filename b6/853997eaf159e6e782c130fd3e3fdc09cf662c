@@ -1,0 +1,137 @@
+.agents/skills/wt-sweep/SKILL.md
+  s_160b3107588443::t_4d948a72a668c8 1-136
+.agents/skills/wt-sweep/evals/scenarios.json
+  s_160b3107588443::t_551f1666e5115e 1-25
+.agents/skills/wt-sweep/references/commands.md
+  s_160b3107588443::t_0aded3deb2e6d2 1-116
+.agents/skills/wt-sweep/references/model-policy.md
+  s_160b3107588443::t_5494ca5352487c 1-102
+.agents/skills/wt-sweep/references/reports.md
+  s_160b3107588443::t_7034888b033d3f 1-74
+.claude/skills/wt-sweep/SKILL.md
+  s_160b3107588443::t_55840d09479c7a 1-136
+.claude/skills/wt-sweep/evals/scenarios.json
+  s_160b3107588443::t_ab907bef5925d9 1-25
+.claude/skills/wt-sweep/references/commands.md
+  s_160b3107588443::t_de927b1b206297 1-116
+.claude/skills/wt-sweep/references/model-policy.md
+  s_160b3107588443::t_885ae130e73c1f 1-102
+.claude/skills/wt-sweep/references/reports.md
+  s_160b3107588443::t_0dc252c8b0cdba 1-74
+.harness-generated.json
+  s_160b3107588443::t_2ea8527d453be0 3-7,12-16,22-23
+AGENTS.md
+  s_160b3107588443::t_563348d0739cd6 16-22,76-82,84
+CHANGELOG.md
+  s_160b3107588443::t_b4bbe4635476d0 12-33,156-166,202-207
+CLAUDE.md
+  s_160b3107588443::t_edc072cef1fcd2 16-22,76-82,84
+README.fr.md
+  s_160b3107588443::t_0f2c173196c3c9 135,151-166,181,280-287,296
+README.md
+  s_160b3107588443::t_3e3c663d567559 126,142-157,172,264-269,279
+docs/README.md
+  s_160b3107588443::t_2a2c63e4316c91 17,33
+docs/architecture.md
+  s_160b3107588443::t_dd973983a27b8d 59
+docs/assistant-skill.md
+  s_160b3107588443::t_b94f5152dbc978 1-200
+docs/cli.md
+  s_160b3107588443::t_a804f92a5f18b9 20,91,110,120,132-133,163,186-189,202-220,231-232
+docs/collection-performance.md
+  s_160b3107588443::t_843166991e5af0 1-136
+docs/contracts.md
+  s_160b3107588443::t_099b07e8ac1f13 215-219,262-271
+docs/getting-started.md
+  s_160b3107588443::t_a7c10079b46c45 65,68-71,74-81
+docs/harness.md
+  s_160b3107588443::t_09e1313d4767fa 5-9,78-79,89-136
+docs/implementation.md
+  s_160b3107588443::t_bc76fc478fde67 13-16
+docs/progress.md
+  s_160b3107588443::t_6ffee037e1688b 20-139
+docs/retex-sessions.md
+  s_160b3107588443::t_1b90d2eec58303 53
+docs/roadmap.md
+  s_160b3107588443::t_84bc28b996ce8e 8-13,31-38,41-58,64-70
+docs/targets-and-filters.md
+  s_160b3107588443::t_aa3811cac2c526 83-101
+docs/tutorial.fr.md
+  s_160b3107588443::t_1a6485518f9f94 72-73,150-157,250-253,294-321
+harness/instructions.md
+  s_160b3107588443::t_596aaa3f1e2a2c 16-22,76-82,84
+harness/skills.json
+  s_160b3107588443::t_f5c16136e28d52 1-12
+harness/skills/wt-sweep/SKILL.md
+  s_160b3107588443::t_6d57f02defc71b 1-136
+harness/skills/wt-sweep/evals/scenarios.json
+  s_160b3107588443::t_955f89ee87f397 1-25
+harness/skills/wt-sweep/references/commands.md
+  s_160b3107588443::t_a7b3562470ba01 1-116
+harness/skills/wt-sweep/references/model-policy.md
+  s_160b3107588443::t_ce1b6f53fe5b14 1-102
+harness/skills/wt-sweep/references/reports.md
+  s_160b3107588443::t_651acdea7f1689 1-74
+scripts/sync-ai.py
+  s_160b3107588443::t_68529b11a485da 6,33-96,134
+src/git.rs
+  s_160b3107588443::t_57fe1e47538655 18-20,24-25,164-191
+src/git/batch.rs
+  s_160b3107588443::t_d15a9d275a807a 1-225
+src/local/summary.rs
+  s_160b3107588443::t_52977408160871 59,172-310,401-488,499-507,509-515,517-544,546-553,555-572,574-595,597,1210-1218,1596-1599
+src/local/summary_batch_tests.rs
+  s_160b3107588443::t_7a53cc7986c433 1-216
+src/main.rs
+  s_160b3107588443::t_d4bcdf333cbaee 27-29,153,240,353,456-459,509,528,537-539,629-631,633-635
+src/presentation.rs
+  s_160b3107588443::t_f1a5024483293c 5-7,537
+src/presentation/console.rs
+  s_160b3107588443::t_d4c8b4995f4151 1-376
+src/review.rs
+  s_160b3107588443::t_05c979ad47ffa6 21-22,106,688-689,753-758,765-768,790-793,988,1005,1011-1032,1040,1050,1178-1183,1314-1320,1338,1369,1371,1375,1378-1380,1407-1411,1413-1414
+src/review/history.rs
+  s_160b3107588443::t_efa91fef2e3b6d 10-31,61,94-96,98-102,104-113,160,165-171,199,206-208,213,226-232,277-292,296-323,331,333-334,338-340,342,344-347,349,351-353,357-358,361-362,364,366-376,383-389,392,406,532,539-541,763-992
+src/review/private.rs
+  s_160b3107588443::t_285959fe956fe3 343,351,355-361,1720,1779-1782
+src/review/private_deadline_tests.rs
+  s_160b3107588443::t_1f4f7f0a907ff8 1-193
+src/review/summary_deadline_tests.rs
+  s_160b3107588443::t_e5f6107fe1af51 385-423
+tests/history.rs
+  s_160b3107588443::t_79ff31b4f3a369 929-1107
+tests/local_summary.rs
+  s_160b3107588443::t_ce85824316980a 209-248,292-316,734-807
+tests/test_discovery_publication.py
+  s_160b3107588443::t_1d1af80e1da076 191-195,382,409-410
+tests/test_enriched.py
+  s_160b3107588443::t_da27c0254780c2 266,353-361
+tests/test_harness.py
+  s_160b3107588443::t_b9e8a5f1ed7936 58-150
+tests/test_review_command.py
+  s_160b3107588443::t_e8c049f75dbfdb 239-311,336,360-361,368,382-383,418,425
+tests/test_scale.py
+  s_160b3107588443::t_a48d5edd209833 317,319,351,353
+tests/test_skill_workflow.py
+  s_160b3107588443::t_5b0561b0376dcc 1-104
+tests/triage_presentation.rs
+  s_160b3107588443::t_64c9fab5eab15b 66,68-74,154-324,326,329
+tests/views.rs
+  s_160b3107588443::t_a88a2180ae6008 145,148,150-151,279-280
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "b6853997eaf159e6e782c130fd3e3fdc09cf662c",
+  "prompts": {},
+  "sessions": {
+    "s_160b3107588443": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a106f2-069b-7be2-aa09-88b1bbf2331e",
+        "model": "gpt-6-astra"
+      },
+      "human_author": "Florian BRUNIAUX <florian@bruniaux.com>"
+    }
+  }
+}
