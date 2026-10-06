@@ -88,7 +88,7 @@ Unavailable paths, contradictory registrations and traversal errors remain
 observations. No repair, pruning or fetch is performed. Relative CLI paths are
 stored as absolute paths so replay from another directory preserves the scope.
 
-Discovery progress goes to stderr. `pending` counts known queued paths, including
+Discovery progress goes to stderr. The displayed pending count covers known queued paths, including
 prefetched metadata; it is not an estimate of all remaining files. Stops distinguish
 interruption, deadline, entry, directory and observation-byte limits. The JSON
 keeps a conservative remaining-scope cover: retry the requested roots, knowing
@@ -116,7 +116,7 @@ overwritten or removed.
 | `--forge FILE` | Optional normalized `wt-sweep.forge/1` export. Its raw source and receipt, when supplied, must still be readable and match. |
 | `--changelog-path RELATIVE` | Read this tracked path at each recorded HEAD; repeat to replace the default changelog paths. Paths are relative to the repository root. |
 | `--no-context` | Skip optional commit samples and changelog reads. Cannot combine with `--changelog-path`. Decisions and their required checks remain the same. |
-| `--summary` | Print exactly five lines; incompatible with `--format json`. |
+| `--summary` | Print a structured recap of verdicts, source coverage and remaining checks; incompatible with `--format json`. |
 
 The command first collects bounded commit-history results across worktrees, then
 collects current local summaries and checks deep Git relationships
@@ -158,7 +158,7 @@ fully local example. Raw inputs are limited to 16 MiB and receipts to 1 MiB.
 | `--format json` | JSON only | None, unless another output option is used |
 | `--out FILE` | Human-readable output, even with `--format json` | New JSON file |
 | `--run-dir BASE` | Selected format; human output also gives the run path | New run directory with JSON, `report.txt`, `run.json` |
-| `plan --summary --run-dir BASE` | Five lines, including the saved detail path | Full detail in `report.txt`, JSON and receipt |
+| `plan --summary --run-dir BASE` | Structured recap, including the saved detail path | Full detail in `report.txt`, JSON and receipt |
 
 `--out` and `--run-dir` are mutually exclusive. `--out` always saves JSON;
 `--summary` changes the human output, not the saved review. Forge ingestion keeps
@@ -181,8 +181,10 @@ does not establish successful publication.
 
 ## Resource limits
 
-`plan` writes phase names, processed counts and stop reasons to stderr. Its JSON
-stdout remains a single report. The first history turn is allocated across
+`review` and `plan` write readable progress to stderr. The final `--summary` recap
+separates discovery, local collection and decision checks, and groups recurring
+history budgets, local budgets and Git timeouts. Other item-specific gaps remain
+in the full report. Its JSON stdout remains a single report. The first history turn is allocated across
 worktrees before any second turn; this is a guarantee about history scheduling,
 not completeness or fairness of the local file collection. Limits may still leave
 results unknown. Caches live only for this execution.

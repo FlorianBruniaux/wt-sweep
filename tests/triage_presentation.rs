@@ -63,12 +63,17 @@ fn report() -> Result<Review, SweepError> {
 fn triage_summary_counts_decisions_without_calling_unknown_usage_inactive() -> Result<(), SweepError>
 {
     let summary = wt_sweep::presentation::summary(&report()?);
-    assert_eq!(summary.lines().count(), 5);
+    assert!(summary.lines().count() <= 60);
     assert!(
-        summary.contains("Keep: 1; cleanup candidates: 1; verify: 1"),
+        summary.contains("Keep: 1")
+            && summary.contains("Cleanup candidates: 1")
+            && summary.contains("Needs verification: 1"),
         "{summary}"
     );
-    assert!(summary.contains("Usage: UNKNOWN"), "{summary}");
+    assert!(
+        summary.contains("Usage by agents or terminals: not checked"),
+        "{summary}"
+    );
     assert!(summary.contains("removal"), "{summary}");
     assert!(!summary.contains("Active:"), "{summary}");
     Ok(())
@@ -146,11 +151,110 @@ fn detail_and_summary_preserve_source_coverage_omissions() -> Result<(), SweepEr
         "{detail}"
     );
     let summary = wt_sweep::presentation::summary(&report);
-    assert_eq!(summary.lines().count(), 5);
+    assert!(summary.lines().count() <= 60);
     assert!(
-        summary.contains("discovery remaining: interrupted"),
+        summary.contains("Discovery remaining: interrupted"),
         "{summary}"
     );
-    assert!(summary.contains("unpublished worktrees: 3"), "{summary}");
+    assert!(summary.contains("Unpublished worktrees: 3"), "{summary}");
+    Ok(())
+}
+
+#[test]
+fn complete_discovery_does_not_hide_partial_or_uncollected_local_checks() -> Result<(), SweepError>
+{
+    let mut report = report()?;
+    report.coverage.traversal_complete = true;
+    report.items[0].local_summary = Some(LocalSummary {
+        worktree_identity: Some(Identity {
+            device: 1,
+            inode: 2,
+        }),
+        staged: LocalCount {
+            observed: 2,
+            ..Default::default()
+        },
+        ..Default::default()
+    });
+    report.items[1].local_summary = Some(LocalSummary {
+        gaps: vec![Gap {
+            path: report.items[1].path.clone(),
+            reason: "whole-review local summary budget exhausted".into(),
+        }],
+        ..Default::default()
+    });
+    let summary = wt_sweep::presentation::summary(&report);
+    for expected in [
+        "WORKTREE SWEEP",
+        "RESULTS",
+        "Discovery: complete",
+        "Decision checks: incomplete for 2/3 worktrees",
+        "Local checks complete: 0",
+        "Local checks partial: 1",
+        "Local checks not collected: 2",
+        "Local collection budget reached",
+    ] {
+        assert!(summary.contains(expected), "missing {expected}: {summary}");
+    }
+    Ok(())
+}
+
+#[test]
+fn complete_local_counts_are_not_a_claim_of_clean_files_or_inactive_usage()
+-> Result<(), Box<dyn std::error::Error>> {
+    let mut report = report()?;
+    let count = LocalCount {
+        complete: true,
+        ..Default::default()
+    };
+    report.items[0].local_summary = Some(LocalSummary {
+        head_complete: true,
+        index_complete: true,
+        disk_complete: true,
+        staged: LocalCount {
+            observed: 2,
+            ..count.clone()
+        },
+        unstaged: count.clone(),
+        conflicts: count.clone(),
+        untracked: count.clone(),
+        ignored: count,
+        ..Default::default()
+    });
+    let summary = wt_sweep::presentation::summary(&report);
+    assert!(summary.contains("Local checks complete: 1"), "{summary}");
+    assert!(summary.contains("Keep: 1"), "{summary}");
+    assert!(
+        summary.contains("Usage by agents or terminals: not checked"),
+        "{summary}"
+    );
+    report.items[0]
+        .local_summary
+        .as_mut()
+        .ok_or("missing fixture summary")?
+        .temporal_consistency = "change_observed".into();
+    assert!(wt_sweep::presentation::summary(&report).contains("Local checks complete: 0"));
+    Ok(())
+}
+
+#[test]
+fn repeated_limits_are_grouped_and_console_does_not_mutate_evidence()
+-> Result<(), Box<dyn std::error::Error>> {
+    let mut report = report()?;
+    report.history_metrics.stop_reason =
+        Some("per-target history traversal step budget reached".into());
+    for item in &mut report.items {
+        item.unknowns
+            .push("required final validation quarantined after family Git timeout".into());
+    }
+    let before = serde_json::to_vec(&report)?;
+    let summary = wt_sweep::presentation::summary(&report);
+    assert_eq!(
+        summary.matches("History traversal limit reached").count(),
+        1,
+        "{summary}"
+    );
+    assert_eq!(summary.matches("Git timeout").count(), 1, "{summary}");
+    assert_eq!(serde_json::to_vec(&report)?, before);
     Ok(())
 }

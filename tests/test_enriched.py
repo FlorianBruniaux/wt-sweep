@@ -263,7 +263,7 @@ class EnrichedTests(unittest.TestCase):
         self.assertEqual(result.returncode, 0, result.stderr.decode(errors="replace"))
         lines = result.stdout.decode().splitlines()
         self.assertGreater(len(lines), 0)
-        self.assertLessEqual(len(lines), 5)
+        self.assertLessEqual(len(lines), 60)
         result = self.plan(path, "--summary", "--format", "json")
         self.assertNotEqual(result.returncode, 0)
         self.assertTrue(result.stderr.strip())
@@ -350,7 +350,15 @@ class EnrichedTests(unittest.TestCase):
             base, "review.json", "plan", "plan", "--inventory", scan_directory / "inventory.json",
             "--target", "refs/heads/main", "--summary")
         self.assertGreater(len(plan.stdout.splitlines()), 0)
-        self.assertLessEqual(len(plan.stdout.splitlines()), 5)
+        self.assertLessEqual(len(plan.stdout.splitlines()), 60)
+        console = plan.stdout.decode()
+        for heading in ("RESULTS", "COVERAGE", "CHECKS STILL NEEDED", "REPORT"):
+            self.assertIn(heading, console)
+        self.assertIn(str(plan_directory / "report.txt"), console)
+        self.assertIn("Keep: 1", console)
+        self.assertIn("Cleanup candidates: 1", console)
+        self.assertIn("Local checks complete: 2", console)
+        self.assertNotIn("processed=", plan.stderr.decode())
         detail = (plan_directory / "report.txt").read_text()
         for value in ("Base", "refs/heads/main", "UNKNOWN"):
             self.assertIn(value, detail, "summary publication lost its full descriptive report")

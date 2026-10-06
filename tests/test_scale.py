@@ -314,9 +314,9 @@ class CliScaleTests(unittest.TestCase):
         report, _, stderr = self.plan(self.inventory())
         self.assertEqual(report["schema"], "wt-sweep.review/2", "stdout must remain strict JSON")
         progress = stderr.decode(errors="replace")
-        for phase in ("history", "local", "deep", "complete"):
+        for phase in ("history", "local files", "Verifying commit", "Review finished"):
             self.assertIn(phase, progress, "CLI progress omitted an execution phase")
-        self.assertRegex(progress, r"(?i)processed[=: ]+2", "progress needs processed count")
+        self.assertRegex(progress, r"Review finished: 2 worktrees", "progress needs worktree count")
 
     def test_more_than_512_commits_is_explicit_unknown_not_false_negative(self):
         fixture = self.fixture
@@ -348,9 +348,9 @@ class CliScaleTests(unittest.TestCase):
             self.assertFalse(fixture.ancestor(source, target))
         _, items, stderr = self.plan(self.inventory(), tuple(target_oids))
         progress = stderr.decode(errors="replace")
-        for phase in ("history", "local", "deep", "complete"):
+        for phase in ("history", "local files", "Verifying commit", "Review finished"):
             self.assertIn(phase, progress, "CLI progress omitted an execution phase")
-        self.assertRegex(progress, r"(?i)processed[=: ]+1", "progress needs processed count")
+        self.assertRegex(progress, r"Review finished: 1 worktree;", "progress needs worktree count")
         item = items[os.fsencode(fixture.repo)]
         for reference, oid in target_oids.items():
             record = self.history(item, reference)

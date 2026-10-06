@@ -121,7 +121,7 @@ Un manifeste enregistre des observations, pas le contenu des fichiers.
 
 Chaque ligne indique le worktree, sa branche, son HEAD complet, son état local,
 son histoire et son verdict. Le détail explique les raisons et les vérifications
-à faire ; `--summary` donne un résumé de cinq lignes.
+à faire ; `--summary` regroupe les verdicts, la couverture et les vérifications restantes dans la console.
 
 | Verdict | Signification |
 | --- | --- |
@@ -149,7 +149,7 @@ Consultez le [contrat de décision](docs/contracts.md#triage-policy) et le
 | Inventaires de fichiers locaux | Examiner les empreintes, métadonnées, entrées d’index et certains éléments d’administration du worktree. | `scan --local` |
 | Relations Git | Vérifier l’identité de commits, l’ascendance et l’identité d’arbres par rapport aux références nommées. | `plan --target FULL_REF` |
 | Preuves de forge hors ligne | Importer des données capturées depuis GitHub ou GitLab avec leur provenance, sans contacter de forge. | `forge ingerer` |
-| Rapports texte et JSON | Lire le rapport détaillé ou le résumé de cinq lignes ; conserver les octets complets des chemins et les identifiants d’objets Git dans le JSON. | `--summary`, `--format json` |
+| Rapports texte et JSON | Lire le rapport détaillé ou le bilan structuré dans la console ; conserver les octets complets des chemins et les identifiants d’objets Git dans le JSON. | `--summary`, `--format json` |
 | Exécutions séparées | Conserver les rapports concurrents dans des dossiers distincts, avec les empreintes des fichiers produits et les horodatages de publication. | `--run-dir BASE` |
 
 La découverte globale est également disponible via `scan --all` ou `review --all`. Elle utilise

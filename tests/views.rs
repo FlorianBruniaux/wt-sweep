@@ -142,13 +142,13 @@ fn empty_selection_human_report_keeps_full_counts_gaps_and_source_bindings()
     assert!(filtered.selected_paths.is_empty());
     assert_eq!(filtered.row_bindings.len(), 3);
     let summary = wt_sweep::presentation::view_summary(&filtered);
-    assert_eq!(summary.lines().count(), 5);
+    assert!(summary.lines().count() <= 60);
     for expected in [
         "0/3",
-        "source totals: keep=1, candidates=1, verify=1",
+        "Source totals: 1 keep, 1 candidates, 1 to verify",
         "Source coverage gaps: 1",
-        "traversal complete: false",
-        "Usage: UNKNOWN",
+        "Discovery: incomplete",
+        "Usage by agents or terminals: not checked",
     ] {
         assert!(summary.contains(expected), "{summary}");
     }
@@ -276,7 +276,7 @@ fn empty_selection_preserves_source_coverage_omissions() -> Result<(), SweepErro
         "{detail}"
     );
     let summary = wt_sweep::presentation::view_summary(&filtered);
-    assert_eq!(summary.lines().count(), 5);
-    assert!(summary.contains("unpublished worktrees: 4"), "{summary}");
+    assert!(summary.lines().count() <= 60);
+    assert!(summary.contains("Unpublished worktrees: 4"), "{summary}");
     Ok(())
 }

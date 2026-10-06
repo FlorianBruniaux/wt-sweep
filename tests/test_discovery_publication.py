@@ -188,12 +188,11 @@ class DiscoveryPublicationTests(unittest.TestCase):
         result = self.run_cli("scan", "--root", self.fixture.scope, "--format", "json")
         self.assert_family_set(self.json_success(result))
         progress = result.stderr.decode(errors="replace")
-        for phase in ("start", "progress", "finished"):
-            self.assertIn("discovery: phase=" + phase, progress,
-                          "discovery stderr omitted an observable lifecycle phase")
-        self.assertIn("stop=none", progress, "complete walk lacks explicit terminal stop state")
-        self.assertRegex(progress, r"families[=: ]+6", "progress does not identify known family count")
-        self.assertRegex(progress, r"pending[=: ]+[0-9]+", "progress omits known pending count")
+        for message in ("Discovering repositories...", "Searching:", "Discovery finished:"):
+            self.assertIn(message, progress, "discovery omitted a lifecycle stage")
+        self.assertNotIn("stopped:", progress, "complete walk reports a stop")
+        self.assertIn("Discovery finished: 6 repositories found", progress)
+        self.assertRegex(progress, r"[0-9]+ known paths pending")
 
     def test_complete_publication_is_verifiable_and_keeps_prior_runs(self):
         sentinel = self.output / "existing-artifact"
@@ -380,7 +379,7 @@ class DiscoveryPublicationTests(unittest.TestCase):
         before = filesystem_manifest(self.fixture.root)
         process = self.start(*arguments)
         try:
-            progress = self.wait_for_stderr(process, b"discovery: phase=start")
+            progress = self.wait_for_stderr(process, b"Discovering repositories...")
             if git_child:
                 self.wait_for_git_child(process)
             if grouped:
@@ -407,8 +406,8 @@ class DiscoveryPublicationTests(unittest.TestCase):
         self.assertIsInstance(remaining["known_pending_paths"], int)
         self.assertGreater(remaining["known_pending_paths"], 0,
                            "current operation/pending root falsely counted complete")
-        self.assertIn(b"discovery: phase=finished", result.stderr)
-        self.assertIn(b"stop=interrupted", result.stderr)
+        self.assertIn(b"Discovery finished:", result.stderr)
+        self.assertIn(b"stopped: interrupted", result.stderr)
         return inventory
 
     def fifo_repo(self, name):

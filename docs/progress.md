@@ -17,6 +17,25 @@ réussie avant fusion de la vérification du commit fusionné. La
 [feuille de route](roadmap.md) garde le diagnostic de performance prioritaire.
 E1 reste non démontrée et `apply` indisponible.
 
+## Bilan console, 06/10/2026
+
+`--summary` affiche les verdicts, la couverture du périmètre source, le nombre de
+contrôles locaux complets, partiels ou absents et les conditions encore manquantes.
+Les budgets d’historique, budgets locaux et timeouts Git sont regroupés. Les
+messages de progression sont lisibles ; le JSON et les règles de décision restent
+inchangés. Ce changement d’affichage ne résout pas les limites de performance
+observées sur le gros dépôt.
+
+Vérifications locales : 280 tests Rust réussis, 2 ignorés ; formatage, Clippy,
+synchronisation des 12 fichiers d’instructions et 6 tests RETEX réussis.
+La suite Python complète a exécuté 253 cas : 246 réussis, 6 ignorés et une ancienne
+assertion `processed=1` à mettre à jour. Après cette correction et l’accord des
+messages au singulier, les 9 tests du module concerné passent. La suite Python
+complète n’a pas été rejouée après ces derniers changements.
+Le rendu du rapport existant de 50 worktrees donne 3 à conserver, 0 candidat et
+47 à vérifier, avec 0 contrôle local complet, 4 partiels et 46 non collectés.
+Aucune nouvelle analyse du dépôt réel n’a été lancée pour cette vérification.
+
 ## Historique U1-U4 et RETEX, 04-05/10/2026
 
 Les sections suivantes conservent les résultats, l'état Git et les limites de

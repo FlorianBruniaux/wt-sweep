@@ -260,7 +260,7 @@ class ReviewCommandTests(unittest.TestCase):
                                "--target", "refs/heads/main", "--summary")
         self.assertEqual(summary.returncode, 0, summary.stderr.decode(errors="replace"))
         self.assertGreater(len(summary.stdout.splitlines()), 0)
-        self.assertLessEqual(len(summary.stdout.splitlines()), 5)
+        self.assertLessEqual(len(summary.stdout.splitlines()), 60)
         outside = self.output / "standalone-review.json"
         result = self.run_cli("review", "--repo", self.fixture.principal,
                               "--target", "refs/heads/main", "--out", outside)
@@ -284,15 +284,15 @@ class ReviewCommandTests(unittest.TestCase):
                 self.assertEqual(result.returncode, 0, result.stderr.decode(errors="replace"))
                 self.assertTrue(result.stdout.strip(), "command help produced no content")
                 self.assertIn(command[-1].encode(), result.stdout)
-                self.assertNotIn(b"discovery:", result.stderr)
-                self.assertNotIn(b"processed=", result.stderr)
+                self.assertNotIn(b"Discovering repositories", result.stderr)
+                self.assertNotIn(b"Checking worktree", result.stderr)
 
     def test_invalid_pairs_refuse_before_discovery_with_valid_review_control(self):
         self.assert_verdicts(self.review())  # Always-refuse parser cannot pass this method.
         no_scope = self.run_cli("review")
         self.assertEqual(no_scope.returncode, 2)
         self.assertEqual(no_scope.stdout, b"")
-        self.assertNotIn(b"discovery:", no_scope.stderr, "missing scope started discovery")
+        self.assertNotIn(b"Discovering repositories", no_scope.stderr, "missing scope started discovery")
         pairs = (("--root", self.fixture.root), ("--all",), ("--repo", self.fixture.linked),
                  ("--inventory", self.output / "missing.json"),
                  ("--local",), ("--summary", "--format", "json"),
@@ -306,8 +306,8 @@ class ReviewCommandTests(unittest.TestCase):
                 self.assertEqual(result.returncode, 2)
                 self.assertEqual(result.stdout, b"")
                 self.assertTrue(result.stderr.strip())
-                self.assertNotIn(b"discovery:", result.stderr, "invalid options started filesystem discovery")
-                self.assertNotIn(b"processed=", result.stderr, "invalid options started review collection")
+                self.assertNotIn(b"Discovering repositories", result.stderr, "invalid options started filesystem discovery")
+                self.assertNotIn(b"Checking worktree", result.stderr, "invalid options started review collection")
         self.assertEqual(before, filesystem_manifest(self.output), "invalid options created or changed outputs")
 
     def test_old_review_archive_refuses_plan_with_fresh_scan_diagnostic_and_no_new_C5(self):
@@ -342,14 +342,14 @@ class ReviewCommandTests(unittest.TestCase):
                                    env=self.fixture.env, stdin=subprocess.DEVNULL,
                                    stdout=subprocess.PIPE, stderr=subprocess.PIPE, start_new_session=True)
         try:
-            progress = helpers.wait_for_stderr(self, process, b"discovery: phase=start")
+            progress = helpers.wait_for_stderr(self, process, b"Discovering repositories...")
             helpers.wait_for_git_child(self, process)
             os.kill(process.pid, signal.SIGINT)
             stdout, stderr = process.communicate(timeout=12)
             diagnostic = (progress + stderr).decode(errors="replace")
             self.assertEqual(process.returncode, 130, diagnostic)
             helpers.assert_children_gone(self)
-            self.assertRegex(diagnostic, r"discovery: phase=finished [^\n]*stop=interrupted")
+            self.assertRegex(diagnostic, r"Discovery finished: [^\n]*stopped: interrupted")
             if stdout:
                 report = self.source(json.loads(stdout))
                 self.assertFalse(report["coverage"]["traversal_complete"])
