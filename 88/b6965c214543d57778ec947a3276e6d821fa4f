@@ -1,0 +1,23 @@
+CHANGELOG.md
+  s_160b3107588443::t_a3bb3cb04d2600 132-133
+README.fr.md
+  s_160b3107588443::t_badca5c555386a 17-18,26-30,38-42,52-53,68-69,149-150,175-176,241-242,260-261,296-297,309-310
+README.md
+  s_160b3107588443::t_69d3be580d257b 17-18,26-30,37-40,49-50,63-64,140-141,165-166,225-226,244-245,279-280,291-292
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "88b6965c214543d57778ec947a3276e6d821fa4f",
+  "prompts": {},
+  "sessions": {
+    "s_160b3107588443": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a106f2-069b-7be2-aa09-88b1bbf2331e",
+        "model": "gpt-6-astra"
+      },
+      "human_author": "Florian BRUNIAUX <florian@bruniaux.com>"
+    }
+  }
+}
