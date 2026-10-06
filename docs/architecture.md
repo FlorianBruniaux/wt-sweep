@@ -8,6 +8,13 @@ separates collection, judgement, presentation and publication.
 
 ## Data flow
 
+`review` collects a fresh inventory and passes it through the same enrichment,
+judgement and presentation path as `plan`. `scan` saves discovery separately;
+`plan` accepts that saved inventory. Review publication keeps the full original
+input and binds it through `inventory_sha256`, rather than compacting it before
+judgement. A source exceeding the publication limit is refused with a narrower
+scope required.
+
 ```mermaid
 flowchart TD
     CLI[main: arguments and output choice] --> D[discover + mounts]
@@ -19,7 +26,9 @@ flowchart TD
     I2 --> E
     F[forge: offline bytes and receipt] --> E
     E --> G
-    E --> O[Observations]
+    E --> LS[local::collect_summary: current local state]
+    LS --> O[Observations]
+    E --> O
     O --> J[review::judge: no I/O]
     J --> R[Review]
     R --> P[presentation]
@@ -36,18 +45,20 @@ fixture, but a scan does not capture an atomic snapshot.
 
 | Module | Responsibility |
 | --- | --- |
-| [main](../src/main.rs) | Parse CLI arguments, apply scan-wide local budgets, select outputs and refuse `apply`. |
+| [main](../src/main.rs) | Parse scoped scan/review and saved-input plan arguments, select outputs, expose command help and refuse `apply`. |
 | [model](../src/model.rs) | Versioned serializable contracts and byte-preserving identities. |
 | [discover](../src/discover.rs) | Bounded traversal, marker discovery, deduplication, coverage and injectable filesystem provider. |
 | [mounts](../src/mounts.rs) | Read macOS mount observations without silently filtering volume types. |
 | [residency](../src/residency.rs) | Disable and verify dataless-file materialization for protected reads. |
 | [git](../src/git.rs) | Controlled Git execution, family inventory and administrative cross-checks. |
-| [local](../src/local.rs) | Descriptor-based resident-file observations, hashes, index parsing and per-worktree budgets. |
+| [local](../src/local.rs) | Descriptor-based manifests plus a separate compact current-state collector, with independent index, traversal and output budgets. |
 | [forge](../src/forge.rs) | Parse local exports, check receipts, retain positive facts and coverage gaps. |
-| [review](../src/review.rs) | Collect verified object relationships, associate forge facts, then judge without I/O. |
+| [review](../src/review.rs) | Collect current controls, graph facts, private history, verified integration and optional context; associate forge facts, then judge without I/O. |
+| [view](../src/view.rs) | Select and group reviewed rows while retaining source totals, bindings and gaps. |
+| [cancel](../src/cancel.rs) | Propagate interruption to bounded collection and publication. |
 | [presentation](../src/presentation.rs) | Escaped descriptions, detailed report and five-line summary. |
 | [output](../src/output.rs) | Bounded artifact reads, canonical digests and exclusive publication outside inspected boundaries. |
-| [run](../src/run.rs) | Publish one run directory and its artifact receipt. |
+| [run](../src/run.rs) | Publish one run directory and its artifact receipt; review binds inventory, review and text together. |
 
 ## Read and publication boundaries
 

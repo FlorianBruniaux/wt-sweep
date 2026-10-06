@@ -2,6 +2,7 @@
 use crate::model::{
     BytePath, DirState, Family, Gap, Identity, Inventory, ScanScope, SweepError, Worktree,
 };
+use std::cell::{Cell, RefCell};
 use std::collections::BTreeSet;
 use std::fs::{self, File};
 use std::io::{self, Read, Write};
@@ -21,6 +22,8 @@ pub enum GitRead {
     GitDir,
     TopLevel,
     ObjectFormat,
+    RefFormat,
+    AdminPath { name: BytePath },
     IgnorePaths { paths: Vec<BytePath> },
     Worktrees,
     ResolveCommit { reference: BytePath },
@@ -35,6 +38,8 @@ pub enum GitRead {
 pub struct ControlledGit {
     timeout: Duration,
     output_limit: u64,
+    spawned: Cell<u64>,
+    first_timeout: RefCell<Option<GitRead>>,
 }
 
 impl Default for ControlledGit {
@@ -42,8 +47,19 @@ impl Default for ControlledGit {
         Self {
             timeout: Duration::from_secs(10),
             output_limit: 8 * 1024 * 1024,
+            spawned: Cell::new(0),
+            first_timeout: RefCell::new(None),
         }
     }
+}
+
+#[cfg(test)]
+thread_local! {
+    static CHILD_READ_JOURNAL: RefCell<Vec<(BytePath, GitRead)>> = const { RefCell::new(Vec::new()) };
+}
+#[cfg(test)]
+pub(crate) fn take_child_read_journal() -> Vec<(BytePath, GitRead)> {
+    CHILD_READ_JOURNAL.with(|journal| std::mem::take(&mut *journal.borrow_mut()))
 }
 
 impl ControlledGit {
@@ -51,6 +67,21 @@ impl ControlledGit {
         Self {
             timeout: timeout.min(Duration::from_secs(10)),
             ..Self::default()
+        }
+    }
+    pub(crate) fn timeout_limit(&self) -> Duration {
+        self.timeout
+    }
+    pub(crate) fn first_timeout(&self) -> Option<GitRead> {
+        self.first_timeout.borrow().clone()
+    }
+    pub(crate) fn spawned_processes(&self) -> u64 {
+        self.spawned.get()
+    }
+    pub(crate) fn with_output_limit(timeout: Duration, output_limit: usize) -> Self {
+        Self {
+            output_limit: output_limit.min(8 * 1024 * 1024) as u64,
+            ..Self::with_timeout(timeout)
         }
     }
     fn command(&self, repo: &Path) -> Command {
@@ -115,6 +146,7 @@ impl ControlledGit {
         read: GitRead,
     ) -> Result<Vec<u8>, SweepError> {
         crate::residency::ensure_no_materialization()?;
+        let observed_read = read.clone();
         let mut command = self.command(command_path);
         if let Some(directory) = directory {
             anchored_cwd::attach(&mut command, directory)
@@ -222,6 +254,40 @@ impl ControlledGit {
                 ]);
                 "git_local_refs"
             }
+            GitRead::RefFormat => {
+                command.args(["rev-parse", "--show-ref-format"]);
+                "git_ref_format"
+            }
+            GitRead::AdminPath { name } => {
+                let bytes = name.bytes()?;
+                if ![
+                    b"HEAD".as_slice(),
+                    b"refs",
+                    b"refs/bisect",
+                    b"refs/worktree",
+                    b"refs/rewritten",
+                    b"logs/HEAD",
+                    b"logs/refs/bisect",
+                    b"logs/refs/worktree",
+                    b"logs/refs/rewritten",
+                    b"packed-refs",
+                    b"refs/stash",
+                    b"logs/refs/stash",
+                ]
+                .contains(&bytes.as_slice())
+                {
+                    return Err(SweepError::new(
+                        "git_argument",
+                        "git_admin_path",
+                        repo,
+                        "history path is not approved",
+                    ));
+                }
+                command
+                    .args(["rev-parse", "--path-format=absolute", "--git-path"])
+                    .arg(std::ffi::OsString::from_vec(bytes));
+                "git_admin_path"
+            }
             GitRead::CommonDir => {
                 command.args(["rev-parse", "--path-format=absolute", "--git-common-dir"]);
                 "git_common_dir"
@@ -239,19 +305,31 @@ impl ControlledGit {
                 "git_worktrees"
             }
         };
-        if allow_empty_no_match {
-            run_bounded_inner(
-                command,
-                repo,
-                operation,
-                self.timeout,
-                self.output_limit,
-                true,
-                &input,
-            )
-        } else {
-            run_bounded(command, repo, operation, self.timeout, self.output_limit)
+        #[cfg(test)]
+        let before_spawned = self.spawned.get();
+        let result = run_bounded_inner(
+            command,
+            repo,
+            operation,
+            self.timeout,
+            self.output_limit,
+            allow_empty_no_match,
+            (&input, Some(&self.spawned)),
+        );
+        #[cfg(test)]
+        if self.spawned.get() > before_spawned {
+            CHILD_READ_JOURNAL.with(|journal| {
+                journal
+                    .borrow_mut()
+                    .push((BytePath::from_path(repo), observed_read.clone()))
+            });
         }
+        if result.as_ref().is_err_and(|e| e.code == "git_timeout")
+            && self.first_timeout.borrow().is_none()
+        {
+            *self.first_timeout.borrow_mut() = Some(observed_read);
+        }
+        result
     }
 }
 
@@ -327,6 +405,7 @@ fn read_ready(stream: &mut UnixStream, bytes: &mut Vec<u8>, budget: usize) -> io
     Ok(false)
 }
 
+#[cfg(test)]
 fn run_bounded(
     command: Command,
     path: &Path,
@@ -334,7 +413,7 @@ fn run_bounded(
     timeout: Duration,
     limit: u64,
 ) -> Result<Vec<u8>, SweepError> {
-    run_bounded_inner(command, path, operation, timeout, limit, false, &[])
+    run_bounded_inner(command, path, operation, timeout, limit, false, (&[], None))
 }
 
 fn run_bounded_inner(
@@ -344,8 +423,9 @@ fn run_bounded_inner(
     timeout: Duration,
     limit: u64,
     allow_empty_no_match: bool,
-    input: &[u8],
+    input_and_spawn_counter: (&[u8], Option<&Cell<u64>>),
 ) -> Result<Vec<u8>, SweepError> {
+    let (input, spawned) = input_and_spawn_counter;
     let error = |code: &str, message: String| SweepError::new(code, operation, path, message);
     let (mut stdout, child_stdout) =
         UnixStream::pair().map_err(|e| error("output_io", e.to_string()))?;
@@ -378,6 +458,9 @@ fn run_bounded_inner(
             .map_err(|e| error("git_spawn", e.to_string()))?,
         completed: false,
     };
+    if let Some(spawned) = spawned {
+        spawned.set(spawned.get().saturating_add(1));
+    }
     // Drop the parent's duplicate child descriptors before waiting for EOF.
     drop(command);
     let budget = usize::try_from(limit).unwrap_or(usize::MAX);
@@ -847,6 +930,7 @@ fn reconcile_primary(
     let selected_primary = if selected_gitdir == common {
         match prove_primary(git, selected, common) {
             Ok(path) => Some(path),
+            Err(error) if error.code == "git_timeout" => return Err(error),
             Err(error) => {
                 failures.push(error.to_string());
                 None
@@ -859,6 +943,7 @@ fn reconcile_primary(
         Some(path) => path,
         None => match prove_primary(git, &reported, common) {
             Ok(path) => path,
+            Err(error) if error.code == "git_timeout" => return Err(error),
             Err(error) => {
                 failures.push(error.to_string());
                 return Err(SweepError::new(
@@ -878,10 +963,15 @@ fn reconcile_primary(
 }
 
 pub fn scan_family(path: &Path) -> Result<Inventory, SweepError> {
+    scan_family_with_git(path, &ControlledGit::default())
+}
+pub(crate) fn scan_family_with_git(
+    path: &Path,
+    git: &ControlledGit,
+) -> Result<Inventory, SweepError> {
     let mut inventory = Inventory::new(ScanScope::Repo {
         path: BytePath::from_path(path),
     });
-    let git = ControlledGit::default();
     let raw_common = git.read(path, GitRead::CommonDir)?;
     let raw_common = raw_common.strip_suffix(b"\n").ok_or_else(|| {
         SweepError::new(
@@ -921,7 +1011,7 @@ pub fn scan_family(path: &Path) -> Result<Inventory, SweepError> {
         ));
     }
     let mut worktrees = parse_worktrees(&git.read(path, GitRead::Worktrees)?, path)?;
-    reconcile_primary(&git, path, &common, &mut worktrees)?;
+    reconcile_primary(git, path, &common, &mut worktrees)?;
     validate_registry(&common, &worktrees)?;
     for tree in &mut worktrees {
         let tree_path = tree.path.to_path()?;
@@ -1001,6 +1091,54 @@ mod tests {
             !executed,
             "repository protocol.ext.allow bypassed generic protocol.allow=never"
         );
+    }
+
+    #[test]
+    fn primary_proof_timeout_is_typed_and_does_not_retry_reported_path() {
+        let fixture = PathBuf::from(format!(
+            "/private/tmp/wt-sweep-primary-timeout-{}-{}",
+            std::process::id(),
+            crate::model::now_ms()
+        ));
+        fs::create_dir(&fixture).unwrap_or_else(|e| panic!("fixture: {e}"));
+        let selected = fixture.join("selected");
+        let redirected = fixture.join("redirected");
+        for path in [&selected, &redirected] {
+            fs::create_dir(path).unwrap_or_else(|e| panic!("mkdir: {e}"));
+            let git = ControlledGit::default();
+            let mut init = git.command(path);
+            init.args(["init", "-b", "main"]);
+            run_bounded(init, path, "fixture_init", git.timeout, 1024 * 1024)
+                .unwrap_or_else(|e| panic!("init: {e}"));
+        }
+        // Initial admin reads use selected's regular config. TopLevel redirects
+        // the proof into a different real repo whose GitDir read must time out.
+        let git = ControlledGit::default();
+        let mut config = git.command(&selected);
+        config.args(["config", "core.worktree"]).arg(&redirected);
+        run_bounded(config, &selected, "fixture_config", git.timeout, 1024)
+            .unwrap_or_else(|e| panic!("config: {e}"));
+        let config = redirected.join(".git/config");
+        fs::remove_file(&config).unwrap_or_else(|e| panic!("replace owned config: {e}"));
+        assert!(
+            Command::new("/usr/bin/mkfifo")
+                .arg(&config)
+                .status()
+                .unwrap_or_else(|e| panic!("fifo: {e}"))
+                .success()
+        );
+        let git = ControlledGit::with_timeout(Duration::from_secs(1));
+        let result = scan_family_with_git(&selected, &git);
+        let spawned = git.spawned_processes();
+        fs::remove_dir_all(&fixture).unwrap_or_else(|e| panic!("cleanup owned fixture: {e}"));
+        let failure = result
+            .err()
+            .unwrap_or_else(|| panic!("blocked primary proof accepted"));
+        assert_eq!(
+            failure.code, "git_timeout",
+            "primary timeout was swallowed into a generic proof refusal"
+        );
+        assert_eq!(spawned, 5, "reported primary retried after a typed timeout");
     }
 
     #[test]

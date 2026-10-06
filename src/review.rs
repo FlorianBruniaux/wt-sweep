@@ -1,11 +1,191 @@
 //! Local Git observations and a pure review policy. Never authorizes an action.
-use crate::git::{ControlledGit, GitRead, scan_family};
+use crate::git::{ControlledGit, GitRead, scan_family_with_git};
 use crate::model::*;
 use crate::output::canonical_digest;
 use std::collections::{BTreeMap, BTreeSet, VecDeque};
 use std::path::Path;
 use std::rc::Rc;
 use std::time::{Duration, Instant};
+
+pub mod context;
+pub mod control;
+mod history;
+pub mod private;
+#[cfg(all(test, unix))]
+mod summary_deadline_tests;
+pub mod targets;
+use targets::{FamilyTargets, TargetInput};
+
+#[derive(Clone, Debug, Default)]
+pub struct ReviewOptions {
+    pub evidence: ReviewLimits,
+    pub controls: control::ControlLimits,
+    pub context: ContextOptions,
+}
+#[derive(Clone, Debug)]
+pub struct ContextOptions {
+    pub enabled: bool,
+    pub changelog_paths: Vec<BytePath>,
+    pub limits: ContextLimits,
+}
+impl Default for ContextOptions {
+    fn default() -> Self {
+        Self {
+            enabled: true,
+            changelog_paths: [
+                "CHANGELOG.md",
+                "CHANGELOG",
+                "CHANGES.md",
+                "CHANGES",
+                "HISTORY.md",
+                "HISTORY",
+            ]
+            .iter()
+            .map(|p| BytePath::from_bytes(p.as_bytes()))
+            .collect(),
+            limits: ContextLimits::default(),
+        }
+    }
+}
+#[derive(Clone, Debug)]
+pub struct ContextLimits {
+    pub object_read_attempts: usize,
+    pub object_bytes: usize,
+    pub traversal_steps: usize,
+    pub per_worktree_steps: usize,
+    pub object_output_bytes: usize,
+    pub commit_samples: usize,
+    pub changelog_paths: usize,
+    pub path_bytes: usize,
+    pub path_components: usize,
+    pub excerpt_bytes: usize,
+    pub output_bytes: usize,
+    pub rows: usize,
+    pub timeout: Duration,
+}
+impl Default for ContextLimits {
+    fn default() -> Self {
+        Self {
+            object_read_attempts: 512,
+            object_bytes: 4 * 1024 * 1024,
+            traversal_steps: 16384,
+            per_worktree_steps: 1024,
+            object_output_bytes: 256 * 1024,
+            commit_samples: 10,
+            changelog_paths: 8,
+            path_bytes: 4096,
+            path_components: 32,
+            excerpt_bytes: 4096,
+            output_bytes: 1024 * 1024,
+            rows: 4096,
+            timeout: Duration::from_secs(10),
+        }
+    }
+}
+/// Collect decision evidence, then optional context from its recorded object IDs.
+pub fn enrich_with_options(
+    inventory: &Inventory,
+    input: TargetInput<'_>,
+    forge: Option<&ForgeExport>,
+    options: &ReviewOptions,
+    hooks: &dyn control::ControlHooks,
+    callback: &mut dyn FnMut(ProgressEvent),
+) -> Result<Observations, SweepError> {
+    options.context.validate()?;
+    let limits = &options.evidence;
+    let control_limits = &options.controls;
+    collect_with_options(
+        inventory,
+        input,
+        forge,
+        limits,
+        control_limits,
+        &options.context,
+        hooks,
+        callback,
+    )
+}
+
+/// Runtime work-unit limits. CLI defaults are unchanged; fixture callers may inject smaller caps.
+#[derive(Clone, Debug)]
+pub struct ReviewLimits {
+    pub object_read_attempts: usize,
+    pub object_bytes: usize,
+    pub traversal_steps: usize,
+    pub per_target_steps: usize,
+    pub slice_object_read_attempts: usize,
+    pub slice_object_bytes: usize,
+    pub slice_traversal_steps: usize,
+    pub target_jobs: usize,
+    pub timeout: Duration,
+    pub deep_object_read_attempts: usize,
+    pub deep_object_bytes: usize,
+    pub deep_traversal_steps: usize,
+    pub deep_per_target_steps: usize,
+}
+impl Default for ReviewLimits {
+    fn default() -> Self {
+        Self {
+            object_read_attempts: 2048,
+            object_bytes: 32 * 1024 * 1024,
+            traversal_steps: 65536,
+            per_target_steps: 512,
+            slice_object_read_attempts: 4,
+            slice_object_bytes: 64 * 1024,
+            slice_traversal_steps: 16,
+            target_jobs: 4096,
+            timeout: Duration::from_secs(60),
+            deep_object_read_attempts: 2048,
+            deep_object_bytes: 32 * 1024 * 1024,
+            deep_traversal_steps: 65536,
+            deep_per_target_steps: 512,
+        }
+    }
+}
+impl ReviewLimits {
+    fn validate(&self) -> Result<(), SweepError> {
+        for (value, cap) in [
+            (self.object_read_attempts, 2048),
+            (self.object_bytes, 32 * 1024 * 1024),
+            (self.traversal_steps, 262144),
+            (self.per_target_steps, 4096),
+            (self.slice_object_read_attempts, 2048),
+            (self.slice_object_bytes, 32 * 1024 * 1024),
+            (self.slice_traversal_steps, 4096),
+            (self.target_jobs, 4096),
+            (self.deep_object_read_attempts, 2048),
+            (self.deep_object_bytes, 32 * 1024 * 1024),
+            (self.deep_traversal_steps, 262144),
+            (self.deep_per_target_steps, 4096),
+        ] {
+            if value == 0 || value > cap {
+                return Err(error("invalid review work-unit limit"));
+            }
+        }
+        if self.timeout.is_zero() || self.timeout > Duration::from_secs(60) {
+            return Err(error("invalid review timeout limit"));
+        }
+        Ok(())
+    }
+}
+#[derive(Clone, Debug)]
+pub struct ProgressEvent {
+    pub phase: &'static str,
+    pub processed: u64,
+    pub stop_reason: Option<String>,
+}
+fn progress(
+    callback: &mut dyn FnMut(ProgressEvent),
+    phase: &'static str,
+    processed: u64,
+    stop_reason: Option<String>,
+) {
+    callback(ProgressEvent {
+        phase,
+        processed,
+        stop_reason,
+    });
+}
 
 fn error(message: impl Into<String>) -> SweepError {
     SweepError::new("invalid_inventory", "review", Path::new(""), message)
@@ -38,7 +218,7 @@ fn subject(bytes: &[u8]) -> Result<(BytePath, bool), SweepError> {
     ))
 }
 
-fn full_ref(reference: &BytePath) -> Result<(), SweepError> {
+pub(crate) fn full_ref(reference: &BytePath) -> Result<(), SweepError> {
     let bytes = reference.bytes()?;
     if !(bytes.starts_with(b"refs/heads/") || bytes.starts_with(b"refs/remotes/"))
         || bytes
@@ -118,7 +298,7 @@ fn matching_requests(
             let Some(source) = request.head_oid.as_deref() else {
                 return false;
             };
-            if worktree.head.as_deref() != Some(source) {
+            if !optional_oid_eq(worktree.head.as_deref(), Some(source)) {
                 return false;
             }
             if let Some(branch) = &worktree.branch {
@@ -179,24 +359,49 @@ struct ObjectReader {
     reads_left: usize,
     bytes_left: usize,
     started: Instant,
+    timeout: Duration,
+    steps_left: usize,
+    per_target_steps: usize,
 }
 impl ObjectReader {
+    #[cfg(test)]
     fn new() -> Self {
+        Self::with_limits(&ReviewLimits::default())
+    }
+    fn with_limits(limits: &ReviewLimits) -> Self {
         Self {
             git: ControlledGit::default(),
             cache: BTreeMap::new(),
-            reads_left: 2048,
-            bytes_left: 32 * 1024 * 1024,
+            reads_left: limits.deep_object_read_attempts,
+            bytes_left: limits.deep_object_bytes,
+            steps_left: limits.deep_traversal_steps,
+            per_target_steps: limits.deep_per_target_steps,
+            timeout: limits.timeout,
             started: Instant::now(),
         }
     }
     fn expired(&self) -> bool {
-        self.started.elapsed() >= Duration::from_secs(60)
+        self.started.elapsed() >= self.timeout
+    }
+    fn exhausted(&self) -> bool {
+        self.expired() || self.reads_left == 0 || self.bytes_left == 0 || self.steps_left == 0
+    }
+    fn step(&mut self) -> Result<(), SweepError> {
+        if self.steps_left == 0 {
+            return Err(error("deep traversal step budget reached"));
+        }
+        self.steps_left -= 1;
+        Ok(())
     }
     fn read(&mut self, common: &Path, kind: &str, oid: &str) -> Result<Rc<Vec<u8>>, SweepError> {
         if self.expired() {
             return Err(error("whole-review time budget reached"));
         }
+        if !valid_oid(oid) {
+            return Err(error("invalid object OID"));
+        }
+        let canonical = oid.to_ascii_lowercase();
+        let oid = canonical.as_str();
         let key = (BytePath::from_path(common), kind.into(), oid.into());
         if let Some(bytes) = self.cache.get(&key) {
             return Ok(bytes.clone());
@@ -230,9 +435,21 @@ impl ObjectReader {
     }
 }
 
+#[derive(Clone)]
 struct Commit {
     tree: String,
     parents: Vec<String>,
+}
+
+fn oid_eq(a: &str, b: &str) -> bool {
+    valid_oid(a) && valid_oid(b) && a.eq_ignore_ascii_case(b)
+}
+fn optional_oid_eq(a: Option<&str>, b: Option<&str>) -> bool {
+    match (a, b) {
+        (Some(a), Some(b)) => oid_eq(a, b),
+        (None, None) => true,
+        _ => false,
+    }
 }
 
 fn commit(reader: &mut ObjectReader, common: &Path, oid: &str) -> Result<Commit, SweepError> {
@@ -240,30 +457,79 @@ fn commit(reader: &mut ObjectReader, common: &Path, oid: &str) -> Result<Commit,
         return Err(error("invalid or absent commit OID"));
     }
     let bytes = reader.read(common, "commit", oid)?;
-    let mut tree = None;
+    parse_commit(&bytes, oid.len())
+}
+fn parse_commit(bytes: &[u8], width: usize) -> Result<Commit, SweepError> {
+    parse_commit_bounded(bytes, width, usize::MAX)
+}
+// Structural framing only. Author/date semantics and signature validity remain
+// outside graph judgement; full object identity is verified before parsing.
+fn parse_commit_bounded(
+    raw: &[u8],
+    width: usize,
+    parent_limit: usize,
+) -> Result<Commit, SweepError> {
+    let separator = raw
+        .windows(2)
+        .position(|pair| pair == b"\n\n")
+        .ok_or_else(|| error("commit header separator absent"))?;
+    let header = &raw[..separator];
+    if header.contains(&0) {
+        return Err(error("commit header contains NUL"));
+    }
+    let mut lines = header.split(|byte| *byte == b'\n').peekable();
+    let object_id = |line: &[u8], prefix: &[u8]| -> Result<String, SweepError> {
+        let value = line
+            .strip_prefix(prefix)
+            .ok_or_else(|| error("commit structural header syntax or order invalid"))?;
+        let value = std::str::from_utf8(value).map_err(|_| error("commit header OID invalid"))?;
+        if value.len() != width || !valid_oid(value) {
+            return Err(error("commit object ID width or syntax invalid"));
+        }
+        Ok(value.to_ascii_lowercase())
+    };
+    let tree = object_id(lines.next().unwrap_or_default(), b"tree ")?;
     let mut parents = Vec::new();
-    for line in bytes
-        .split(|b| *b == b'\n')
-        .take_while(|line| !line.is_empty())
+    while lines
+        .peek()
+        .is_some_and(|line| line.starts_with(b"parent "))
     {
-        if let Some(value) = line.strip_prefix(b"tree ") {
-            let value = std::str::from_utf8(value).map_err(|_| error("invalid tree OID"))?;
-            if tree.is_some() || !valid_oid(value) {
-                return Err(error("invalid commit tree header"));
-            }
-            tree = Some(value.to_string());
-        } else if let Some(value) = line.strip_prefix(b"parent ") {
-            let value = std::str::from_utf8(value).map_err(|_| error("invalid parent OID"))?;
-            if !valid_oid(value) {
-                return Err(error("invalid commit parent header"));
-            }
-            parents.push(value.into());
+        if parents.len() >= parent_limit {
+            return Err(error("commit parent fanout budget reached"));
+        }
+        parents.push(object_id(lines.next().unwrap_or_default(), b"parent ")?);
+    }
+    for prefix in [b"author ".as_slice(), b"committer "] {
+        let line = lines.next().unwrap_or_default();
+        if line
+            .strip_prefix(prefix)
+            .is_none_or(|value| value.is_empty())
+        {
+            return Err(error("commit structural header syntax or order invalid"));
         }
     }
-    Ok(Commit {
-        tree: tree.ok_or_else(|| error("missing commit tree header"))?,
-        parents,
-    })
+    let mut extension = false;
+    for line in lines {
+        if line.starts_with(b" ") {
+            if !extension {
+                return Err(error("commit orphan header continuation"));
+            }
+            continue;
+        }
+        let split = line
+            .iter()
+            .position(|byte| byte.is_ascii_whitespace())
+            .ok_or_else(|| error("commit extension header framing invalid"))?;
+        let key = &line[..split];
+        if key.is_empty()
+            || line[split] != b' '
+            || [b"tree".as_slice(), b"parent", b"author", b"committer"].contains(&key)
+        {
+            return Err(error("commit structural header syntax or order invalid"));
+        }
+        extension = true;
+    }
+    Ok(Commit { tree, parents })
 }
 
 fn resolve(git: &ControlledGit, common: &Path, reference: &BytePath) -> Result<String, SweepError> {
@@ -278,7 +544,7 @@ fn resolve(git: &ControlledGit, common: &Path, reference: &BytePath) -> Result<S
         .and_then(|v| std::str::from_utf8(v).ok())
         .filter(|s| valid_oid(s))
         .ok_or_else(|| error("invalid resolved target OID"))?;
-    Ok(oid.into())
+    Ok(oid.to_ascii_lowercase())
 }
 
 fn local_refs(git: &ControlledGit, common: &Path) -> Result<Vec<BytePath>, SweepError> {
@@ -300,8 +566,10 @@ fn relation(
     source: &str,
     target: &str,
 ) -> Result<Option<&'static str>, SweepError> {
-    let source_commit = commit(reader, common, source)?;
-    let target_commit = commit(reader, common, target)?;
+    let source = source.to_ascii_lowercase();
+    let target = target.to_ascii_lowercase();
+    let source_commit = commit(reader, common, &source)?;
+    let target_commit = commit(reader, common, &target)?;
     inspect_tree(reader, common, &source_commit.tree)?;
     inspect_tree(reader, common, &target_commit.tree)?;
     if source == target {
@@ -313,7 +581,8 @@ fn relation(
         if !visited.insert(oid.clone()) {
             continue;
         }
-        if visited.len() > 512 {
+        reader.step()?;
+        if visited.len() > reader.per_target_steps {
             return Err(error("commit traversal budget reached; ancestry unknown"));
         }
         if oid == source {
@@ -331,13 +600,14 @@ fn relation(
 
 fn inspect_tree(reader: &mut ObjectReader, common: &Path, oid: &str) -> Result<(), SweepError> {
     let width = oid.len() / 2;
-    let mut queue = VecDeque::from([oid.to_string()]);
+    let mut queue = VecDeque::from([oid.to_ascii_lowercase()]);
     let mut seen = BTreeSet::new();
     while let Some(oid) = queue.pop_front() {
         if !seen.insert(oid.clone()) {
             continue;
         }
-        if seen.len() > 512 {
+        reader.step()?;
+        if seen.len() > reader.per_target_steps {
             return Err(error("tree traversal budget reached"));
         }
         let raw = reader.read(common, "tree", &oid)?;
@@ -381,26 +651,368 @@ fn inspect_tree(reader: &mut ObjectReader, common: &Path, oid: &str) -> Result<(
     Ok(())
 }
 
+fn unavailable_local_summary(
+    worktree: &Worktree,
+    reason: String,
+) -> Result<LocalSummary, SweepError> {
+    let observed = now_ms();
+    let mut summary = LocalSummary {
+        started_unix_ms: observed,
+        finished_unix_ms: observed,
+        temporal_consistency: "not_guaranteed".into(),
+        gaps: vec![Gap {
+            path: worktree.path.clone(),
+            reason,
+        }],
+        ..LocalSummary::default()
+    };
+    summary.digest_sha256 = canonical_digest(&summary)?;
+    Ok(summary)
+}
+
+#[derive(Default)]
+struct LocalCollection {
+    summaries: BTreeMap<BytePath, Option<LocalSummary>>,
+    stopped_families: BTreeMap<(u64, u64), GitRead>,
+}
+
+fn stops_family_history(operation: &GitRead) -> bool {
+    !matches!(operation, GitRead::IgnorePaths { .. })
+}
+
+fn family_timeout_reason(operation: &GitRead) -> String {
+    let operation = match operation {
+        GitRead::Commit { oid } => format!("Commit {oid}"),
+        GitRead::Tree { oid } => format!("Tree {oid}"),
+        GitRead::Blob { oid } => format!("Blob {oid}"),
+        GitRead::CommonDir => "CommonDir".into(),
+        GitRead::GitDir => "GitDir".into(),
+        GitRead::TopLevel => "TopLevel".into(),
+        GitRead::ObjectFormat => "ObjectFormat".into(),
+        GitRead::RefFormat => "RefFormat".into(),
+        GitRead::AdminPath { name } => format!("AdminPath {}", name.display()),
+        GitRead::Worktrees => "Worktrees".into(),
+        GitRead::ResolveCommit { .. } => "ResolveCommit".into(),
+        GitRead::LocalRefs => "LocalRefs".into(),
+        GitRead::RemoteUrls => "RemoteUrls".into(),
+        GitRead::IgnorePaths { .. } => "IgnorePaths".into(),
+    };
+    format!(
+        "family collection stopped after Git timeout in {operation}; remaining dependent Git reads not performed"
+    )
+}
+
+fn current_local_summaries(
+    inventory: &Inventory,
+    stopped_families: &BTreeMap<(u64, u64), GitRead>,
+) -> Result<LocalCollection, SweepError> {
+    local_summaries_with_stopped_families(inventory, 24 * 1024 * 1024, stopped_families)
+}
+
+#[cfg(test)]
+fn local_summaries_with_byte_budget(
+    inventory: &Inventory,
+    budget: usize,
+) -> Result<LocalCollection, SweepError> {
+    local_summaries_with_stopped_families(inventory, budget, &BTreeMap::new())
+}
+fn local_summaries_with_stopped_families(
+    inventory: &Inventory,
+    budget: usize,
+    stopped_families: &BTreeMap<(u64, u64), GitRead>,
+) -> Result<LocalCollection, SweepError> {
+    local_summaries_collect(
+        inventory,
+        budget,
+        stopped_families,
+        crate::local::collect_summary_for_review,
+    )
+}
+
+fn local_summaries_collect(
+    inventory: &Inventory,
+    budget: usize,
+    stopped_families: &BTreeMap<(u64, u64), GitRead>,
+    mut collect: impl FnMut(
+        &Worktree,
+        &crate::local::SummaryLimits,
+    ) -> Result<crate::local::SummaryOutcome, SweepError>,
+) -> Result<LocalCollection, SweepError> {
+    let started = Instant::now();
+    let mut output = LocalCollection {
+        stopped_families: stopped_families.clone(),
+        ..LocalCollection::default()
+    };
+    let mut families = BTreeSet::new();
+    let mut summary_bytes = 0usize;
+    for family in &inventory.families {
+        let family_id = (family.identity.device, family.identity.inode);
+        if !family.common_dir.to_path()?.is_absolute() || !families.insert(family_id) {
+            return Err(error("invalid or duplicate inventory family"));
+        }
+        for worktree in &family.worktrees {
+            if output.summaries.contains_key(&worktree.path) {
+                return Err(error("duplicate worktree path in inventory"));
+            }
+            if summary_bytes >= budget {
+                output.summaries.insert(worktree.path.clone(), None);
+                continue;
+            }
+            let remaining = Duration::from_secs(120).saturating_sub(started.elapsed());
+            let unavailable = if remaining.is_zero() {
+                Some("whole-review local collection time budget reached")
+            } else if worktree.bare || !matches!(worktree.path_state, DirState::Present) {
+                Some("local summary unavailable for bare or non-present worktree")
+            } else {
+                None
+            };
+            let summary = if let Some(operation) = output.stopped_families.get(&family_id) {
+                unavailable_local_summary(worktree, family_timeout_reason(operation))?
+            } else if let Some(reason) = unavailable {
+                unavailable_local_summary(worktree, reason.into())?
+            } else {
+                let mut limits = crate::local::SummaryLimits::default();
+                limits.timeout = limits.timeout.min(remaining);
+                match collect(worktree, &limits) {
+                    Ok(outcome) => {
+                        if let Some(operation) = outcome.first_git_timeout
+                            && stops_family_history(&operation)
+                        {
+                            output.stopped_families.insert(family_id, operation);
+                        }
+                        outcome.summary
+                    }
+                    Err(error) => unavailable_local_summary(worktree, error.to_string())?,
+                }
+            };
+            let bytes = serde_json::to_vec(&summary)
+                .map_err(|e| error(e.to_string()))?
+                .len();
+            if bytes > budget.saturating_sub(summary_bytes) {
+                output.summaries.insert(worktree.path.clone(), None);
+                summary_bytes = budget;
+            } else {
+                summary_bytes += bytes;
+                output
+                    .summaries
+                    .insert(worktree.path.clone(), Some(summary));
+            }
+        }
+    }
+    Ok(output)
+}
+
+fn local_summary_incomplete(summary: &LocalSummary) -> bool {
+    !summary.head_complete
+        || !summary.index_complete
+        || !summary.disk_complete
+        || !summary.gaps.is_empty()
+        || [
+            &summary.staged,
+            &summary.unstaged,
+            &summary.conflicts,
+            &summary.untracked,
+            &summary.ignored,
+        ]
+        .iter()
+        .any(|count| !count.complete)
+}
+
+fn family_change_observed(before: &Family, after: &Family) -> bool {
+    if before.identity != after.identity || before.common_dir != after.common_dir {
+        return true;
+    }
+    let observed: BTreeMap<_, _> = after
+        .worktrees
+        .iter()
+        .map(|tree| (&tree.path, tree))
+        .collect();
+    before.worktrees.iter().any(|previous| {
+        let Some(current) = observed.get(&previous.path) else {
+            return false;
+        };
+        let identities_differ = previous
+            .identity
+            .as_ref()
+            .zip(current.identity.as_ref())
+            .is_some_and(|(a, b)| a != b);
+        let heads_differ = previous
+            .head
+            .as_ref()
+            .zip(current.head.as_ref())
+            .is_some_and(|(a, b)| !oid_eq(a, b));
+        let branches_differ = previous
+            .branch
+            .as_ref()
+            .zip(current.branch.as_ref())
+            .is_some_and(|(a, b)| a != b);
+        let presence_changed = matches!(
+            (&previous.path_state, &current.path_state),
+            (DirState::Present, DirState::Absent) | (DirState::Absent, DirState::Present)
+        );
+        identities_differ
+            || heads_differ
+            || branches_differ
+            || presence_changed
+            || previous.bare != current.bare
+            || previous.detached != current.detached
+    })
+}
+
+fn invalidate_local_summary(
+    summary: &mut LocalSummary,
+    change_observed: bool,
+) -> Result<(), SweepError> {
+    summary.head_complete = false;
+    summary.index_complete = false;
+    summary.disk_complete = false;
+    if change_observed {
+        summary.temporal_consistency = "change_observed".into();
+    }
+    for count in [
+        &mut summary.staged,
+        &mut summary.unstaged,
+        &mut summary.conflicts,
+        &mut summary.untracked,
+        &mut summary.ignored,
+    ] {
+        count.complete = false;
+    }
+    summary.digest_sha256 = canonical_digest(summary)?;
+    Ok(())
+}
+
+fn record_deep_timeout(
+    stopped: &mut BTreeMap<(u64, u64), GitRead>,
+    family: &Family,
+    git: &ControlledGit,
+    reader: &ObjectReader,
+) -> bool {
+    if let Some(operation) = git
+        .first_timeout()
+        .or_else(|| reader.git.first_timeout())
+        .filter(stops_family_history)
+    {
+        stopped
+            .entry((family.identity.device, family.identity.inode))
+            .or_insert(operation);
+        true
+    } else {
+        false
+    }
+}
+
 pub fn enrich(
     inventory: &Inventory,
     targets: &[BytePath],
     forge: Option<&ForgeExport>,
 ) -> Result<Observations, SweepError> {
-    if inventory.schema != INVENTORY_SCHEMA {
-        return Err(error("unsupported inventory schema"));
-    }
-    for target in targets {
-        full_ref(target)?;
-    }
+    enrich_with_limits(inventory, targets, forge, &ReviewLimits::default())
+}
+pub fn enrich_with_limits(
+    inventory: &Inventory,
+    targets: &[BytePath],
+    forge: Option<&ForgeExport>,
+    limits: &ReviewLimits,
+) -> Result<Observations, SweepError> {
+    enrich_with_limits_and_progress(inventory, targets, forge, limits, &mut |_| {})
+}
+pub fn enrich_with_limits_and_progress(
+    inventory: &Inventory,
+    targets: &[BytePath],
+    forge: Option<&ForgeExport>,
+    limits: &ReviewLimits,
+    callback: &mut dyn FnMut(ProgressEvent),
+) -> Result<Observations, SweepError> {
+    enrich_with_controls(
+        inventory,
+        targets,
+        forge,
+        limits,
+        &Default::default(),
+        &crate::local::NativeHooks,
+        callback,
+    )
+}
+pub fn enrich_with_controls(
+    inventory: &Inventory,
+    targets: &[BytePath],
+    forge: Option<&ForgeExport>,
+    limits: &ReviewLimits,
+    control_limits: &control::ControlLimits,
+    hooks: &dyn control::ControlHooks,
+    callback: &mut dyn FnMut(ProgressEvent),
+) -> Result<Observations, SweepError> {
+    enrich_with_target_input_and_controls(
+        inventory,
+        TargetInput::Simple(targets),
+        forge,
+        limits,
+        control_limits,
+        hooks,
+        callback,
+    )
+}
+pub fn enrich_with_target_input_and_controls(
+    inventory: &Inventory,
+    input: TargetInput<'_>,
+    forge: Option<&ForgeExport>,
+    limits: &ReviewLimits,
+    control_limits: &control::ControlLimits,
+    hooks: &dyn control::ControlHooks,
+    callback: &mut dyn FnMut(ProgressEvent),
+) -> Result<Observations, SweepError> {
+    enrich_with_options(
+        inventory,
+        input,
+        forge,
+        &ReviewOptions {
+            evidence: limits.clone(),
+            controls: control_limits.clone(),
+            context: ContextOptions::default(),
+        },
+        hooks,
+        callback,
+    )
+}
+#[allow(clippy::too_many_arguments)]
+fn collect_with_options(
+    inventory: &Inventory,
+    input: TargetInput<'_>,
+    forge: Option<&ForgeExport>,
+    limits: &ReviewLimits,
+    control_limits: &control::ControlLimits,
+    context_options: &ContextOptions,
+    hooks: &dyn control::ControlHooks,
+    callback: &mut dyn FnMut(ProgressEvent),
+) -> Result<Observations, SweepError> {
+    limits.validate()?;
+    let family_targets = FamilyTargets::bind_with(inventory, input, hooks)?;
     if let Some(export) = forge {
         verify_forge(export)?;
     }
     let started_unix_ms = now_ms();
-    let git = ControlledGit::default();
-    let mut reader = ObjectReader::new();
+    progress(callback, "controls", 0, None);
+    let mut controls = control::ControlRun::collect(inventory, control_limits, hooks)?;
+    let mut history = history::HistoryRun::collect(
+        inventory,
+        &family_targets,
+        limits,
+        &controls.stopped_families,
+        callback,
+    )?;
+    progress(callback, "local", 0, None);
+    let LocalCollection {
+        summaries: mut local_summaries,
+        stopped_families,
+    } = current_local_summaries(inventory, &history.stopped_families)?;
+    history.stopped_families.extend(stopped_families.clone());
+    progress(callback, "deep", 0, None);
+    let mut reader = ObjectReader::with_limits(limits);
     let mut items = Vec::new();
     let mut identities = BTreeSet::new();
     for family in &inventory.families {
+        let targets = family_targets.for_family(family);
         let common = family.common_dir.to_path()?;
         if !common.is_absolute() {
             return Err(error("common directory must be absolute"));
@@ -408,71 +1020,110 @@ pub fn enrich(
         if !identities.insert((family.identity.device, family.identity.inode)) {
             return Err(error("duplicate inventory family"));
         }
-        if reader.expired() {
+        // Timeout telemetry is scoped to this physical family; object budgets/cache remain global.
+        let git = ControlledGit::default();
+        reader.git = ControlledGit::default();
+        let family_id = (family.identity.device, family.identity.inode);
+        let family_timeout = history.stopped_families.get(&family_id);
+        if family_timeout.is_some() || reader.expired() {
+            let reason = family_timeout
+                .map(family_timeout_reason)
+                .unwrap_or_else(|| {
+                    "whole-review time budget reached; family not revalidated".into()
+                });
             for worktree in &family.worktrees {
                 items.push(ReviewItem {
+                    worktree_state: controls.states.get(&worktree.path).cloned(),
+                    decision: None,
+                    private_history: None,
                     path: worktree.path.clone(),
+                    local_summary: local_summaries.remove(&worktree.path).flatten(),
                     branch: worktree.branch.clone(),
                     head: worktree.head.clone(),
                     subject: None,
                     subject_truncated: false,
                     classification: "to_triage".into(),
                     observations: Vec::new(),
+                    history: Vec::new(),
+                    history_omitted_targets: 0,
                     requests: Vec::new(),
                     risks: Vec::new(),
-                    unknowns: vec![
-                        "whole-review time budget reached; family not revalidated".into(),
-                    ],
+                    unknowns: vec![reason.clone()],
                 });
             }
             continue;
         }
-        // Porcelain puts the principal worktree first. A separate administration
-        // need not contain a backlink, so re-enter through the recorded tree.
-        // The common directory and identity are still checked below.
-        let entrypoint = family
-            .worktrees
-            .first()
-            .map(|tree| tree.path.to_path())
-            .transpose()?
-            .unwrap_or_else(|| common.clone());
-        let current = scan_family(&entrypoint);
-        let before = current.as_ref().ok().and_then(|i| i.families.first());
-        let refs = local_refs(&git, &common);
-        let remote_identities = forge.map(|_| remotes(&git, &common));
+        let current = controls
+            .initial
+            .get(&family_id)
+            .cloned()
+            .unwrap_or_else(|| Err(error("initial family control unavailable")));
+        let before = current.as_ref().ok();
+        let initial_change_observed =
+            before.is_some_and(|observed| family_change_observed(family, observed));
+        let refs = if reader.exhausted() || history.stopped_families.contains_key(&family_id) {
+            Err(error("deep work budget reached; refs not collected"))
+        } else {
+            local_refs(&git, &common)
+        };
+        record_deep_timeout(&mut history.stopped_families, family, &git, &reader);
+        let remote_identities = forge
+            .filter(|_| !history.stopped_families.contains_key(&family_id))
+            .map(|_| remotes(&git, &common));
+        record_deep_timeout(&mut history.stopped_families, family, &git, &reader);
         let mut candidate_refs: BTreeSet<BytePath> = targets.iter().cloned().collect();
         if let Ok(refs) = &refs {
             candidate_refs.extend(refs.iter().cloned());
         }
+        // Explicit integration targets get the budget first. Keep each group
+        // ordered and all refs deduplicated by the set above.
+        let (mut candidate_refs, intermediate_refs): (Vec<_>, Vec<_>) = candidate_refs
+            .into_iter()
+            .partition(|reference| targets.contains(reference));
+        candidate_refs.extend(intermediate_refs);
         let mut paths = BTreeSet::new();
         for worktree in &family.worktrees {
             if !paths.insert(worktree.path.clone()) {
                 return Err(error("duplicate worktree in inventory"));
             }
             let mut item = ReviewItem {
+                worktree_state: controls.states.get(&worktree.path).cloned(),
+                decision: None,
+                private_history: None,
                 path: worktree.path.clone(),
+                local_summary: local_summaries.remove(&worktree.path).flatten(),
                 branch: worktree.branch.clone(),
                 head: worktree.head.clone(),
                 subject: None,
                 subject_truncated: false,
                 classification: "to_triage".into(),
                 observations: Vec::new(),
+                history: Vec::new(),
+                history_omitted_targets: 0,
                 requests: Vec::new(),
                 risks: vec![
                     "integration observations do not establish preservation of local files".into(),
                 ],
                 unknowns: Vec::new(),
             };
+            if let Some(operation) = history.stopped_families.get(&family_id) {
+                item.unknowns.push(family_timeout_reason(operation));
+                items.push(item);
+                continue;
+            }
             let same = before
                 .filter(|f| f.identity == family.identity && f.common_dir == family.common_dir)
                 .and_then(|f| f.worktrees.iter().find(|w| w.path == worktree.path))
                 .is_some_and(|w| {
                     w.identity == worktree.identity
-                        && w.head == worktree.head
+                        && optional_oid_eq(w.head.as_deref(), worktree.head.as_deref())
                         && w.branch == worktree.branch
                         && w.path_state == worktree.path_state
                 });
             if !same {
+                if let Some(summary) = &mut item.local_summary {
+                    invalidate_local_summary(summary, initial_change_observed)?;
+                }
                 item.unknowns.push(
                     "inventory identity or HEAD changed, or current family cannot be read".into(),
                 );
@@ -482,14 +1133,18 @@ pub fn enrich(
                 items.push(item);
                 continue;
             }
+            history.attach(&mut item);
+            if let Some(export) = forge {
+                if let Some(Ok(remotes)) = &remote_identities {
+                    item.requests = matching_requests(export, remotes, worktree);
+                }
+            }
             if inventory
                 .local_inventories
                 .iter()
                 .any(|local| local.worktree == worktree.path)
             {
-                item.unknowns.push("local file manifest describes the inventory interval; current file bytes are not revalidated by this review".into());
-            } else {
-                item.unknowns.push("local file contents and index not inventoried; scan --local for bounded observations".into());
+                item.unknowns.push("saved local manifest describes the scan interval; current local summary is a separate observation".into());
             }
             if !matches!(worktree.path_state, DirState::Present | DirState::Absent) {
                 item.unknowns.push("worktree path unavailable".into());
@@ -507,6 +1162,7 @@ pub fn enrich(
                 continue;
             };
             let source_bytes = reader.read(&common, "commit", source);
+            record_deep_timeout(&mut history.stopped_families, family, &git, &reader);
             let source_available = source_bytes.is_ok();
             match source_bytes.and_then(|raw| subject(&raw)) {
                 Ok((subject, truncated)) => {
@@ -514,6 +1170,22 @@ pub fn enrich(
                     item.subject_truncated = truncated;
                 }
                 Err(e) => item.unknowns.push(format!("description: {e}")),
+            }
+            // Unknown C4 is still possible here. It remains mandatory at final judgement.
+            if !c1(&item, family)
+                || !c3(&item)
+                || !keep_reasons(&item, family, started_unix_ms, now_ms()).is_empty()
+                || targets.is_empty()
+            {
+                item.unknowns.push(
+                    "deep verification not required for an already retained or incomplete worktree"
+                        .into(),
+                );
+                if forge.is_none() {
+                    item.unknowns.push("forge state unknown (no export)".into());
+                }
+                items.push(item);
+                continue;
             }
             if targets.is_empty() {
                 item.unknowns
@@ -523,6 +1195,9 @@ pub fn enrich(
                 item.unknowns.push(e.to_string());
             }
             for (index, reference) in candidate_refs.iter().enumerate() {
+                if history.stopped_families.contains_key(&family_id) {
+                    break;
+                }
                 // Every relation requires the source commit. A failed source
                 // read already makes it unknown; repeated target reads cannot
                 // repair that observation and can multiply a blocked-read delay.
@@ -532,7 +1207,7 @@ pub fn enrich(
                         .push("integration unknown: source commit unavailable".into());
                     break;
                 }
-                if index >= 128 || reader.expired() {
+                if index >= 128 || reader.exhausted() {
                     item.unknowns.push("target count or whole-review time budget reached; remaining targets unknown".into());
                     break;
                 }
@@ -549,6 +1224,7 @@ pub fn enrich(
                     }
                     Ok((target, relation))
                 })();
+                record_deep_timeout(&mut history.stopped_families, family, &git, &reader);
                 match result {
                     Ok((target, Some(relation))) => {
                         item.observations.push(IntegrationObservation {
@@ -585,59 +1261,399 @@ pub fn enrich(
             }
             items.push(item);
         }
-        // A second read detects observed changes, but cannot establish a filesystem snapshot.
-        let after = scan_family(&entrypoint);
-        let stable = match (&current, &after) {
-            (Ok(a), Ok(b)) => {
-                serde_json::to_value(&a.families).ok() == serde_json::to_value(&b.families).ok()
-            }
-            _ => false,
-        };
-        if !stable {
-            let family_paths: BTreeSet<_> = family.worktrees.iter().map(|w| &w.path).collect();
-            for item in items.iter_mut().filter(|i| family_paths.contains(&i.path)) {
-                item.observations.clear();
-                item.requests.clear();
-                item.subject = None;
-                item.subject_truncated = false;
-                item.unknowns
-                    .push("family changed during enrichment".into());
+    }
+    for item in &mut items {
+        if item.local_summary.is_none() {
+            item.unknowns.push(
+                "current local summary omitted: whole-review local summary byte budget reached"
+                    .into(),
+            );
+        }
+        if item
+            .local_summary
+            .as_ref()
+            .is_none_or(local_summary_incomplete)
+        {
+            item.unknowns
+                .push("current local summary incomplete; inspect local counts and gaps".into());
+        }
+    }
+    progress(callback, "private_history", 0, None);
+    let mut private = private::PrivateHistoryRun::collect(
+        inventory,
+        &family_targets,
+        &Default::default(),
+        &crate::local::NativeHooks,
+        &history.stopped_families,
+    )?;
+    history
+        .stopped_families
+        .extend(private.stopped_families.clone());
+    progress(
+        callback,
+        "history_revalidate",
+        history.metrics.first_pass_items,
+        history.metrics.stop_reason.clone(),
+    );
+    controls.finish(inventory, &history.stopped_families)?;
+    history
+        .stopped_families
+        .extend(controls.stopped_families.clone());
+    for item in &mut items {
+        item.worktree_state = controls.states.get(&item.path).cloned();
+        if item
+            .worktree_state
+            .as_ref()
+            .is_some_and(|state| state.checks == "change_observed")
+        {
+            if let Some(summary) = &mut item.local_summary {
+                invalidate_local_summary(summary, true)?;
             }
         }
     }
+    history.finish(inventory, &mut items, &controls.final_families)?;
+    progress(callback, "private_revalidate", items.len() as u64, None);
+    private.finish(inventory, &history.stopped_families)?;
+    history
+        .stopped_families
+        .extend(private.stopped_families.clone());
+    history.reconcile_stopped(inventory, &mut items);
+    for item in &mut items {
+        item.private_history = private.output.histories.remove(&item.path);
+        if item.private_history.is_none() {
+            item.unknowns
+                .push("private history not collected: output byte budget reached".into());
+        }
+    }
+    for item in &mut items {
+        if let Some(family) = inventory
+            .families
+            .iter()
+            .find(|f| f.worktrees.iter().any(|w| w.path == item.path))
+            && history
+                .stopped_families
+                .contains_key(&(family.identity.device, family.identity.inode))
+            && let Some(state) = &mut item.worktree_state
+        {
+            if state.checks != "change_observed" {
+                state.checks = "incomplete".into();
+            }
+            state
+                .gaps
+                .push("required final validation quarantined after family Git timeout".into());
+        }
+    }
+    control::bound_item_states(&mut items, control_limits.output_bytes)?;
+    let evidence_finished_unix_ms = now_ms();
+    let context = if context_options.enabled {
+        progress(callback, "context", items.len() as u64, None);
+        Some(context::collect(
+            inventory,
+            &items,
+            &family_targets,
+            &history,
+            &reader,
+            context_options,
+            hooks,
+        )?)
+    } else {
+        None
+    };
+    let shared_stashes = private.output.shared_stashes;
+
+    let history_metrics = history.metrics;
+    progress(
+        callback,
+        "complete",
+        items.len() as u64,
+        history_metrics.stop_reason.clone(),
+    );
     items.sort_by(|a, b| a.path.cmp(&b.path));
     Ok(Observations {
+        context,
+        shared_stashes,
         inventory: inventory.clone(),
+        history_metrics,
         items,
         forge: forge.cloned(),
         started_unix_ms,
-        finished_unix_ms: now_ms(),
+        finished_unix_ms: evidence_finished_unix_ms,
     })
+}
+
+fn worktree_matches(a: &Worktree, b: &Worktree) -> bool {
+    a.path == b.path
+        && a.identity == b.identity
+        && optional_oid_eq(a.head.as_deref(), b.head.as_deref())
+        && a.branch == b.branch
+        && a.detached == b.detached
+        && a.bare == b.bare
+        && a.locked == b.locked
+        && a.prunable == b.prunable
+        && a.path_state == b.path_state
+}
+fn state_bound(item: &ReviewItem, family: &Family) -> bool {
+    item.worktree_state.as_ref().is_some_and(|s| {
+        s.common_dir == family.common_dir
+            && s.family_identity.as_ref() == Some(&family.identity)
+            && s.observed.as_ref().is_some_and(|w| {
+                w.path == item.path
+                    && optional_oid_eq(w.head.as_deref(), item.head.as_deref())
+                    && family.worktrees.iter().any(|old| {
+                        w.path == old.path
+                            && w.identity == old.identity
+                            && optional_oid_eq(w.head.as_deref(), old.head.as_deref())
+                            && w.branch == old.branch
+                            && w.path_state == old.path_state
+                    })
+            })
+    })
+}
+fn c1(item: &ReviewItem, family: &Family) -> bool {
+    state_bound(item, family)
+        && item.worktree_state.as_ref().is_some_and(|s| {
+            s.role == "linked"
+                && s.checks == "complete"
+                && s.protection_complete
+                && s.operations_complete
+                && s.protections.is_empty()
+                && s.operations.is_empty()
+                && s.git_dir.is_some()
+                && s.git_dir_identity.is_some()
+                && s.observed.as_ref().is_some_and(|w| {
+                    matches!(w.path_state, DirState::Present)
+                        && w.identity.is_some()
+                        && w.head.as_deref().is_some_and(valid_oid)
+                        && w.locked.is_none()
+                })
+        })
+}
+fn deep_witness(item: &ReviewItem, o: &IntegrationObservation) -> bool {
+    o.target_role == "integration"
+        && matches!(o.relation.as_str(), "identical_commit" | "ancestor")
+        && optional_oid_eq(Some(&o.source_oid), item.head.as_deref())
+        && valid_oid(&o.source_oid)
+        && valid_oid(&o.target_oid)
+        && (o.relation != "identical_commit" || oid_eq(&o.source_oid, &o.target_oid))
+        && full_ref(&o.target_ref).is_ok()
+}
+fn c2(item: &ReviewItem) -> bool {
+    item.observations.iter().any(|o| deep_witness(item, o))
+}
+fn local_bound(item: &ReviewItem) -> bool {
+    item.worktree_state
+        .as_ref()
+        .zip(item.local_summary.as_ref())
+        .is_some_and(|(s, l)| {
+            s.observed.as_ref().is_some_and(|w| {
+                l.worktree_identity.is_some()
+                    && l.worktree_identity == w.identity
+                    && optional_oid_eq(l.head.as_deref(), w.head.as_deref())
+                    && optional_oid_eq(l.head.as_deref(), item.head.as_deref())
+            }) && l.git_dir.is_some()
+                && l.git_dir == s.git_dir
+        })
+}
+fn c3(item: &ReviewItem) -> bool {
+    local_bound(item)
+        && item.local_summary.as_ref().is_some_and(|s| {
+            !local_summary_incomplete(s)
+                && s.temporal_consistency != "change_observed"
+                && [
+                    &s.staged,
+                    &s.unstaged,
+                    &s.conflicts,
+                    &s.untracked,
+                    &s.ignored,
+                ]
+                .iter()
+                .all(|n| n.observed == 0)
+        })
+}
+fn private_bound(item: &ReviewItem) -> bool {
+    item.worktree_state
+        .as_ref()
+        .zip(item.private_history.as_ref())
+        .is_some_and(|(s, h)| {
+            h.git_dir.is_some()
+                && h.git_dir == s.git_dir
+                && h.git_dir_identity.is_some()
+                && h.git_dir_identity == s.git_dir_identity
+        })
+}
+fn c4(item: &ReviewItem) -> bool {
+    private_bound(item)
+        && item.private_history.as_ref().is_some_and(|h| {
+            h.enumeration_complete
+                && h.temporal_consistency != "change_observed"
+                && !h.roots.is_empty()
+                && h.roots
+                    .iter()
+                    .any(|r| optional_oid_eq(Some(&r.oid), item.head.as_deref()))
+                && h.roots.iter().all(|r| {
+                    r.result == "covered"
+                        && r.anchor.as_ref().is_some_and(|a| {
+                            valid_oid(&a.oid)
+                                && a.reference
+                                    .bytes()
+                                    .is_ok_and(|name| private::retained_anchor_name(&name))
+                        })
+                })
+        })
+}
+fn interval(start: u64, end: u64, facts: &Observations) -> bool {
+    facts.started_unix_ms <= start && start <= end && end <= facts.finished_unix_ms
+}
+fn c5(item: &ReviewItem, facts: &Observations) -> bool {
+    let Some(state) = &item.worktree_state else {
+        return false;
+    };
+    let family = facts
+        .inventory
+        .families
+        .iter()
+        .find(|f| f.worktrees.iter().any(|w| w.path == item.path));
+    state.checks == "complete"
+        && family.is_some_and(|f| state_bound(item, f))
+        && interval(state.started_unix_ms, state.finished_unix_ms, facts)
+        && local_bound(item)
+        && item.local_summary.as_ref().is_some_and(|l| {
+            interval(l.started_unix_ms, l.finished_unix_ms, facts)
+                && l.temporal_consistency != "change_observed"
+        })
+        && private_bound(item)
+        && item.private_history.as_ref().is_some_and(|h| {
+            interval(h.started_unix_ms, h.finished_unix_ms, facts)
+                && h.enumeration_complete
+                && h.temporal_consistency != "change_observed"
+        })
+        && item.observations.iter().any(|o| {
+            deep_witness(item, o) && interval(o.started_unix_ms, o.finished_unix_ms, facts)
+        })
+}
+fn local_keep_reasons(item: &ReviewItem) -> Vec<String> {
+    let mut reasons = Vec::new();
+    if let Some(s) = &item.local_summary {
+        for (code, count) in [
+            ("local_staged", &s.staged),
+            ("local_unstaged", &s.unstaged),
+            ("local_conflicts", &s.conflicts),
+            ("local_untracked", &s.untracked),
+            ("local_ignored", &s.ignored),
+        ] {
+            if count.observed > 0 {
+                reasons.push(code.into());
+            }
+        }
+    }
+    reasons
+}
+fn keep_reasons(item: &ReviewItem, family: &Family, started: u64, finished: u64) -> Vec<String> {
+    let mut reasons = Vec::new();
+    if let Some(s) = &item.worktree_state {
+        match s.role.as_str() {
+            "main" => reasons.push("main_checkout".into()),
+            "bare" => reasons.push("bare_repository".into()),
+            _ => {}
+        }
+        if s.observed.as_ref().is_some_and(|w| w.locked.is_some()) {
+            reasons.push("git_locked".into());
+        }
+        if !s.protections.is_empty() {
+            reasons.push("administrative_lock".into());
+        }
+        if !s.operations.is_empty() {
+            reasons.push("git_operation".into());
+        }
+    }
+    reasons.extend(local_keep_reasons(item));
+    if state_bound(item, family)
+        && item.requests.iter().any(|r| {
+            matches!(r.state.as_str(), "open" | "opened")
+                && optional_oid_eq(r.head_oid.as_deref(), item.head.as_deref())
+        })
+    {
+        reasons.push("open_request".into());
+    }
+    if state_bound(item, family)
+        && item.history_omitted_targets == 0
+        && !item.history.is_empty()
+        && item.history.iter().all(|h| {
+            started <= h.started_unix_ms
+                && h.started_unix_ms <= h.finished_unix_ms
+                && h.finished_unix_ms <= finished
+                && h.result == "not_ancestor"
+                && optional_oid_eq(h.source_oid.as_deref(), item.head.as_deref())
+                && h.target_oid.as_deref().is_some_and(valid_oid)
+                && h.stop_reason.is_none()
+        })
+    {
+        reasons.push("head_not_integrated".into());
+    }
+    if private_bound(item)
+        && item.private_history.as_ref().is_some_and(|h| {
+            h.roots
+                .iter()
+                .any(|r| r.result == "not_preserved_by_retained_refs")
+        })
+    {
+        reasons.push("private_history_not_preserved".into());
+    }
+    reasons
 }
 
 pub fn judge(facts: &Observations) -> Result<Review, SweepError> {
     let mut items = facts.items.clone();
     for item in &mut items {
-        item.classification = if item
-            .requests
+        let family = facts
+            .inventory
+            .families
             .iter()
-            .any(|r| r.state == "open" || r.state == "opened")
-        {
-            "active"
-        } else if item
-            .observations
+            .find(|f| f.worktrees.iter().any(|w| w.path == item.path));
+        let reasons = family
+            .map(|f| keep_reasons(item, f, facts.started_unix_ms, facts.finished_unix_ms))
+            .unwrap_or_else(|| local_keep_reasons(item));
+        let conditions = [
+            family.is_some_and(|f| c1(item, f)),
+            c2(item),
+            c3(item),
+            c4(item),
+            c5(item, facts),
+        ];
+        let missing_conditions = conditions
             .iter()
-            .any(|o| o.target_role == "integration")
-        {
-            "integration_observed"
+            .enumerate()
+            .filter(|(_, valid)| !**valid)
+            .map(|(index, _)| format!("C{}", index + 1))
+            .collect::<Vec<_>>();
+        item.classification = if !reasons.is_empty() {
+            "keep"
+        } else if missing_conditions.is_empty() {
+            "cleanup_candidate"
         } else {
-            "to_triage"
+            "verify"
         }
         .into();
+        item.decision = Some(TriageDecision {
+            keep_reasons: reasons,
+            missing_conditions,
+        });
+        if !item
+            .unknowns
+            .iter()
+            .any(|u| u == "usage UNKNOWN; confirm usage before any removal")
+        {
+            item.unknowns
+                .push("usage UNKNOWN; confirm usage before any removal".into());
+        }
+        item.risks.push("no removal authorized; ACLs, xattrs and unreachable objects outside enumerated roots are outside preservation scope".into());
     }
     let mut review = Review {
+        context: facts.context.clone(),
+        shared_stashes: facts.shared_stashes.clone(),
+        history_metrics: facts.history_metrics.clone(),
         schema: REVIEW_SCHEMA.into(),
-        policy_version: "local-evidence/1".into(),
+        policy_version: "triage/1".into(),
         inventory_sha256: canonical_digest(&facts.inventory)?,
         digest_sha256: String::new(),
         started_unix_ms: facts.started_unix_ms,
@@ -646,13 +1662,30 @@ pub fn judge(facts: &Observations) -> Result<Review, SweepError> {
         items,
         forge: facts.forge.clone(),
         not_collected: facts.inventory.not_collected.clone(),
-        local_inventories: facts.inventory.local_inventories.clone(),
+        local_inventory_refs: facts
+            .inventory
+            .local_inventories
+            .iter()
+            .map(|local| LocalInventoryRef {
+                worktree: local.worktree.clone(),
+                started_unix_ms: local.started_unix_ms,
+                finished_unix_ms: local.finished_unix_ms,
+                content_digest_sha256: local.content_digest_sha256.clone(),
+                traversal_complete: local.traversal_complete,
+                temporal_consistency: local.temporal_consistency.clone(),
+                entry_count: local.entries.len(),
+                index_entry_count: local.index_entries.len(),
+                administration_entry_count: local.administration_entries.len(),
+                gap_count: local.gaps.len(),
+                not_collected_count: local.not_collected.len(),
+            })
+            .collect(),
     };
     review.digest_sha256 = canonical_digest(&review)?;
     Ok(review)
 }
 
-fn verify_object(kind: &str, oid: &str, bytes: &[u8]) -> Result<(), SweepError> {
+pub(crate) fn verify_object(kind: &str, oid: &str, bytes: &[u8]) -> Result<(), SweepError> {
     use sha2::Digest;
     let header = format!("{kind} {}\0", bytes.len());
     let computed = match oid.len() {
@@ -711,5 +1744,362 @@ mod tests {
                 "{resource}"
             );
         }
+    }
+    #[test]
+    fn only_history_dependent_timeouts_stop_family_reads() {
+        assert!(!stops_family_history(&GitRead::IgnorePaths {
+            paths: vec![BytePath::from_bytes(b"a\nb")],
+        }));
+        let oid = "a".repeat(40);
+        let operation = GitRead::Blob { oid: oid.clone() };
+        assert!(stops_family_history(&operation));
+        assert!(stops_family_history(&GitRead::GitDir));
+        let reason = family_timeout_reason(&operation);
+        assert!(reason.contains(&oid));
+        assert!(reason.contains("remaining dependent Git reads not performed"));
+    }
+
+    #[test]
+    fn family_metadata_failure_is_not_a_positive_change_observation() -> Result<(), SweepError> {
+        let before = Family {
+            common_dir: BytePath::from_bytes(b"/fixture/.git"),
+            identity: Identity {
+                device: 1,
+                inode: 10,
+            },
+            worktrees: vec![Worktree {
+                path: BytePath::from_bytes(b"/fixture/linked"),
+                identity: Some(Identity {
+                    device: 1,
+                    inode: 20,
+                }),
+                head: Some("a".repeat(40)),
+                branch: Some(BytePath::from_bytes(b"refs/heads/topic")),
+                detached: false,
+                bare: false,
+                locked: None,
+                prunable: None,
+                path_state: DirState::Present,
+            }],
+        };
+        let mut after = before.clone();
+        for state in [
+            DirState::ReadError {
+                reason: "EIO".into(),
+            },
+            DirState::Inaccessible {
+                reason: "EACCES".into(),
+            },
+            DirState::VolumeUnavailable {
+                reason: "unmounted".into(),
+            },
+            DirState::Unknown {
+                reason: "not examined".into(),
+            },
+        ] {
+            after.worktrees[0].identity = None;
+            after.worktrees[0].path_state = state;
+            let mut summary = LocalSummary {
+                temporal_consistency: "not_guaranteed".into(),
+                ..Default::default()
+            };
+            invalidate_local_summary(&mut summary, family_change_observed(&before, &after))?;
+            assert_eq!(summary.temporal_consistency, "not_guaranteed");
+        }
+        after = before.clone();
+        after.worktrees[0].identity = Some(Identity {
+            device: 1,
+            inode: 30,
+        });
+        assert!(family_change_observed(&before, &after));
+        after = before.clone();
+        after.worktrees[0].head = Some("b".repeat(40));
+        assert!(family_change_observed(&before, &after));
+        after = before.clone();
+        after.worktrees[0].path_state = DirState::Absent;
+        after.worktrees[0].identity = None;
+        assert!(family_change_observed(&before, &after));
+        assert!(!family_change_observed(&before, &before));
+        Ok(())
+    }
+
+    #[test]
+    fn local_revalidation_failure_is_unknown_not_observed_drift() -> Result<(), SweepError> {
+        let mut summary = LocalSummary {
+            temporal_consistency: "not_guaranteed".into(),
+            staged: LocalCount {
+                observed: 2,
+                complete: true,
+                ..Default::default()
+            },
+            ..Default::default()
+        };
+        invalidate_local_summary(&mut summary, false)?;
+        assert_eq!(summary.temporal_consistency, "not_guaranteed");
+        assert_eq!(summary.staged.observed, 2);
+        assert!(!summary.staged.complete);
+        invalidate_local_summary(&mut summary, true)?;
+        assert_eq!(summary.temporal_consistency, "change_observed");
+        invalidate_local_summary(&mut summary, false)?;
+        assert_eq!(summary.temporal_consistency, "change_observed");
+        Ok(())
+    }
+
+    #[test]
+    fn aggregate_local_summary_budget_counts_unavailable_placeholders()
+    -> Result<(), Box<dyn std::error::Error>> {
+        let mut inventory = Inventory::new(ScanScope::Roots { paths: Vec::new() });
+        inventory.families.push(Family {
+            common_dir: BytePath::from_bytes(b"/synthetic/bare"),
+            identity: Identity {
+                device: 1,
+                inode: 2,
+            },
+            worktrees: (0..5)
+                .map(|n| Worktree {
+                    path: BytePath::from_bytes(format!("/synthetic/bare/{n}").as_bytes()),
+                    identity: None,
+                    head: None,
+                    branch: None,
+                    detached: false,
+                    bare: true,
+                    locked: None,
+                    prunable: None,
+                    path_state: DirState::Present,
+                })
+                .collect(),
+        });
+        let summaries = local_summaries_with_byte_budget(&inventory, 32)?.summaries;
+        let bytes: usize = summaries
+            .values()
+            .filter_map(Option::as_ref)
+            .map(|s| serde_json::to_vec(s).map(|bytes| bytes.len()))
+            .sum::<Result<usize, _>>()?;
+        assert!(bytes <= 32, "fallback summaries exceeded budget: {bytes}");
+        assert_eq!(summaries.len(), 5, "omitted rows must remain represented");
+        assert!(summaries.values().all(Option::is_none));
+        let sufficient = local_summaries_with_byte_budget(&inventory, 8192)?.summaries;
+        assert!(
+            sufficient.values().all(Option::is_some),
+            "budget logic always omitted"
+        );
+        Ok(())
+    }
+}
+
+#[cfg(test)]
+#[allow(clippy::unwrap_used, clippy::expect_used)]
+mod deep_timeout_regression {
+    use super::*;
+    use crate::git::scan_family;
+    use std::{
+        fs,
+        path::{Path, PathBuf},
+        process::{Command, Stdio},
+        sync::atomic::{AtomicU64, Ordering},
+        time::{Duration, Instant},
+    };
+    static NEXT: AtomicU64 = AtomicU64::new(0);
+    struct Fixture(PathBuf);
+    impl Fixture {
+        fn new() -> Self {
+            let p = PathBuf::from(format!(
+                "/private/tmp/wt-sweep-private-{}-{}",
+                std::process::id(),
+                NEXT.fetch_add(1, Ordering::Relaxed)
+            ));
+            fs::create_dir(&p).unwrap();
+            let f = Self(p);
+            f.git(&["init", "--template=", "-b", "main"]);
+            fs::write(f.0.join("file"), "fixture\n").unwrap();
+            f.git(&["add", "file"]);
+            f.git(&["commit", "-m", "fixture"]);
+            f
+        }
+        fn at(path: &Path, args: &[&str]) -> String {
+            let mut child = Command::new("/usr/bin/git")
+                .env_clear()
+                .env("PATH", "/usr/bin:/bin")
+                .env("TMPDIR", "/private/tmp")
+                .env("GIT_CONFIG_NOSYSTEM", "1")
+                .env("GIT_CONFIG_GLOBAL", "/dev/null")
+                .env("GIT_ALLOW_PROTOCOL", "")
+                .env("GIT_NO_LAZY_FETCH", "1")
+                .env("GIT_AUTHOR_NAME", "Fixture")
+                .env("GIT_AUTHOR_EMAIL", "fixture@example.invalid")
+                .env("GIT_COMMITTER_NAME", "Fixture")
+                .env("GIT_COMMITTER_EMAIL", "fixture@example.invalid")
+                .args([
+                    "-c",
+                    "core.hooksPath=/dev/null",
+                    "-c",
+                    "core.fsmonitor=false",
+                    "-c",
+                    "gc.auto=0",
+                    "-c",
+                    "maintenance.auto=false",
+                    "-C",
+                ])
+                .arg(path)
+                .args(args)
+                .stdout(Stdio::piped())
+                .stderr(Stdio::piped())
+                .spawn()
+                .unwrap();
+            let start = Instant::now();
+            while child.try_wait().unwrap().is_none() {
+                if start.elapsed() > Duration::from_secs(15) {
+                    let _ = child.kill();
+                    let _ = child.wait();
+                    panic!("owned fixture Git exceeded deadline");
+                }
+                std::thread::sleep(Duration::from_millis(5));
+            }
+            let out = child.wait_with_output().unwrap();
+            assert!(
+                out.status.success(),
+                "{args:?}: {}",
+                String::from_utf8_lossy(&out.stderr)
+            );
+            String::from_utf8(out.stdout)
+                .unwrap()
+                .trim_end_matches('\n')
+                .into()
+        }
+        fn git(&self, args: &[&str]) -> String {
+            Self::at(&self.0, args)
+        }
+    }
+    impl Drop for Fixture {
+        fn drop(&mut self) {
+            let _ = fs::remove_dir_all(&self.0);
+        }
+    }
+
+    fn make_fifo(path: &Path) {
+        let mut child = Command::new("/usr/bin/mkfifo")
+            .env_clear()
+            .arg(path)
+            .stdout(Stdio::null())
+            .stderr(Stdio::null())
+            .spawn()
+            .unwrap();
+        let start = Instant::now();
+        loop {
+            if let Some(status) = child.try_wait().unwrap() {
+                assert!(status.success());
+                break;
+            }
+            if start.elapsed() > Duration::from_secs(15) {
+                let _ = child.kill();
+                let _ = child.wait();
+                panic!("owned FIFO fixture child exceeded deadline");
+            }
+            std::thread::sleep(Duration::from_millis(5));
+        }
+    }
+    #[test]
+    fn deep_timeout_has_no_later_blocked_family_children() {
+        let blocked = Fixture::new();
+        let linked = blocked.0.join("linked");
+        blocked.git(&["worktree", "add", "-b", "topic", linked.to_str().unwrap()]);
+        let healthy = Fixture::new();
+        let base = blocked.git(&["rev-parse", "HEAD"]);
+        let tree = blocked.git(&["rev-parse", "HEAD^{tree}"]);
+        let exclusive = blocked.git(&[
+            "commit-tree",
+            &tree,
+            "-p",
+            &base,
+            "-m",
+            "blocked intermediate",
+        ]);
+        blocked.git(&["update-ref", "refs/heads/zz_blocked", &exclusive]);
+        let mut inventory = scan_family(&blocked.0).unwrap();
+        inventory
+            .families
+            .extend(scan_family(&healthy.0).unwrap().families);
+        let path = blocked
+            .0
+            .join(".git/objects")
+            .join(&exclusive[..2])
+            .join(&exclusive[2..]);
+        let raw = fs::read(&path).unwrap();
+        fs::remove_file(&path).unwrap();
+        make_fifo(&path);
+        crate::git::take_child_read_journal();
+        let mut after_deep = Vec::new();
+        let mut restored = false;
+        let target_map = TargetMap {
+            schema: TARGET_MAP_SCHEMA.into(),
+            families: inventory
+                .families
+                .iter()
+                .map(|family| TargetMapFamily {
+                    common_dir: family.common_dir.clone(),
+                    identity: family.identity.clone(),
+                    targets: vec![BytePath::from_bytes(b"refs/heads/main")],
+                })
+                .collect(),
+        };
+        let facts = enrich_with_target_input_and_controls(
+            &inventory,
+            targets::TargetInput::Map(&target_map),
+            None,
+            &Default::default(),
+            &Default::default(),
+            &crate::local::NativeHooks,
+            &mut |event| {
+                if event.phase == "private_history" {
+                    after_deep = crate::git::take_child_read_journal();
+                    fs::remove_file(&path).unwrap();
+                    fs::write(&path, &raw).unwrap();
+                    restored = true;
+                }
+            },
+        )
+        .unwrap();
+        assert!(restored);
+        let later = crate::git::take_child_read_journal();
+        let blocked_reads = after_deep
+            .iter()
+            .filter(|(path, _)| path.to_path().unwrap().starts_with(&blocked.0))
+            .collect::<Vec<_>>();
+        let (last_path, last_operation) = blocked_reads.last().unwrap();
+        assert_eq!(*last_path, BytePath::from_path(&blocked.0.join(".git")));
+        assert!(
+            matches!(last_operation, GitRead::ResolveCommit { reference } if *reference == BytePath::from_bytes(b"refs/heads/zz_blocked")),
+            "{last_operation:?}"
+        );
+        assert_eq!(blocked_reads.iter().filter(|(_, op)| matches!(op, GitRead::ResolveCommit { reference } if *reference == BytePath::from_bytes(b"refs/heads/zz_blocked"))).count(), 1);
+        assert!(
+            later
+                .iter()
+                .all(|(path, _)| !path.to_path().unwrap().starts_with(&blocked.0)),
+            "dependent child retried after deep timeout: {later:?}"
+        );
+        assert!(
+            later
+                .iter()
+                .any(|(path, _)| path.to_path().unwrap().starts_with(&healthy.0))
+        );
+        let item = facts
+            .items
+            .iter()
+            .find(|i| i.path == BytePath::from_path(&blocked.0))
+            .unwrap();
+        assert!(
+            !item.private_history.as_ref().unwrap().enumeration_complete,
+            "deep timeout was retried as a fresh private history"
+        );
+        assert!(item.observations.is_empty());
+        assert!(item.local_summary.as_ref().unwrap().index_complete);
+        let good = facts
+            .items
+            .iter()
+            .find(|i| i.path == BytePath::from_path(&healthy.0))
+            .unwrap();
+        assert!(good.private_history.as_ref().unwrap().enumeration_complete);
+        assert_eq!(good.history[0].result, "identical_commit");
     }
 }

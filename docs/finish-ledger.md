@@ -1,8 +1,12 @@
-# Finition de Worktree Sweep
+# Registre de finition de Worktree Sweep
 
 [Index documentaire](README.md) · [Guide de démarrage](getting-started.md)
 
-Mandat du 04/10/2026 : terminer les lots issus du RETEX, éprouver les conditions
+Les sections précédant le checkpoint T01-T09 décrivent la clôture historique du
+socle U1-U4 et des ajouts RETEX. Leurs chiffres, digest de binaire, absence de
+remote et licence non renseignée sont l’état de cette passe, pas l’état courant.
+
+Mandat historique du 04/10/2026 : terminer les lots issus du RETEX, éprouver les conditions
 du nettoyage et préparer la livraison. Au démarrage, le dépôt n'avait ni premier
 commit ni remote. La destination et la licence de publication ont été demandées
 pendant le travail et restent sans réponse à cette clôture locale du 05/10.
@@ -119,3 +123,81 @@ Avant le premier commit de livraison : 72 fichiers à suivre sur `main`, aucun
 remote. Le mandat de finition couvre ce commit local ; il ne fournit ni
 destination distante, ni licence, ni autorisation de nettoyage réel. Les fichiers
 privés de reprise et les résultats de compilation restent exclus du suivi.
+
+
+## Triage T01-T09
+
+Validation locale du 05/10/2026 dans le worktree de triage, branche
+`codex/worktree-triage`. Les résultats ci-dessous portent sur le raccordement
+final de T01 à T09, après les corrections et la revue indépendante.
+
+Le parcours `review` réutilise la découverte et le jugement de `plan`, avec cible
+explicite, filtres, contexte et groupe. `--run-dir` conserve l’inventaire original,
+la revue, le détail et le reçu. L’aide est propre à chaque commande. Les archives
+`review/1` restent historiques et exigent un nouveau scan pour les contrôles C5.
+Les trois verdicts sont `keep`, `cleanup_candidate` et `verify` ; l’usage des
+candidats reste à confirmer. `apply` reste indisponible.
+
+### Vérifications finales
+
+| Contrôle | État final |
+| --- | --- |
+| Formatage, Clippy tous targets avec warnings refusés, build optimisé hors ligne | PASS |
+| Suite Rust complète | 277 passés, 2 ignorés. |
+| Suite Python complète | 253 recensés : 247 passés, 6 sautés, aucun échec ; Python 3.14, binaire optimisé figé. |
+| Synchronisation du harness | PASS ; activation native `UNKNOWN`. |
+| Tutoriel français sur le binaire final | Bloc shell exécuté sans modification : 3 worktrees, 2 `keep` et 1 `cleanup_candidate` avec cible ; sans cible, 2 `keep` et 1 `verify`. `apply` refuse avec le code 2, note et HEAD inchangés. |
+| Documentation | 10 documents, 188 liens locaux et ancres, 18 blocs shell vérifiés. |
+| Revue indépendante T09 | Conforme après correction, sans constat restant. |
+| CI distante | Non vérifiée lors de cette validation locale ; consulter le statut du commit publié. |
+
+SHA-256 du binaire final utilisé pour les tests Python, le tutoriel et l’essai
+réel : `8cd44bb54abd32a061d886bb24f1e431633f4655b22655aa16031b8684ea4b4d`.
+Les octets du binaire restent inchangés après chaque recette.
+
+Les deux tests Rust ignorés sont un replay historique privé et un point d’entrée
+enfant exécuté par son test parent. Les six tests Python sautés correspondent à
+quatre replays historiques privés non demandés et deux chemins non UTF-8 que le
+système de fichiers hôte refuse de créer. Les cas d’identité en octets restent
+testés avec des enregistrements synthétiques.
+
+La revue a aussi vérifié les identifiants Git en majuscules et les en-têtes de
+commit malformés. Un test indépendant distingue l’épuisement du budget local
+d’un worktree du délai maximal du moteur Git : le premier garde les observations
+de la même famille disponibles ; le second arrête encore ses lectures dépendantes.
+Le test échoue avec l’ancien comportement et passe après correction.
+
+### Essai par dépôt
+
+Le parcours final a examiné en lecture seule un dépôt choisi et ses worktrees
+enregistrés, avec une référence locale confirmée avant exécution. Il a terminé
+avec le code 0 en **197,276 secondes** :
+
+| Observation | Résultat |
+| --- | --- |
+| Périmètre découvert | 1 famille, 48 worktrees, parcours achevé sans lacune de découverte. |
+| Verdicts | 3 `keep`, 45 `verify`, 0 `cleanup_candidate`. |
+| Conditions C1 | 45 worktrees passent les contrôles structurels ; ce résultat ne suffit pas au statut de candidat. |
+| Relations Git | 1 commit identique, 3 relations d’ancêtre, 44 inconnues. |
+| Résumés locaux | 4 worktrees examinés partiellement ; 44 non collectés après épuisement du budget global de revue locale. Aucun résumé n’est complet sur ses trois volets HEAD/index/disque. |
+| Histoire privée | 112 racines couvertes, 209 inconnues. |
+| Artefacts | Hashes et tailles des trois fichiers vérifiés contre le reçu ; liaison canonique entre inventaire et revue vérifiée. |
+| Contrôles après exécution | Référence cible et liste des worktrees enregistrés inchangées. |
+
+Les 48 worktrees gardent des inconnues. Le gros dépôt dépasse les budgets locaux
+et d’historique ; cette version ne permet donc pas encore d’y désigner un candidat
+au nettoyage. Un parcours de découverte terminé ne signifie pas que chaque
+worktree a été entièrement analysé. Les métriques d’histoire ne mesurent pas le
+temps de collecte locale ni celui de la vérification approfondie.
+
+Les lectures Git groupées X02 restent une piste pour ce coût observé. Leur
+condition d’ouverture sur la fixture de 100 worktrees n’a pas été rencontrée.
+Aucune reprise persistante X01 ni prise en charge supplémentaire d’index X03
+n’a été ajoutée : la découverte s’est achevée et l’index réel est un v2 pris en
+charge. Les limites actuelles restent documentées dans la [référence CLI](cli.md).
+
+Les commandes exactes, références, identifiants et rapports réels restent dans
+les preuves privées, hors des exemples publics. Les guides utilisent des fixtures
+synthétiques ou un chemin fourni par le lecteur. Aucun scan global réel ni
+nettoyage n’a été exécuté. Cet essai ne prouve ni instantané machine, ni exclusion
+d’écrivains, ni conservation exhaustive des fichiers de ce dépôt réel.

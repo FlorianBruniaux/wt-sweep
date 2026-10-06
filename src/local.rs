@@ -1,4 +1,5 @@
 //! Bounded local observations. This is an inventory, never a backup or snapshot.
+pub(crate) mod history;
 use crate::git::{ControlledGit, GitRead};
 use crate::model::{
     BytePath, Gap, Identity, IndexEntry, LocalEntry, LocalInventory, SweepError, Worktree, now_ms,
@@ -53,7 +54,11 @@ pub trait LocalHooks {
     }
 }
 pub struct NativeHooks;
-impl LocalHooks for NativeHooks {}
+impl LocalHooks for NativeHooks {
+    fn cancelled(&self) -> bool {
+        crate::cancel::requested()
+    }
+}
 
 pub fn collect(worktree: &Worktree, limits: &LocalLimits) -> Result<LocalInventory, SweepError> {
     collect_with(worktree, limits, &NativeHooks)
@@ -202,6 +207,7 @@ fn parse_index_text(raw: &[u8], max_entries: usize) -> io::Result<Vec<IndexEntry
 struct RawIndex {
     entries: Vec<IndexEntry>,
     shared: Option<String>,
+    intent_to_add: bool,
 }
 fn parse_raw_index(raw: &[u8], hash_size: usize, max_entries: usize) -> io::Result<RawIndex> {
     let invalid = || io::Error::other("malformed or unsupported raw index");
@@ -239,6 +245,7 @@ fn parse_raw_index(raw: &[u8], hash_size: usize, max_entries: usize) -> io::Resu
     }
     let mut offset = 12usize;
     let mut entries = Vec::new();
+    let mut intent_to_add = false;
     for _ in 0..count {
         let start = offset;
         let fixed = 40 + hash_size + 2;
@@ -261,6 +268,7 @@ fn parse_raw_index(raw: &[u8], hash_size: usize, max_entries: usize) -> io::Resu
             if extended_flags & !0x6000 != 0 {
                 return Err(io::Error::other("reserved extended flags in raw index"));
             }
+            intent_to_add |= extended_flags & 0x2000 != 0;
             offset += 2;
         }
         let remainder = raw.get(offset..end).ok_or_else(invalid)?;
@@ -338,7 +346,11 @@ fn parse_raw_index(raw: &[u8], hash_size: usize, max_entries: usize) -> io::Resu
     } else {
         entries.clear();
     }
-    Ok(RawIndex { entries, shared })
+    Ok(RawIndex {
+        entries,
+        shared,
+        intent_to_add,
+    })
 }
 
 struct Context<'a> {
@@ -1027,3 +1039,8 @@ pub fn collect_with(
     context.inventory.finished_unix_ms = now_ms();
     Ok(context.inventory)
 }
+
+mod summary;
+pub use summary::{SummaryLimits, collect_summary, collect_summary_with};
+
+pub(crate) use summary::{SummaryOutcome, collect_summary_for_review};

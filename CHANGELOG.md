@@ -9,7 +9,73 @@ the Cargo package version is a development version.
 
 ### Added
 
-- [French hands-on tutorial](docs/tutorial.fr.md) with a disposable two-worktree
+- Add `review` to discover and judge worktrees in one command, preserving the input
+  inventory beside the review and report in a single run with artifact hashes.
+- Add command-specific help and an explicit diagnostic for historical review/1
+  archives passed where an inventory is required.
+
+- Discovery progress, distinct stop reasons and a conservative remaining-scope
+  cover. Ctrl-C retains partial observations when possible and exits `130`;
+  destination verification can still refuse publication.
+- Exact JSON/text publication limits. Oversized inventories declare omitted
+  detail or rows; oversized reviews refuse without changing their source data.
+- Publication fault tests using real files, short writes, full-disk and interrupted
+  writes, and failures at each synchronization stage. Run receipts distinguish
+  artifact hashes from successful publisher completion.
+
+- Optional commit and changelog context at recorded Git OIDs, with separate
+  observation intervals, bounded excerpts and explicit incomplete results.
+  Commit counts compare HEAD against the union of selected target histories.
+  `--changelog-path` selects tracked paths; `--no-context` skips these reads.
+  Neither option changes the triage decision rules.
+- Forge provenance in detailed reports: host/project, recorded HEAD, update
+  time, capture interval, raw-source hash and receipt verification.
+
+- Per-repository integration targets via an identity-bound `--target-map`. A plain
+  `--target` now requires one physical repository family; missing mappings never
+  select a default branch. Target lists now use canonical byte order in every
+  phase rather than input order; omitted targets remain unknown.
+- Report filters for repository, path, branch, local state and verdict, with
+  grouping by repository or parent directory. Filtered JSON keeps the complete
+  source review, original coverage and digest, plus a separately digested view.
+
+- Three triage verdicts: `keep`, `cleanup_candidate` and `verify`. Positive
+  retention reasons take priority; candidates require current controls, verified
+  Git integration, complete clean local state and covered private history.
+  Reports name missing conditions and the next checks. Usage remains unknown.
+- Current worktree role, registration protection, administrative locks and Git
+  operation markers, checked before and after collection. Deep object checks
+  are reserved for possible candidates; collected graph facts remain visible.
+
+- Current private-history roots and shared stash context in version-2 reviews.
+  Root coverage uses verified commit ancestry and explicit named anchors, with
+  separate results for uncovered and incomplete history. Earlier observations
+  remain labeled after failed final checks.
+- One stash list per physical repository family, with separate membership,
+  metadata and file-detail completeness. Human reports keep shared stash context
+  separate from each worktree's own history.
+- A bounded commit-history pass across worktrees before local file collection and
+  deep Git checks. Per-target graph results distinguish complete non-ancestry
+  from incomplete reads and remain separate from tree/blob verification.
+- History progress on stderr and counters in `history_metrics`, with in-run
+  caches, work-unit budgets and explicit omitted-target counts. References are
+  revalidated after local and deep work; earlier graph results remain visible
+  when the current result becomes unknown.
+- Family-level timeout containment across history, local collection, deep checks
+  and final Git revalidation, so distinct HEADs do not repeatedly retry a blocked
+  repository while other families wait.
+- Current local summaries in `plan`, under `items[].local_summary` in
+  `wt-sweep.review/2`. Separate counts describe staged and unstaged changes,
+  conflicts, untracked and ignored files, with observation intervals, source
+  hashes, partial counts and explicit gaps. Input inventories remain version 1.
+- Separate limits for compact local collection, including ordinary indexes with
+  more than 20,000 entries. Detailed `scan --local` manifest limits are unchanged.
+- [Worktree triage action plan, v2](docs/superpowers/plans/2026-10-05-worktree-triage-v2.md)
+  and [architecture/plan critique](docs/superpowers/plans/2026-10-05-worktree-triage-review.md),
+  covering decision conditions, large-repository limits, local work and stashes,
+  machine discovery and filtering. The revised plan defines delivery dependencies
+  and acceptance criteria. Delivery status is recorded in the plan.
+- [French hands-on tutorial](docs/tutorial.fr.md) with a disposable three-worktree
   trial, expected results with and without an integration target, local test
   commands and a copyable prompt for an assistant reviewing one repository.
 - [French README](README.fr.md) with translated Mermaid diagrams and expandable
@@ -63,6 +129,16 @@ the Cargo package version is a development version.
 
 ### Changed
 
+- Fresh scan paths are stored as absolute paths. Filesystem publication refuses
+  ambiguous legacy relative scopes and inventories with omitted family boundaries.
+- Scan and review share final output-boundary revalidation. Parent directories
+  are synchronized after creating a run; visible receipts after a later failure
+  remain available with explicit unknown durability.
+
+- Simple single-family target lists retain unknown report rows when that family
+  disappears after scanning. Explicit target maps still refuse an unreadable or
+  mismatched initial identity; unsafe publication remains refused.
+
 - Replaced the README workflow image with the Git/local-file example. Mermaid
   diagrams explain the workflow; the earlier Gemini image and generation history
   remain in the assets documentation.
@@ -81,6 +157,28 @@ the Cargo package version is a development version.
 
 ### Fixed
 
+- Give the expanded macOS CI suite 45 minutes: the 15-minute and intermediate
+  30-minute job limits interrupted runs. Test commands and product time budgets
+  are unchanged.
+
+- Distinguish an exhausted local-summary allowance from a full Git-call timeout.
+  A slow worktree no longer suppresses later worktrees merely because its own
+  shorter time budget expired during a child read.
+
+- Normalize full hexadecimal Git object identities across graph, deep and private
+  history checks. Valid uppercase parent IDs no longer produce a complete
+  non-ancestry result; repeated case aliases do not consume extra graph steps.
+- Refuse malformed commit graph headers as incomplete evidence instead of
+  treating an unread parent as a complete negative relationship.
+
+- Stop repeated dependent reads within a repository family after a Git timeout
+  during current local collection. Preserve observed counts and continue other
+  families; ignore-rule and physical-file errors keep independent Git checks.
+
+- Explicit integration targets are reviewed before intermediate refs. Repositories
+  with many branches can now produce an observation for a requested target before
+  reaching the candidate limit. Object verification and the 128-candidate limit
+  are unchanged; shared review budgets can still leave worktrees unexamined.
 - Python fixture Git commands now close standard input explicitly. Running the
   suite from a terminal previously made `pack-objects --all` wait for input and
   time out during the FIFO-pack test setup. A regression keeps the caller's

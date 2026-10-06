@@ -7,7 +7,22 @@ définit les lots et responsabilités ; leur validation exige les preuves du
 registre. Garder la comparaison des alternatives ouverte avant de développer le
 moteur de nettoyage.
 
-## Démarrage
+## Triage T01-T09
+
+La reprise de triage s’appuie sur le [plan v2](superpowers/plans/2026-10-05-worktree-triage-v2.md).
+Elle ajoute cibles par famille, histoire du graphe, résumé local courant, histoire
+privée, décisions C1-C5, contexte descriptif, vues et collecte bornée. T09 raccorde
+`review`, l’aide par commande et la publication de l’inventaire original avec la
+revue. Le [checkpoint courant](finish-ledger.md#triage-t01-t09) porte les preuves
+finales ; les lots et chiffres du socle ci-dessous restent historiques.
+
+L’intégrateur possède CLI, contrats, Cargo, changelog et raccordements. Le lot T09
+confie le parseur de graphe et les reçus à son exécutant, l’oracle CLI à un auteur
+distinct et les guides à la rédaction technique. Le checkout est partagé ; chaque
+lot conserve les modifications des autres. Une validation documentaire ou un
+compteur de tests ne certifie ni activation native ni nettoyage réel.
+
+## Démarrage historique U1-U4
 
 L'intégrateur définit le contrat d'inventaire et une fixture attendue non vide.
 Les types communs entrent quand leur premier consommateur existe, sans générer

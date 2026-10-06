@@ -44,7 +44,7 @@ class ReviewTests(unittest.TestCase):
     def report(self, result):
         self.assertEqual(result.returncode, 0, result.stderr.decode(errors="replace"))
         report = json.loads(result.stdout)
-        self.assertEqual(report["schema"], "wt-sweep.review/1")
+        self.assertEqual(report["schema"], "wt-sweep.review/2")
         self.assertEqual(report["inventory_sha256"], self.expected_inventory_digest)
         claimed = report["digest_sha256"]
         body = {key: value for key, value in report.items() if key != "digest_sha256"}
@@ -54,8 +54,10 @@ class ReviewTests(unittest.TestCase):
         self.assertEqual(set(actual), set(self.fixture.expected), "omitted or invented review worktree")
         return report, actual
 
-    def assert_not_integrated(self, item):
-        self.assertEqual(item["classification"], "to_triage")
+    def assert_not_integrated(self, item, expected="keep"):
+        self.assertEqual(item["classification"], expected)
+        if expected == "keep":
+            self.assertTrue(item["decision"]["keep_reasons"], "KEEP needs an observed positive reason")
         self.assertFalse(any(observation["target_role"] == "integration"
                              for observation in item["observations"]), "unsupported integration proof")
 
@@ -64,7 +66,7 @@ class ReviewTests(unittest.TestCase):
         target = self.fixture.git("-C", str(self.fixture.principal), "rev-parse", "refs/heads/main").stdout.decode().strip()
         _, items = self.report(self.plan())
         item = items[os.fsencode(self.fixture.linked)]
-        self.assertEqual(item["classification"], "integration_observed", "always-triage implementation")
+        self.assertEqual(item["classification"], "cleanup_candidate", "always-triage implementation")
         self.assertTrue(any(observation["relation"] == "ancestor"
                             and observation["source_oid"] == self.fixture.heads[os.fsencode(self.fixture.linked)]
                             and observation["target_oid"] == target
@@ -72,11 +74,52 @@ class ReviewTests(unittest.TestCase):
                             and observation["target_role"] == "integration"
                             for observation in item["observations"]), "missing independently expected target relation")
 
+    def crowded_explicit_target(self):
+        fixture = self.new_history()
+        # Deep priority needs a clean linked candidate; main is always kept.
+        source = fixture.write_commit(fixture.linked, "tracked.txt", b"source work\n")
+        target = fixture.git("-C", str(fixture.principal), "commit-tree",
+                             fixture.oid(fixture.linked, "HEAD^{tree}"),
+                             "-p", source, "-m", "Explicit integration target").stdout.decode().strip()
+        reference = "refs/heads/zzz-integration"
+        fixture.git("-C", str(fixture.principal), "update-ref", reference, target)
+        for number in range(140):
+            fixture.git("-C", str(fixture.principal), "update-ref",
+                        f"refs/heads/a-intermediate-{number:03d}", fixture.base)
+        return fixture, source, target, reference
+
+    def test_explicit_target_precedes_140_intermediate_refs(self):
+        fixture, source_oid, target_oid, reference = self.crowded_explicit_target()
+        _, items = self.report(self.plan(targets=(reference,)))
+        item = items[os.fsencode(fixture.linked)]
+        self.assertTrue(any(observation["relation"] == "ancestor"
+                            and observation["source_oid"] == source_oid
+                            and observation["target_oid"] == target_oid
+                            and decode_path(observation["target_ref"]) == reference.encode()
+                            and observation["target_role"] == "integration"
+                            for observation in item["observations"]),
+                        "explicit integration target was displaced by intermediate refs")
+        self.assertEqual(item["classification"], "cleanup_candidate")
+        self.assertTrue(any("remaining targets unknown" in unknown for unknown in item["unknowns"]),
+                        "target count limit was silently lifted")
+
+    def test_crowded_unavailable_explicit_target_remains_unknown(self):
+        fixture, _, target_oid, reference = self.crowded_explicit_target()
+        scan = fixture.scan("--format", "json")
+        self.assertEqual(scan.returncode, 0, scan.stderr.decode(errors="replace"))
+        inventory = json.loads(scan.stdout)
+        (fixture.principal / ".git" / "objects" / target_oid[:2] / target_oid[2:]).unlink()
+        _, items = self.report(self.plan(targets=(reference,), inventory=inventory))
+        item = items[os.fsencode(fixture.linked)]
+        self.assert_not_integrated(item, "verify")
+        self.assertTrue(any(reference in unknown for unknown in item["unknowns"]),
+                        "unavailable explicit target was never attempted")
+
     def test_identical_commit_and_identical_tree_have_explicit_target_oids(self):
         fixture = self.new_history()
         _, items = self.report(self.plan())
         source = items[os.fsencode(fixture.linked)]
-        self.assertEqual(source["classification"], "integration_observed")
+        self.assertEqual(source["classification"], "cleanup_candidate")
         self.assertTrue(any(observation["relation"] == "identical_commit"
                             and observation["source_oid"] == fixture.base
                             and observation["target_oid"] == fixture.base
@@ -84,24 +127,32 @@ class ReviewTests(unittest.TestCase):
         source_oid = fixture.write_commit(fixture.linked, "tracked.txt", b"identical content\n")
         target_oid = fixture.write_commit(fixture.principal, "tracked.txt", b"identical content\n")
         self.assertNotEqual(source_oid, target_oid, "fixture accidentally recreated the same commit")
-        _, items = self.report(self.plan())
+        _, items = self.report(self.plan(targets=("refs/heads/main", "refs/heads/unavailable")))
         source = items[os.fsencode(fixture.linked)]
-        self.assertEqual(source["classification"], "integration_observed")
+        self.assertEqual(source["classification"], "verify")
+        self.assertIn("C2", source["decision"]["missing_conditions"])
         self.assertTrue(any(observation["relation"] == "identical_tree"
                             and observation["source_oid"] == source_oid
                             and observation["target_oid"] == target_oid
                             and decode_path(observation["target_ref"]) == b"refs/heads/main"
                             for observation in source["observations"]))
 
-    def test_no_explicit_target_preserves_intermediate_relations_and_forge_unknown(self):
+    def test_no_explicit_target_preserves_context_and_explicit_control_verifies_intermediate(self):
         fixture = self.new_history()
+        fixture.git("-C", str(fixture.principal), "update-ref", "refs/heads/intermediate", fixture.base)
         _, items = self.report(self.plan(targets=()))
         source = items[os.fsencode(fixture.linked)]
-        self.assert_not_integrated(source)
-        self.assertTrue(source["observations"], "known intermediate relation was discarded")
-        self.assertTrue(all(observation["target_role"] == "intermediate"
-                            for observation in source["observations"]))
+        self.assert_not_integrated(source, "verify")
+        self.assertEqual(source["observations"], [], "C2 impossible without an explicit target")
+        self.assertIn("C2", source["decision"]["missing_conditions"])
         self.assertTrue(source["unknowns"], "no target/forge evidence was presented as known absence")
+        _, controlled = self.report(self.plan())
+        linked = controlled[os.fsencode(fixture.linked)]
+        self.assertEqual(linked["classification"], "cleanup_candidate")
+        self.assertTrue(any(observation["target_role"] == "intermediate"
+                            and decode_path(observation["target_ref"]) == b"refs/heads/intermediate"
+                            for observation in linked["observations"]),
+                        "admissible candidate lost a real verified intermediate relation")
 
     def test_new_commit_after_integration_is_not_inferred_complete(self):
         fixture = self.new_history()
@@ -145,7 +196,7 @@ class ReviewTests(unittest.TestCase):
         result = self.plan(inventory=inventory)
         _, items = self.report(result)
         item = items[os.fsencode(fixture.linked)]
-        self.assert_not_integrated(item)
+        self.assert_not_integrated(item, "verify")
         self.assertTrue(item["unknowns"], "missing source object concealed")
 
     def test_missing_blob_cannot_support_an_identical_tree_observation(self):
@@ -165,6 +216,31 @@ class ReviewTests(unittest.TestCase):
         self.assert_not_integrated(item)
         self.assertTrue(item["unknowns"], "tree OID equality hid an unavailable referenced blob")
 
+    def test_missing_target_only_blob_refuses_deep_ancestor_but_keeps_clean_source(self):
+        fixture = self.new_history()
+        tree = fixture.write_commit(fixture.principal, "target-only.txt", b"target-only unavailable blob\n")
+        # Restore main to the clean source before collecting local facts. The
+        # explicit target alone references the injected missing blob.
+        fixture.git("-C", str(fixture.principal), "update-ref", "refs/heads/integration", tree)
+        blob = fixture.oid(fixture.principal, "HEAD:target-only.txt")
+        fixture.git("-C", str(fixture.principal), "reset", "--hard", fixture.base)
+        _, healthy = self.report(self.plan(targets=("refs/heads/integration",)))
+        self.assertEqual(healthy[os.fsencode(fixture.linked)]["classification"], "cleanup_candidate")
+        self.assertTrue(any(o["relation"] == "ancestor" and o["target_oid"] == tree
+                            for o in healthy[os.fsencode(fixture.linked)]["observations"]))
+        (fixture.principal / ".git/objects" / blob[:2] / blob[2:]).unlink()
+        _, items = self.report(self.plan(targets=("refs/heads/integration",)))
+        item = items[os.fsencode(fixture.linked)]
+        self.assert_not_integrated(item, "verify")
+        self.assertTrue(item["local_summary"]["head_complete"])
+        self.assertTrue(item["local_summary"]["index_complete"])
+        self.assertTrue(item["local_summary"]["disk_complete"])
+        self.assertTrue(any(record["result"] == "ancestor" and record["target_oid"] == tree
+                            for record in item["history"]), "graph evidence disappeared with an unavailable blob")
+        self.assertTrue(any(blob in unknown for unknown in item["unknowns"]),
+                        "clean-source deep proof never attempted the missing target blob")
+        self.assertIn("C2", item["decision"]["missing_conditions"])
+
     def test_inventory_head_and_path_identity_drift_are_unknown(self):
         fixture = self.new_history()
         scan = fixture.scan("--format", "json")
@@ -173,7 +249,7 @@ class ReviewTests(unittest.TestCase):
         fixture.write_commit(fixture.linked, "tracked.txt", b"late head\n")
         _, items = self.report(self.plan(inventory=inventory))
         item = items[os.fsencode(fixture.linked)]
-        self.assert_not_integrated(item)
+        self.assert_not_integrated(item, "verify")
         self.assertTrue(item["unknowns"], "HEAD drift hidden")
         retained = fixture.root / "retained-source"
         fixture.linked.rename(retained)
@@ -181,7 +257,7 @@ class ReviewTests(unittest.TestCase):
         fixture.linked.mkdir()
         _, items = self.report(self.plan(inventory=inventory))
         item = items[os.fsencode(fixture.linked)]
-        self.assert_not_integrated(item)
+        self.assert_not_integrated(item, "verify")
         self.assertTrue(item["unknowns"], "directory identity replacement hidden")
 
     def test_suggestions_and_action_fields_are_refused(self):
@@ -291,7 +367,7 @@ class ReviewTests(unittest.TestCase):
         (fixture.principal / ".git" / "shallow").write_text(target + "\n")
         _, items = self.report(self.plan())
         item = items[os.fsencode(fixture.linked)]
-        self.assertEqual(item["classification"], "integration_observed")
+        self.assertEqual(item["classification"], "cleanup_candidate")
         self.assertTrue(any(observation["relation"] == "ancestor"
                             and observation["target_oid"] == target
                             and observation["target_role"] == "integration"
@@ -312,7 +388,7 @@ class ReviewTests(unittest.TestCase):
         (fixture.principal / ".git" / "objects" / parent[:2] / parent[2:]).unlink()
         _, items = self.report(self.plan(inventory=inventory))
         item = items[os.fsencode(fixture.linked)]
-        self.assert_not_integrated(item)
+        self.assert_not_integrated(item, "verify")
         self.assertTrue(item["unknowns"], "missing raw parent object concealed by shallow traversal")
 
     def test_recent_worktree_without_scoped_open_request_is_not_active(self):
@@ -353,9 +429,11 @@ class ReviewTests(unittest.TestCase):
         _, export = self.import_forge([self.request()])
         report, items = self.report(self.plan(extra=("--forge", str(export))))
         item = items[os.fsencode(self.fixture.linked)]
-        self.assertEqual(item["classification"], "active", "scoped open request lost to local integration")
+        self.assertEqual(item["classification"], "keep", "scoped open request lost to local integration")
         self.assertTrue(item["requests"], "matching positive request omitted")
-        self.assertTrue(any(observation["target_role"] == "integration" for observation in item["observations"]))
+        self.assertIn("open_request", item["decision"]["keep_reasons"])
+        self.assertEqual(item["observations"], [], "known open request should skip deep work")
+        self.assertTrue(any(record["result"] == "ancestor" for record in item["history"]))
         self.assertFalse(report["forge"]["coverage"]["absence_proven"], "partial export became proof of absence")
 
     def test_contradictory_raw_project_or_head_cannot_establish_activity(self):
@@ -474,13 +552,16 @@ class ReviewTests(unittest.TestCase):
         object_file.write_bytes(zlib.compress(b"commit " + str(len(forged)).encode() + b"\0" + forged))
         _, items = self.report(self.plan(inventory=inventory))
         item = items[os.fsencode(fixture.linked)]
-        self.assert_not_integrated(item)
+        self.assert_not_integrated(item, "verify")
         self.assertTrue(item["unknowns"], "corrupt intermediate object was trusted as ancestry")
 
     def test_corrupt_tree_content_is_unknown_even_with_a_valid_commit(self):
         fixture = self.new_history()
         fixture.write_commit(fixture.linked, "tracked.txt", b"source tree content\n")
-        fixture.write_commit(fixture.principal, "tracked.txt", b"target tree content\n")
+        target_tree_oid = fixture.oid(fixture.principal, "HEAD^{tree}")
+        target_commit = fixture.git("-C", str(fixture.principal), "commit-tree", target_tree_oid,
+                                    "-p", fixture.oid(fixture.linked), "-m", "Cover clean source").stdout.decode().strip()
+        fixture.git("-C", str(fixture.principal), "update-ref", "refs/heads/main", target_commit)
         source_tree = fixture.oid(fixture.linked, "HEAD^{tree}")
         target_tree = fixture.oid(fixture.principal, "HEAD^{tree}")
         self.assertNotEqual(source_tree, target_tree)
@@ -494,19 +575,23 @@ class ReviewTests(unittest.TestCase):
         target_file.write_bytes(replacement)
         _, items = self.report(self.plan())
         item = items[os.fsencode(fixture.linked)]
-        self.assert_not_integrated(item)
+        self.assert_not_integrated(item, "verify")
         self.assertTrue(item["unknowns"], "tree bytes did not match their complete object ID")
 
     def test_sha256_real_objects_preserve_full_oids_and_positive_integration(self):
         fixture = self.new_history(object_format="sha256")
+        _, positive = self.report(self.plan())
+        self.assertEqual(positive[os.fsencode(fixture.linked)]["classification"], "cleanup_candidate")
+        self.assertTrue(positive[os.fsencode(fixture.linked)]["observations"])
         source = fixture.write_commit(fixture.linked, "tracked.txt", b"same SHA256 tree\n")
         target = fixture.write_commit(fixture.principal, "tracked.txt", b"same SHA256 tree\n")
         self.assertEqual(len(source), 64)
         self.assertEqual(len(target), 64)
         self.assertNotEqual(source, target)
-        _, items = self.report(self.plan())
+        _, items = self.report(self.plan(targets=("refs/heads/main", "refs/heads/unavailable")))
         item = items[os.fsencode(fixture.linked)]
-        self.assertEqual(item["classification"], "integration_observed")
+        self.assertEqual(item["classification"], "verify")
+        self.assertIn("C2", item["decision"]["missing_conditions"])
         self.assertTrue(any(observation["relation"] == "identical_tree"
                             and observation["source_oid"] == source
                             and observation["target_oid"] == target

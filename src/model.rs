@@ -2,6 +2,8 @@ use serde::{Deserialize, Serialize};
 use std::path::{Path, PathBuf};
 
 pub const INVENTORY_SCHEMA: &str = "wt-sweep.inventory/1";
+pub const TARGET_MAP_SCHEMA: &str = "wt-sweep.targets/1";
+pub const REVIEW_VIEW_SCHEMA: &str = "wt-sweep.review-view/1";
 
 #[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
@@ -169,6 +171,62 @@ pub struct Coverage {
     pub volumes: Vec<VolumeObservation>,
     #[serde(default)]
     pub aliases: Vec<PathAlias>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub remaining: Option<DiscoveryRemainder>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub publication: Option<PublicationOmissions>,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum DiscoveryStop {
+    Interrupted,
+    Deadline,
+    EntryBudget,
+    DirectoryBudget,
+    ObservationBudget,
+}
+
+impl DiscoveryStop {
+    pub fn as_str(&self) -> &'static str {
+        match self {
+            Self::Interrupted => "interrupted",
+            Self::Deadline => "deadline",
+            Self::EntryBudget => "entry_budget",
+            Self::DirectoryBudget => "directory_budget",
+            Self::ObservationBudget => "observation_budget",
+        }
+    }
+}
+
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum RemainingCover {
+    RequestedScope,
+}
+
+#[derive(Clone, Debug, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct DiscoveryRemainder {
+    pub reason: DiscoveryStop,
+    pub known_pending_paths: usize,
+    pub cover: RemainingCover,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum PublicationCover {
+    RequestedScopeAndRegisteredWorktrees,
+}
+
+#[derive(Clone, Debug, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct PublicationOmissions {
+    pub local_inventories: usize,
+    pub markers: usize,
+    pub families: usize,
+    pub worktrees: usize,
+    pub cover: PublicationCover,
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
@@ -253,6 +311,63 @@ pub struct LocalEntry {
     pub link_target: Option<BytePath>,
 }
 
+/// A positive count survives partial collection; zero is exact only when complete.
+#[derive(Clone, Debug, Default, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct LocalCount {
+    pub observed: usize,
+    pub complete: bool,
+    pub samples: Vec<BytePath>,
+    pub samples_omitted: usize,
+}
+
+#[derive(Clone, Debug, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct LocalSource {
+    pub kind: String,
+    pub path: BytePath,
+    pub sha256: String,
+}
+
+#[derive(Clone, Debug, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct LocalInventoryRef {
+    pub worktree: BytePath,
+    pub started_unix_ms: u64,
+    pub finished_unix_ms: u64,
+    pub content_digest_sha256: String,
+    pub traversal_complete: bool,
+    pub temporal_consistency: String,
+    pub entry_count: usize,
+    pub index_entry_count: usize,
+    pub administration_entry_count: usize,
+    pub gap_count: usize,
+    pub not_collected_count: usize,
+}
+
+#[derive(Clone, Debug, Default, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct LocalSummary {
+    pub worktree_identity: Option<Identity>,
+    pub git_dir: Option<BytePath>,
+    pub head: Option<String>,
+    pub started_unix_ms: u64,
+    pub finished_unix_ms: u64,
+    pub staged: LocalCount,
+    pub unstaged: LocalCount,
+    pub conflicts: LocalCount,
+    pub untracked: LocalCount,
+    pub ignored: LocalCount,
+    pub head_complete: bool,
+    pub index_complete: bool,
+    pub disk_complete: bool,
+    pub temporal_consistency: String,
+    pub sources: Vec<LocalSource>,
+    pub gaps: Vec<Gap>,
+    pub details_truncated: bool,
+    pub digest_sha256: String,
+}
+
 #[derive(Clone, Debug, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct IndexEntry {
@@ -301,6 +416,8 @@ impl Inventory {
                 roots: Vec::new(),
                 volumes: Vec::new(),
                 aliases: Vec::new(),
+                remaining: None,
+                publication: None,
             },
             markers: Vec::new(),
             not_collected: vec![
@@ -316,7 +433,7 @@ impl Inventory {
 }
 
 pub const FORGE_SCHEMA: &str = "wt-sweep.forge/1";
-pub const REVIEW_SCHEMA: &str = "wt-sweep.review/1";
+pub const REVIEW_SCHEMA: &str = "wt-sweep.review/2";
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
@@ -383,10 +500,163 @@ pub struct IntegrationObservation {
     pub finished_unix_ms: u64,
 }
 
+/// Commit-graph observations, distinct from verified tree/blob integration evidence.
+#[derive(Clone, Debug, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct HistoryObservation {
+    pub source_oid: Option<String>,
+    pub target_ref: BytePath,
+    pub target_oid: Option<String>,
+    pub result: String,
+    #[serde(default)]
+    pub observed_result: Option<String>,
+    pub started_unix_ms: u64,
+    pub finished_unix_ms: u64,
+    pub stop_reason: Option<String>,
+}
+
+/// Counters cover the history phase only; returned bytes exclude failed I/O.
+#[derive(Clone, Debug, Default, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct HistoryMetrics {
+    pub items_total: u64,
+    pub first_pass_items: u64,
+    pub completed_targets: u64,
+    pub incomplete_targets: u64,
+    pub object_read_attempts: u64,
+    pub object_bytes: u64,
+    pub traversal_steps: u64,
+    pub cache_hits: u64,
+    pub target_resolution_attempts: u64,
+    pub spawned_processes: u64,
+    pub elapsed_ms: u64,
+    pub stop_reason: Option<String>,
+}
+
+/// File hashes or directory membership digests from bounded administration reads.
+#[derive(Clone, Debug, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct HistorySource {
+    pub path: BytePath,
+    pub kind: String,
+    pub exists: Option<bool>,
+    pub sha256: Option<String>,
+    pub bytes: Option<u64>,
+    pub complete: bool,
+}
+
+#[derive(Clone, Debug, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct RootProvenance {
+    pub source: BytePath,
+    pub kind: String,
+}
+
+#[derive(Clone, Debug, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct RetainedAnchor {
+    pub reference: BytePath,
+    pub oid: String,
+}
+
+#[derive(Clone, Debug, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct PrivateRoot {
+    pub oid: String,
+    pub provenance: Vec<RootProvenance>,
+    pub result: String,
+    pub anchor: Option<RetainedAnchor>,
+    pub observed_result: Option<String>,
+    pub reason: Option<String>,
+}
+
+#[derive(Clone, Debug, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct PrivateHistory {
+    pub git_dir: Option<BytePath>,
+    pub git_dir_identity: Option<Identity>,
+    pub started_unix_ms: u64,
+    pub finished_unix_ms: u64,
+    pub enumeration_complete: bool,
+    pub anchors_complete: bool,
+    pub temporal_consistency: String,
+    pub sources: Vec<HistorySource>,
+    pub roots: Vec<PrivateRoot>,
+    pub gaps: Vec<String>,
+}
+
+#[derive(Clone, Debug, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct StashEntry {
+    pub oid: String,
+    pub base_oid: Option<String>,
+    pub timestamp_unix: Option<i64>,
+    pub message: Option<BytePath>,
+    pub message_truncated: bool,
+    pub files: Vec<BytePath>,
+    pub metadata_complete: bool,
+    pub files_complete: bool,
+    pub gaps: Vec<String>,
+}
+
+#[derive(Clone, Debug, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct FamilyStashes {
+    pub common_dir: BytePath,
+    pub identity: Identity,
+    pub started_unix_ms: u64,
+    pub finished_unix_ms: u64,
+    pub enumeration_complete: bool,
+    pub temporal_consistency: String,
+    pub sources: Vec<HistorySource>,
+    pub entries: Vec<StashEntry>,
+    pub gaps: Vec<String>,
+}
+
+#[derive(Clone, Debug, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct WorktreeState {
+    pub observed: Option<Worktree>,
+    pub common_dir: BytePath,
+    pub family_identity: Option<Identity>,
+    pub git_dir: Option<BytePath>,
+    pub git_dir_identity: Option<Identity>,
+    pub role: String,
+    #[serde(default)]
+    pub protections: Vec<BytePath>,
+    pub protection_complete: bool,
+    pub operations: Vec<BytePath>,
+    pub operations_complete: bool,
+    pub checks: String,
+    pub started_unix_ms: u64,
+    pub finished_unix_ms: u64,
+    pub sources: Vec<HistorySource>,
+    pub gaps: Vec<String>,
+}
+
+#[derive(Clone, Debug, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct TriageDecision {
+    pub keep_reasons: Vec<String>,
+    pub missing_conditions: Vec<String>,
+}
+
 #[derive(Clone, Debug, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct ReviewItem {
+    #[serde(default)]
+    pub worktree_state: Option<WorktreeState>,
+    #[serde(default)]
+    pub decision: Option<TriageDecision>,
     pub path: BytePath,
+    #[serde(default)]
+    pub private_history: Option<PrivateHistory>,
+    #[serde(default)]
+    pub history: Vec<HistoryObservation>,
+    #[serde(default)]
+    pub history_omitted_targets: usize,
+    #[serde(default)]
+    pub local_summary: Option<LocalSummary>,
     #[serde(default)]
     pub branch: Option<BytePath>,
     #[serde(default)]
@@ -404,7 +674,10 @@ pub struct ReviewItem {
 
 #[derive(Clone, Debug)]
 pub struct Observations {
+    pub context: Option<ReviewContext>,
     pub inventory: Inventory,
+    pub shared_stashes: Vec<FamilyStashes>,
+    pub history_metrics: HistoryMetrics,
     pub items: Vec<ReviewItem>,
     pub forge: Option<ForgeExport>,
     pub started_unix_ms: u64,
@@ -414,7 +687,13 @@ pub struct Observations {
 #[derive(Clone, Debug, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct Review {
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub context: Option<ReviewContext>,
     pub schema: String,
+    #[serde(default)]
+    pub shared_stashes: Vec<FamilyStashes>,
+    #[serde(default)]
+    pub history_metrics: HistoryMetrics,
     pub policy_version: String,
     pub inventory_sha256: String,
     pub digest_sha256: String,
@@ -425,5 +704,105 @@ pub struct Review {
     pub forge: Option<ForgeExport>,
     pub not_collected: Vec<String>,
     #[serde(default)]
-    pub local_inventories: Vec<LocalInventory>,
+    pub local_inventory_refs: Vec<LocalInventoryRef>,
+}
+
+/// Explicit integration targets, bound to one saved physical repository family.
+#[derive(Clone, Debug, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct TargetMap {
+    pub schema: String,
+    pub families: Vec<TargetMapFamily>,
+}
+#[derive(Clone, Debug, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct TargetMapFamily {
+    pub common_dir: BytePath,
+    pub identity: Identity,
+    pub targets: Vec<BytePath>,
+}
+#[derive(Clone, Debug, Default, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct ReviewFilters {
+    pub repository: Option<BytePath>,
+    pub path_prefix: Option<BytePath>,
+    pub branch: Option<BytePath>,
+    pub local_state: Option<String>,
+    pub verdict: Option<String>,
+}
+/// Historical registration for grouping; this does not establish current C1.
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct ReviewRowBinding {
+    pub path: BytePath,
+    pub common_dir: BytePath,
+    pub identity: Identity,
+}
+#[derive(Clone, Debug, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct ReviewView {
+    pub schema: String,
+    pub source: Review,
+    pub row_bindings: Vec<ReviewRowBinding>,
+    pub selected_paths: Vec<BytePath>,
+    pub group_by: String,
+    pub filters: ReviewFilters,
+    pub digest_sha256: String,
+}
+
+#[derive(Clone, Debug, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct ReviewContext {
+    pub started_unix_ms: u64,
+    pub finished_unix_ms: u64,
+    pub items: Vec<WorktreeContext>,
+    pub omitted_items: usize,
+    pub gaps: Vec<String>,
+}
+#[derive(Clone, Debug, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct WorktreeContext {
+    pub path: BytePath,
+    pub common_dir: BytePath,
+    pub family_identity: Identity,
+    pub head_oid: Option<String>,
+    pub uncovered: UncoveredCommits,
+    pub changelogs: Vec<ChangelogContext>,
+    pub gaps: Vec<String>,
+}
+#[derive(Clone, Debug, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct ContextTarget {
+    pub reference: BytePath,
+    pub oid: Option<String>,
+}
+#[derive(Clone, Debug, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct UncoveredCommits {
+    pub targets: Vec<ContextTarget>,
+    pub observed: usize,
+    pub complete: bool,
+    pub samples: Vec<CommitContext>,
+    pub samples_omitted: usize,
+    pub gaps: Vec<String>,
+}
+#[derive(Clone, Debug, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct CommitContext {
+    pub oid: String,
+    pub subject: Option<BytePath>,
+    pub subject_truncated: bool,
+}
+#[derive(Clone, Debug, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct ChangelogContext {
+    pub revision_oid: String,
+    pub path: BytePath,
+    pub tree_oid: Option<String>,
+    pub blob_oid: Option<String>,
+    pub status: String,
+    pub blob_bytes: Option<usize>,
+    pub excerpt: Option<BytePath>,
+    pub excerpt_truncated: bool,
+    pub gaps: Vec<String>,
 }

@@ -34,7 +34,9 @@ implémentées ; la sauvegarde, la restauration et la suppression sont
 indisponibles. `apply` refuse toute invocation. Le nom du projet est provisoire
 et aucune version n’a été publiée.
 
-![Exemple : le HEAD du worktree correspond à refs/heads/main et reçoit la classification integration_observed, mais notes.txt reste non suivi. Le scan local enregistre son empreinte et ses métadonnées sans sauvegarder son contenu. Sauvegarde, restauration et suppression sont indisponibles.](docs/assets/git-and-local-work.svg)
+![Illustration historique : un HEAD Git identique ne préserve pas les fichiers locaux non suivis.](docs/assets/git-and-local-work.svg)
+
+Illustration historique des preuves. Avec `triage/1`, le contenu non suivi impose `keep`.
 
 Reproduisez ce cas avec la [démo sur un dépôt jetable](docs/getting-started.md#disposable-demo).
 Les [sources du visuel et les notes de revue](docs/assets/README.md) comprennent
@@ -49,8 +51,9 @@ fichiers ignorés ou une version différente dans l’index.
 
 Le rapport liste le HEAD complet de chaque worktree, ses relations avec les
 références choisies, les PR ou MR associées, ainsi que les risques et les éléments
-de preuve manquants. Avec `scan --local`, il relève aussi les fichiers locaux et
-l’état de l’index. Ces relevés aident à examiner ce qui reste dans un worktree ;
+de preuve manquants. `review` et `plan` comparent le HEAD, l’index et les fichiers
+courants. Avec `scan --local`, l’inventaire relève aussi leurs empreintes et
+métadonnées détaillées. Ces relevés aident à examiner ce qui reste dans un worktree ;
 ils ne contiennent aucune sauvegarde des fichiers.
 
 ## Démarrage rapide
@@ -83,54 +86,54 @@ Consultez le [guide de démarrage et de dépannage](docs/getting-started.md).
 
 ### Examiner un dépôt et ses worktrees
 
-Définissez `repo_path` avec le chemin du clone à examiner. Le dossier des
-rapports doit se trouver hors du dépôt inspecté, de ses worktrees et de ses
-répertoires d’administration Git.
+Depuis la racine de `wt-sweep`, après compilation, saisissez le chemin du clone
+et la référence d’intégration que vous avez confirmée. Le bloc s’arrête si cette
+référence manque localement.
 
 ```sh
-repo_path="/absolute/path/to/your/clone"
-report_dir="$(mktemp -d /private/tmp/wt-sweep-report.XXXXXX)"
-
-./target/release/wt-sweep scan --repo "$repo_path" --local \
-  --out "$report_dir/inventory.json"
-
-# Choisissez une référence complète existante, par exemple refs/heads/master.
-./target/release/wt-sweep plan --inventory "$report_dir/inventory.json" \
-  --target refs/heads/main --summary --run-dir "$report_dir"
+(
+  set -eu
+  sweep_bin="$PWD/target/release/wt-sweep"
+  printf 'Chemin absolu du clone : '
+  IFS= read -r repo_path
+  printf 'Référence complète confirmée (refs/heads/... ou refs/remotes/...) : '
+  IFS= read -r target_ref
+  /usr/bin/git --no-optional-locks -c core.fsmonitor=false -C "$repo_path" \
+    show-ref --verify --quiet "$target_ref"
+  report_dir="$(mktemp -d /private/tmp/wt-sweep-report.XXXXXX)"
+  "$sweep_bin" review --repo "$repo_path" --target "$target_ref" \
+    --summary --run-dir "$report_dir"
+  printf 'Rapports : %s\n' "$report_dir"
+)
 ```
 
-`scan --local` relève les fichiers suivis, non suivis et ignorés présents
-localement, dans des limites explicites. `plan` affiche un résumé de cinq lignes
-et enregistre le rapport complet, le JSON et un reçu de publication dans un
-nouveau dossier d’exécution. Les fichiers de sortie existants ne sont jamais
-remplacés. Pour un exemple prêt à exécuter, utilisez la
-[démo sur un dépôt jetable](docs/getting-started.md#disposable-demo).
+Gardez `XXXXXX` tel quel : `mktemp` le remplace par un suffixe unique. Le dossier
+des rapports doit se trouver hors du dépôt, de ses worktrees enregistrés et de
+ses administrations Git. `review` découvre la famille puis collecte les preuves
+courantes. Son nouveau dossier contient l’inventaire original `inventory.json`,
+la revue `review.json`, le détail `report.txt` et le reçu `run.json`.
+
+Pour les empreintes détaillées des fichiers ou une revue séparée de l’inventaire,
+suivez le [parcours avancé scan puis plan](docs/tutorial.fr.md#parcours-avancé-scan-puis-plan).
+Un manifeste enregistre des observations, pas le contenu des fichiers.
 
 ### Lire le résultat
 
-La [démo](docs/getting-started.md#disposable-demo) produit l’extrait de résumé
-ci-dessous. Le HEAD de chacun des deux worktrees correspond à la cible choisie :
+Chaque ligne indique le worktree, sa branche, son HEAD complet, son état local,
+son histoire et son verdict. Le détail explique les raisons et les vérifications
+à faire ; `--summary` donne un résumé de cinq lignes.
 
-```text
-Worktrees: 2
-Active: 0; integration observed: 2; to triage: 0
-Unknowns: 2 worktrees; coverage gaps: 0
-```
-
-Le rapport complet indique chaque worktree, sa branche, son HEAD et la relation
-observée. Consultez le [rapport capturé](docs/getting-started.md#read-a-review)
-et l’[extrait JSON annoté](docs/contracts.md#example-review-item).
-
-| Classification | Ce qui a été observé |
+| Verdict | Signification |
 | --- | --- |
-| `active` | Une MR ou PR ouverte a été associée au worktree par son hôte de forge, son projet, sa branche et son HEAD. Cette observation prime sur les observations d’intégration. |
-| `integration_observed` | Une relation vérifiée entre commits ou arbres Git relie le worktree à une référence explicitement choisie avec `--target`. |
-| `to_triage` | Aucune des deux conditions n’a été établie. Examinez les observations et les inconnues. |
+| `keep` | Travail à préserver, checkout principal, protection, opération ou autre raison positive de conserver. |
+| `cleanup_candidate` | Les contrôles actuels, l’intégration Git, l’état local propre et la conservation de l’histoire satisfont les cinq conditions. |
+| `verify` | Des preuves nécessaires manquent ou se contredisent. Le rapport indique les conditions à vérifier. |
 
-**Aucune de ces classifications n’autorise une suppression.** Un worktree dont
-le HEAD est intégré peut encore contenir des modifications locales. L’absence
-de preuve issue d’une forge reste une inconnue, même lorsqu’une intégration Git
-a été observée.
+L’usage d’un candidat reste à confirmer avant tout retrait. Le rapport n’autorise
+aucune suppression et ne constitue pas une sauvegarde complète. Un HEAD mergé ne
+suffit pas s’il reste des modifications locales ou une histoire propre au reflog.
+Consultez le [contrat de décision](docs/contracts.md#triage-policy) et le
+[tutoriel](docs/tutorial.fr.md).
 
 ## Fonctionnalités
 
@@ -141,13 +144,15 @@ a été observée.
 | --- | --- | --- |
 | Familles de dépôts | Repérer le worktree principal, les worktrees liés et ceux à HEAD détaché, ainsi que les worktrees enregistrés mais absents. | `scan --repo PATH` |
 | Découverte ciblée | Parcourir les racines choisies, y compris les dossiers cachés, ignorés et imbriqués, en conservant les lacunes de couverture. | `scan --root PATH` |
+| Revue en une commande | Découvrir le périmètre et collecter les preuves courantes du triage. | `review --repo PATH` |
+| État local courant | Comparer HEAD, index et fichiers avec compteurs complets ou partiels. | `review` ou `plan` |
 | Inventaires de fichiers locaux | Examiner les empreintes, métadonnées, entrées d’index et certains éléments d’administration du worktree. | `scan --local` |
 | Relations Git | Vérifier l’identité de commits, l’ascendance et l’identité d’arbres par rapport aux références nommées. | `plan --target FULL_REF` |
 | Preuves de forge hors ligne | Importer des données capturées depuis GitHub ou GitLab avec leur provenance, sans contacter de forge. | `forge ingerer` |
 | Rapports texte et JSON | Lire le rapport détaillé ou le résumé de cinq lignes ; conserver les octets complets des chemins et les identifiants d’objets Git dans le JSON. | `--summary`, `--format json` |
 | Exécutions séparées | Conserver les rapports concurrents dans des dossiers distincts, avec les empreintes des fichiers produits et les horodatages de publication. | `--run-dir BASE` |
 
-La découverte globale est également disponible via `scan --all`. Elle utilise
+La découverte globale est également disponible via `scan --all` ou `review --all`. Elle utilise
 les volumes montés visibles et signale les lacunes d’accès. Elle a été testée
 avec des volumes injectés, sans scanner la machine de développement.
 Commencez par un dépôt ou des racines choisies.
@@ -156,40 +161,44 @@ Commencez par un dépôt ou des racines choisies.
 
 ## Fonctionnement
 
-`scan` enregistre un inventaire dans le périmètre choisi. `plan` le lit, vérifie
-les relations Git avec les cibles explicites et produit une revue :
+`review` combine découverte et revue. Les commandes séparées `scan` et `plan`
+restent disponibles pour les manifestes détaillés et les inventaires sauvegardés.
+La cible d’intégration est explicite ; aucune branche par défaut n’est devinée.
 
 ```mermaid
 flowchart LR
-    Scan["scan<br/>Périmètre explicite"] --> Inventory["Inventaire JSON<br/>Fichiers et index en option"]
-    Inventory --> Plan["plan<br/>Vérifier les relations Git"]
+    Review["review<br/>Périmètre explicite"] --> Scan["Découverte courante"]
+    Scan --> Inventory["Inventaire original JSON"]
+    Inventory --> Plan["Preuves courantes et jugement"]
     Targets["Références d’intégration"] --> Plan
-    Forge["Export de forge capturé"] -. facultatif .-> Plan
-    Plan --> Report["Rapport et JSON<br/>Risques et inconnues"]
+    Forge["Export forge capturé"] -. facultatif .-> Plan
+    Plan --> Report["Revue JSON et rapport<br/>Raisons et conditions manquantes"]
 ```
 
-`plan` reprend les inventaires de fichiers locaux sauvegardés sans relire leur
-contenu. Une relation Git observée ne dit donc rien des changements apportés
-aux fichiers locaux depuis le scan.
+La revue sépare les relations du graphe de la vérification approfondie des objets.
+Le détail distingue index, fichiers, conflits, contenu non suivi et ignoré,
+histoire privée et stashes partagés. Les compteurs partiels restent des bornes
+minimales ou `UNKNOWN`. Les sujets de commit et changelogs donnent du contexte ;
+ils ne prouvent pas l’intégration.
 
 <details>
 <summary>Règles de classification d’un worktree</summary>
 
-Une MR ou PR ouverte ne prime que si son hôte de forge, son projet, sa branche
-source et son HEAD complet correspondent au worktree. Sinon, la revue cherche
-une relation vérifiée entre commits ou arbres Git avec une cible d’intégration
-explicite.
+Les raisons de conserver sont prioritaires. Seul un worktree lié avec des
+contrôles actuels complets, une intégration vérifiée, un état local propre et une
+histoire couverte peut devenir candidat. L’absence d’export de forge ne suffit
+pas à invalider ces preuves.
 
 ```mermaid
 flowchart TD
-    Open{"MR ou PR ouverte<br/>associée précisément ?"}
-    Open -->|Oui| Active["active"]
-    Open -->|Non établi| Git{"Relation Git vérifiée<br/>avec une cible d’intégration explicite ?"}
-    Git -->|Oui| Integrated["integration_observed"]
-    Git -->|Non établi| Triage["to_triage"]
-    Active --> Review["Conserver les risques et inconnues<br/>Aucune autorisation de suppression"]
-    Integrated --> Review
-    Triage --> Review
+    Reason{"Travail, protection ou autre<br/>raison de conserver observée ?"}
+    Reason -->|Oui| Keep["keep"]
+    Reason -->|Non| Proof{"Les cinq conditions actuelles<br/>C1-C5 sont établies ?"}
+    Proof -->|Oui| Candidate["cleanup_candidate<br/>Usage à confirmer"]
+    Proof -->|Non| Verify["verify<br/>Conditions manquantes indiquées"]
+    Keep --> Report["Raisons et preuves<br/>Aucune suppression autorisée"]
+    Candidate --> Report
+    Verify --> Report
 ```
 
 Le [tableau des classifications](#lire-le-résultat) et les
@@ -221,6 +230,7 @@ précisent les limites de lecture et de publication des rapports.
 | [Tutoriel en français](docs/tutorial.fr.md) | Essai sur un dépôt jetable, tests automatiques, premier dépôt réel et prompt pour un assistant |
 | [Démarrage](docs/getting-started.md) | Installation, démo sur un dépôt jetable, lecture des rapports et dépannage |
 | [Référence CLI](docs/cli.md) | Commandes, valeurs par défaut, modes de sortie, limites et codes de retour |
+| [Cibles et filtres](docs/targets-and-filters.md) | Cibles par dépôt, sélection des lignes et rapports regroupés (anglais) |
 | [Imports de forge hors ligne](docs/forge.md) | Exports, reçus d’exécution et limites d’association |
 | [Preuves et JSON](docs/contracts.md) | Champs des schémas, octets des chemins, empreintes et reçus d’exécution |
 | [Architecture](docs/architecture.md) | Rôle des modules, limites de lecture et stratégie de test |
@@ -250,13 +260,12 @@ Le [plan d’acceptation](docs/plan.md) définit les conditions à remplir. La
 [décision concernant `apply`](docs/decisions/apply-readiness.md) consigne
 pourquoi elles ne sont pas remplies.
 
-Le point de contrôle du 2026-10-05 a enregistré 92 tests Rust et 78 tests Python
-réussis. Les tests non exécutés, les résultats des expériences natives et
-l’empreinte du binaire testé figurent dans le
-[registre de validation](docs/finish-ledger.md#vérifications). Le badge CI
-renvoie aux résultats du workflow distant, distincts de ces contrôles locaux.
-Les fichiers non résidents réels de FileProvider, les refus TCC réels et un
-instantané de toute la machine n’ont pas été vérifiés.
+Les 92 tests Rust et 78 tests Python du socle U1-U4 appartiennent au
+checkpoint historique. Le [registre de validation](docs/finish-ledger.md#triage-t01-t09)
+sépare le triage courant, les contrôles finaux et l’essai par dépôt. Le badge CI
+renvoie aux résultats distants ; il ne valide pas cette passe locale.
+Les vrais placeholders FileProvider, refus TCC et instantanés machine restent
+non vérifiés.
 
 </details>
 

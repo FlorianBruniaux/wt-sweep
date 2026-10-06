@@ -809,3 +809,205 @@ fn discovers_submodule_family_and_preserves_independent_manifest() {
     );
     assert_eq!(independent_manifest(&fixture.0), before);
 }
+
+struct CancelAfterFinalRead {
+    cancelled: std::cell::Cell<bool>,
+}
+impl DiscoveryProvider for CancelAfterFinalRead {
+    fn read_directory(&self, _: &Path, _: usize) -> std::io::Result<DirectoryListing> {
+        self.cancelled.set(true);
+        Ok(DirectoryListing {
+            entries: Vec::new(),
+            complete: true,
+            errors: Vec::new(),
+        })
+    }
+    fn cancelled(&self) -> bool {
+        self.cancelled.get()
+    }
+}
+
+#[test]
+fn cancellation_during_final_empty_directory_read_preserves_remaining_cover() {
+    let fixture = Fixture::new();
+    let scope = ScanScope::Roots {
+        paths: vec![BytePath::from_path(&fixture.0)],
+    };
+    let provider = CancelAfterFinalRead {
+        cancelled: std::cell::Cell::new(false),
+    };
+    let inventory = scan_scope_with(&scope, &DiscoveryOptions::default(), &provider)
+        .unwrap_or_else(|e| panic!("scan: {e}"));
+    assert!(
+        !inventory.coverage.traversal_complete,
+        "last operation cancellation was lost"
+    );
+    let remaining = inventory
+        .coverage
+        .remaining
+        .as_ref()
+        .unwrap_or_else(|| panic!("remaining cover missing"));
+    assert_eq!(
+        remaining.reason,
+        wt_sweep::model::DiscoveryStop::Interrupted
+    );
+    assert_eq!(
+        remaining.cover,
+        wt_sweep::model::RemainingCover::RequestedScope
+    );
+    assert_eq!(
+        inventory.coverage.roots,
+        vec![BytePath::from_path(&fixture.0)]
+    );
+}
+
+#[test]
+fn progress_starts_before_io_and_finishes_with_prefetched_pending_scope() {
+    use wt_sweep::discover::{DiscoveryPhase, scan_scope_with_progress};
+    let fixture = Fixture::new();
+    for name in ["a", "b", "c"] {
+        fs::create_dir(fixture.0.join(name)).unwrap_or_else(|e| panic!("mkdir: {e}"));
+    }
+    let started = std::cell::Cell::new(false);
+    let cancel = std::cell::Cell::new(false);
+    struct Provider<'a> {
+        started: &'a std::cell::Cell<bool>,
+        cancel: &'a std::cell::Cell<bool>,
+    }
+    impl DiscoveryProvider for Provider<'_> {
+        fn canonicalize(&self, path: &Path) -> std::io::Result<PathBuf> {
+            assert!(self.started.get(), "scope I/O preceded start progress");
+            fs::canonicalize(path)
+        }
+        fn cancelled(&self) -> bool {
+            self.cancel.get()
+        }
+        fn metadata_batch(
+            &self,
+            paths: &[PathBuf],
+            _: usize,
+        ) -> Vec<std::io::Result<fs::Metadata>> {
+            let result = paths.iter().map(|path| self.metadata(path)).collect();
+            if paths.len() >= 2 {
+                self.cancel.set(true);
+            }
+            result
+        }
+    }
+    let mut events = Vec::new();
+    let inventory = scan_scope_with_progress(
+        &ScanScope::Roots {
+            paths: vec![BytePath::from_path(&fixture.0)],
+        },
+        &DiscoveryOptions {
+            workers: 3,
+            ..DiscoveryOptions::default()
+        },
+        &Provider {
+            started: &started,
+            cancel: &cancel,
+        },
+        &mut |event| {
+            if event.phase == DiscoveryPhase::Start {
+                started.set(true);
+            }
+            events.push(event.clone());
+        },
+    )
+    .unwrap_or_else(|e| panic!("scan: {e}"));
+    assert_eq!(
+        events.first().map(|e| &e.phase),
+        Some(&DiscoveryPhase::Start)
+    );
+    let last = events
+        .last()
+        .unwrap_or_else(|| panic!("terminal progress absent"));
+    assert_eq!(last.phase, DiscoveryPhase::Finished);
+    assert_eq!(last.stop, Some(wt_sweep::model::DiscoveryStop::Interrupted));
+    assert!(last.metadata_ready_paths >= 2);
+    assert!(
+        inventory
+            .coverage
+            .remaining
+            .as_ref()
+            .is_some_and(|r| r.known_pending_paths >= 2)
+    );
+}
+
+#[test]
+fn directory_budget_stops_globally_and_depth_only_leaves_subtree_gaps() {
+    let fixture = Fixture::new();
+    for name in ["a", "b", "c"] {
+        fs::create_dir(fixture.0.join(name)).unwrap_or_else(|e| panic!("mkdir: {e}"));
+    }
+    struct Provider(std::cell::Cell<usize>);
+    impl DiscoveryProvider for Provider {
+        fn read_directory(&self, path: &Path, limit: usize) -> std::io::Result<DirectoryListing> {
+            self.0.set(self.0.get() + 1);
+            LocalFilesystem.read_directory(path, limit)
+        }
+    }
+    let provider = Provider(std::cell::Cell::new(0));
+    let scope = ScanScope::Roots {
+        paths: vec![BytePath::from_path(&fixture.0)],
+    };
+    let limited = scan_scope_with(
+        &scope,
+        &DiscoveryOptions {
+            max_directories: 1,
+            ..DiscoveryOptions::default()
+        },
+        &provider,
+    )
+    .unwrap_or_else(|e| panic!("scan: {e}"));
+    assert_eq!(provider.0.get(), 1);
+    assert_eq!(
+        limited.coverage.remaining.as_ref().map(|r| &r.reason),
+        Some(&wt_sweep::model::DiscoveryStop::DirectoryBudget)
+    );
+    assert_eq!(
+        limited.coverage.gaps.len(),
+        1,
+        "one global stop must replace one gap per pending directory"
+    );
+    let depth = scan_scope_with(
+        &scope,
+        &DiscoveryOptions {
+            max_depth: 0,
+            ..DiscoveryOptions::default()
+        },
+        &LocalFilesystem,
+    )
+    .unwrap_or_else(|e| panic!("scan: {e}"));
+    assert!(depth.coverage.remaining.is_none());
+    assert_eq!(depth.coverage.gaps.len(), 3);
+}
+
+#[test]
+fn observation_budget_retains_crossing_family_and_stops_before_more_io() {
+    let fixture = Fixture::new();
+    let repo = fixture.0.join("repo");
+    fixture.repo(&repo);
+    let inventory = scan_scope_with(
+        &ScanScope::Repo {
+            path: BytePath::from_path(&repo),
+        },
+        &DiscoveryOptions {
+            max_observation_bytes: 1,
+            ..DiscoveryOptions::default()
+        },
+        &LocalFilesystem,
+    )
+    .unwrap_or_else(|e| panic!("scan: {e}"));
+    assert_eq!(
+        inventory.families.len(),
+        1,
+        "crossing bounded observation must remain present"
+    );
+    assert_eq!(inventory.families[0].worktrees.len(), 1);
+    assert_eq!(
+        inventory.coverage.remaining.as_ref().map(|r| &r.reason),
+        Some(&wt_sweep::model::DiscoveryStop::ObservationBudget)
+    );
+    assert!(!inventory.coverage.traversal_complete);
+}

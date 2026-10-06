@@ -1,16 +1,17 @@
 use std::{collections::BTreeMap, ffi::OsString, io::Write, path::PathBuf, process::ExitCode};
 use wt_sweep::{
-    discover::{DiscoveryOptions, LocalFilesystem, scan_scope_with},
+    discover::{DiscoveryOptions, LocalFilesystem, scan_scope_with_progress},
     model::*,
-    output::{canonical_digest, inventory_json, inventory_table, read_artifact, write_new},
-    review::{enrich, judge},
+    output::{PublicationLimits, bounded_json, canonical_digest, read_artifact, write_new},
+    review::{ReviewOptions, enrich_with_options, judge, targets::TargetInput},
 };
 
 const HELP: &str = "Worktree Sweep (wt-sweep)
 
 Usage:
+  wt-sweep review (--repo PATH | --root PATH... | --all) [--workers 1..8] [PLAN OPTIONS]
   wt-sweep scan (--repo PATH | --root PATH... | --all) [--workers 1..8] [--local] [--format json|table] [--out FILE | --run-dir BASE]
-  wt-sweep plan --inventory FILE [--target FULL_REF]... [--forge FILE] [--summary] [--format json|table] [--out FILE | --run-dir BASE]
+  wt-sweep plan --inventory FILE [--target FULL_REF... | --target-map FILE] [--filter-repo PATH] [--path-prefix PATH] [--branch FULL_REF] [--local-state clean|dirty|unknown] [--verdict keep|cleanup_candidate|verify] [--group-by repo|directory] [--changelog-path RELATIVE...] [--no-context] [--forge FILE] [--summary] [--format json|table] [--out FILE | --run-dir BASE]
   wt-sweep forge commandes
   wt-sweep forge ingerer --raw FILE [--receipt FILE] [--out FILE | --run-dir BASE]
   wt-sweep --help | --version
@@ -18,10 +19,12 @@ Usage:
 Read-only inventory and evidence review. Scans require explicit scope.
 JSON preserves path bytes as hexadecimal; tables escape control bytes.
 --out creates a new JSON file outside inspected targets and prints a table.
-An integration target must be explicitly named with --target, e.g. refs/heads/main.
+Use --target for one repository family, or --target-map for explicit targets per family.
+Filters select reviewed rows; JSON views retain the full source and its coverage.
 Global discovery reports gaps and does not establish a machine-wide snapshot.
 --workers bounds parallel metadata reads; aggregation order stays deterministic.
 --local hashes local files and index within explicit budgets; gaps remain visible.
+review and plan report phase progress on stderr and keeps JSON on stdout.
 --run-dir creates an isolated run below an existing directory outside inspected targets.
 apply is unavailable until conservation and approval gates are verified.
 ";
@@ -29,14 +32,28 @@ apply is unavailable until conservation and approval gates are verified.
 type Options = BTreeMap<String, Vec<OsString>>;
 
 fn main() -> ExitCode {
-    match run(std::env::args_os().skip(1).collect()) {
+    let args: Vec<_> = std::env::args_os().skip(1).collect();
+    if args
+        .first()
+        .is_some_and(|arg| arg == "scan" || arg == "plan" || arg == "review")
+        && let Err(error) = wt_sweep::cancel::install()
+    {
+        eprintln!("wt-sweep: cannot install interruption handler: {error}");
+        return ExitCode::from(2);
+    }
+    match run(args) {
+        Ok(()) if wt_sweep::cancel::requested() => ExitCode::from(130),
         Ok(()) => ExitCode::SUCCESS,
         Err(message) => {
             eprintln!(
                 "wt-sweep: {}",
                 BytePath::from_bytes(message.as_bytes()).display()
             );
-            ExitCode::from(2)
+            ExitCode::from(if wt_sweep::cancel::requested() {
+                130
+            } else {
+                2
+            })
         }
     }
 }
@@ -53,7 +70,7 @@ fn options(args: &[OsString], allowed: &[&str], repeat: &[&str]) -> Result<Optio
             return Err(format!("repeated option {arg}"));
         }
         index += 1;
-        let value = if matches!(arg, "--all" | "--summary" | "--local") {
+        let value = if matches!(arg, "--all" | "--summary" | "--local" | "--no-context") {
             OsString::from("true")
         } else {
             let value = args
@@ -88,6 +105,12 @@ fn run(args: Vec<OsString>) -> Result<(), String> {
         [arg] if arg == "--version" || arg == "-V" => {
             return print(format!("wt-sweep {}\n", env!("CARGO_PKG_VERSION")).as_bytes());
         }
+        [command, flag] if flag == "--help" || flag == "-h" => {
+            return command_help(command.to_str().unwrap_or(""));
+        }
+        [command, sub, flag] if command == "forge" && (flag == "--help" || flag == "-h") => {
+            return command_help(&format!("forge {}", sub.to_str().unwrap_or("")));
+        }
         _ => {}
     }
     match args.first().and_then(|arg| arg.to_str()) {
@@ -96,9 +119,42 @@ fn run(args: Vec<OsString>) -> Result<(), String> {
         }
         Some("scan") => scan(&args[1..]),
         Some("plan") => plan(&args[1..]),
+        Some("review") => review(&args[1..]),
         Some("forge") => forge(&args[1..]),
         _ => Err("unsupported arguments; use wt-sweep --help".into()),
     }
+}
+
+fn command_help(command: &str) -> Result<(), String> {
+    let usage = match command {
+        "scan" => {
+            "wt-sweep scan (--repo PATH | --root PATH... | --all) [--workers 1..8] [--local] [--format json|table] [--out FILE | --run-dir BASE]"
+        }
+        "plan" => "wt-sweep plan --inventory FILE [REVIEW OPTIONS]",
+        "review" => {
+            "wt-sweep review (--repo PATH | --root PATH... | --all) [--workers 1..8] [REVIEW OPTIONS]"
+        }
+        "forge" => {
+            "wt-sweep forge commandes | ingerer --raw FILE [--receipt FILE] [--out FILE | --run-dir BASE]"
+        }
+        "forge commandes" => "wt-sweep forge commandes",
+        "forge ingerer" => {
+            "wt-sweep forge ingerer --raw FILE [--receipt FILE] [--out FILE | --run-dir BASE]"
+        }
+        _ => return Err("unsupported command; use wt-sweep --help".into()),
+    };
+    let notes = match command {
+        "scan" => {
+            "Discovery requires an explicit scope. --local additionally hashes local content within budgets.\nProgress is on stderr. Gaps and unfinished scope remain in the inventory.\n"
+        }
+        "plan" | "review" => {
+            "REVIEW OPTIONS:\n  --target FULL_REF... | --target-map FILE\n  --filter-repo PATH  --path-prefix PATH  --branch FULL_REF\n  --local-state clean|dirty|unknown  --verdict keep|cleanup_candidate|verify\n  --group-by repo|directory  --forge FILE\n  --changelog-path RELATIVE... | --no-context\n  --summary  --format json|table  --out FILE | --run-dir BASE\n\nTargets must be explicit; no target leaves integration unknown.\nFilters select rows after judgement and retain source coverage in JSON views.\n--summary cannot be combined with --format json. Progress is on stderr.\n--run-dir needs an existing directory outside inspected targets.\nreview saves inventory.json, review.json, report.txt and run.json together.\nplan reuses a saved inventory and saves review.json, report.txt and run.json.\nA cleanup_candidate still requires confirmation of its use. apply is unavailable.\n"
+        }
+        _ => {
+            "Offline evidence only. No network command is executed by these subcommands.\ncommandes prints capture guidance; ingerer reads captured raw data and its receipt.\n"
+        }
+    };
+    print(format!("Usage:\n  {usage}\n\nRead-only.\n{notes}").as_bytes())
 }
 
 fn scan(args: &[OsString]) -> Result<(), String> {
@@ -116,23 +172,56 @@ fn scan(args: &[OsString]) -> Result<(), String> {
         ],
         &["--root"],
     )?;
+    let mut inventory = collect_inventory(&opts)?;
+    let publication_limits = PublicationLimits::default();
+    if opts.contains_key("--local") {
+        collect_local(&mut inventory, &publication_limits);
+    }
+    let prepared = wt_sweep::output::prepare_inventory(&inventory, &publication_limits)
+        .map_err(|e| e.to_string())?;
+    let boundaries = if opts.contains_key("--out") || opts.contains_key("--run-dir") {
+        wt_sweep::output::revalidate_boundaries(&inventory).map_err(|e| e.to_string())?
+    } else {
+        inventory
+    };
+    deliver(
+        &opts,
+        prepared.json,
+        prepared.report,
+        &boundaries,
+        RunInfo {
+            command: "scan",
+            name: "inventory.json",
+            partial: prepared.partial,
+            detail: None,
+            inventory_json: None,
+        },
+    )
+}
+
+fn collect_inventory(opts: &Options) -> Result<Inventory, String> {
     let modes = ["--repo", "--root", "--all"]
         .iter()
         .filter(|name| opts.contains_key(**name))
         .count();
     if modes != 1 {
-        return Err("scan requires exactly one explicit scope: --repo, --root or --all".into());
+        return Err(
+            "scan/review requires exactly one explicit scope: --repo, --root or --all".into(),
+        );
     }
-    let scope = if let Some(repo) = one(&opts, "--repo") {
+    let scope = if let Some(repo) = one(opts, "--repo") {
         ScanScope::Repo {
-            path: BytePath::from_path(&repo),
+            path: BytePath::from_path(&std::path::absolute(&repo).map_err(|e| e.to_string())?),
         }
     } else if let Some(roots) = opts.get("--root") {
         ScanScope::Roots {
             paths: roots
                 .iter()
-                .map(|r| BytePath::from_path(&PathBuf::from(r)))
-                .collect(),
+                .map(|r| {
+                    std::path::absolute(PathBuf::from(r)).map(|path| BytePath::from_path(&path))
+                })
+                .collect::<Result<Vec<_>, _>>()
+                .map_err(|e| e.to_string())?,
         }
     } else {
         ScanScope::AllMounted
@@ -145,45 +234,80 @@ fn scan(args: &[OsString]) -> Result<(), String> {
             .filter(|workers| (1..=8).contains(workers))
             .ok_or("workers must be an integer between 1 and 8")?;
     }
-    let mut inventory =
-        scan_scope_with(&scope, &limits, &LocalFilesystem).map_err(|e| e.to_string())?;
-    if opts.contains_key("--local") {
-        collect_local(&mut inventory);
-    }
-    deliver(
-        &opts,
-        inventory_json(&inventory).map_err(|e| e.to_string())?,
-        inventory_table(&inventory),
-        &inventory,
-        RunInfo {
-            command: "scan",
-            name: "inventory.json",
-            partial: !inventory.coverage.traversal_complete || !inventory.coverage.gaps.is_empty(),
-            detail: None,
-        },
-    )
+    let inventory = scan_scope_with_progress(&scope, &limits, &LocalFilesystem, &mut |event| {
+        let current = event
+            .current
+            .as_ref()
+            .map(|path| format!(" current={}", path.display()))
+            .unwrap_or_default();
+        eprintln!(
+            "discovery: phase={} directories={} entries={} families={} pending={} stop={}{}",
+            event.phase.as_str(),
+            event.directories,
+            event.entries,
+            event.families,
+            event
+                .queued_paths
+                .saturating_add(event.metadata_ready_paths),
+            event
+                .stop
+                .as_ref()
+                .map(DiscoveryStop::as_str)
+                .unwrap_or("none"),
+            current
+        );
+    })
+    .map_err(|e| e.to_string())?;
+    Ok(inventory)
 }
 
-fn collect_local(inventory: &mut Inventory) {
+fn collect_local(inventory: &mut Inventory, publication_limits: &PublicationLimits) {
     use wt_sweep::local::{LocalLimits, collect};
     let started = std::time::Instant::now();
     let mut entries_left = 25_000;
     let mut bytes_left = 256 * 1024 * 1024;
-    let mut manifest_left = 24 * 1024 * 1024;
-    for worktree in inventory
+    let base_bytes = wt_sweep::output::bounded_json_size(inventory, publication_limits.json_bytes)
+        .unwrap_or(publication_limits.json_bytes);
+    let mut manifest_left = (24 * 1024 * 1024).min(
+        publication_limits
+            .json_bytes
+            .saturating_sub(base_bytes)
+            .saturating_sub(publication_limits.metadata_reserve_bytes),
+    );
+    let total_worktrees = inventory
+        .families
+        .iter()
+        .map(|family| family.worktrees.len())
+        .sum::<usize>();
+    for (ordinal, worktree) in inventory
         .families
         .iter()
         .flat_map(|family| &family.worktrees)
+        .enumerate()
     {
         let remaining = std::time::Duration::from_secs(120).saturating_sub(started.elapsed());
-        if entries_left == 0 || bytes_left == 0 || manifest_left < 4096 || remaining.is_zero() {
+        if entries_left == 0
+            || bytes_left == 0
+            || manifest_left < 4096
+            || remaining.is_zero()
+            || wt_sweep::cancel::requested()
+        {
+            let omitted = total_worktrees.saturating_sub(ordinal);
+            let reason = if wt_sweep::cancel::requested() {
+                "interrupted"
+            } else {
+                "whole-scan local inventory budget exhausted"
+            };
+            let message = format!(
+                "{reason}; {omitted} worktrees not collected; scope includes remaining discovered worktrees and registered worktrees outside requested roots"
+            );
             inventory.coverage.gaps.push(Gap {
                 path: worktree.path.clone(),
-                reason: "whole-scan local inventory budget exhausted; worktree not collected"
-                    .into(),
+                reason: message.clone(),
             });
+            inventory.not_collected.push(message);
             inventory.coverage.traversal_complete = false;
-            continue;
+            break;
         }
         let defaults = LocalLimits::default();
         let limits = LocalLimits {
@@ -243,26 +367,97 @@ fn collect_local(inventory: &mut Inventory) {
     inventory.finish();
 }
 
+const PLAN_OPTIONS: &[&str] = &[
+    "--target",
+    "--target-map",
+    "--changelog-path",
+    "--no-context",
+    "--filter-repo",
+    "--path-prefix",
+    "--branch",
+    "--local-state",
+    "--verdict",
+    "--group-by",
+    "--forge",
+    "--out",
+    "--format",
+    "--summary",
+    "--run-dir",
+];
+
 fn plan(args: &[OsString]) -> Result<(), String> {
-    let opts = options(
-        args,
-        &[
-            "--inventory",
-            "--target",
-            "--forge",
-            "--out",
-            "--format",
-            "--summary",
-            "--run-dir",
-        ],
-        &["--target"],
-    )?;
+    let mut allowed = PLAN_OPTIONS.to_vec();
+    allowed.push("--inventory");
+    let opts = options(args, &allowed, &["--target", "--changelog-path"])?;
+    let settings = review_settings(&opts)?;
+    let input = one(&opts, "--inventory").ok_or("plan requires --inventory FILE")?;
+    let value: serde_json::Value = read_artifact(&input).map_err(|e| e.to_string())?;
+    if value.get("schema").and_then(serde_json::Value::as_str) == Some("wt-sweep.review/1") {
+        return Err("this is a historical review/1 archive, not an inventory; it provides no current C5 verification. Use wt-sweep review with an explicit scope, or create a fresh scan inventory for plan".into());
+    }
+    let inventory: Inventory = serde_json::from_value(value).map_err(|e| e.to_string())?;
+    produce_review(&opts, inventory, settings, false)
+}
+
+fn review(args: &[OsString]) -> Result<(), String> {
+    let mut allowed = PLAN_OPTIONS.to_vec();
+    allowed.extend(["--repo", "--root", "--all", "--workers"]);
+    let opts = options(args, &allowed, &["--root", "--target", "--changelog-path"])?;
+    let settings = review_settings(&opts)?;
+    let inventory = collect_inventory(&opts)?;
+    produce_review(&opts, inventory, settings, true)
+}
+
+struct ReviewSettings {
+    filters: ReviewFilters,
+    group_by: String,
+    use_view: bool,
+    target_map: Option<TargetMap>,
+    forge: Option<ForgeExport>,
+    targets: Vec<BytePath>,
+    review_options: ReviewOptions,
+}
+
+fn review_settings(opts: &Options) -> Result<ReviewSettings, String> {
     if opts.contains_key("--summary") && opts.get("--format").is_some_and(|v| v[0] == "json") {
         return Err("--summary is incompatible with --format json".into());
     }
-    let input = one(&opts, "--inventory").ok_or("plan requires --inventory FILE")?;
-    let inventory: Inventory = read_artifact(&input).map_err(|e| e.to_string())?;
-    let forge: Option<ForgeExport> = one(&opts, "--forge")
+    if opts.contains_key("--target") && opts.contains_key("--target-map") {
+        return Err("--target and --target-map are mutually exclusive".into());
+    }
+    let value = |name: &str| -> Result<Option<String>, String> {
+        opts.get(name)
+            .map(|v| {
+                v[0].to_str()
+                    .map(str::to_owned)
+                    .ok_or_else(|| format!("{name} must be UTF-8"))
+            })
+            .transpose()
+    };
+    let filters = ReviewFilters {
+        repository: one(opts, "--filter-repo").map(|p| BytePath::from_path(&p)),
+        path_prefix: one(opts, "--path-prefix").map(|p| BytePath::from_path(&p)),
+        branch: one(opts, "--branch").map(|p| BytePath::from_path(&p)),
+        local_state: value("--local-state")?,
+        verdict: value("--verdict")?,
+    };
+    let group_by = value("--group-by")?.unwrap_or_else(|| "repo".into());
+    wt_sweep::view::validate_filters(&filters, &group_by).map_err(|e| e.to_string())?;
+    let use_view = [
+        "--filter-repo",
+        "--path-prefix",
+        "--branch",
+        "--local-state",
+        "--verdict",
+        "--group-by",
+    ]
+    .iter()
+    .any(|name| opts.contains_key(*name));
+    let target_map: Option<TargetMap> = one(opts, "--target-map")
+        .map(|p| read_artifact(&p))
+        .transpose()
+        .map_err(|e| e.to_string())?;
+    let forge: Option<ForgeExport> = one(opts, "--forge")
         .map(|p| read_artifact(&p))
         .transpose()
         .map_err(|e| e.to_string())?;
@@ -272,53 +467,126 @@ fn plan(args: &[OsString]) -> Result<(), String> {
         .flatten()
         .map(|t| BytePath::from_path(&PathBuf::from(t)))
         .collect();
-    let facts = enrich(&inventory, &targets, forge.as_ref()).map_err(|e| e.to_string())?;
+    if opts.contains_key("--no-context") && opts.contains_key("--changelog-path") {
+        return Err("--no-context and --changelog-path are mutually exclusive".into());
+    }
+    let mut review_options = ReviewOptions::default();
+    review_options.context.enabled = !opts.contains_key("--no-context");
+    if let Some(paths) = opts.get("--changelog-path") {
+        review_options.context.changelog_paths = paths
+            .iter()
+            .map(|path| BytePath::from_path(&PathBuf::from(path)))
+            .collect();
+    }
+    Ok(ReviewSettings {
+        filters,
+        group_by,
+        use_view,
+        target_map,
+        forge,
+        targets,
+        review_options,
+    })
+}
+
+fn produce_review(
+    opts: &Options,
+    inventory: Inventory,
+    settings: ReviewSettings,
+    combined: bool,
+) -> Result<(), String> {
+    let ReviewSettings {
+        filters,
+        group_by,
+        use_view,
+        target_map,
+        forge,
+        targets,
+        review_options,
+    } = settings;
+    // Save exactly the input bound by the review digest. Never compact it after judgement.
+    let source_json = combined
+        .then(|| bounded_json(&inventory, PublicationLimits::default().json_bytes))
+        .transpose()
+        .map_err(|e| format!("review input cannot be published; select a narrower scope: {e}"))?;
+    let target_input = target_map
+        .as_ref()
+        .map(TargetInput::Map)
+        .unwrap_or(TargetInput::Simple(&targets));
+    let facts = enrich_with_options(
+        &inventory,
+        target_input,
+        forge.as_ref(),
+        &review_options,
+        &wt_sweep::local::NativeHooks,
+        &mut |event| {
+            let reason = event
+                .stop_reason
+                .as_deref()
+                .map(|reason| {
+                    format!(
+                        "; {}",
+                        reason
+                            .chars()
+                            .flat_map(char::escape_default)
+                            .collect::<String>()
+                    )
+                })
+                .unwrap_or_default();
+            eprintln!("{}: processed={}{}", event.phase, event.processed, reason);
+        },
+    )
+    .map_err(|e| e.to_string())?;
     let review = judge(&facts).map_err(|e| e.to_string())?;
     if canonical_digest(&review).map_err(|e| e.to_string())? != review.digest_sha256 {
         return Err("review digest mismatch".into());
     }
-    let detail = wt_sweep::presentation::detail(&review);
+    let view = use_view
+        .then(|| wt_sweep::view::build(&inventory, &review, filters, &group_by))
+        .transpose()
+        .map_err(|e| e.to_string())?;
+    let publication_limits = PublicationLimits::default();
+    let detail = if let Some(view) = &view {
+        wt_sweep::presentation::view_detail_bounded(view, publication_limits.report_bytes)
+    } else {
+        wt_sweep::presentation::detail_bounded(&review, publication_limits.report_bytes)
+    }
+    .map_err(|e| e.to_string())?;
     let table = if opts.contains_key("--summary") {
-        wt_sweep::presentation::summary(&review)
+        if let Some(view) = &view {
+            wt_sweep::presentation::view_summary(view)
+        } else {
+            wt_sweep::presentation::summary(&review)
+        }
     } else {
         detail.clone()
     };
-    let mut boundaries = inventory.clone();
-    if opts.contains_key("--out") || opts.contains_key("--run-dir") {
-        // Preserve the original scope and union current registrations. A stale
-        // inventory must never authorize writing inside a newly moved worktree.
-        for family in &inventory.families {
-            let entrypoint = family
-                .worktrees
-                .first()
-                .map(|tree| &tree.path)
-                .unwrap_or(&family.common_dir)
-                .to_path()
-                .map_err(|e| e.to_string())?;
-            let current = wt_sweep::git::scan_family(&entrypoint)
-                .map_err(|e| format!("cannot revalidate output boundaries: {e}"))?;
-            if current
-                .families
-                .first()
-                .is_none_or(|f| f.identity != family.identity)
-            {
-                return Err("output boundary identity changed".into());
-            }
-            boundaries.families.extend(current.families);
-        }
+    let json = if let Some(view) = &view {
+        bounded_json(view, publication_limits.json_bytes)
+    } else {
+        bounded_json(&review, publication_limits.json_bytes)
     }
+    .map_err(|e| e.to_string())?;
+    let boundaries = if opts.contains_key("--out") || opts.contains_key("--run-dir") {
+        wt_sweep::output::revalidate_boundaries(&inventory).map_err(|e| e.to_string())?
+    } else {
+        inventory
+    };
     deliver(
-        &opts,
-        serde_json::to_vec_pretty(&review).map_err(|e| e.to_string())?,
+        opts,
+        json,
         table,
         &boundaries,
         RunInfo {
-            command: "plan",
+            command: if combined { "review" } else { "plan" },
             name: "review.json",
             partial: !review.coverage.gaps.is_empty()
                 || !review.coverage.traversal_complete
+                || review.coverage.remaining.is_some()
+                || review.coverage.publication.is_some()
                 || review.items.iter().any(|item| !item.unknowns.is_empty()),
             detail: Some(&detail),
+            inventory_json: source_json.as_deref(),
         },
     )
 }
@@ -335,7 +603,7 @@ fn forge(args: &[OsString]) -> Result<(), String> {
             let table = format!("Forge requests: {}; pagination complete: {}; temporal consistency: {}; absence proven: {}\n", export.requests.len(), export.coverage.pagination_complete, export.coverage.temporal_consistency, export.coverage.absence_proven);
             let mut opts = opts;
             if !opts.contains_key("--out") && !opts.contains_key("--format") { opts.insert("--format".into(), vec![OsString::from("json")]); }
-            deliver(&opts, serde_json::to_vec_pretty(&export).map_err(|e| e.to_string())?, table, &scope, RunInfo { command: "forge ingerer", name: "forge.json", partial: !export.coverage.gaps.is_empty() || !export.coverage.pagination_complete, detail: None })
+            deliver(&opts, bounded_json(&export, PublicationLimits::default().json_bytes).map_err(|e| e.to_string())?, table, &scope, RunInfo { command: "forge ingerer", name: "forge.json", partial: !export.coverage.gaps.is_empty() || !export.coverage.pagination_complete, detail: None, inventory_json: None })
         }
         _ => Err("use forge commandes or forge ingerer --raw FILE".into()),
     }
@@ -346,33 +614,38 @@ struct RunInfo<'a> {
     name: &'static str,
     partial: bool,
     detail: Option<&'a str>,
+    inventory_json: Option<&'a [u8]>,
 }
 
 fn deliver(
     opts: &Options,
-    mut json: Vec<u8>,
+    json: Vec<u8>,
     table: String,
     inventory: &Inventory,
     run: RunInfo<'_>,
 ) -> Result<(), String> {
-    if json.len() >= 32 * 1024 * 1024 {
+    let limits = PublicationLimits::default();
+    if json.len() > limits.json_bytes || run.detail.unwrap_or(&table).len() > limits.report_bytes {
         return Err(
             "serialized artifact exceeds the 32 MiB read limit; select a narrower scope".into(),
         );
     }
-    json.push(b'\n');
+    if !json.ends_with(b"\n") {
+        return Err("serialized artifact is missing its final newline".into());
+    }
     if let Some(base) = one(opts, "--run-dir") {
-        let path = wt_sweep::run::publish(
-            &base,
-            wt_sweep::run::Artifact {
-                command: run.command,
-                name: run.name,
-                json: &json,
-                report: run.detail.unwrap_or(&table),
-                partial: run.partial,
-            },
-            inventory,
-        )
+        let artifact = wt_sweep::run::Artifact {
+            command: run.command,
+            name: run.name,
+            json: &json,
+            report: run.detail.unwrap_or(&table),
+            partial: run.partial,
+        };
+        let path = if let Some(source) = run.inventory_json {
+            wt_sweep::run::publish_with_inventory(&base, artifact, inventory, source)
+        } else {
+            wt_sweep::run::publish(&base, artifact, inventory)
+        }
         .map_err(|e| e.to_string())?;
         if opts.get("--format").is_some_and(|v| v[0] == "json") {
             print(&json)
@@ -380,7 +653,7 @@ fn deliver(
             let mut lines: Vec<_> = table.lines().map(str::to_owned).collect();
             if let Some(detail_line) = lines.get_mut(3) {
                 *detail_line = format!(
-                    "Read-only review; removal unavailable. Detail: {}",
+                    "Read-only review; usage to confirm, no removal authorized. Detail: {}",
                     BytePath::from_path(&path.join("report.txt")).display()
                 );
             }
