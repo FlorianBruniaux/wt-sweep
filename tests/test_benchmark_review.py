@@ -21,22 +21,88 @@ BINARY = Path(os.environ.get('WT_SWEEP_BENCHMARK_BINARY', str(WORKTREE / 'target
 
 
 class BenchmarkProtocolTests(unittest.TestCase):
-    def test_partial_fact_prefix_does_not_count_and_complete_fact_does(self):
+    def test_visible_fact_excludes_unknown_inventory_heads_and_unidentified_counts(self):
         head = b'a' * 40
-        heads = [head]
+        target = b'b' * 40
+        heads = [head, target]
         for text in (b'Comparing commit history...', b'Observed history:',
                      b'Observed history: ancestor (provisional, com',
-                     b'Observed local: staged=', b'Observed local: staged=0 unstaged=0'):
-            with self.subTest(text=text):
-                self.assertFalse(benchmark.has_useful_fact(text, heads))
-        for text in (b'Observed history: ancestor (provisional, complete); ',
                      b'Observed history: unknown (provisional, partial); ',
+                     b'Observed history: ancestor (provisional, partial); ',
+                     b'Observed history: ancestor (provisional, com\r\x1b[2Kplete); ',
+                     b'Observed local: staged=', b'Observed local: staged=0 unstaged=0',
+                     b'Observed local: staged=UNKNOWN unstaged=UNKNOWN conflicts=UNKNOWN untracked=UNKNOWN ignored=UNKNOWN (provisional); /synthetic/linked',
                      b'Observed local: staged=0 unstaged=0 conflicts=0 untracked=0 ignored=0 ',
-                     b'Observed local: staged=>=1 unstaged=UNKNOWN conflicts=0 untracked=0 ignored=0 ',
                      b'"head": "' + head + b'"'):
             with self.subTest(text=text):
-                self.assertTrue(benchmark.has_useful_fact(text, heads))
-        self.assertFalse(benchmark.has_useful_fact(b'Observed local: staged=0 unstaged=0 conflicts=0 untracked=0 ignored=', heads))
+                self.assertFalse(benchmark.has_useful_fact(text, heads))
+        for relation in (b'identical_commit', b'ancestor', b'not_ancestor'):
+            self.assertTrue(benchmark.has_useful_fact(
+                b'Observed history: ' + relation + b' (provisional, complete); ', heads))
+        for counts in (b'staged=0 unstaged=0 conflicts=0 untracked=0 ignored=0',
+                       b'staged=>=1 unstaged=UNKNOWN conflicts=UNKNOWN untracked=UNKNOWN ignored=UNKNOWN'):
+            self.assertTrue(benchmark.has_useful_fact(
+                b'Observed local: ' + counts + b' (provisional); /synthetic/linked',
+                heads, paths=[b'/synthetic/linked']))
+        self.assertFalse(benchmark.has_useful_fact(
+            b'Observed local: staged=>=0 unstaged=>=0 conflicts=>=0 untracked=>=0 ignored=>=0 (provisional); /synthetic/linked',
+            heads, paths=[b'/synthetic/linked']))
+        history = {'source_oid': head.decode(), 'target_oid': target.decode(),
+            'target_ref': {'hex': b'refs/heads/integration'.hex()}, 'result': 'ancestor', 'stop_reason': None}
+        self.assertTrue(benchmark.has_useful_fact(json.dumps({'history': [history]}).encode(), heads, stream='stdout'))
+        self.assertFalse(benchmark.has_useful_fact(json.dumps({'history': [history]}).encode()[:-3], heads, stream='stdout'))
+        history['result'] = 'unknown'
+        self.assertFalse(benchmark.has_useful_fact(json.dumps({'history': [history]}).encode(), heads, stream='stdout'))
+        history['result'] = 'ancestor'
+        history['stop_reason'] = 'changed source'
+        self.assertFalse(benchmark.has_useful_fact(json.dumps({'history': [history]}).encode(), heads, stream='stdout'))
+        local = {'head': head.decode(), 'worktree_identity': {'device': 1, 'inode': 2},
+            'staged': {'observed': 0, 'complete': True}}
+        self.assertTrue(benchmark.has_useful_fact(json.dumps({'local_summary': local}).encode(), heads, stream='stdout'))
+        local['staged']['complete'] = False
+        self.assertFalse(benchmark.has_useful_fact(json.dumps({'local_summary': local}).encode(), heads, stream='stdout'))
+
+    def test_timestamped_chunks_recompute_first_visible_fact_and_preserve_initial_status(self):
+        with tempfile.TemporaryDirectory(prefix='wt-sweep-benchmark-capture-', dir='/private/tmp') as name:
+            root = Path(name)
+            head = b'a' * 40
+            parts = [('stderr', 10_000_000, b'\r\x1b[2KObserved history: unknown (provisional, partial); '),
+                     ('stderr', 20_000_000, b'\r\x1b[2KObserved history: identical_commit (provisional, com'),
+                     ('stdout', 25_000_000, b'"head": "' + head + b'"'),
+                     ('stderr', 30_000_000, b'plete); /synthetic/linked')]
+            output = {'stdout': bytearray(), 'stderr': bytearray()}
+            chunks = []
+            for stream, elapsed, chunk in parts:
+                chunks.append({'stream': stream, 'offset_bytes': len(output[stream]),
+                               'length_bytes': len(chunk), 'elapsed_ns': elapsed})
+                output[stream].extend(chunk)
+            streams = {}
+            for stream, raw in output.items():
+                destination = root / stream
+                destination.write_bytes(raw)
+                streams[stream] = {'path': str(destination), 'sha256': benchmark.digest_file(destination), 'bytes': len(raw)}
+            capture = root / 'capture.json'
+            capture.write_text(json.dumps({'schema': 'wt-sweep.benchmark-capture/1',
+                'clock': 'time.monotonic_ns', 'streams': streams, 'chunks': chunks}))
+            replay = benchmark.recompute_capture(capture, [head], [b'/synthetic/linked'])
+            self.assertEqual(replay['first_provisional_status_ms'], {'stdout': None, 'stderr': 10})
+            self.assertEqual(replay['first_useful_ms'], {'stdout': None, 'stderr': 30})
+            self.assertEqual(replay['first_fact_details']['stderr']['result'], 'identical_commit')
+            original = json.loads(capture.read_text())
+            with patch.object(benchmark, 'MAX_CAPTURE_CHUNKS', 3), self.assertRaisesRegex(AssertionError, 'cap'):
+                benchmark.recompute_capture(capture, [head], [b'/synthetic/linked'])
+            with patch.object(benchmark, 'MAX_CAPTURE_METADATA', 1), self.assertRaisesRegex(AssertionError, 'metadata cap'):
+                benchmark.recompute_capture(capture, [head], [b'/synthetic/linked'])
+            truncated = copy.deepcopy(original)
+            truncated['chunks'].pop()
+            capture.write_text(json.dumps(truncated))
+            with self.assertRaisesRegex(AssertionError, 'omitted raw bytes'):
+                benchmark.recompute_capture(capture, [head], [b'/synthetic/linked'])
+            corrupted = copy.deepcopy(original)
+            corrupted['chunks'][1]['offset_bytes'] += 1
+            capture.write_text(json.dumps(corrupted))
+            with self.assertRaisesRegex(AssertionError, 'offset'):
+                benchmark.recompute_capture(capture, [head], [b'/synthetic/linked'])
 
     def test_row_oracle_refuses_empty_mismatched_and_contradictory_outputs(self):
         first, second = Path('/synthetic/main'), Path('/synthetic/linked')
@@ -205,6 +271,15 @@ time.sleep(30)
                 self.assertTrue(sample['fixture_rows_verified'])
                 self.assertIsNotNone(sample['first_useful_ms']['stdout'])
                 self.assertIsNotNone(sample['first_useful_ms']['stderr'])
+                capture = Path(sample['capture_path'])
+                self.assertTrue(sample['capture_replay_verified'])
+                self.assertEqual(benchmark.digest_file(capture), sample['capture_sha256'])
+                replay = benchmark.recompute_capture(capture)
+                for key in ('first_output_ms', 'first_useful_ms', 'first_provisional_status_ms', 'first_fact_details'):
+                    self.assertEqual(replay[key], sample[key])
+                self.assertIn(sample['first_fact_details']['stderr']['kind'], ('history_relation', 'local_counts'))
+                if sample['first_fact_details']['stderr']['kind'] == 'history_relation':
+                    self.assertNotEqual(sample['first_fact_details']['stderr']['result'], 'unknown')
                 reports.append(json.loads(destination.read_text()))
         self.assertEqual(original, fixture.manifest())
         report = reports[0]

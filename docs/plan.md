@@ -23,8 +23,9 @@ d’état local provisoires ; seuls le rapport final et ses preuves portent
 la décision complète. Le résumé local doit conserver intent-to-add comme
 travail non indexé, pour les index SHA-1 et SHA-256.
 
-Les résultats de la release intégrée et la recette restent à consigner
-dans le [registre](progress.md). Le [benchmark sur familles jetables](../scripts/benchmark-review.py)
+Les preuves locales sont dans le [registre](progress.md) ; le SHA livré,
+sa CI et la recette intégrée sont suivis dans
+[#13](https://github.com/FlorianBruniaux/wt-sweep/issues/13). Le [benchmark sur familles jetables](../scripts/benchmark-review.py)
 et la [comparaison runtime](research/worktree-runtime-comparison-2026-10-07.md)
 conservent argv, identités des binaires, sorties et limites de preuve. Les
 essais concurrents ne remplacent ni les contrôles Sweep encore attendus

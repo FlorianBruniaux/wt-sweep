@@ -599,6 +599,48 @@ fn review_settings(opts: &Options) -> Result<ReviewSettings, String> {
     })
 }
 
+fn first_collected_observation(
+    observation: &Option<wt_sweep::review::ProgressObservation>,
+    observed_history: &mut bool,
+    observed_local: &mut bool,
+) -> bool {
+    use wt_sweep::review::ProgressObservation;
+    // Pending events remain available in verbose and live progress. A pipe gets
+    // its one milestone only after a relationship or numeric count was collected.
+    match observation {
+        Some(ProgressObservation::History {
+            head,
+            target_oid,
+            result,
+            complete,
+            ..
+        }) if *complete
+            && head.is_some()
+            && target_oid.is_some()
+            && matches!(
+                result.as_str(),
+                "identical_commit" | "ancestor" | "not_ancestor"
+            ) =>
+        {
+            !std::mem::replace(observed_history, true)
+        }
+        Some(ProgressObservation::Local { summary, .. })
+            if [
+                &summary.staged,
+                &summary.unstaged,
+                &summary.conflicts,
+                &summary.untracked,
+                &summary.ignored,
+            ]
+            .iter()
+            .any(|count| count.complete || count.observed > 0) =>
+        {
+            !std::mem::replace(observed_local, true)
+        }
+        _ => false,
+    }
+}
+
 fn produce_review(
     opts: &Options,
     inventory: Inventory,
@@ -633,15 +675,11 @@ fn produce_review(
         &review_options,
         &wt_sweep::local::NativeHooks,
         &mut |event| {
-            let first_observation = match &event.observation {
-                Some(wt_sweep::review::ProgressObservation::History { .. }) => {
-                    !std::mem::replace(&mut observed_history, true)
-                }
-                Some(wt_sweep::review::ProgressObservation::Local { .. }) => {
-                    !std::mem::replace(&mut observed_local, true)
-                }
-                None => false,
-            };
+            let first_observation = first_collected_observation(
+                &event.observation,
+                &mut observed_history,
+                &mut observed_local,
+            );
             progress.update(
                 &wt_sweep::presentation::review_progress(&event),
                 first_observation || matches!(event.phase, "controls" | "complete"),
@@ -829,4 +867,102 @@ fn print(bytes: &[u8]) -> Result<(), String> {
         .lock()
         .write_all(bytes)
         .map_err(|e| e.to_string())
+}
+
+#[cfg(test)]
+mod progress_tests {
+    use super::first_collected_observation;
+    use wt_sweep::{
+        model::{BytePath, LocalSummary},
+        review::ProgressObservation,
+    };
+
+    fn history(result: &str, complete: bool, bound: bool) -> Option<ProgressObservation> {
+        Some(ProgressObservation::History {
+            path: BytePath::from_bytes(b"/fixture/worktree"),
+            head: Some("a".repeat(40)),
+            target_ref: BytePath::from_bytes(b"refs/heads/main"),
+            target_oid: bound.then(|| "b".repeat(40)),
+            result: result.into(),
+            complete,
+        })
+    }
+
+    fn local(observed: usize, complete: bool) -> Option<ProgressObservation> {
+        let mut summary = LocalSummary::default();
+        summary.staged.observed = observed;
+        summary.staged.complete = complete;
+        Some(ProgressObservation::Local {
+            path: BytePath::from_bytes(b"/fixture/worktree"),
+            summary: Box::new(summary),
+        })
+    }
+
+    #[test]
+    fn pending_history_does_not_hide_later_collected_relationship() {
+        let (mut history_seen, mut local_seen) = (false, false);
+        for event in [
+            history("unknown", false, true),
+            history("unknown", true, true),
+            history("ancestor", false, true),
+            history("ancestor", true, false),
+            None,
+        ] {
+            assert!(!first_collected_observation(
+                &event,
+                &mut history_seen,
+                &mut local_seen
+            ));
+            assert!(!history_seen);
+        }
+        assert!(first_collected_observation(
+            &history("ancestor", true, true),
+            &mut history_seen,
+            &mut local_seen
+        ));
+        assert!(!first_collected_observation(
+            &history("identical_commit", true, true),
+            &mut history_seen,
+            &mut local_seen
+        ));
+        assert!(!local_seen);
+    }
+
+    #[test]
+    fn local_unknown_is_followed_by_a_numeric_partial_observation() {
+        let (mut history_seen, mut local_seen) = (false, false);
+        assert!(!first_collected_observation(
+            &local(0, false),
+            &mut history_seen,
+            &mut local_seen
+        ));
+        assert!(!local_seen);
+        assert!(first_collected_observation(
+            &local(2, false),
+            &mut history_seen,
+            &mut local_seen
+        ));
+        assert!(!first_collected_observation(
+            &local(3, true),
+            &mut history_seen,
+            &mut local_seen
+        ));
+        assert!(!history_seen);
+    }
+
+    #[test]
+    fn exact_zero_and_nonintegration_are_useful_independent_facts() {
+        let (mut history_seen, mut local_seen) = (false, false);
+        assert!(first_collected_observation(
+            &local(0, true),
+            &mut history_seen,
+            &mut local_seen
+        ));
+        assert!(first_collected_observation(
+            &history("not_ancestor", true, true),
+            &mut history_seen,
+            &mut local_seen
+        ));
+        assert!(history_seen && local_seen);
+    }
 }

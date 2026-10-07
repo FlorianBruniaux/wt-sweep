@@ -16,8 +16,9 @@ the Cargo package version is a development version.
 - Release review benchmark runner for constant 50/100-worktree fixtures, pipe
   and live PTY output, first collected fact, phase costs and independent source
   conservation. The runner checks exact report identities and executable
-  hashes, ignores partial fact prefixes and terminates its owned process
-  groups on capture errors. Recorded 50/100-worktree samples distinguish
+  hashes, excludes pending statuses and partial fact prefixes, and records
+  bounded timestamped output chunks for offline timing verification. It
+  terminates its owned process groups on capture errors. Recorded 50/100-worktree samples distinguish
   comparable evidence from budget-driven refusals and retain ignored-file costs.
 
 - Controlled runtime comparison of Sweep, Holt and AgentRinse on synthetic
@@ -283,6 +284,10 @@ the Cargo package version is a development version.
 - Kept local handoffs outside tracked source to avoid distributing private paths.
 
 ### Fixed
+
+- Keep the redirected progress milestone available until a known history relation
+  or numeric local count is collected. Pending history and all-unknown local
+  events no longer hide a later useful observation.
 
 - Git output collection waits for readable/writable descriptors instead of
   sleeping after each producer burst. Input/output caps, deadlines, failed

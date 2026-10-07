@@ -5,7 +5,8 @@ Requires Python 3.11+. Example:
 python3.14 -B scripts/benchmark-review.py --binary baseline=/path/to/frozen \
     --binary after=/path/to/frozen --counts 50 100 --modes pipe pty --out /private/tmp/result.json
 OS cache is not cleared. First useful output requires an actual collected fact:
-a complete provisional history status/local counts or a full fixture HEAD, not a heading.
+a known complete displayed history relation or numeric local proof with identity.
+Unknown statuses and inventory HEADs never count. Receipt chunks are saved for offline audit.
 """
 import argparse
 import errno
@@ -28,6 +29,8 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "tests"))
 from test_scale import CliScaleTests, ScaleFixture, decode_path  # Independent real Git fixture/oracle.
 
 MAX_OUTPUT = 32 * 1024 * 1024
+MAX_CAPTURE_CHUNKS = 16384
+MAX_CAPTURE_METADATA = 2 * 1024 * 1024
 
 
 def digest_file(path):
@@ -49,20 +52,169 @@ def stable_digest(value):
                                     separators=(",", ":")).encode()).hexdigest()
 
 
-HISTORY_FACT = re.compile(
+HISTORY_STATUS = re.compile(
     rb"Observed history: (?:identical_commit|ancestor|not_ancestor|unknown) "
     rb"\(provisional, (?:complete|partial)\);")
+HISTORY_FACT = re.compile(
+    rb"Observed history: (?P<result>identical_commit|ancestor|not_ancestor) "
+    rb"\(provisional, complete\);")
 LOCAL_NUMBER = rb"(?:[0-9]+|>=[0-9]+|UNKNOWN)"
 LOCAL_FACT = re.compile(
-    rb"Observed local: staged=" + LOCAL_NUMBER + rb" unstaged=" + LOCAL_NUMBER
-    + rb" conflicts=" + LOCAL_NUMBER + rb" untracked=" + LOCAL_NUMBER
-    + rb" ignored=" + LOCAL_NUMBER + rb"(?=[ \r\n;(\x1b])")
+    rb"Observed local: staged=(?P<staged>" + LOCAL_NUMBER + rb") unstaged=(?P<unstaged>" + LOCAL_NUMBER
+    + rb") conflicts=(?P<conflicts>" + LOCAL_NUMBER + rb") untracked=(?P<untracked>" + LOCAL_NUMBER
+    + rb") ignored=(?P<ignored>" + LOCAL_NUMBER + rb")(?=[ \r\n;(\x1b])")
+FACETS = ("staged", "unstaged", "conflicts", "untracked", "ignored")
 
 
-def has_useful_fact(output, heads):
-    # A prefix or unfinished numeric token may be split across reads.
-    return bool(any(head in output for head in heads)
-                or HISTORY_FACT.search(output) or LOCAL_FACT.search(output))
+def displayed_segments(output):
+    """Never join text across a redraw/line boundary to invent a visible fact."""
+    begin = 0
+    for separator in re.finditer(rb"\r|\n|\x1b\[2K", output):
+        yield begin, output[begin:separator.start()]
+        begin = separator.end()
+    yield begin, output[begin:]
+
+
+def provisional_status_visible(output, stream):
+    return stream == "stderr" and any(HISTORY_STATUS.search(segment) or LOCAL_FACT.search(segment)
+                                      for _, segment in displayed_segments(output))
+
+
+def complete_json_objects(output, pattern):
+    decoder = json.JSONDecoder()
+    for marker in re.finditer(pattern, output):
+        begin = marker.start() if output[marker.start():marker.start() + 1] == b"{" else marker.end()
+        while begin < len(output) and output[begin:begin + 1] in b" \t\r\n":
+            begin += 1
+        if output[begin:begin + 1] != b"{":
+            continue
+        try:
+            text = output[begin:].decode("utf-8")
+            value, end = decoder.raw_decode(text)
+        except (UnicodeDecodeError, json.JSONDecodeError):
+            continue
+        if isinstance(value, dict):
+            yield begin, begin + len(text[:end].encode("utf-8")), value
+
+
+def visible_fact(output, heads, paths=(), stream="stderr"):
+    """An actual visible relation/count, never an inventory HEAD or unknown status."""
+    output = bytes(output)
+    matches = []
+    if stream == "stderr":
+        for begin, segment in displayed_segments(output):
+            for match in HISTORY_FACT.finditer(segment):
+                matches.append((begin + match.end(), {"kind": "history_relation",
+                    "result": match['result'].decode("ascii"), "complete": True,
+                    "start_byte": begin + match.start(), "end_byte": begin + match.end()}))
+            for match in LOCAL_FACT.finditer(segment):
+                tokens = {facet: match[facet].decode("ascii") for facet in FACETS}
+                numeric = any(value.isdecimal() or (value.startswith(">=") and int(value[2:]) > 0)
+                              for value in tokens.values())
+                tail = segment[match.end():]
+                prefix = b" (provisional); "
+                if not numeric or not tail.startswith(prefix):
+                    continue
+                identity = tail[len(prefix):]
+                for path in paths:
+                    if identity.startswith(path) and (len(identity) == len(path) or identity[len(path):len(path) + 1] in b" \t;"):
+                        end = begin + match.end() + len(prefix) + len(path)
+                        matches.append((end, {"kind": "local_counts", "path_hex": path.hex(),
+                            "counts": tokens, "start_byte": begin + match.start(), "end_byte": end}))
+    elif stream == "stdout":
+        known_heads = {head.decode("ascii") for head in heads}
+        for begin, end, value in complete_json_objects(output, rb'\{\s*"source_oid"\s*:'):
+            if (value.get("source_oid") in known_heads and value.get("target_oid") in known_heads
+                    and value.get("target_ref") == {"hex": b"refs/heads/integration".hex()}
+                    and value.get("result") in ("identical_commit", "ancestor", "not_ancestor")
+                    and "stop_reason" in value and value["stop_reason"] is None):
+                matches.append((end, {"kind": "history_relation", "result": value["result"],
+                    "source_oid": value["source_oid"], "target_oid": value["target_oid"],
+                    "complete": True, "start_byte": begin, "end_byte": end}))
+        for begin, end, value in complete_json_objects(output, rb'"local_summary"\s*:\s*'):
+            identity = value.get("worktree_identity") or {}
+            if (value.get("head") not in known_heads or not all(type(identity.get(key)) is int
+                    and identity[key] >= 0 for key in ("device", "inode"))):
+                continue
+            observed = {}
+            for facet in FACETS:
+                count = value.get(facet) or {}
+                number = count.get("observed")
+                if type(number) is int and number >= 0 and (count.get("complete") is True or number > 0):
+                    observed[facet] = {"observed": number, "complete": count.get("complete") is True}
+            if observed:
+                matches.append((end, {"kind": "local_counts", "head": value["head"],
+                    "worktree_identity": identity, "counts": observed, "start_byte": begin, "end_byte": end}))
+    else:
+        raise ValueError("capture stream must be stdout or stderr")
+    return min(matches, key=lambda pair: pair[0])[1] if matches else None
+
+
+def has_useful_fact(output, heads, paths=(), stream="stderr"):
+    return visible_fact(output, heads, paths, stream) is not None
+
+
+def update_capture_timings(output, stream, elapsed_ns, heads, paths, timings):
+    elapsed_ms = elapsed_ns / 1e6
+    if timings["first_output_ms"][stream] is None:
+        timings["first_output_ms"][stream] = elapsed_ms
+    if (timings["first_provisional_status_ms"][stream] is None
+            and provisional_status_visible(output[stream], stream)):
+        timings["first_provisional_status_ms"][stream] = elapsed_ms
+    if timings["first_useful_ms"][stream] is None:
+        fact = visible_fact(output[stream], heads, paths, stream)
+        if fact is not None:
+            timings["first_useful_ms"][stream] = elapsed_ms
+            timings["first_fact_details"][stream] = fact
+
+
+def empty_capture_timings():
+    return {key: {"stdout": None, "stderr": None} for key in (
+        "first_output_ms", "first_provisional_status_ms", "first_useful_ms", "first_fact_details")}
+
+
+def recompute_capture(capture_path, heads=None, paths=None):
+    """Recompute exact receipt-chunk timing from bounded raw streams and offsets."""
+    encoded = capture_path.read_bytes()
+    if len(encoded) > MAX_CAPTURE_METADATA:
+        raise AssertionError("capture metadata cap exceeded")
+    capture = json.loads(encoded)
+    if capture.get("schema") != "wt-sweep.benchmark-capture/1" or capture.get("clock") != "time.monotonic_ns":
+        raise AssertionError("unexpected capture schema/clock")
+    if heads is None:
+        heads = [head.encode("ascii") for head in capture["fixture_identities"]["heads"]]
+    if paths is None:
+        paths = [bytes.fromhex(path) for path in capture["fixture_identities"]["paths_hex"]]
+    streams = capture["streams"]
+    if set(streams) != {"stdout", "stderr"}:
+        raise AssertionError("capture stream set differs")
+    raw = {}
+    for stream, description in streams.items():
+        source = Path(description["path"])
+        if digest_file(source) != description["sha256"]:
+            raise AssertionError("capture stream hash differs")
+        raw[stream] = source.read_bytes()
+        if len(raw[stream]) != description["bytes"]:
+            raise AssertionError("capture stream byte length differs")
+    if sum(map(len, raw.values())) > MAX_OUTPUT or len(capture["chunks"]) > MAX_CAPTURE_CHUNKS:
+        raise AssertionError("capture output/chunk cap exceeded")
+    output = {"stdout": bytearray(), "stderr": bytearray()}
+    timings = empty_capture_timings()
+    previous = -1
+    for chunk in capture["chunks"]:
+        stream, offset, length, elapsed = (chunk[key] for key in ("stream", "offset_bytes", "length_bytes", "elapsed_ns"))
+        if stream not in output or type(offset) is not int or offset != len(output[stream]):
+            raise AssertionError("capture offset discontinuity")
+        if type(length) is not int or not 0 < length <= 65536 or offset + length > len(raw[stream]):
+            raise AssertionError("capture chunk length differs")
+        if type(elapsed) is not int or not max(0, previous) <= elapsed <= 720 * 1_000_000_000:
+            raise AssertionError("capture monotonic timing differs")
+        previous = elapsed
+        output[stream].extend(raw[stream][offset:offset + length])
+        update_capture_timings(output, stream, elapsed, heads, paths, timings)
+    if any(bytes(output[stream]) != raw[stream] for stream in output):
+        raise AssertionError("capture omitted raw bytes")
+    return timings
 
 
 def validate_fixture_rows(report, fixture):
@@ -174,9 +326,10 @@ def measure(binary, fixture, mode, output_path, order="forward", budget="standar
         fcntl.ioctl(slave, termios.TIOCSWINSZ, struct.pack("HHHH", 24, 200, 0, 0))
     selector = selectors.DefaultSelector()
     output = {"stdout": bytearray(), "stderr": bytearray()}
-    first_output = {"stdout": None, "stderr": None}
-    first_useful = {"stdout": None, "stderr": None}
+    timings = empty_capture_timings()
+    chunks = []
     heads = [head.encode() for head in fixture.heads.values()]
+    paths = [os.fsencode(path) for path in fixture.paths]
     started = time.monotonic_ns()
     process = subprocess.Popen(argv, env={**fixture.env, "TERM": "xterm-256color"},
                                stdin=subprocess.DEVNULL, stdout=subprocess.PIPE,
@@ -202,15 +355,17 @@ def measure(binary, fixture, mode, output_path, order="forward", budget="standar
                 if not chunk:
                     selector.unregister(key.fileobj)
                     continue
-                elapsed = (time.monotonic_ns() - started) / 1e6
+                elapsed_ns = time.monotonic_ns() - started
                 stream = key.data
-                if first_output[stream] is None:
-                    first_output[stream] = elapsed
+                offset = len(output[stream])
                 output[stream].extend(chunk)
                 if sum(map(len, output.values())) > MAX_OUTPUT:
                     raise RuntimeError("benchmark output cap reached")
-                if first_useful[stream] is None and has_useful_fact(output[stream], heads):
-                    first_useful[stream] = elapsed
+                if len(chunks) >= MAX_CAPTURE_CHUNKS:
+                    raise RuntimeError("benchmark capture chunk cap reached")
+                chunks.append({"stream": stream, "offset_bytes": offset,
+                               "length_bytes": len(chunk), "elapsed_ns": elapsed_ns})
+                update_capture_timings(output, stream, elapsed_ns, heads, paths, timings)
         returncode = process.wait(timeout=5)
         elapsed = (time.monotonic_ns() - started) / 1e6
         if returncode:
@@ -231,10 +386,27 @@ def measure(binary, fixture, mode, output_path, order="forward", budget="standar
             raise AssertionError("review changed owned fixture bytes/metadata; atime excluded")
         output_path.write_bytes(output["stdout"])
         output_path.with_suffix(".stderr").write_bytes(output["stderr"])
+        capture_path = output_path.with_suffix(".capture.json")
+        capture = {"schema": "wt-sweep.benchmark-capture/1", "clock": "time.monotonic_ns",
+            "fixture_identities": {"heads": [head.decode("ascii") for head in heads],
+                                   "paths_hex": [path.hex() for path in paths]},
+            "limits": {"output_bytes": MAX_OUTPUT, "chunks": MAX_CAPTURE_CHUNKS,
+                       "metadata_bytes": MAX_CAPTURE_METADATA, "timeout_seconds": 720},
+            "streams": {stream: {"path": str(path), "sha256": digest_file(path), "bytes": len(output[stream])}
+                        for stream, path in (("stdout", output_path), ("stderr", output_path.with_suffix(".stderr")))},
+            "chunks": chunks}
+        encoded = (json.dumps(capture, separators=(",", ":")) + "\n").encode("utf-8")
+        if len(encoded) > MAX_CAPTURE_METADATA:
+            raise RuntimeError("benchmark capture metadata cap reached")
+        capture_path.write_bytes(encoded)
+        if recompute_capture(capture_path, heads, paths) != timings:
+            raise AssertionError("offline capture replay differs from live receipt timings")
         phases = (report.get("collection_metrics") or {}).get("phases", [])
         return {"mode": mode, "order": order, "budget_profile": budget, "elapsed_ms": elapsed,
-                "first_output_ms": first_output, "first_useful_ms": first_useful,
-                "first_useful_criterion": "complete provisional history status/local counts or full fixture HEAD; headings/prefixes excluded",
+                **timings,
+                "first_useful_criterion": "known complete displayed history relation or numeric local proof with identity; unknown statuses and inventory HEADs excluded",
+                "capture_path": str(capture_path), "capture_sha256": digest_file(capture_path),
+                "capture_chunks": len(chunks), "capture_replay_verified": True,
                 "fixture_rows_verified": True,
                 "binary_sha256_before": binary_before, "binary_sha256_after": binary_after,
                 "terminal_protocol": {"color": "auto", "stderr_is_pty": mode == "pty",

@@ -254,7 +254,10 @@ impl HistoryRun {
         let bytes = self.metrics.object_bytes;
         let steps = self.metrics.traversal_steps;
         if !job.initialized {
-            self.rows[job.row].observations[job.observation].started_unix_ms = now_ms();
+            let observation = &mut self.rows[job.row].observations[job.observation];
+            observation.started_unix_ms = now_ms();
+            observation.stop_reason =
+                Some("history comparison in progress; relation not established".into());
             if let Err(e) = self.read_commit(family, &source) {
                 self.complete(job, family, "unknown", Some(e.to_string()));
                 return;
@@ -886,6 +889,53 @@ mod deadline_tests {
     }
     fn near_deadline(run: &mut HistoryRun) {
         run.started = Instant::now() - (run.limits.timeout - Duration::from_millis(200));
+    }
+
+    #[test]
+    fn initialized_history_slice_reports_in_progress_instead_of_unexamined() {
+        let f = Fixture::new();
+        let source = f.git(&["rev-parse", "HEAD"]);
+        let tree = f.git(&["rev-parse", "HEAD^{tree}"]);
+        let target = f.git(&["commit-tree", &tree, "-p", &source, "-m", "descendant"]);
+        f.git(&["update-ref", "refs/heads/integration", &target]);
+        let inventory = crate::git::scan_family(&f.0).unwrap();
+        let targets = [BytePath::from_bytes(b"refs/heads/integration")];
+        let bound = FamilyTargets::bind(&inventory, TargetInput::Simple(&targets)).unwrap();
+        let limits = ReviewLimits {
+            slice_object_read_attempts: 1,
+            ..ReviewLimits::default()
+        };
+        let mut events = Vec::new();
+        let run = HistoryRun::collect(
+            &inventory,
+            &bound,
+            &limits,
+            &BTreeMap::new(),
+            &mut |event| events.push(event),
+        )
+        .unwrap();
+        let first = events
+            .iter()
+            .find(|event| event.observation.is_some())
+            .unwrap();
+        assert!(
+            matches!(first.observation.as_ref(), Some(ProgressObservation::History {
+            head, target_oid, result, complete, ..
+        }) if head.as_deref() == Some(source.as_str()) && target_oid.as_deref() == Some(target.as_str())
+            && result == "unknown" && !complete)
+        );
+        assert!(
+            first
+                .stop_reason
+                .as_deref()
+                .unwrap()
+                .contains("in progress"),
+            "an examined slice retained a stale unexamined label: {:?}",
+            first.stop_reason
+        );
+        assert_eq!(run.rows[0].observations[0].result, "ancestor");
+        assert!(run.rows[0].observations[0].stop_reason.is_none());
+        assert!(run.metrics.object_read_attempts >= 2);
     }
 
     #[test]

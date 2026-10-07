@@ -622,7 +622,8 @@ contrôlé ne démontre pas l’activation native du skill dans une nouvelle ses
 
 ### Vérifications locales du lot audit
 
-Sur le code Rust et les assets HTML finaux, `cargo fmt --all -- --check` et
+Au checkpoint `bfdef510`, sur le code Rust et les assets HTML,
+`cargo fmt --all -- --check` et
 Clippy tous targets passent. La suite Rust complète compte 361 succès et
 3 ignorés : benchmark volontaire, entrée enfant exécutée par son test parent et
 import historique nécessitant des données explicitement choisies. La suite
@@ -657,5 +658,35 @@ a ensuite retrouvé les 69 inscriptions Git attendues : neuf `keep`, 60 `verify`
 aucun candidat. Les artefacts texte/JSON/HTML concordent ; le navigateur les lit
 hors ligne. Les 69 résumés locaux restent partiels et seules dix mesures disque
 sur 71 sont complètes. Le commit local `bfdef510` a été essayé ; deux pushes ont
-été refusés pendant une panne GitHub. Publication, CI distante et recette sur
-le SHA intégré restent à vérifier dans #13. Aucun nettoyage réel exécuté.
+été refusés pendant une panne GitHub avant la publication de la
+[PR #15](https://github.com/FlorianBruniaux/wt-sweep/pull/15). La
+[CI de `1e058f4`](https://github.com/FlorianBruniaux/wt-sweep/actions/runs/37644846382)
+a ensuite réussi. Ce contrôle précède le correctif du premier fait visible
+décrit dans le benchmark ; il ne valide pas ce correctif. Le SHA livré, sa CI
+et la recette intégrée sont suivis dans
+[#13](https://github.com/FlorianBruniaux/wt-sweep/issues/13). Aucun nettoyage réel exécuté.
+
+
+### Correction du premier fait visible
+
+La relecture du benchmark a distingué le premier statut provisoire du premier
+fait collecté lisible. Les anciennes mesures conservaient parfois un statut
+`unknown`/`partial` comme premier résultat ; elles ne prouvent pas ce second
+délai. Le [registre de mesure](research/collection-benchmark-2026-10-07.md)
+conserve ces essais et la campagne complémentaire avec ses propres binaires.
+
+La sortie redirigée réserve désormais son jalon d’histoire à une relation connue
+complète, et son jalon local à un compte exact ou une borne positive. Un événement
+entièrement inconnu ne consomme plus ce jalon. Le terminal interactif et le mode
+détaillé gardent les états provisoires. Le libellé d’un parcours commencé devient
+`history comparison in progress; relation not established` ; le jugement final reste inchangé.
+
+Trois tests de séquence passent après deux échecs attendus sur l’ancien gate.
+Le test réel de progression passe, ainsi que sept tests du protocole et huit
+scénarios console/PTY. La régression Git avec tranche d’une lecture a échoué
+sur le libellé initial puis passé après correction. Formatage et Clippy tous
+targets passent. La release est figée à
+`e8a87860773e566b12f8696812591981101380d225f85de0944b4a87bd35f4e3`,
+avec les 35 préimages source vérifiées avant et après construction puis relues
+indépendamment. Les contrôles complets du SHA livré restent identifiés par le
+lien de CI dans [#13](https://github.com/FlorianBruniaux/wt-sweep/issues/13).

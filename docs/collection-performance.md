@@ -83,17 +83,24 @@ les mesures ci-dessus restent dans ce registre si le dossier temporaire dispara�
 ## Premier fait utile sur 50 et 100 worktrees
 
 La [mesure du 07/10/2026](research/collection-benchmark-2026-10-07.md)
-compare deux binaires release figés, avec sorties redirigée et PTY séparées.
-Le premier statut d’histoire complet arrive après 3,4 à 3,5 secondes sur le
-corpus de 50 worktrees en standard, puis 5,6 à 6 secondes sur celui de 100
-worktrees en thorough. Ce statut reste provisoire ; les verdicts attendent
-les vérifications finales. Les preuves, plafonds et états des fixtures sont
-identiques à l’intérieur de chaque couple retenu.
+compare des binaires release figés, avec sorties redirigée et PTY séparées.
+La campagne finale mesure une relation Git connue effectivement affichée :
+environ 1,3 à 2 secondes sur 50 worktrees et 3,4 à 4 secondes sur 100, avec le
+profil `thorough`. Ces quatre couples conservent les mêmes preuves, plafonds
+et états des fixtures. Il s’agit d’un échantillon par couple sur cette machine,
+pas d’un délai garanti. Les verdicts attendent les vérifications finales.
+Les octets reçus et leurs horodatages permettent de rejouer la mesure hors ligne.
 
-Un couple à 100 worktrees en standard a été refusé comme benchmark comparable :
-les délais locaux et privés avaient produit des preuves différentes. Le rapport
-conserve ce résultat, dont un temps total après reste inconnu. Le passage en
-thorough utilise le profil public existant ; aucun plafond produit n’a changé.
+Deux couples finaux à 50 worktrees en standard restent non comparables : un
+délai local par ligne a interrompu une lecture malgré un budget global encore
+disponible. Le complément `thorough` à 50 a été choisi après ces refus ; ils
+restent dans le registre. Les temps totaux varient dans les deux sens et ne
+démontrent pas une accélération générale. Aucun plafond produit n’a été changé.
+
+La campagne historique conserve aussi un couple refusé à 100 worktrees en
+standard, dont un temps total après reste inconnu. Ses anciennes mesures du
+premier statut pouvaient compter `unknown`/`partial` ; elles ne prouvent pas
+le délai d’affichage d’un fait utile et restent attribuées à leur ancien binaire.
 
 La sonde séparée de 400 fichiers ignorés conserve 50 worktrees et leurs raisons
 de `keep`. Elle mesure les lectures locales, mais ne se compare pas au temps
