@@ -2,7 +2,7 @@
 use super::text;
 use crate::{
     discover::{DiscoveryPhase, DiscoveryProgress},
-    model::{LocalSummary, Review, ReviewItem, ReviewView},
+    model::{Coverage, LocalSummary, Review, ReviewItem, ReviewView},
     review::ProgressEvent,
 };
 use std::{collections::BTreeSet, fmt::Write};
@@ -172,6 +172,7 @@ fn render(review: &Review, rows: &[&ReviewItem], filtered: bool) -> String {
             "  Source totals: {k} keep, {c} candidates, {v} to verify"
         );
     }
+    crate::disk::render_summary(review.disk_usage.as_ref(), &mut output);
     let complete = review
         .items
         .iter()
@@ -248,26 +249,8 @@ fn render(review: &Review, rows: &[&ReviewItem], filtered: bool) -> String {
             "  None for unresolved worktrees. Retention reasons remain in the detail."
         );
     }
-    if let Some(metrics) = &review.collection_metrics {
-        let _ = writeln!(output, "\nCOLLECTION TIME");
-        for phase in &metrics.phases {
-            let title = match phase.name.as_str() {
-                "controls" => "Identity and protections",
-                "history" => "Commit history",
-                "local" => "Local files",
-                "deep" => "Candidate object verification",
-                "private_history" => "Private history",
-                "revalidation" => "Final checks",
-                "context" => "Optional context",
-                _ => "Other checks",
-            };
-            let _ = writeln!(
-                output,
-                "  {title}: {:.1}s",
-                phase.elapsed_ms as f64 / 1000.0
-            );
-        }
-    }
+    write_discovery_performance(&review.coverage, &mut output);
+    write_collection_performance(review, &mut output);
     let limits = limits(review);
     if !limits.is_empty() {
         let _ = writeln!(output, "\nCOLLECTION LIMITS");
@@ -293,6 +276,104 @@ fn render(review: &Review, rows: &[&ReviewItem], filtered: bool) -> String {
         "\nUsage by agents or terminals: not checked.\nRead-only review; no removal authorized.\nIncomplete checks do not mean a worktree is clean."
     );
     output
+}
+
+fn rate(count: u64, elapsed_ms: u64, unit: &str) -> String {
+    if elapsed_ms == 0 {
+        return "rate unavailable (<1 ms)".into();
+    }
+    format!("{:.1} {unit}/s", count as f64 * 1000.0 / elapsed_ms as f64)
+}
+
+pub fn write_discovery_performance(coverage: &Coverage, output: &mut impl Write) {
+    let Some(metrics) = &coverage.discovery_metrics else {
+        return;
+    };
+    let complete = coverage.traversal_complete
+        && coverage.gaps.is_empty()
+        && coverage.remaining.is_none()
+        && coverage.publication.is_none();
+    let _ = writeln!(output, "\nDISCOVERY PERFORMANCE (source inventory)");
+    let _ = writeln!(
+        output,
+        "  Elapsed: {:.3}s; metadata workers: {}",
+        metrics.elapsed_ms as f64 / 1000.0,
+        metrics.workers
+    );
+    let _ = writeln!(
+        output,
+        "  Directory read attempts: {}; entries listed: {}",
+        metrics.directory_read_attempts, metrics.entries_listed
+    );
+    if metrics.directory_read_attempts > 0 {
+        let _ = writeln!(
+            output,
+            "  Average discovery throughput: {}",
+            rate(metrics.entries_listed as u64, metrics.elapsed_ms, "entries")
+        );
+    }
+    let _ = writeln!(
+        output,
+        "  Coverage: {}; {} gaps. Timing excludes disk sizing, local analysis and publication.",
+        if complete { "complete" } else { "incomplete" },
+        coverage.gaps.len()
+    );
+}
+
+fn phase_title(name: &str) -> &'static str {
+    match name {
+        "controls" => "Identity and protections",
+        "history" => "Commit history",
+        "local" => "Local files",
+        "deep" => "Candidate object verification",
+        "private_history" => "Private history",
+        "revalidation" => "Final checks",
+        "context" => "Optional context",
+        _ => "Other checks",
+    }
+}
+
+pub fn write_collection_performance(review: &Review, output: &mut impl Write) {
+    let Some(metrics) = &review.collection_metrics else {
+        return;
+    };
+    let _ = writeln!(output, "\nCOLLECTION TIME");
+    let mut total = 0_u64;
+    for phase in &metrics.phases {
+        total = total.saturating_add(phase.elapsed_ms);
+        let _ = write!(
+            output,
+            "  {}: {:.1}s",
+            phase_title(&phase.name),
+            phase.elapsed_ms as f64 / 1000.0
+        );
+        if let Some(paths) = phase.counters.get("paths_checked") {
+            let _ = write!(
+                output,
+                "; {paths} paths checked ({})",
+                rate(*paths, phase.elapsed_ms, "paths")
+            );
+        }
+        if let Some(processes) = phase.counters.get("git_processes") {
+            let _ = write!(output, "; {processes} Git processes");
+        }
+        let _ = writeln!(output);
+    }
+    let _ = writeln!(
+        output,
+        "  Recorded phases: {:.1}s (excludes discovery, disk size measurement and publication)",
+        total as f64 / 1000.0
+    );
+    if total > 0 {
+        if let Some(slowest) = metrics.phases.iter().max_by_key(|phase| phase.elapsed_ms) {
+            let _ = writeln!(
+                output,
+                "  Slowest phase: {} ({:.1}% of recorded collection time)",
+                phase_title(&slowest.name),
+                slowest.elapsed_ms as f64 * 100.0 / total as f64
+            );
+        }
+    }
 }
 
 // Diagnostic wording only: never used to determine a verdict or completeness.
@@ -363,20 +444,23 @@ pub fn discovery_progress(event: &DiscoveryProgress) -> String {
     match event.phase {
         DiscoveryPhase::Start => "Discovering repositories...".into(),
         DiscoveryPhase::Progress => format!(
-            "  Searching: {} repositories found; {} known paths pending",
+            "  Searching: {} repositories found; {} known paths pending; {:.1}s; {}",
             event.families,
             event
                 .queued_paths
-                .saturating_add(event.metadata_ready_paths)
+                .saturating_add(event.metadata_ready_paths),
+            event.elapsed_ms as f64 / 1000.0,
+            rate(event.entries as u64, event.elapsed_ms, "entries")
         ),
         DiscoveryPhase::Finished => format!(
-            "Discovery finished: {} repositories found{}",
+            "Discovery finished: {} repositories found{}; {:.3}s",
             event.families,
             event
                 .stop
                 .as_ref()
                 .map(|s| format!("; stopped: {}", s.as_str()))
-                .unwrap_or_default()
+                .unwrap_or_default(),
+            event.elapsed_ms as f64 / 1000.0
         ),
     }
 }

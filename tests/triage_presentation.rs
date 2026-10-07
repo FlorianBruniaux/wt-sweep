@@ -353,3 +353,42 @@ fn recap_distinguishes_justified_retention_from_unresolved_checks() -> Result<()
     );
     Ok(())
 }
+
+#[test]
+fn performance_recap_uses_measured_denominators_and_preserves_verdicts()
+-> Result<(), Box<dyn std::error::Error>> {
+    let original = report()?;
+    let mut json = serde_json::to_value(&original)?;
+    json["coverage"]["discovery_metrics"] = serde_json::json!({
+        "elapsed_ms": 2000, "directory_read_attempts": 64, "entries_listed": 500, "workers": 4
+    });
+    json["collection_metrics"] = serde_json::json!({
+        "budget_profile": "standard", "applied_limits": {}, "phases": [
+            {"name": "history", "elapsed_ms": 1000, "counters": {}},
+            {"name": "local", "elapsed_ms": 3000, "counters": {"paths_checked": 3000, "git_processes": 12}}
+        ]
+    });
+    let mut measured: Review = serde_json::from_value(json)?;
+    let summary = wt_sweep::presentation::summary(&measured);
+    for expected in [
+        "250.0 entries/s",
+        "1000.0 paths/s",
+        "12 Git processes",
+        "Local files (75.0%",
+        "Keep: 1",
+        "Needs verification: 1",
+    ] {
+        assert!(summary.contains(expected), "missing {expected}: {summary}");
+    }
+    // Less than one clock millisecond has no stable rate, and absent counters are not zero.
+    if let Some(metrics) = &mut measured.collection_metrics {
+        metrics.phases[1].elapsed_ms = 0;
+        metrics.phases[1].counters.remove("git_processes");
+    }
+    let summary = wt_sweep::presentation::summary(&measured);
+    assert!(!summary.contains("1000.0 paths/s"));
+    assert!(!summary.contains("0 Git processes"));
+    assert!(!summary.contains("inf"));
+    assert!(!summary.contains("NaN"));
+    Ok(())
+}

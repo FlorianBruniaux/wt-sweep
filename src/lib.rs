@@ -1,5 +1,6 @@
 pub mod cancel;
 pub mod discover;
+pub mod disk;
 pub mod forge;
 pub mod git;
 pub mod local;

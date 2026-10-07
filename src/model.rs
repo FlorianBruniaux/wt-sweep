@@ -162,6 +162,9 @@ pub struct Gap {
 #[derive(Clone, Debug, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct Coverage {
+    /// Diagnostic telemetry from discovery, never a completeness or decision proof.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub discovery_metrics: Option<DiscoveryMetrics>,
     pub traversal_complete: bool,
     pub temporal_consistency: String,
     pub gaps: Vec<Gap>,
@@ -175,6 +178,16 @@ pub struct Coverage {
     pub remaining: Option<DiscoveryRemainder>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub publication: Option<PublicationOmissions>,
+}
+
+/// Monotonic wall time; listing counts include incomplete discovery, not verified files.
+#[derive(Clone, Debug, Default, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct DiscoveryMetrics {
+    pub elapsed_ms: u64,
+    pub directory_read_attempts: usize,
+    pub entries_listed: usize,
+    pub workers: usize,
 }
 
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
@@ -288,6 +301,8 @@ pub struct Inventory {
     pub not_collected: Vec<String>,
     #[serde(default)]
     pub local_inventories: Vec<LocalInventory>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub disk_usage: Option<crate::disk::DiskUsage>,
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
@@ -410,6 +425,7 @@ impl Inventory {
             finished_unix_ms: started_unix_ms,
             families: Vec::new(),
             coverage: Coverage {
+                discovery_metrics: None,
                 traversal_complete: false,
                 temporal_consistency: "not_guaranteed".into(),
                 gaps: Vec::new(),
@@ -425,6 +441,7 @@ impl Inventory {
                 "restoration, writer exclusion and current remote state".into(),
             ],
             local_inventories: Vec::new(),
+            disk_usage: None,
         }
     }
     pub fn finish(&mut self) {
@@ -704,6 +721,9 @@ pub struct Observations {
 #[derive(Clone, Debug, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct Review {
+    /// Captured size observations from the source inventory, never decision evidence.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub disk_usage: Option<crate::disk::DiskUsage>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub context: Option<ReviewContext>,
     pub schema: String,

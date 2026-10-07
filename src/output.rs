@@ -377,6 +377,11 @@ fn publish(
 }
 
 fn render_inventory(inventory: &Inventory, text: &mut impl std::fmt::Write) {
+    crate::presentation::write_discovery_performance(&inventory.coverage, text);
+    if let Some(disk) = &inventory.disk_usage {
+        crate::disk::render(disk, &inventory.families, text);
+    }
+    let _ = writeln!(text);
     let _ = writeln!(text, "STATE\tHEAD\tBRANCH\tPATH");
     for root in &inventory.coverage.roots {
         let _ = writeln!(text, "Root: {}", root.display());
@@ -709,7 +714,8 @@ fn prepared(
 ) -> Result<PreparedInventory, SweepError> {
     let json = bounded_json(&inventory, limits.json_bytes)?;
     let report = inventory_table_bounded(&inventory, limits.report_bytes)?;
-    let partial = !inventory.coverage.traversal_complete
+    let partial = inventory.disk_usage.as_ref().is_some_and(|d| !d.complete)
+        || !inventory.coverage.traversal_complete
         || !inventory.coverage.gaps.is_empty()
         || inventory.coverage.remaining.is_some()
         || inventory.coverage.publication.is_some();

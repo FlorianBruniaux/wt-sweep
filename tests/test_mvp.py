@@ -344,6 +344,10 @@ finally:
                               for w in family["worktrees"]}, set(self.fixture.expected))
             stable = {key: value for key, value in inventory.items()
                       if key not in ("started_unix_ms", "finished_unix_ms")}
+            # Only execution settings and elapsed time vary; keep all observed counters.
+            metrics = stable["coverage"]["discovery_metrics"]
+            metrics.pop("elapsed_ms")
+            metrics.pop("workers")
             if baseline is None:
                 baseline = stable
             else:

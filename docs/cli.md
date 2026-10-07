@@ -10,10 +10,11 @@ for example `--workers 4`. `scan`, `plan`, `review`, `forge`, `forge commandes` 
 
 ```text
 wt-sweep review (--repo PATH | --root PATH... | --all)
-  [--workers 1..8] [all plan options except --inventory]
+  [--workers 1..8] [--disk-usage] [--disk-budget standard|thorough]
+  [all plan options except --inventory]
 
 wt-sweep scan (--repo PATH | --root PATH... | --all)
-  [--workers 1..8] [--local] [--format json|table]
+  [--workers 1..8] [--local] [--disk-usage] [--disk-budget standard|thorough] [--format json|table]
   [--out FILE | --run-dir BASE]
 
 wt-sweep plan --inventory FILE [--target FULL_REF... | --target-map FILE]
@@ -301,6 +302,25 @@ can therefore give each worktree less than its maximum allowance.
 
 ## Collection metrics and console results
 
+Discovery records optional `coverage.discovery_metrics` on inventories and their
+inherited review coverage. `elapsed_ms` uses a monotonic clock. The other fields
+are `directory_read_attempts` (including failed reads), `entries_listed` (files
+and directories returned by listings), and the requested metadata `workers`.
+Counts include work done before a stop. They do not count verified file contents.
+A `--repo` scan reads the Git family directly, so its traversal counts are zero.
+
+Progress on stderr shows elapsed time and average entries per second. Text
+reports include a `DISCOVERY PERFORMANCE` block with the same counts and a
+separate complete/incomplete coverage status. Rates are unavailable below one
+millisecond. No completion percentage or finish-time estimate is inferred from
+the pending queue: the full filesystem size is unknown. Discovery timing includes
+Git family validation, but excludes local analysis and report publication.
+For `plan`, this block describes the saved source inventory, not a fresh scan.
+
+See the [Rust benchmark recipe](collection-performance.md#benchmark-rust-reproductible)
+for a controlled comparison of worker settings. `--workers 4` is a setting to
+measure, not a promised speedup.
+
 Current `wt-sweep.review/2` reports can include optional `collection_metrics`:
 `budget_profile`, a numeric `applied_limits` map, and `phases` entries with
 `name`, `elapsed_ms` and `counters`. The phases describe controls, commit history,
@@ -323,7 +343,10 @@ may need an update to accept the new optional field.
 The console's `Resolved verdicts` counts `keep` plus `cleanup_candidate`, with
 `verify` listed separately. A positive retention reason can resolve `keep` even
 when other candidate conditions remain unknown. `CHECKS STILL NEEDED` lists
-conditions for unresolved rows; `COLLECTION TIME` shows recorded phase timings.
+conditions for unresolved rows; `COLLECTION TIME` shows recorded phase timings,
+local paths per second and Git process counts where those counters exist. The
+slowest phase's percentage uses the sum of recorded collection phases only.
+A missing counter stays absent; a partial scan can still have measured throughput.
 All source gaps remain in JSON and the detailed report.
 
 ## Exit codes
@@ -337,3 +360,31 @@ All source gaps remain in JSON and the detailed report.
 Diagnostics go to stderr. There is no separate exit code for incomplete coverage;
 consumers must inspect the JSON and [receipt status](contracts.md#run-receipts).
 `apply` always returns `2` because preservation and approval gates are not verified.
+
+## Disk usage
+
+`scan --disk-usage` and `review --disk-usage` measure logical file lengths and allocated blocks for each
+registered worktree and shared Git directory. It reads metadata without hashing
+contents; hidden and ignored files are included. It does not follow symlinks.
+The total deduplicates device/inode pairs across rows; allocated bytes are not
+an estimate of reclaimable APFS space. Missing sizes remain unknown.
+
+Limits: 30 seconds and 500,000 entries per root, 600 seconds and 2,000,000 entries
+overall, depth 128. `--disk-budget thorough` raises these limits to 120 seconds
+and 1,000,000 entries per root, 1,800 seconds and 10,000,000 entries overall.
+It requires `--disk-usage`. A cap, error, directory mutation or refused boundary makes
+that measurement partial. Discovery coverage remains separate; a complete size
+walk cannot account for repositories discovery missed.
+
+`review --disk-usage` measures after discovery, before decision evidence collection.
+Its disk budget is independent of `--budget`. It covers all inventoried roots,
+including when `--worktree` focuses Git/local checks or display filters select a
+subset. The console and report label that scope. The summary shows recorded
+totals and completeness; `report.txt` lists sizes per root. `review.json` retains
+the same `disk_usage` block as `inventory.json`, or `source.disk_usage` in a view.
+
+`plan` carries captured disk observations and their original interval into its
+reports without recounting sizes. Old inventories remain readable. When sizes
+were not collected, review and plan say so explicitly; no zero total is invented.
+Rendering is deterministic from captured data and requires no LLM. See the
+[disk usage guide](disk-usage.md) for examples and JSON.

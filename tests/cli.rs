@@ -123,3 +123,56 @@ fn combined_review_rejects_invalid_options_before_discovery() {
         );
     }
 }
+
+#[test]
+fn disk_budget_requires_measurement_and_a_known_profile_before_discovery() {
+    for command in ["scan", "review"] {
+        for (extra, message) in [
+            (
+                vec!["--disk-budget", "thorough"],
+                "--disk-budget requires --disk-usage",
+            ),
+            (
+                vec!["--disk-usage", "--disk-budget", "unbounded"],
+                "--disk-budget must be standard or thorough",
+            ),
+        ] {
+            let mut args = vec![command, "--repo", "/must/not/read"];
+            args.extend(extra);
+            let output = run(&args);
+            assert_eq!(output.status.code(), Some(2));
+            let diagnostic = String::from_utf8_lossy(&output.stderr);
+            assert!(diagnostic.contains(message), "{diagnostic}");
+            assert!(!diagnostic.contains("Discovering repositories"));
+            assert!(output.stdout.is_empty());
+        }
+    }
+}
+
+#[test]
+fn thorough_disk_profile_is_recorded_on_an_empty_explicit_scope() {
+    let output = run(&[
+        "scan",
+        "--root",
+        "/does-not-exist-wt-sweep-size-fixture",
+        "--disk-usage",
+        "--disk-budget",
+        "thorough",
+        "--format",
+        "json",
+    ]);
+    assert!(
+        output.status.success(),
+        "{}",
+        String::from_utf8_lossy(&output.stderr)
+    );
+    let value: serde_json::Value = serde_json::from_slice(&output.stdout).expect("JSON");
+    assert_eq!(value["disk_usage"]["limits"]["max_entries"], 10_000_000);
+    assert_eq!(value["coverage"]["traversal_complete"], false);
+    assert!(
+        !value["coverage"]["gaps"]
+            .as_array()
+            .expect("gaps")
+            .is_empty()
+    );
+}

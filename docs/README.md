@@ -16,6 +16,7 @@ dates of their observations.
 | [Tutoriel en français](tutorial.fr.md) | One-command review, disposable trial, tests, advanced replay and a copyable assistant prompt. |
 | [Assistant skill (French)](assistant-skill.md) | Claude/Codex invocation, progressive report reading, cleanup suggestions and local verification. |
 | [Getting started](getting-started.md) | macOS setup, disposable demo, report interpretation and troubleshooting. |
+| [Espace disque](disk-usage.md) | Taille par worktree, Git partagé, total dédupliqué et limites de la mesure. |
 | [CLI reference](cli.md) | Implemented commands, output rules, exit codes and collection limits. |
 | [Targets and filters](targets-and-filters.md) | Select refs per repository and inspect a subset while retaining source evidence. |
 | [Offline forge imports](forge.md) | Supported exports, capture receipts and limits of MR/PR association. |
@@ -30,7 +31,7 @@ dates of their observations.
 | [Architecture](architecture.md) | Module responsibilities, data flow, read boundaries and test strategy. |
 | [Native boundaries](native-boundaries.md) | Three reviewed private unsafe boundaries and their evidence limits. |
 | [AI development harness](harness.md) | Canonical instructions, generated host files and separate checks for native activation. |
-| [Collection measurements](collection-performance.md) | Budget profiles, phase metrics, distinct-content regressions, shared traversal, targeted collection and observed coverage. |
+| [Collection measurements](collection-performance.md) | Discovery throughput, reproducible Rust benchmark, budget profiles, phase metrics and observed coverage. |
 | [Implementation results](progress.md) | Current checkpoint links followed by the dated U1-U4 validation record. |
 | [Finishing ledger](finish-ledger.md) | Historical RETEX checkpoint, current triage checks, repository trial and remaining gates. |
 

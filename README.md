@@ -239,10 +239,21 @@ protected reads, including its Git children. If that policy cannot be establishe
 the operation is refused. Access failures and timeouts remain visible. A completed
 walk is still an interval of observations, not an atomic filesystem snapshot.
 
+Discovery reports include elapsed time and entries per second. Review summaries
+identify the slowest measured collection phase. The [performance guide and Rust
+benchmark](docs/collection-performance.md#benchmark-rust-reproductible) explain
+how to compare worker settings without losing coverage.
+
 The [architecture](docs/architecture.md) and [evidence contracts](docs/contracts.md)
 describe the read and publication boundaries.
 
 ---
+
+**Disk usage:** add `--disk-usage` to `scan` or `review` for allocated and logical
+sizes per worktree, shared Git storage and a deduplicated total. The CLI writes
+these figures directly to the console recap, text report and JSON. `plan` retains
+captured measurements. Ignored files are included; incomplete measurements stay
+visible. [Measure disk usage](docs/disk-usage.md).
 
 ## Documentation
 

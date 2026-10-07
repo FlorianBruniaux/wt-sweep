@@ -27,6 +27,24 @@ Consulter le [workflow](https://github.com/FlorianBruniaux/wt-sweep/actions/work
 pour le statut d'un commit précis. La publication des sources ne constitue pas
 une release binaire.
 
+## Espace disque
+
+Ajouté dans le checkout local : `scan --disk-usage` et `review --disk-usage`,
+tailles par worktree et administration Git, total dédupliqué par inode et mesures
+partielles explicites. Les tailles sont intégrées au bilan console, au rapport
+texte et au JSON ; `plan` conserve les observations capturées.
+Le [guide disque](disk-usage.md) donne la commande et les limites. L’estimation
+d’espace réellement récupérable sur APFS reste hors de ce comptage.
+
+## Mesure de performance
+
+Le checkout ajoute le débit de découverte, les durées monotones et un benchmark
+Rust facultatif à résultats constants. La [recette de mesure](collection-performance.md#benchmark-rust-reproductible)
+compare 1 et 4 workers ; elle ne promet aucune accélération sur d’autres disques.
+Les prochains contrôles restent le coût des appels Git pour les ignorés, l’index
+`intent-to-add`, puis les budgets et la reprise d’une découverte globale. Les
+indicateurs ne lèvent pas ces limites de collecte.
+
 ## Accompagnement par un assistant
 
 Le [skill du dépôt](assistant-skill.md) fournit un parcours de revue et de lecture

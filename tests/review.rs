@@ -164,3 +164,73 @@ fn current_review_references_large_historical_manifest_without_copying_entries()
     assert_eq!(value["local_inventory_refs"][0]["not_collected_count"], 1);
     assert!(serde_json::to_vec(&value).unwrap().len() < 4096);
 }
+
+#[test]
+fn disk_observations_are_digested_and_rendered_without_changing_verdicts() {
+    use wt_sweep::disk::{DiskBytes, DiskKind, DiskLimits, DiskMeasurement, DiskUsage};
+    let mut facts = observations();
+    let without_disk = wt_sweep::review::judge(&facts).unwrap();
+    facts.inventory.disk_usage = Some(DiskUsage {
+        started_unix_ms: 10,
+        finished_unix_ms: 20,
+        elapsed_ms: 10,
+        limits: DiskLimits::default(),
+        complete: false,
+        temporal_consistency: "not_guaranteed".into(),
+        unique_bytes: DiskBytes {
+            logical: 1024,
+            allocated: 4096,
+        },
+        measurements: vec![DiskMeasurement {
+            path: facts.items[0].path.clone(),
+            kind: DiskKind::Worktree,
+            identity: None,
+            bytes: Some(DiskBytes {
+                logical: 1024,
+                allocated: 4096,
+            }),
+            complete: false,
+            entries_checked: 2,
+            excluded_registered_roots: 0,
+            elapsed_ms: 10,
+            gaps: vec![],
+            gaps_omitted: 0,
+        }],
+    });
+    let with_disk = wt_sweep::review::judge(&facts).unwrap();
+    let value = serde_json::to_value(&with_disk).unwrap();
+    assert_eq!(
+        value["disk_usage"],
+        serde_json::to_value(&facts.inventory.disk_usage).unwrap()
+    );
+    assert_eq!(
+        serde_json::to_value(&with_disk.items).unwrap(),
+        serde_json::to_value(&without_disk.items).unwrap()
+    );
+    assert_ne!(with_disk.digest_sha256, without_disk.digest_sha256);
+    let mut tampered = value.clone();
+    tampered["disk_usage"]["unique_bytes"]["allocated"] = 8192.into();
+    let tampered: Review = serde_json::from_value(tampered).unwrap();
+    assert_ne!(
+        wt_sweep::output::canonical_digest(&tampered).unwrap(),
+        with_disk.digest_sha256
+    );
+    let repeated = wt_sweep::review::judge(&facts).unwrap();
+    assert_eq!(value, serde_json::to_value(&repeated).unwrap());
+    let detail = wt_sweep::presentation::detail(&with_disk);
+    let summary = wt_sweep::presentation::summary(&with_disk);
+    assert_eq!(detail, wt_sweep::presentation::detail(&repeated));
+    assert_eq!(summary, wt_sweep::presentation::summary(&repeated));
+    for text in [&detail, &summary] {
+        assert!(text.contains("4.00 KiB"));
+        assert!(text.contains("INCOMPLETE: totals cover observed entries only"));
+        assert!(text.contains("Disk observation interval (Unix ms): 10..20"));
+    }
+    assert!(wt_sweep::presentation::detail_bounded(&with_disk, detail.len() - 1).is_err());
+    let mut old = value;
+    old.as_object_mut().unwrap().remove("disk_usage");
+    assert!(
+        serde_json::from_value::<Review>(old).is_ok(),
+        "old reviews remain readable"
+    );
+}

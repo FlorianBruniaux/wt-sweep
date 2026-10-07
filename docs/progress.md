@@ -17,6 +17,92 @@ réussie avant fusion de la vérification du commit fusionné. La
 [feuille de route](roadmap.md) garde le diagnostic de performance prioritaire.
 E1 reste non démontrée et `apply` indisponible.
 
+## Espace disque, 06/10/2026
+
+Le checkout local ajoute `scan --disk-usage`, `review --disk-usage` et
+`--disk-budget standard|thorough`. Le rapport final et le récapitulatif console
+rendent les mesures capturées directement depuis la CLI. `plan` les conserve
+avec leur intervalle d’origine ; les filtres gardent les totaux de la source.
+Une absence de mesure est affichée explicitement.
+Le collecteur mesure les métadonnées par descripteur, sans lire le contenu des
+fichiers. Les tailles allouées et logiques sont publiées par dossier de travail
+et administration Git, avec total dédupliqué par périphérique/inode. Les autres
+racines enregistrées imbriquées sont comptées séparément. Le tri du rapport par
+taille conserve branche, chemin et dépôt ; les lacunes restent explicites.
+Le [guide disque](disk-usage.md) précise les plafonds et la limite APFS.
+
+Les sept scénarios initiaux du collecteur passent : fichiers ignorés et creux, liens symboliques,
+liens physiques locaux et partagés, racines imbriquées, budgets, racine absente ou
+remplacée, noms avec caractères de contrôle et dépôt nu. Les neuf tests CLI
+passent, y compris le refus d’un profil invalide et l’acceptation de `thorough`.
+Une première fixture utilisait un nom non UTF-8 refusé par APFS ; elle utilise
+maintenant tabulation et saut de ligne. Ce contrôle ne prouve pas la gestion
+native de noms non UTF-8 sur un autre système de fichiers.
+
+Avant l’intégration au rapport de revue, la suite Rust exécutée avec un seul test à la fois passe : 336 tests,
+plus trois ignorés. Une exécution concurrente avait dépassé le délai du test de
+transport de 32 Mio ; son rejeu isolé passe en 5,66 s sans modifier le seuil.
+La suite Python complète a exécuté 277 cas, avec six ignorés et deux échecs de
+sous-scénarios dans le test d’ordre sur 46 et 100 worktrees. L’écart porte sur
+`cleanup_candidate` contre `verify` entre deux collectes. Ce passage n’est pas
+vert. La charge de la machine et des collectes concurrentes était élevée ; cela
+ne suffit pas à attribuer la cause. Le rejeu isolé termine en 443,879 s : le
+sous-scénario à 46 worktrees passe, celui à 100 conserve l’écart de verdict.
+Ce constat reste ouvert ; la validation Python globale n’est pas acquise.
+Les tests et les plafonds n’ont pas été modifiés pour contourner cet échec.
+Formatage, Clippy et build release passent à ce checkpoint. Le SHA-256 de ce binaire release
+est `3bd01ef53f49d386edbbba999f7c5ceab8d8654c1dedf935a0896e32705d61db`.
+
+Les README, aide CLI, contrats, changelog, index et roadmap sont alignés. Les
+22 projections d’instructions restent synchronisées. Les 179 liens locaux et
+sept blocs shell contrôlés sont valides. La publication GitHub reste à faire.
+Les mesures personnelles restent hors du dépôt.
+
+### Raccordement au rapport final
+
+`review` accepte la mesure dans la même commande que l’analyse. Les tests ajoutés
+vérifient la publication native des tailles dans la console, le texte et le JSON,
+leur conservation par `plan` après modification des fichiers, le même rendu pour
+les mêmes observations et l’absence d’effet sur un verdict positif de candidat.
+Une vue filtrée conserve toutes les mesures et n’affiche le bilan qu’une fois.
+Les métriques précisent que la mesure disque a sa propre durée.
+
+La suite Rust complète passe avec 340 tests et 3 ignorés. Les deux derniers
+libellés de temps ont ensuite été revérifiés par 26 tests ciblés du rendu, du
+jugement et de la mesure. Les 32 scénarios Python de revue et de publication
+passent également. Formatage, Clippy et build release
+passent. Un essai release sur deux dossiers de travail et une administration Git
+jetables retrouve les octets alloués de l’oracle `stat` et publie les mêmes données
+dans `inventory.json` et `review.json`. Le binaire de ce raccordement a pour SHA-256
+`dec98c6dea3accf9fe74b009eeb9b25fc5ff731b431a5cfb09659985182d2826`.
+Ces contrôles n’effacent pas l’échec d’ordre à 100 worktrees décrit plus haut.
+
+## Indicateurs de performance, 06/10/2026
+
+Le checkout local `codex/scan-performance` ajoute durée monotone, tentatives de
+lecture de dossiers, entrées listées et workers dans les métriques de découverte.
+La console affiche le débit et la couverture séparément. Les revues ajoutent le
+débit local, les appels Git mesurés et la part de la phase la plus longue.
+Le [benchmark Rust](collection-performance.md#benchmark-rust-reproductible)
+compare les workers sur une fixture constante avec vérification de conservation.
+
+Les tests ont d’abord échoué sur l’absence de métriques et leur rejet par le
+lecteur, puis passé après raccordement. La suite complète compte 327 tests Rust
+réussis et trois ignorés, dont le benchmark exécuté séparément avec succès.
+La suite Python 3.14 compte 277 cas : 271 réussis et six ignorés. Une première
+invocation avec Python 3.9 a échoué sur `hashlib.file_digest` et a été interrompue ;
+elle ne fait pas partie du résultat de validation. Formatage, Clippy et contrôle
+des 22 projections passent. Les 373 liens documentaires locaux existent et les
+six blocs shell des README et guides modifiés sont syntaxiquement valides.
+
+La mesure isolée donne une médiane de 1,043 s à un worker et 1,157 s à quatre,
+pour 2 218 entrées avec couverture complète dans les deux cas. Les plages se
+chevauchent ; aucun gain du parallélisme n’est établi. Le
+[registre des mesures](collection-performance.md#mesure-locale-du-06102026)
+conserve le corpus, les empreintes et les limites. Aucun scan global réel ni
+publication distante n’a été exécuté pour ce lot. Les 60 secondes de découverte
+et l’absence de reprise restent des limites distinctes.
+
 ## Profils et grands scénarios A1-A6, 06/10/2026
 
 Le lot ajoute les profils finis `standard|thorough`, les plafonds appliqués et

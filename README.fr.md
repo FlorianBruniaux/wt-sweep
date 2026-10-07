@@ -261,7 +261,18 @@ précisent les limites de lecture et de publication des rapports.
 
 ---
 
+**Espace disque :** ajouter `--disk-usage` à `scan` ou `review` pour mesurer chaque
+worktree et son dossier Git partagé, avec un total dédupliqué. La CLI écrit les
+chiffres dans le récapitulatif console, le rapport texte et le JSON. `plan` conserve
+les mesures capturées. Les fichiers ignorés sont inclus et les mesures partielles
+signalées. [Mesurer l’espace disque](docs/disk-usage.md).
+
 ## Documentation
+
+Les rapports affichent le temps de découverte et le débit d’entrées listées.
+Les bilans de revue indiquent la phase de collecte la plus longue. Le
+[guide de performance et benchmark Rust](docs/collection-performance.md#benchmark-rust-reproductible)
+permet de comparer les workers sur un corpus constant, avec contrôle de couverture.
 
 | Guide | Contenu |
 | --- | --- |

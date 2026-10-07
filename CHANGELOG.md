@@ -9,6 +9,23 @@ the Cargo package version is a development version.
 
 ### Added
 
+- Opt-in `scan --disk-usage` and `review --disk-usage`: allocated and logical sizes per worktree and
+  shared Git directory, inode-deduplicated totals, bounded metadata-only walks
+  and explicit partial measurements. Includes ignored files, hardlink and
+  nested-root accounting, tests and a [disk usage guide](docs/disk-usage.md).
+  `review` publishes sizes in its console recap, `report.txt` and `review.json`;
+  `plan` carries captured sizes and their original interval from the inventory.
+  Filters retain source totals. Missing measurements are explicit, and disk
+  accounting never changes cleanup verdicts.
+
+- Discovery performance in progress, text reports and optional
+  `coverage.discovery_metrics`: monotonic elapsed time, directory-read attempts,
+  listed entries and worker count. Console rates stay separate from coverage.
+- Review recaps show measured local paths per second, per-phase Git process
+  counts when available, and the slowest recorded collection phase.
+- An opt-in Rust discovery benchmark compares one and four metadata workers on
+  the same disposable Git corpus, checking exact results and source conservation.
+
 - `review` and `plan --budget standard|thorough` select finite collection
   allowances. Standard preserves the previous defaults; thorough permits larger
   local inventories, commit graphs and private-history checks. Applied limits

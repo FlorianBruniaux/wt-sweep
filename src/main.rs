@@ -9,8 +9,8 @@ use wt_sweep::{
 const HELP: &str = "Worktree Sweep (wt-sweep)
 
 Usage:
-  wt-sweep review (--repo PATH | --root PATH... | --all) [--workers 1..8] [PLAN OPTIONS]
-  wt-sweep scan (--repo PATH | --root PATH... | --all) [--workers 1..8] [--local] [--format json|table] [--out FILE | --run-dir BASE]
+  wt-sweep review (--repo PATH | --root PATH... | --all) [--workers 1..8] [--disk-usage] [--disk-budget standard|thorough] [PLAN OPTIONS]
+  wt-sweep scan (--repo PATH | --root PATH... | --all) [--workers 1..8] [--local] [--disk-usage] [--disk-budget standard|thorough] [--format json|table] [--out FILE | --run-dir BASE]
   wt-sweep plan --inventory FILE [--target FULL_REF... | --target-map FILE] [--filter-repo PATH] [--path-prefix PATH] [--branch FULL_REF] [--local-state clean|dirty|unknown] [--verdict keep|cleanup_candidate|verify] [--group-by repo|directory] [--changelog-path RELATIVE...] [--no-context] [--forge FILE] [--summary] [--format json|table] [--out FILE | --run-dir BASE]
   wt-sweep forge commandes
   wt-sweep forge ingerer --raw FILE [--receipt FILE] [--out FILE | --run-dir BASE]
@@ -23,6 +23,7 @@ Use --target for one repository family, or --target-map for explicit targets per
 Filters select reviewed rows; JSON views retain the full source and its coverage.
 Global discovery reports gaps and does not establish a machine-wide snapshot.
 --workers bounds parallel metadata reads; aggregation order stays deterministic.
+--disk-usage measures file sizes and allocated blocks without reading contents (scan and review).
 --local hashes local files and index within explicit budgets; gaps remain visible.
 review and plan report readable progress on stderr and keep JSON on stdout.
 --summary prints verdicts, collection coverage and remaining checks.
@@ -72,7 +73,10 @@ fn options(args: &[OsString], allowed: &[&str], repeat: &[&str]) -> Result<Optio
             return Err(format!("repeated option {arg}"));
         }
         index += 1;
-        let value = if matches!(arg, "--all" | "--summary" | "--local" | "--no-context") {
+        let value = if matches!(
+            arg,
+            "--all" | "--summary" | "--local" | "--no-context" | "--disk-usage"
+        ) {
             OsString::from("true")
         } else {
             let value = args
@@ -130,11 +134,11 @@ fn run(args: Vec<OsString>) -> Result<(), String> {
 fn command_help(command: &str) -> Result<(), String> {
     let usage = match command {
         "scan" => {
-            "wt-sweep scan (--repo PATH | --root PATH... | --all) [--workers 1..8] [--local] [--format json|table] [--out FILE | --run-dir BASE]"
+            "wt-sweep scan (--repo PATH | --root PATH... | --all) [--workers 1..8] [--local] [--disk-usage] [--disk-budget standard|thorough] [--format json|table] [--out FILE | --run-dir BASE]"
         }
         "plan" => "wt-sweep plan --inventory FILE [REVIEW OPTIONS]",
         "review" => {
-            "wt-sweep review (--repo PATH | --root PATH... | --all) [--workers 1..8] [REVIEW OPTIONS]"
+            "wt-sweep review (--repo PATH | --root PATH... | --all) [--workers 1..8] [--disk-usage] [--disk-budget standard|thorough] [REVIEW OPTIONS]"
         }
         "forge" => {
             "wt-sweep forge commandes | ingerer --raw FILE [--receipt FILE] [--out FILE | --run-dir BASE]"
@@ -147,10 +151,10 @@ fn command_help(command: &str) -> Result<(), String> {
     };
     let notes = match command {
         "scan" => {
-            "Discovery requires an explicit scope. --local additionally hashes local content within budgets.\nProgress is on stderr. Gaps and unfinished scope remain in the inventory.\n"
+            "Discovery requires an explicit scope. --disk-usage measures registered roots, including ignored files, without hashing.\nDisk budgets: 30s/500,000 entries per root; 600s/2,000,000 entries overall; depth 128.\n--disk-budget thorough: 120s/1,000,000 entries per root; 1800s/10,000,000 overall.\nAllocated blocks are not a reclaim estimate; partial measurements remain explicit.\n--local additionally hashes local content within budgets.\nProgress is on stderr, with elapsed time and average listing throughput.\nReports retain discovery metrics and coverage separately. Gaps and unfinished scope remain in the inventory.\n"
         }
         "plan" | "review" => {
-            "REVIEW OPTIONS:\n  --budget standard|thorough (default: standard; larger finite collection allowances)\n  --target FULL_REF... | --target-map FILE\n  --worktree ABSOLUTE_PATH (collect evidence for this exact recorded worktree)\n  --filter-repo PATH  --path-prefix PATH  --branch FULL_REF\n  --local-state clean|dirty|unknown  --verdict keep|cleanup_candidate|verify\n  --group-by repo|directory  --forge FILE\n  --changelog-path RELATIVE... | --no-context\n  --summary  --format json|table  --out FILE | --run-dir BASE\n\nTargets must be explicit; no target leaves integration unknown.\nFilters select rows after judgement and retain source coverage in JSON views.\n--worktree narrows history/local/private/context reads; full inventory and identity checks remain.\nOther rows explicitly retain missing evidence. Add --path-prefix for a focused display.\n--summary cannot be combined with --format json. Progress is on stderr.\n--run-dir needs an existing directory outside inspected targets.\nreview saves inventory.json, review.json, report.txt and run.json together.\nplan reuses a saved inventory and saves review.json, report.txt and run.json.\nA cleanup_candidate still requires confirmation of its use. apply is unavailable.\n"
+            "REVIEW OPTIONS:\n  --budget standard|thorough (default: standard; larger finite collection allowances)\n  --target FULL_REF... | --target-map FILE\n  --worktree ABSOLUTE_PATH (collect evidence for this exact recorded worktree)\n  --filter-repo PATH  --path-prefix PATH  --branch FULL_REF\n  --local-state clean|dirty|unknown  --verdict keep|cleanup_candidate|verify\n  --group-by repo|directory  --forge FILE\n  --changelog-path RELATIVE... | --no-context\n  --summary  --format json|table  --out FILE | --run-dir BASE\n\nTargets must be explicit; no target leaves integration unknown.\nFilters select rows after judgement and retain source coverage in JSON views.\n--worktree narrows history/local/private/context reads; full inventory and identity checks remain.\nOther rows explicitly retain missing evidence. Add --path-prefix for a focused display.\n--summary cannot be combined with --format json. Progress is on stderr.\n--run-dir needs an existing directory outside inspected targets.\nreview accepts --disk-usage [--disk-budget standard|thorough] for metadata-only sizes.\nDisk measurement covers all inventoried roots, independently of --worktree and display filters.\nIts budget is separate from --budget; defaults: 30s/root, 600s overall; thorough: 120s/root, 1800s overall.\nreview saves inventory.json, review.json, report.txt and run.json together.\nplan reuses saved disk observations with their original interval; it does not recount sizes.\nplan saves review.json, report.txt and run.json.\nA cleanup_candidate still requires confirmation of its use. apply is unavailable.\n"
         }
         _ => {
             "Offline evidence only. No network command is executed by these subcommands.\ncommandes prints capture guidance; ingerer reads captured raw data and its receipt.\n"
@@ -170,11 +174,15 @@ fn scan(args: &[OsString]) -> Result<(), String> {
             "--format",
             "--workers",
             "--local",
+            "--disk-usage",
+            "--disk-budget",
             "--run-dir",
         ],
         &["--root"],
     )?;
+    let disk_limits = disk_settings(&opts)?;
     let mut inventory = collect_inventory(&opts)?;
+    collect_disk(&mut inventory, disk_limits.as_ref())?;
     let publication_limits = PublicationLimits::default();
     if opts.contains_key("--local") {
         collect_local(&mut inventory, &publication_limits);
@@ -199,6 +207,46 @@ fn scan(args: &[OsString]) -> Result<(), String> {
             inventory_json: None,
         },
     )
+}
+
+fn disk_settings(opts: &Options) -> Result<Option<wt_sweep::disk::DiskLimits>, String> {
+    let limits = match opts.get("--disk-budget").and_then(|values| values.first()) {
+        Some(_) if !opts.contains_key("--disk-usage") => {
+            return Err("--disk-budget requires --disk-usage".into());
+        }
+        Some(value) if value == "standard" => wt_sweep::disk::DiskLimits::default(),
+        Some(value) if value == "thorough" => wt_sweep::disk::DiskLimits::thorough(),
+        Some(_) => return Err("--disk-budget must be standard or thorough".into()),
+        None => wt_sweep::disk::DiskLimits::default(),
+    };
+    Ok(opts.contains_key("--disk-usage").then_some(limits))
+}
+
+fn collect_disk(
+    inventory: &mut Inventory,
+    limits: Option<&wt_sweep::disk::DiskLimits>,
+) -> Result<(), String> {
+    if let Some(disk_limits) = limits {
+        eprintln!("Measuring registered worktrees and shared Git directories...");
+        wt_sweep::disk::collect(inventory, disk_limits, &mut |row| {
+            let size = row
+                .bytes
+                .as_ref()
+                .map(|b| wt_sweep::disk::human_bytes(b.allocated))
+                .unwrap_or_else(|| "unknown".into());
+            eprintln!(
+                "  {}: {size} ({})",
+                row.path.display(),
+                if row.complete {
+                    "complete"
+                } else {
+                    "incomplete"
+                }
+            );
+        })
+        .map_err(|e| e.to_string())?;
+    }
+    Ok(())
 }
 
 fn collect_inventory(opts: &Options) -> Result<Inventory, String> {
@@ -385,10 +433,19 @@ fn plan(args: &[OsString]) -> Result<(), String> {
 
 fn review(args: &[OsString]) -> Result<(), String> {
     let mut allowed = PLAN_OPTIONS.to_vec();
-    allowed.extend(["--repo", "--root", "--all", "--workers"]);
+    allowed.extend([
+        "--repo",
+        "--root",
+        "--all",
+        "--workers",
+        "--disk-usage",
+        "--disk-budget",
+    ]);
     let opts = options(args, &allowed, &["--root", "--target", "--changelog-path"])?;
     let settings = review_settings(&opts)?;
-    let inventory = collect_inventory(&opts)?;
+    let disk_limits = disk_settings(&opts)?;
+    let mut inventory = collect_inventory(&opts)?;
+    collect_disk(&mut inventory, disk_limits.as_ref())?;
     produce_review(&opts, inventory, settings, true)
 }
 
@@ -558,7 +615,11 @@ fn produce_review(
         RunInfo {
             command: if combined { "review" } else { "plan" },
             name: "review.json",
-            partial: !review.coverage.gaps.is_empty()
+            partial: review
+                .disk_usage
+                .as_ref()
+                .is_some_and(|usage| !usage.complete)
+                || !review.coverage.gaps.is_empty()
                 || !review.coverage.traversal_complete
                 || review.coverage.remaining.is_some()
                 || review.coverage.publication.is_some()

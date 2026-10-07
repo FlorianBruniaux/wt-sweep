@@ -960,3 +960,25 @@ fn optional_context_cannot_change_any_triage_verdict_or_condition() {
         assert_ne!(before.digest_sha256, after.digest_sha256);
     }
 }
+
+#[test]
+fn optional_incomplete_disk_measurement_does_not_change_a_candidate() {
+    let mut facts = candidate();
+    let baseline = wt_sweep::review::judge(&facts).unwrap();
+    assert_eq!(baseline.items[0].classification, "cleanup_candidate");
+    facts.inventory.disk_usage = Some(wt_sweep::disk::DiskUsage {
+        started_unix_ms: 10,
+        finished_unix_ms: 20,
+        elapsed_ms: 10,
+        limits: wt_sweep::disk::DiskLimits::default(),
+        complete: false,
+        temporal_consistency: "not_guaranteed".into(),
+        unique_bytes: Default::default(),
+        measurements: vec![],
+    });
+    let measured = wt_sweep::review::judge(&facts).unwrap();
+    assert_eq!(
+        serde_json::to_value(&baseline.items).unwrap(),
+        serde_json::to_value(&measured.items).unwrap()
+    );
+}

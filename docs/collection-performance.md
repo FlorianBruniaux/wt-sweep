@@ -2,6 +2,84 @@
 
 [Index documentaire](README.md) · [Limites CLI](cli.md#resource-limits) · [Collecte ciblée](targets-and-filters.md#complete-the-evidence-for-one-worktree)
 
+## Indicateurs de performance
+
+Le bilan de `scan` affiche le temps de découverte, les tentatives de lecture de
+dossiers, le nombre d’entrées listées, le débit moyen et les workers demandés.
+Ces mesures sont aussi conservées dans `coverage.discovery_metrics`. Le temps
+vient de `std::time::Instant` ; aucun crate supplémentaire n’est nécessaire.
+Les entrées listées comprennent fichiers et dossiers. Les worktrees enregistrés
+hors racine peuvent être trouvés sans parcourir leur contenu.
+
+`review --summary` ajoute le débit de la phase locale et ses appels Git, lorsque
+ces compteurs sont présents. La phase la plus longue apparaît avec sa part du
+temps de collecte enregistré. La découverte et la publication restent hors de
+ce total. Avec `plan`, les mesures de découverte viennent de l’inventaire source.
+
+Lire la couverture à côté du débit : une collecte qui atteint son plafond peut
+être rapide et incomplète. Un compteur absent reste absent. Le nombre de chemins
+connus en attente ne permet pas de calculer un pourcentage d’avancement fiable.
+Le plafond de découverte reste de 60 secondes ; le profil `thorough` ne le change
+pas. Aucun point de reprise du parcours n’est ajouté par ces mesures.
+
+## Benchmark Rust reproductible
+
+Depuis le checkout, exécuter le test facultatif en mode release :
+
+```sh
+cargo test --release --locked --offline --test discover benchmark_discovery -- --ignored --exact --nocapture
+```
+
+Le test crée une arborescence privée sous `/private/tmp`, avec deux familles Git,
+quatre worktrees, un dépôt caché et 2 048 fichiers synthétiques répartis dans
+64 dossiers. Il compare 1 et 4 workers avec un échauffement chacun, puis trois
+mesures par configuration en alternant leur ordre. Il affiche minimum, médiane,
+maximum, débit et ratio des durées médianes. Il vérifie à chaque passage les
+familles et chemins exacts, la couverture complète, les mêmes unités de travail
+et la conservation des octets, modes, identités et mtime de la fixture.
+
+La génération et la vérification de la fixture sont hors chronométrage. La mesure
+couvre l’appel Rust de découverte, pas le démarrage de la CLI ni la publication.
+Le cache du système n’est pas vidé. Exécuter ce benchmark seul, hors suites de
+tests concurrentes, et comparer des runs sur le même hôte et le même corpus.
+Noter le commit et le diff local avec les résultats. Aucun seuil de durée absolu
+ne fait échouer la CI ; un parcours incomplet ou une conservation violée échoue.
+
+Le premier levier disponible est `--workers 1..8`, pour les métadonnées. Les appels
+Git restent séquentiels. Si les processus Git dominent la phase locale, réduire
+leurs appels ou mieux les grouper demande une mesure distincte sur cette phase.
+Augmenter `--budget` autorise davantage de travail ; cela ne rend pas une lecture
+plus rapide. Toute optimisation doit conserver les résultats et la couverture
+pour que la comparaison ait un sens.
+
+### Mesure locale du 06/10/2026
+
+Benchmark exécuté en release sur macOS aarch64, après la fin des suites Rust et
+Python. Chaque passage a visité 107 dossiers et listé 2 218 entrées, Git inclus.
+Les deux familles et quatre worktrees attendus sont présents ; couverture
+complète et manifeste de conservation inchangé pour les huit passages.
+
+| Workers | Minimum | Médiane | Maximum | Débit à la médiane |
+| --- | --- | --- | --- | --- |
+| 1 | 0,925 s | 1,043 s | 1,306 s | 2 125,7 entrées/s |
+| 4 | 0,871 s | 1,157 s | 1,222 s | 1 917,4 entrées/s |
+
+Le ratio des durées médianes est de 1,11 pour 4 contre 1 worker. Les plages se
+chevauchent : ce passage ne démontre aucun gain du parallélisme. Ce corpus local
+ne mesure ni une machine entière, ni les performances de l’analyse des fichiers
+locaux d’un gros dépôt. Le cache système et les autres applications ne sont pas
+contrôlés ; trois échantillons ne suffisent pas à établir une distribution de
+latence générale.
+
+Identités de cette mesure : base `98a9a4bc0520a16f5759cbaff54127631a353ba2`,
+branche locale `codex/scan-performance` avec changements non commités.
+SHA-256 du diff `src/` et `tests/` :
+`778e7b6079ee8c9942dc71ef01fbd7fcd5f882e5df842e8af46e815178589d94`.
+SHA-256 de l’exécutable de benchmark :
+`1cdb8d3ca677bb2ab14ef219a7f293b12b98bef739c373d6c08d264983f601d1`.
+La sortie locale est conservée dans `/private/tmp/wt-sweep-perf-benchmark.log` ;
+les mesures ci-dessus restent dans ce registre si le dossier temporaire disparaît.
+
 ## Profils et mesure d’une nouvelle collecte
 
 `review` et `plan` acceptent `--budget standard|thorough`. Standard conserve les

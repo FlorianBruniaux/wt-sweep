@@ -2097,6 +2097,7 @@ pub fn judge(facts: &Observations) -> Result<Review, SweepError> {
         item.risks.push("no removal authorized; ACLs, xattrs and unreachable objects outside enumerated roots are outside preservation scope".into());
     }
     let mut review = Review {
+        disk_usage: facts.inventory.disk_usage.clone(),
         context: facts.context.clone(),
         shared_stashes: facts.shared_stashes.clone(),
         history_metrics: facts.history_metrics.clone(),

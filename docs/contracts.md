@@ -70,9 +70,21 @@ outside this manifest. See [limits](cli.md#resource-limits),
 
 ## Discovery remainder and publication omissions
 
-Inventory coverage can contain two optional fields. Readers that reject unknown
+Inventory coverage can contain optional fields. Readers that reject unknown
 fields need this extended inventory contract. Absent fields preserve the earlier
 canonical representation.
+
+`coverage.discovery_metrics` holds diagnostic `elapsed_ms`,
+`directory_read_attempts`, `entries_listed` and `workers`. Elapsed time is
+monotonic and covers discovery only, including Git family validation. Directory
+reads count attempts, including failures; listed entries count files and
+directories returned before stopping, including hidden and ignored entries.
+Direct `--repo` discovery has zero traversal counts. No telemetry field is a
+proof of completeness or a triage condition. Review coverage carries the source
+inventory's metrics unchanged, including when `plan` reads an older inventory.
+Older inventories without this field remain readable; strict older binaries may
+reject the addition. Rates are derived for display, not stored as floating-point
+facts. A zero recorded duration does not yield a rate.
 
 `coverage.remaining` records a global discovery stop: `interrupted`, `deadline`,
 `entry_budget`, `directory_budget` or `observation_budget`. `known_pending_paths`
@@ -604,3 +616,30 @@ The additional inventory artifact is written and synced before the receipt.
 An inventory write or sync failure has the same incomplete-publication semantics
 as a review or report failure. Existing scan/plan/forge runs keep their artifact
 sets. stdout and `--out` emit the review alone.
+
+## Optional disk accounting
+
+Inventory `/1` and review `/2` accept optional `disk_usage`, absent unless
+requested with `scan --disk-usage` or `review --disk-usage`. Judgement copies the
+source inventory block unchanged into the review, where the canonical digest
+covers it. A filtered view retains it in `source.disk_usage`, with all source
+measurements and totals regardless of selected paths. This diagnostic block
+never establishes cleanup eligibility or changes C1-C5.
+`measurements` contains path bytes, root identity, `kind` (`worktree` or
+`git_common`), optional `bytes` (`logical`, `allocated`), `complete`, entries
+checked, excluded registered roots, duration and capped gap examples with an
+omitted count. Null bytes mean no measurement; partial bytes mean observed data.
+
+`unique_bytes` deduplicates device/inode identities across every measured root.
+`complete` concerns the disk walks, independently of discovery coverage. The
+block also records limits, timestamps, monotonic elapsed time and
+`temporal_consistency: not_guaranteed`. Per-row totals may overlap; APFS shared
+extents and reclaimable storage are not measured. See [disk accounting semantics](disk-usage.md).
+
+Publication retains this block intact, including when unrelated inventory rows
+are compacted, or refuses publication if it exceeds the mandatory budget.
+Disk incompleteness makes scan/review receipts partial. `plan` retains captured
+sizes and timestamps without a new disk walk. Text reports and console summaries
+render this block deterministically; absent measurements are labeled as such.
+Detailed reports preserve every disk root, even when review rows are filtered.
+The size observation interval is separate from the later decision interval.
