@@ -1,0 +1,27 @@
+CHANGELOG.md
+  s_05ea773ff72f20::t_45906364ad48dc 12-15
+docs/README.md
+  s_05ea773ff72f20::t_65d8ce500ffe7d 39
+docs/progress.md
+  s_05ea773ff72f20::t_cdaf338cb42c21 653-661
+docs/research/multi-project-acceptance-2026-10-07.md
+  s_05ea773ff72f20::t_cb91c39e0845ba 1-50
+tests/data/acceptance/multi-project-2026-10-07.json
+  s_05ea773ff72f20::t_e8849d35d784d7 1-236
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "1e058f4cec9ea494dccd441f8112c39caace2ad4",
+  "prompts": {},
+  "sessions": {
+    "s_05ea773ff72f20": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a116be-a2cd-75a1-a076-6afacdef72a0",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "Florian BRUNIAUX <florian@bruniaux.com>"
+    }
+  }
+}
