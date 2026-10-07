@@ -10,7 +10,7 @@ publish = false
 [dependencies]
 serde = { version = "=1.0.228", features = ["derive"] }
 serde_json = "=1.0.150"
-rustix = { version = "=1.1.4", features = ["fs"] }
+rustix = { version = "=1.1.4", features = ["fs", "termios"] }
 sha2 = "=0.10.9"
 sha1-checked = "=0.10.0"
 libc = "=0.2.189"

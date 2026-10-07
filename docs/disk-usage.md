@@ -22,8 +22,9 @@ Depuis le checkout de Worktree Sweep, sur macOS :
     --root "$HOME/.codex/worktrees" \
     --disk-usage \
     --disk-budget thorough \
+    --html \
     --run-dir "$report_dir"
-  open -a TextEdit "$report_dir"/run-*/report.txt
+  open "$report_dir"/run-*/report.html
 )
 ```
 
@@ -50,15 +51,19 @@ Pour un dépôt et sa cible d’intégration, depuis le checkout de Worktree Swe
     --disk-budget thorough \
     --group-by directory \
     --summary \
+    --html \
     --run-dir "$report_dir"
-  open -a TextEdit "$report_dir"/run-*/report.txt
+  open "$report_dir"/run-*/report.html
 )
 ```
 
 La section `DISK USAGE` apparaît dans le récapitulatif console et dans le rapport
 final `report.txt`. Le détail liste les tailles par dossier ; le récapitulatif
 affiche le total et la couverture de la mesure. Les octets exacts sont également
-dans `inventory.json` et `review.json`.
+dans `inventory.json` et `review.json`. Une mesure partielle reste marquée
+`INCOMPLETE` à côté du volume affiché. La progression compte les dossiers visités
+sans afficher tous leurs chemins ; `--verbose` rétablit ces lignes et les
+métriques détaillées. Les intervalles de mesure restent dans le rapport complet.
 
 `--disk-usage` reste explicite, car parcourir les métadonnées peut être coûteux.
 Sans cette option, `review` indique que les tailles n’ont pas été mesurées.
@@ -70,6 +75,12 @@ Le budget disque est indépendant de `--budget`, qui concerne les vérifications
 Git et locales. Le comptage disque couvre **toutes les racines inventoriées** :
 `--worktree` et les filtres de présentation ne le réduisent pas. Les totaux sont
 étiquetés en conséquence, même si une seule ligne de revue est sélectionnée.
+
+Avec `--html --run-dir`, le [rapport HTML par famille](html-report-plan.md)
+affiche les mêmes mesures capturées. La recherche et les filtres du navigateur
+changent les lignes visibles, sans recalculer les totaux source. L’absence de
+mesure et les lacunes restent affichées ; `run.json` lie aussi `report.html`.
+`report.txt` reste disponible dans le même dossier.
 
 ## Lire le bilan
 

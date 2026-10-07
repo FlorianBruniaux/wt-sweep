@@ -46,6 +46,7 @@ seulement si c’est bien votre cible. Dans Claude Code, remplacez `$wt-sweep` p
 ```text
 $wt-sweep Analyse les worktrees du dépôt /chemin/du/clone.
 La cible d’intégration confirmée est refs/heads/develop.
+Produis un rapport HTML hors ligne et mesure l’espace disque.
 Regroupe par répertoire. Donne d’abord le bilan global, puis examine les
 worktrees par groupes de cinq. Explique les éléments à conserver, les preuves
 manquantes et les candidats signalés par la CLI. Termine par une liste ordonnée
@@ -54,8 +55,9 @@ de vérifications et de suggestions pour préparer le nettoyage. Ne supprime rie
 
 L’assistant doit montrer le périmètre et les refs, vérifier l’aide de la CLI,
 lancer une revue dans une nouvelle sortie et conserver son code de retour.
-Il lit ensuite les artefacts sauvegardés ; les messages de progression ne
-remplacent pas le rapport.
+Il lit ensuite les artefacts sauvegardés, vérifie le reçu et donne le chemin
+du HTML. Les messages de progression sont provisoires et ne remplacent pas le
+rapport final. Les tailles allouées ne prédisent pas un gain récupérable sur APFS.
 
 ## Reprendre un rapport sans relancer l’analyse
 

@@ -3,8 +3,10 @@ use crate::model::{BytePath, LocalCount, Review, ReviewItem, ReviewView};
 use std::fmt::Write;
 
 mod console;
+pub mod html;
 pub use console::{
-    discovery_progress, review_progress, summary, view_summary, write_discovery_performance,
+    compact_summary, compact_view_summary, discovery_progress, review_progress, summary,
+    view_summary, write_discovery_performance,
 };
 
 fn text(value: &str, limit: usize) -> String {

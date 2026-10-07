@@ -113,8 +113,9 @@ référence manque localement.
     show-ref --verify --quiet "$target_ref"
   report_dir="$(mktemp -d /private/tmp/wt-sweep-report.XXXXXX)"
   "$sweep_bin" review --repo "$repo_path" --target "$target_ref" \
-    --summary --run-dir "$report_dir"
+    --summary --disk-usage --html --run-dir "$report_dir"
   printf 'Rapports : %s\n' "$report_dir"
+  open "$report_dir"/run-*/report.html
 )
 ```
 
@@ -122,7 +123,10 @@ Gardez `XXXXXX` tel quel : `mktemp` le remplace par un suffixe unique. Le dossie
 des rapports doit se trouver hors du dépôt, de ses worktrees enregistrés et de
 ses administrations Git. `review` découvre la famille puis collecte les preuves
 courantes. Son nouveau dossier contient l’inventaire original `inventory.json`,
-la revue `review.json`, le détail `report.txt` et le reçu `run.json`.
+la revue `review.json`, le détail `report.txt`, le bilan hors ligne `report.html`
+et le reçu `run.json`. Le HTML regroupe les worktrees par famille Git, avec
+recherche, tri et preuves repliables. Les totaux source, sélectionnés et visibles
+restent distincts. Consultez le [guide du rapport HTML](docs/html-report-plan.md).
 
 Pour les empreintes détaillées des fichiers ou une revue séparée de l’inventaire,
 suivez le [parcours avancé scan puis plan](docs/tutorial.fr.md#parcours-avancé-scan-puis-plan).
@@ -131,8 +135,12 @@ Un manifeste enregistre des observations, pas le contenu des fichiers.
 ### Lire le résultat
 
 Chaque ligne indique le worktree, sa branche, son HEAD complet, son état local,
-son histoire et son verdict. Le détail explique les raisons et les vérifications
-à faire ; `--summary` regroupe les verdicts, la couverture et les vérifications restantes dans la console.
+son histoire et son verdict. `--summary` affiche un bilan court : verdicts,
+espace disque et contrôles manquants. Les couleurs et icônes sont automatiques
+dans le terminal ; la progression tient sur une ligne. Ajoutez `--verbose` pour
+les logs et durées détaillés, ou `--color never` pour une sortie sobre.
+`report.txt` conserve les raisons, chemins et preuves. Le JSON et les fichiers
+enregistrés restent sans codes de couleur.
 
 | Verdict | Signification |
 | --- | --- |

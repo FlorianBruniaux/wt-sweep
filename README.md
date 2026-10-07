@@ -105,8 +105,9 @@ integration ref you have confirmed. The block stops if that ref is absent locall
     show-ref --verify --quiet "$target_ref"
   report_dir="$(mktemp -d /private/tmp/wt-sweep-report.XXXXXX)"
   "$sweep_bin" review --repo "$repo_path" --target "$target_ref" \
-    --summary --run-dir "$report_dir"
+    --summary --disk-usage --html --run-dir "$report_dir"
   printf 'Reports: %s\n' "$report_dir"
+  open "$report_dir"/run-*/report.html
 )
 ```
 
@@ -114,7 +115,10 @@ Keep `XXXXXX` literally: `mktemp` replaces it with a unique suffix. The report
 base must be outside the repository, its registered worktrees and Git
 administration. `review` discovers the family and collects current evidence in
 one command. Its new run directory contains the original `inventory.json`,
-`review.json`, full `report.txt` and publication receipt `run.json`.
+`review.json`, full `report.txt`, offline `report.html` and publication receipt
+`run.json`. The HTML groups worktrees by Git family and offers search, sorting
+and collapsible evidence. Its totals distinguish source, selected and visible rows.
+See the [HTML report guide](docs/html-report-plan.md).
 
 For detailed file hashes, or to review a saved inventory separately, use the
 [advanced scan and plan path](docs/tutorial.fr.md#parcours-avancé-scan-puis-plan).
@@ -123,7 +127,11 @@ A saved manifest records observations, not file contents.
 ### Read the result
 
 Each row names the worktree, branch, full HEAD, local changes, history and verdict.
-The detail explains the reasons and the next checks; `--summary` groups verdicts, coverage and remaining checks in a console recap.
+`--summary` prints a short recap with verdicts, disk sizes and missing checks.
+Terminal colors and icons are automatic; progress updates one line. Add
+`--verbose` for detailed logs and timings, or `--color never` for plain output.
+The full reasons, paths and evidence remain in `report.txt`. JSON and saved files
+contain no terminal decoration.
 
 | Verdict | Meaning |
 | --- | --- |

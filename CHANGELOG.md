@@ -9,6 +9,47 @@ the Cargo package version is a development version.
 
 ### Added
 
+- Release review benchmark runner for constant 50/100-worktree fixtures, pipe
+  and live PTY output, first collected fact, phase costs and independent source
+  conservation. The runner checks exact report identities and executable
+  hashes, ignores partial fact prefixes and terminates its owned process
+  groups on capture errors. Recorded 50/100-worktree samples distinguish
+  comparable evidence from budget-driven refusals and retain ignored-file costs.
+
+- Controlled runtime comparison of Sweep, Holt and AgentRinse on synthetic
+  repositories, with native outputs and an independent conservation oracle.
+  Decisions remain specific to the audit contracts; recovery was not tested.
+
+- Add offline HTML reports for scan, review and plan with `--html --run-dir`,
+  grouped by Git family with source/view totals, bounded escaped evidence,
+  browser filters and receipted bytes.
+- Show provisional history and local-file observations during review, keeping
+  final cleanup verdicts behind all decision checks.
+- Interpret intent-to-add index entries without rejecting the entire local
+  summary; preserve staged/unstaged distinctions and incomplete evidence.
+
+- GitHub milestone for the read-only audit roadmap, with a tracking epic and
+  five acceptance-driven tasks. A separate vision epic records optional
+  integrations and future worktree management; it does not enable removal.
+  The [roadmap](docs/roadmap.md) links to the issues and their dependencies.
+
+- Source-level comparison of 12 cloned worktree tools, with specialist backend,
+  Rust, system and interface analyses, pinned commits and implementation references.
+  Separates existing Sweep behavior from proposed HTML, CLI and provenance work,
+  and records recovery and read-only boundaries. That source inspection did not
+  execute or integrate competitor code; the runtime comparison listed above is separate.
+
+- Worktree ecosystem comparison using Agentic Ecosystem Map, Perplexity and
+  primary sources. Records overlap with Holt, AgentRinse and lifecycle managers,
+  reuse options and the disposable comparisons required before expanding scope.
+  This research pass preceded the disposable runtime comparison.
+
+- Compact terminal progress and a shorter `--summary` recap. Colors and icons
+  follow each terminal stream; `--color auto|always|never`, `NO_COLOR` and
+  `TERM=dumb` control decoration. `--verbose` exposes detailed progress and
+  metrics. Saved reports and JSON remain plain and complete; partial disk
+  measurements and missing evidence remain visible.
+
 - Opt-in `scan --disk-usage` and `review --disk-usage`: allocated and logical sizes per worktree and
   shared Git directory, inode-deduplicated totals, bounded metadata-only walks
   and explicit partial measurements. Includes ignored files, hardlink and
@@ -178,6 +219,12 @@ the Cargo package version is a development version.
   the AgentSec presentation block.
 
 ### Changed
+
+- Reuse the measured serialized size of unchanged private-history records
+  within an output-budget pass; modified records are measured again. Finite
+  caps and final evidence checks remain in force.
+- Verify equal verdicts for equal collected evidence in the 100-worktree
+  regression; final private-history deadline gaps retain C4/C5 as unknown.
 
 - Deep candidate checks batch distinct blobs and reuse verified trees within the
   current physical family and review, under the same object-integrity checks.

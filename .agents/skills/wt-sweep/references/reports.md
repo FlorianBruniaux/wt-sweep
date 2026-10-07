@@ -7,6 +7,8 @@
 - `inventory.json`: discovered families, paths, collection scope and gaps.
 - `review.json`: original decision evidence, or a filtered view embedding it.
 - `report.txt`: human-readable explanation of those observations.
+- `report.html` when requested: offline reading by Git family, with search, sort
+  and collapsible evidence. Scan reports explicitly have no review verdict.
 - `run.json`: publication receipt listing artifact names, byte lengths and SHA-256.
 
 For a saved run, check that receipt schema is `wt-sweep.run/1` and its command is
@@ -52,6 +54,19 @@ omit collection metrics; report telemetry unavailable rather than inventing it.
 The console's `Resolved verdicts` counts keep plus candidates. A keep reason
 remains resolved even if candidate conditions are incomplete. Verify rows still
 need evidence; retention reasons and missing conditions are separate facts.
+
+## Disk measurements and live progress
+
+Logical bytes describe file lengths. Allocated bytes describe the filesystem's
+reported allocation. Keep partial or absent measurements visible; the global
+deduplicated total can differ from project sums. Neither value is a promise of
+space reclaimed by deleting an APFS clone. The HTML does not recalculate disk
+figures when a reader filters the visible rows.
+
+`Observed history:` and `Observed local:` lines are collected, provisional facts.
+They appear before final consistency checks. Do not use them as a completed
+review or invent a candidate while collection continues. Plain redirected output
+keeps the first fact of each kind; verbose output retains each observation.
 
 ## Decisions and missing conditions
 

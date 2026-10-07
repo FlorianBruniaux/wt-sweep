@@ -2,6 +2,21 @@
 
 [Index documentaire](README.md) · [Présentation du projet](../README.md)
 
+La [lecture du code des 12 clones](worktree-source-analysis-2026-10-07.md)
+complète les promesses documentées avec des mécanismes, limites et tests présents.
+Elle corrige notamment la présence du registre gwq et précise les licences de
+Holt et Superset. Cette lecture de sources n’exécutait aucun concurrent.
+
+La [comparaison runtime contrôlée](research/worktree-runtime-comparison-2026-10-07.md)
+ajoute ensuite des audits natifs Holt et AgentRinse sur des fixtures synthétiques,
+avec raisons, OID, codes de sortie et manifestations d’écriture. La release
+Sweep intégrée reste à comparer. Aucun scénario de retrait ou de restauration
+n’a été exécuté ; les verdicts externes ne remplacent pas C1-C5.
+
+La [recherche du 07/10/2026](worktree-ecosystem-2026-10-07.md) complète cet
+inventaire avec Holt, kwt et les gestionnaires de cycle de vie. Elle recommande
+une comparaison sur fixtures avant tout élargissement du produit.
+
 La recherche du 04/10/2026 porte sur la documentation et une lecture ciblée du
 code. Aucun de ces produits n'a été exécuté pour valider notre contrat complet.
 L'absence de candidat équivalent vérifié n'est pas une preuve d'absence du marché.

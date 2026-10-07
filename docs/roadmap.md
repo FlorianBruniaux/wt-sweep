@@ -2,6 +2,43 @@
 
 [Index documentaire](README.md) · [Preuves du triage](finish-ledger.md#triage-t01-t09) · [Plan T01-T09](superpowers/plans/2026-10-05-worktree-triage-v2.md)
 
+## Jalon courant : audit lisible en lecture seule
+
+[Milestone GitHub](https://github.com/FlorianBruniaux/wt-sweep/milestone/1) · [Épique de suivi #8](https://github.com/FlorianBruniaux/wt-sweep/issues/8)
+
+Le jalon termine le parcours d'audit : choisir des racines, retrouver les
+worktrees, comprendre leur état et leur taille, puis lire un rapport HTML par
+projet. Les issues portent les critères d'acceptation et l'état courant ; ce
+document conserve le périmètre et les limites.
+
+| Ordre | Livrable suivi | Dépendances |
+| --- | --- | --- |
+| 1 | [#9 : stabiliser et publier les ajouts console, disque et métriques](https://github.com/FlorianBruniaux/wt-sweep/issues/9) | Vérifications complètes et écart intermittent à 100 worktrees à expliquer. |
+| 2 | [#10, D1 : HTML autonome par projet](https://github.com/FlorianBruniaux/wt-sweep/issues/10) | Intégration après #9 ; développement possible en parallèle de #11. |
+| 3 | [#11, D2 : collecte et premier résultat utile](https://github.com/FlorianBruniaux/wt-sweep/issues/11) | Intégration après #9 ; budgets et preuves préservés. |
+| 4 | [#12 : comparaison Sweep, Holt et AgentRinse sur fixtures](https://github.com/FlorianBruniaux/wt-sweep/issues/12) | Indépendante du HTML ; décision requise avant une extension de gestion. |
+| 5 | [#13 : recette multi-projets et documentation finale](https://github.com/FlorianBruniaux/wt-sweep/issues/13) | Après #9, #10 et #11 ; décision de #12 consignée. |
+
+Le jalon se clôt avec les preuves des cinq tâches, une recette sur le SHA livré
+et des rapports texte, JSON et HTML concordants. Les inconnues justifiées restent
+visibles. La recette réelle porte sur des racines explicitement choisies ; la
+création des issues ne déclenche aucun scan.
+
+## Vision après ce jalon
+
+L'[épique de vision #14](https://github.com/FlorianBruniaux/wt-sweep/issues/14)
+reste hors du milestone. Elle conserve D3 (raccordement facultatif à Worktrunk),
+D4 (provenance importée), D5 (récupération et retrait) et D6 (expérience APFS).
+Ces options ne sont pas des engagements d'implémentation.
+
+Avant d'engager une extension, documenter le besoin, l'alternative existante,
+l'essai et le critère d'arrêt. Si un outil couvre déjà le besoin et les garanties
+recherchées, privilégier l'adoption ou un adaptateur. Sweep ne prévoit pas de
+reconstruire un gestionnaire de cycle de vie, un ADE ou un registre obligatoire.
+Le retrait reste soumis à E1/U5-U7.
+
+## État de référence
+
 État du 06/10/2026 : T01 à T09 sont fusionnés dans `main` par la
 [PR #1](https://github.com/FlorianBruniaux/wt-sweep/pull/1), commit
 `ddda77ddba24566328a83dad79b74d943cecd8e5`. Le triage en lecture seule est livré.
@@ -27,22 +64,30 @@ Consulter le [workflow](https://github.com/FlorianBruniaux/wt-sweep/actions/work
 pour le statut d'un commit précis. La publication des sources ne constitue pas
 une release binaire.
 
+## Rapport HTML par projet
+
+Le [rendu HTML](html-report-plan.md) est raccordé à `scan`, `review` et `plan`
+avec `--html --run-dir`. Il affiche les familles, verdicts, tailles et lacunes
+sans modifier le jugement. Les preuves de validation et de livraison sont
+suivies dans #10 et #13 ; une implémentation locale ne vaut pas livraison distante.
+
 ## Espace disque
 
-Ajouté dans le checkout local : `scan --disk-usage` et `review --disk-usage`,
-tailles par worktree et administration Git, total dédupliqué par inode et mesures
-partielles explicites. Les tailles sont intégrées au bilan console, au rapport
+L’option `--disk-usage` de `scan` et `review` collecte les
+tailles par worktree et administration Git, avec un total dédupliqué par inode
+et des mesures partielles explicites. Les tailles sont intégrées au bilan console, au rapport
 texte et au JSON ; `plan` conserve les observations capturées.
 Le [guide disque](disk-usage.md) donne la commande et les limites. L’estimation
 d’espace réellement récupérable sur APFS reste hors de ce comptage.
 
 ## Mesure de performance
 
-Le checkout ajoute le débit de découverte, les durées monotones et un benchmark
-Rust facultatif à résultats constants. La [recette de mesure](collection-performance.md#benchmark-rust-reproductible)
+La CLI consigne le débit de découverte et les durées monotones. Un benchmark
+Rust facultatif vérifie les résultats constants. La [recette de mesure](collection-performance.md#benchmark-rust-reproductible)
 compare 1 et 4 workers ; elle ne promet aucune accélération sur d’autres disques.
-Les prochains contrôles restent le coût des appels Git pour les ignorés, l’index
-`intent-to-add`, puis les budgets et la reprise d’une découverte globale. Les
+Le lot #11 traite `intent-to-add` et [mesure le premier fait utile](research/collection-benchmark-2026-10-07.md)
+sur des corpus de 50 et 100 worktrees. Les appels Git, les ignorés et l’histoire privée restent
+mesurés séparément ; la reprise persistante demeure hors de ce lot. Les
 indicateurs ne lèvent pas ces limites de collecte.
 
 ## Accompagnement par un assistant
@@ -99,8 +144,31 @@ que la fixture initiale à contenu partagé ne montrait pas. Les extensions X01
 restent conditionnelles. La découverte réelle s’est achevée et l’index v2 est
 pris en charge. Une collecte ciblée est un nouveau run, pas une reprise X01.
 Le support d’un autre format d’index demande un cas concret et ses fixtures.
-L’entrée `intent-to-add` du dernier run garde ses sémantiques inconnues même
-avec le format v2 ; elle demande son propre contrôle.
+L’entrée `intent-to-add` de cette recette historique restait inconnue même
+avec le format v2. Le lot #11 traite désormais ce cas sur des fixtures SHA-1 et
+SHA-256 ; seul un nouveau passage peut établir l’état actuel du worktree réel.
+
+## Extension vers la gestion : comparaison préalable
+
+La [lecture des 12 clones](worktree-source-analysis-2026-10-07.md) est terminée.
+Elle propose D1 (HTML par projet), D2 (premier résultat utile), D3 (`wt sweep`)
+et D4 (provenance importée passivement). D1/D2 appartiennent au jalon courant ; D3/D4 restent dans la vision.
+Les comparaisons de récupération D5 et de création APFS D6 sont séparées.
+Les 48 essais d’audit sur fixtures et la décision par capacité sont consignés
+dans le [rapport de comparaison](research/worktree-runtime-comparison-2026-10-07.md) et #12.
+Ils ne prouvent ni la restauration ni une équivalence de conservation générale.
+
+La [recherche du 07/10](worktree-ecosystem-2026-10-07.md) identifie un
+recouvrement avec Holt et AgentRinse pour l'audit et la récupération, et avec
+Worktrunk, kwt, gwq et Workroot pour le cycle de vie. Le rapport HTML reste un
+besoin de restitution ; il n'est pas une différenciation démontrée.
+
+La comparaison d’audit retient Sweep pour ses preuves explicites et reprend des
+idées de restitution. Elle ne démontre pas une équivalence de récupération.
+Avant d’ajouter création, registre propriétaire ou orchestration, comparer
+encore les mécanismes de récupération de Holt et AgentRinse, puis Worktrunk et
+kwt pour les entrées JSON et la gestion des sessions. Les essais de cycle de vie restent hors du jalon courant. Aucun de ces projets n'est une dépendance de Sweep, et cette recherche
+ne lève pas les conditions E1/U5-U7.
 
 ## Nettoyage automatique : chantier séparé
 

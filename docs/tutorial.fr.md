@@ -45,8 +45,9 @@ la référence manque localement, sans en choisir une autre.
     show-ref --verify --quiet "$target_ref"
   report_dir="$(mktemp -d /private/tmp/wt-sweep-report.XXXXXX)"
   "$sweep_bin" review --repo "$repo_path" --target "$target_ref" \
-    --summary --run-dir "$report_dir"
+    --summary --disk-usage --html --run-dir "$report_dir"
   printf 'Rapports : %s\n' "$report_dir"
+  open "$report_dir"/run-*/report.html
 )
 ```
 
@@ -67,10 +68,17 @@ Chaque nouveau dossier `run-*` contient :
 | `inventory.json` | L’inventaire original de cette découverte, sans compactage préalable au jugement. |
 | `review.json` | Les preuves, décisions, intervalles et lacunes, ou une vue contenant la source complète. |
 | `report.txt` | Le détail des lignes choisies, avec totaux et lacunes source. |
-| `run.json` | Le reçu et les hashes des trois artefacts. |
+| `report.html` | Le bilan hors ligne par famille, avec recherche, tri et détails repliables. |
+| `run.json` | Le reçu, les tailles et les empreintes des artefacts présents. |
 
-Le bilan console distingue verdicts, couverture et contrôles restants.
-Il ne remplace pas le détail. Le chemin d’exécution est
+Le bilan console distingue verdicts, couverture et contrôles restants. Les
+couleurs et icônes s’activent dans le terminal ; la progression reste sur une
+ligne au lieu de lister chaque dossier. Ajoutez `--verbose` à la même commande
+pour les logs détaillés et les durées par phase. `--color never` désactive la
+décoration ; `--color always` la force dans la sortie texte. Le mode automatique
+respecte `NO_COLOR` et `TERM=dumb`. Le JSON reste sans codes de couleur.
+
+Le bilan ne remplace pas le détail. Le chemin d’exécution est
 affiché lors de la publication. Un reçu lie les octets qu’il énumère ; une erreur
 de synchronisation finale laisse la durabilité inconnue. Aucun fichier de cette
 liste ne constitue une sauvegarde des worktrees.

@@ -185,7 +185,7 @@ class DiscoveryPublicationTests(unittest.TestCase):
                 self.assertTrue(any(m["origin"] == "git_registry_outside_roots" for m in outside))
 
     def test_progress_keeps_stdout_json_and_emits_start_progress_terminal(self):
-        result = self.run_cli("scan", "--root", self.fixture.scope, "--format", "json")
+        result = self.run_cli("scan", "--root", self.fixture.scope, "--format", "json", "--verbose")
         self.assert_family_set(self.json_success(result))
         progress = result.stderr.decode(errors="replace")
         for message in ("Discovering repositories...", "Searching:", "Discovery finished:"):

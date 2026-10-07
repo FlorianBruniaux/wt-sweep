@@ -2,6 +2,72 @@
 
 [Index documentaire](README.md) · [Contrats des artefacts](contracts.md) · [Feuille de route](roadmap.md)
 
+Le [dernier checkpoint du lot audit](#audit-lisible--intégration-du-07102026)
+regroupe les validations HTML, collecte et assistant. Les sections précédentes
+conservent les observations historiques et leurs limites.
+
+## Reprise du 07/10/2026
+
+Le checkout de travail précédent était absent. L’instantané Git
+`14f00ea454795fd6df1f86dec72ec6573d3e546e`, créé par Codex sous le libellé
+`startup-cleanup`, conserve les ajouts disque et métriques. La branche
+`codex/html-reports` reprend cet instantané dans un checkout isolé. Le dossier
+principal et ses modifications locales sont préservés.
+
+Les 24 tests CLI, disque et jugement rejoués sur cet état passent. Ce passage
+ne remplace pas la suite complète du 06/10 et ne résout pas l’écart du test à
+100 worktrees. Cet état de reprise précède le lot d’audit lisible décrit plus
+bas : HTML implémenté et cause de l’écart de collecte reproduite.
+
+Le contrôle GitHub du 07/10 confirme les PR 1 à 7 fusionnées, aucune PR ouverte
+et `main` à `31b58339c6d4a84750bbbad2c0f89ebfa4c8624f`. Les ajouts disque et
+les dernières métriques restent dans l’instantané local, sans PR de publication.
+
+## Affichage terminal, 07/10/2026
+
+La CLI met à jour une seule ligne de progression dans un terminal compatible, en respectant sa largeur.
+Une redirection conserve les étapes principales. `--summary` affiche les
+verdicts, la couverture et les tailles ; `--verbose` conserve les événements
+par dossier et les métriques détaillées. Les couleurs et icônes sont automatiques,
+avec `--color auto|always|never`, `NO_COLOR` et `TERM=dumb`. Les mesures partielles
+restent signalées et les contrôles manquants du bilan court portent sur les
+lignes sélectionnées. Le rapport complet et les artefacts JSON restent sans
+décoration. La collecte et les règles de jugement ne sont pas modifiées.
+
+Les changements portent sur `src/main.rs`, `src/terminal.rs` et le rendu dans
+`src/presentation/`. Les README anglais et français, la référence CLI, le tutoriel,
+le guide disque et le changelog documentent les options. Les tests utilisent des
+dépôts jetables ; aucun scan de la machine ou des dépôts personnels n’a été relancé.
+
+Les six scénarios initiaux d’affichage échouent avant implémentation puis passent :
+progression compacte, récapitulatif court, mode détaillé, codes de couleur absents des
+artefacts, détection indépendante des deux terminaux et désactivation de la
+décoration. Les pseudo-terminaux sont réels. Deux tests du rendu couvrent les
+mesures partielles, les filtres et les conditions manquantes. Sur la même fixture
+à deux worktrees, la progression redirigée passe de 18 à 6 lignes ; le nouveau
+bilan mesure 24 lignes sans dossier de publication.
+
+Le passage Rust complet termine avec **342 tests réussis, 3 ignorés**. La suite
+Python exécute **284 cas, 6 ignorés, un échec** : le test de publication attendait
+le titre supprimé `CHECKS STILL NEEDED` alors que les deux verdicts étaient résolus.
+Ses assertions suivent désormais le bilan compact, avec les mêmes verdicts et
+la même couverture attendus. Les scénarios d’ordre sur 46 et 100 worktrees passent
+lors de ce rejeu ; ce passage seul ne démontre pas la disparition de l’écart
+intermittent observé le 06/10.
+
+Un test supplémentaire reproduit ensuite le repli de la progression à
+32 colonnes. Le correctif lit la largeur courante via la fonction `termios` de
+`rustix`, déjà présent dans le projet. Après cet ajustement, **31 tests Rust
+ciblés et 9 tests Python passent** : les huit tests d’affichage et le test de
+publication corrigé. Les essais de largeur couvrent 2, 4, 32 et 80 colonnes,
+ainsi qu’une largeur non renseignée. La ligne est effacée avant un diagnostic
+d’erreur. Les suites globales ne sont pas intégralement rejouées après cet
+ajustement d’affichage.
+
+Le formatage, Clippy, la compilation release, les 22 projections d’instructions
+et les 132 liens locaux contrôlés dans les documents modifiés passent. Les
+changements restent locaux, sans commit ni publication GitHub pour ce lot.
+
 ## État courant au 06/10/2026
 
 U1-U4 et T01-T09 sont livrés en lecture seule. Le triage a rejoint `main` par
@@ -508,3 +574,79 @@ Git interdit les transports avec une liste vide `GIT_ALLOW_PROTOCOL`, en plus
 du refus des téléchargements implicites. Le test réel vérifie qu'une configuration
 locale autorisant le protocole ne réactive pas son exécuteur. Référence primaire :
 [documentation Git des variables de transport](https://git-scm.com/docs/git/2.53.0.html).
+
+
+## Audit lisible : intégration du 07/10/2026
+
+Le lot courant implémente `--html` sur `scan`, `review` et `plan`, le rendu
+hors ligne par famille et le reçu de publication du HTML. Les étapes de
+progression affichent des observations provisoires d’histoire et d’état local.
+Le correctif d’index `intent-to-add` conserve la distinction index/disque.
+Ce paragraphe décrit le checkout en cours ; le SHA livré et la validation
+complète sont consignés à la fin du lot, séparément des passages ciblés.
+
+Contrôles ciblés observés : 10 tests de rendu HTML, 9 de publication, 5 parcours
+CLI HTML (dont multi-racines avec doublon, worktrees extérieurs enregistrés et
+racine inaccessible), 8 tests de terminal/PTY. Les 2 régressions du formatage
+progressif ont échoué avant implémentation puis réussi. Les reçus lient les
+longueurs et hashes ; les oracles de fixtures ne constatent pas de mutation.
+
+Chromium a ouvert un rapport synthétique de 2 familles et 4 worktrees à
+1920, 1280, 390 et 320 px, avec et sans JavaScript. Aucun appel réseau, erreur
+JavaScript ou débordement horizontal observé. Recherche, filtre de verdict,
+tri, thème et détails au clavier vérifiés ; rendu contrôlé à zoom CSS 200 %.
+Ce dernier contrôle ne prouve pas le comportement de tous les navigateurs au
+zoom natif. Captures desktop/mobile relues visuellement. Une revue indépendante
+a trouvé l’omission des lacunes de manifestes `scan --local` ; corrigée, testée
+et relue. Les mesures de performance et la recette réelle ont leurs preuves
+séparées ; ces tests n’établissent pas un inventaire actuel de la machine.
+
+
+Le skill reste de portée dépôt : source `harness/skills/wt-sweep`, projections
+`.claude/skills/wt-sweep` et `.agents/skills/wt-sweep`. `sync-ai.py --check`
+valide 22 fichiers. Les caches BM25 de ce checkout ont été reconstruits pour
+Claude et Codex, sans changement des hooks ni des réglages globaux. Chaque client
+sélectionne le skill sur les 14 sondes positives et l’évite sur les 6 négatives
+exécutées. Il est éligible et le seuil global passe ; F1 de calibration 0,966,
+F1 de l’évaluation croisée 0,683. Ces sondes ne prouvent pas une absence générale
+de faux positifs. L’invocation native dans une nouvelle session reste inconnue.
+
+Le prompt « reprendre un rapport sans relancer l’analyse » a été rejoué par
+un sous-agent sur le rapport synthétique de quatre lignes : trois `keep`, un
+candidat. Le lecteur a vérifié les tailles et SHA-256 des trois artefacts
+liés au reçu, cité les motifs et conditions de chaque ligne, puis proposé de
+préserver la note locale et de confirmer l’usage du candidat. Aucun scan ni
+retrait exécuté ; artefacts inchangés. Ce cas possède des tailles complètes et
+aucun filtre : les cas partiels et filtrés relèvent des tests séparés. Ce rejeu
+contrôlé ne démontre pas l’activation native du skill dans une nouvelle session.
+
+### Vérifications locales du lot audit
+
+Sur le code Rust et les assets HTML finaux, `cargo fmt --all -- --check` et
+Clippy tous targets passent. La suite Rust complète compte 361 succès et
+3 ignorés : benchmark volontaire, entrée enfant exécutée par son test parent et
+import historique nécessitant des données explicitement choisies. La suite
+Python complète compte 291 cas, 285 succès et 6 ignorés : quatre imports
+historiques non demandés et deux créations de chemins refusées par le système
+de fichiers (EILSEQ). Les cas d’identités en octets restent testés séparément.
+Les six témoins d’exclusion passent ; ils démontrent les contre-exemples, pas
+l’exclusion des écrivains.
+
+Le SHA-256 du binaire debug est resté
+`14183414de93e18921550ef01ed1e990ebb1438e828dba76f395122b41bb3a59`
+avant et après la suite Python. La release des essais navigateur et des douze
+scénarios comparatifs porte l’empreinte
+`a622edf51eb32ef8fe58991703f9b404bbc67d1526bddaec9f4950206d6f26bf`.
+La capsule de sources construite conserve Cargo, tous les fichiers Rust et les
+assets CSS/JS. Les tests du protocole de benchmark ajoutés ensuite sont
+consignés séparément. La CI du commit livré reste une preuve distincte.
+
+
+Le [benchmark de collecte du 07/10](research/collection-benchmark-2026-10-07.md)
+conserve huit échantillons propres comparables et deux échantillons avec fichiers
+ignorés. Un couple standard à 100 worktrees reste explicitement non comparable.
+Les six tests du protocole ajoutés après la suite Python complète passent
+séparément ; ils vérifient notamment l’identité des preuves, la persistance des
+mesures refusées et l’arrêt du groupe de processus possédé. Le test de signal
+observe le vrai appel système mais ne constitue pas un oracle de disparition de
+chaque descendant. Les deux tests du banc de comparaison des outils passent.

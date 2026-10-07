@@ -191,3 +191,128 @@ fn full_backend_timeout_still_quarantines_private_family_and_stops_dependent_rea
     );
     assert!(crate::git::take_child_read_journal().is_empty());
 }
+
+#[test]
+fn fixed_private_facts_judge_identically_but_final_limits_leave_c4_c5_unknown() {
+    fn manifest(path: &Path, out: &mut BTreeMap<BytePath, (u32, i64, i64, Vec<u8>)>) {
+        let meta = fs::symlink_metadata(path).unwrap_or_else(|error| panic!("metadata: {error}"));
+        let bytes = if meta.is_file() {
+            fs::read(path).unwrap_or_else(|error| panic!("read: {error}"))
+        } else {
+            Vec::new()
+        };
+        out.insert(
+            BytePath::from_path(path),
+            (
+                std::os::unix::fs::MetadataExt::mode(&meta),
+                std::os::unix::fs::MetadataExt::mtime_nsec(&meta),
+                std::os::unix::fs::MetadataExt::ctime_nsec(&meta),
+                bytes,
+            ),
+        );
+        if meta.is_dir() {
+            for entry in fs::read_dir(path).unwrap_or_else(|error| panic!("list: {error}")) {
+                manifest(
+                    &entry
+                        .unwrap_or_else(|error| panic!("entry: {error}"))
+                        .path(),
+                    out,
+                );
+            }
+        }
+    }
+    let fixture = Fixture::new();
+    let inventory = crate::git::scan_family(&fixture.0.join("repo"))
+        .unwrap_or_else(|error| panic!("scan: {error}"));
+    let targets = [BytePath::from_bytes(b"refs/heads/main")];
+    let original = crate::review::enrich(&inventory, &targets, None)
+        .unwrap_or_else(|error| panic!("enrich: {error}"));
+    let first = judge(&original).unwrap_or_else(|error| panic!("judge: {error}"));
+    let again = judge(&original).unwrap_or_else(|error| panic!("judge again: {error}"));
+    assert_eq!(
+        serde_json::to_value(&first).unwrap_or_else(|error| panic!("json: {error}")),
+        serde_json::to_value(again).unwrap_or_else(|error| panic!("json: {error}"))
+    );
+    let linked = BytePath::from_path(&fixture.0.join("linked"));
+    assert!(
+        first
+            .items
+            .iter()
+            .any(|item| item.path == linked && item.classification == "cleanup_candidate")
+    );
+    let bound = FamilyTargets::bind_with(&inventory, TargetInput::Simple(&targets), &NativeHooks)
+        .unwrap_or_else(|error| panic!("targets: {error}"));
+    let mut before = BTreeMap::new();
+    manifest(&fixture.0, &mut before);
+    for stop in ["time", "source_bytes"] {
+        let limits = PrivateHistoryLimits::default();
+        let mut private =
+            PrivateHistoryRun::collect(&inventory, &bound, &limits, &NativeHooks, &BTreeMap::new())
+                .unwrap_or_else(|error| panic!("collect: {error}"));
+        assert!(
+            private.output.histories[&linked]
+                .roots
+                .iter()
+                .all(|root| root.result == "covered")
+        );
+        if stop == "time" {
+            // Exhaust a finite allowance directly, without a sleep or host-load race.
+            private.started = Instant::now() - limits.timeout;
+        } else {
+            private.source_bytes = limits.source_bytes;
+        }
+        private
+            .finish(&inventory, &BTreeMap::new())
+            .unwrap_or_else(|error| panic!("finish: {error}"));
+        assert!(
+            private.stopped_families.is_empty(),
+            "budget stop is not a backend quarantine"
+        );
+        let mut facts = original.clone();
+        for item in &mut facts.items {
+            item.private_history = private.output.histories.remove(&item.path);
+        }
+        facts.finished_unix_ms = now_ms();
+        let item = facts
+            .items
+            .iter()
+            .find(|item| item.path == linked)
+            .unwrap_or_else(|| panic!("linked"));
+        assert!(
+            c1(item, &inventory.families[0]) && c2(item) && c3(item),
+            "independent proof changed"
+        );
+        assert!(
+            !c4(item) && !c5(item, &facts),
+            "final refusal became complete proof"
+        );
+        assert!(
+            item.private_history
+                .as_ref()
+                .is_some_and(|history| !history.enumeration_complete
+                    && history.roots.iter().all(|root| root.result == "unknown"
+                        && root.observed_result.as_deref() == Some("covered")))
+        );
+        let review = judge(&facts).unwrap_or_else(|error| panic!("judge refusal: {error}"));
+        let refused = review
+            .items
+            .iter()
+            .find(|item| item.path == linked)
+            .unwrap_or_else(|| panic!("linked refusal"));
+        assert_eq!(refused.classification, "verify");
+        assert_eq!(
+            refused
+                .decision
+                .as_ref()
+                .unwrap_or_else(|| panic!("decision"))
+                .missing_conditions,
+            ["C4", "C5"]
+        );
+        let mut after = BTreeMap::new();
+        manifest(&fixture.0, &mut after);
+        assert_eq!(
+            before, after,
+            "collection changed owned source bytes or metadata; atime excluded"
+        );
+    }
+}

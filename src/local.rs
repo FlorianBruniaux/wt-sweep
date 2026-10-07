@@ -207,7 +207,7 @@ fn parse_index_text(raw: &[u8], max_entries: usize) -> io::Result<Vec<IndexEntry
 struct RawIndex {
     entries: Vec<IndexEntry>,
     shared: Option<String>,
-    intent_to_add: bool,
+    intent_to_add: BTreeSet<BytePath>,
 }
 fn parse_raw_index(raw: &[u8], hash_size: usize, max_entries: usize) -> io::Result<RawIndex> {
     let invalid = || io::Error::other("malformed or unsupported raw index");
@@ -245,7 +245,7 @@ fn parse_raw_index(raw: &[u8], hash_size: usize, max_entries: usize) -> io::Resu
     }
     let mut offset = 12usize;
     let mut entries = Vec::new();
-    let mut intent_to_add = false;
+    let mut intent_to_add = BTreeSet::new();
     for _ in 0..count {
         let start = offset;
         let fixed = 40 + hash_size + 2;
@@ -260,6 +260,7 @@ fn parse_raw_index(raw: &[u8], hash_size: usize, max_entries: usize) -> io::Resu
             .collect::<String>();
         let flags = u16::from_be_bytes([header[40 + hash_size], header[41 + hash_size]]);
         offset += fixed;
+        let mut intent = false;
         if flags & 0x4000 != 0 {
             if version != 3 || offset + 2 > end {
                 return Err(invalid());
@@ -268,7 +269,7 @@ fn parse_raw_index(raw: &[u8], hash_size: usize, max_entries: usize) -> io::Resu
             if extended_flags & !0x6000 != 0 {
                 return Err(io::Error::other("reserved extended flags in raw index"));
             }
-            intent_to_add |= extended_flags & 0x2000 != 0;
+            intent = extended_flags & 0x2000 != 0;
             offset += 2;
         }
         let remainder = raw.get(offset..end).ok_or_else(invalid)?;
@@ -289,6 +290,14 @@ fn parse_raw_index(raw: &[u8], hash_size: usize, max_entries: usize) -> io::Resu
             .ok_or_else(invalid)?;
         if raw[offset + length..next].iter().any(|b| *b != 0) {
             return Err(invalid());
+        }
+        if intent {
+            if flags & 0x3000 != 0 {
+                return Err(io::Error::other(
+                    "intent-to-add conflict stage is unsupported",
+                ));
+            }
+            intent_to_add.insert(BytePath::from_bytes(path));
         }
         entries.push(IndexEntry {
             path: BytePath::from_bytes(path),

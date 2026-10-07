@@ -479,6 +479,22 @@ impl HistoryRun {
             if let Some(job) = jobs.iter_mut().find(|job| job.row == row) {
                 run.turn(job, inventory);
                 run.metrics.first_pass_items += 1;
+                let row = &run.rows[job.row];
+                let observation = &row.observations[job.observation];
+                callback(ProgressEvent {
+                    phase: "history_observation",
+                    processed: run.metrics.first_pass_items,
+                    stop_reason: observation.stop_reason.clone(),
+                    observation: Some(ProgressObservation::History {
+                        path: row.path.clone(),
+                        head: observation.source_oid.clone(),
+                        target_ref: observation.target_ref.clone(),
+                        target_oid: observation.target_oid.clone(),
+                        result: observation.result.clone(),
+                        complete: observation.result != "unknown"
+                            && observation.stop_reason.is_none(),
+                    }),
+                });
             }
         }
         progress(

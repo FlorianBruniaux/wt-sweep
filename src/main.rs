@@ -1,3 +1,5 @@
+mod terminal;
+
 use std::{collections::BTreeMap, ffi::OsString, io::Write, path::PathBuf, process::ExitCode};
 use wt_sweep::{
     discover::{DiscoveryOptions, LocalFilesystem, scan_scope_with_progress},
@@ -26,9 +28,12 @@ Global discovery reports gaps and does not establish a machine-wide snapshot.
 --disk-usage measures file sizes and allocated blocks without reading contents (scan and review).
 --local hashes local files and index within explicit budgets; gaps remain visible.
 review and plan report readable progress on stderr and keep JSON on stdout.
---summary prints verdicts, collection coverage and remaining checks.
+--summary prints a compact recap; --verbose adds detailed progress and metrics.
+--color auto|always|never controls terminal color and icons (default: auto).
+Auto respects NO_COLOR and TERM=dumb; JSON and saved reports stay plain.
 --worktree PATH focuses evidence collection; unselected rows remain explicitly incomplete.
 --run-dir creates an isolated run below an existing directory outside inspected targets.
+--html adds an offline report.html to scan/review/plan runs; requires --run-dir.
 apply is unavailable until conservation and approval gates are verified.
 ";
 
@@ -75,7 +80,13 @@ fn options(args: &[OsString], allowed: &[&str], repeat: &[&str]) -> Result<Optio
         index += 1;
         let value = if matches!(
             arg,
-            "--all" | "--summary" | "--local" | "--no-context" | "--disk-usage"
+            "--all"
+                | "--summary"
+                | "--local"
+                | "--no-context"
+                | "--disk-usage"
+                | "--verbose"
+                | "--html"
         ) {
             OsString::from("true")
         } else {
@@ -89,6 +100,9 @@ fn options(args: &[OsString], allowed: &[&str], repeat: &[&str]) -> Result<Optio
         if arg == "--format" && value != "json" && value != "table" {
             return Err("format must be json or table".into());
         }
+        if arg == "--color" && value != "auto" && value != "always" && value != "never" {
+            return Err("--color must be auto, always or never".into());
+        }
         values
             .entry(arg.to_string())
             .or_insert_with(Vec::new)
@@ -96,6 +110,9 @@ fn options(args: &[OsString], allowed: &[&str], repeat: &[&str]) -> Result<Optio
     }
     if values.contains_key("--out") && values.contains_key("--run-dir") {
         return Err("--out and --run-dir are mutually exclusive".into());
+    }
+    if values.contains_key("--html") && !values.contains_key("--run-dir") {
+        return Err("--html requires --run-dir BASE".into());
     }
     Ok(values)
 }
@@ -151,10 +168,10 @@ fn command_help(command: &str) -> Result<(), String> {
     };
     let notes = match command {
         "scan" => {
-            "Discovery requires an explicit scope. --disk-usage measures registered roots, including ignored files, without hashing.\nDisk budgets: 30s/500,000 entries per root; 600s/2,000,000 entries overall; depth 128.\n--disk-budget thorough: 120s/1,000,000 entries per root; 1800s/10,000,000 overall.\nAllocated blocks are not a reclaim estimate; partial measurements remain explicit.\n--local additionally hashes local content within budgets.\nProgress is on stderr, with elapsed time and average listing throughput.\nReports retain discovery metrics and coverage separately. Gaps and unfinished scope remain in the inventory.\n"
+            "Discovery requires an explicit scope. --disk-usage measures registered roots, including ignored files, without hashing.\nDisk budgets: 30s/500,000 entries per root; 600s/2,000,000 entries overall; depth 128.\n--disk-budget thorough: 120s/1,000,000 entries per root; 1800s/10,000,000 overall.\nAllocated blocks are not a reclaim estimate; partial measurements remain explicit.\n--local additionally hashes local content within budgets.\n--html adds report.html to the run and requires --run-dir BASE.\nProgress is compact on stderr. --verbose adds paths and discovery counters.\n--color auto|always|never controls terminal color and icons.\nReports retain discovery metrics and coverage separately. Gaps and unfinished scope remain in the inventory.\n"
         }
         "plan" | "review" => {
-            "REVIEW OPTIONS:\n  --budget standard|thorough (default: standard; larger finite collection allowances)\n  --target FULL_REF... | --target-map FILE\n  --worktree ABSOLUTE_PATH (collect evidence for this exact recorded worktree)\n  --filter-repo PATH  --path-prefix PATH  --branch FULL_REF\n  --local-state clean|dirty|unknown  --verdict keep|cleanup_candidate|verify\n  --group-by repo|directory  --forge FILE\n  --changelog-path RELATIVE... | --no-context\n  --summary  --format json|table  --out FILE | --run-dir BASE\n\nTargets must be explicit; no target leaves integration unknown.\nFilters select rows after judgement and retain source coverage in JSON views.\n--worktree narrows history/local/private/context reads; full inventory and identity checks remain.\nOther rows explicitly retain missing evidence. Add --path-prefix for a focused display.\n--summary cannot be combined with --format json. Progress is on stderr.\n--run-dir needs an existing directory outside inspected targets.\nreview accepts --disk-usage [--disk-budget standard|thorough] for metadata-only sizes.\nDisk measurement covers all inventoried roots, independently of --worktree and display filters.\nIts budget is separate from --budget; defaults: 30s/root, 600s overall; thorough: 120s/root, 1800s overall.\nreview saves inventory.json, review.json, report.txt and run.json together.\nplan reuses saved disk observations with their original interval; it does not recount sizes.\nplan saves review.json, report.txt and run.json.\nA cleanup_candidate still requires confirmation of its use. apply is unavailable.\n"
+            "REVIEW OPTIONS:\n  --budget standard|thorough (default: standard; larger finite collection allowances)\n  --target FULL_REF... | --target-map FILE\n  --worktree ABSOLUTE_PATH (collect evidence for this exact recorded worktree)\n  --filter-repo PATH  --path-prefix PATH  --branch FULL_REF\n  --local-state clean|dirty|unknown  --verdict keep|cleanup_candidate|verify\n  --group-by repo|directory  --forge FILE\n  --changelog-path RELATIVE... | --no-context\n  --summary  --format json|table  --out FILE | --run-dir BASE\n  --html (offline report.html; requires --run-dir BASE)\n\nTargets must be explicit; no target leaves integration unknown.\nFilters select rows after judgement and retain source coverage in JSON views.\n--worktree narrows history/local/private/context reads; full inventory and identity checks remain.\nOther rows explicitly retain missing evidence. Add --path-prefix for a focused display.\n--summary cannot be combined with --format json. Progress is compact on stderr.\n--verbose adds detailed progress and recap metrics.\n--color auto|always|never (default: auto; respects NO_COLOR and TERM=dumb).\nJSON and saved report.txt files are always plain text.\n--run-dir needs an existing directory outside inspected targets.\nreview accepts --disk-usage [--disk-budget standard|thorough] for metadata-only sizes.\nDisk measurement covers all inventoried roots, independently of --worktree and display filters.\nIts budget is separate from --budget; defaults: 30s/root, 600s overall; thorough: 120s/root, 1800s overall.\nreview saves inventory.json, review.json, report.txt and run.json together.\nplan reuses saved disk observations with their original interval; it does not recount sizes.\nplan saves review.json, report.txt and run.json.\nA cleanup_candidate still requires confirmation of its use. apply is unavailable.\n"
         }
         _ => {
             "Offline evidence only. No network command is executed by these subcommands.\ncommandes prints capture guidance; ingerer reads captured raw data and its receipt.\n"
@@ -174,26 +191,41 @@ fn scan(args: &[OsString]) -> Result<(), String> {
             "--format",
             "--workers",
             "--local",
+            "--html",
             "--disk-usage",
             "--disk-budget",
+            "--verbose",
+            "--color",
             "--run-dir",
         ],
         &["--root"],
     )?;
     let disk_limits = disk_settings(&opts)?;
-    let mut inventory = collect_inventory(&opts)?;
-    collect_disk(&mut inventory, disk_limits.as_ref())?;
+    let mut progress = terminal::Progress::new(&opts);
+    let mut inventory = collect_inventory(&opts, &mut progress)?;
+    collect_disk(&mut inventory, disk_limits.as_ref(), &mut progress)?;
     let publication_limits = PublicationLimits::default();
     if opts.contains_key("--local") {
         collect_local(&mut inventory, &publication_limits);
     }
     let prepared = wt_sweep::output::prepare_inventory(&inventory, &publication_limits)
         .map_err(|e| e.to_string())?;
+    let html = opts
+        .contains_key("--html")
+        .then(|| {
+            wt_sweep::presentation::html::inventory(
+                &prepared.inventory,
+                publication_limits.report_bytes,
+            )
+        })
+        .transpose()
+        .map_err(|e| e.to_string())?;
     let boundaries = if opts.contains_key("--out") || opts.contains_key("--run-dir") {
         wt_sweep::output::revalidate_boundaries(&inventory).map_err(|e| e.to_string())?
     } else {
         inventory
     };
+    progress.finish();
     deliver(
         &opts,
         prepared.json,
@@ -205,6 +237,7 @@ fn scan(args: &[OsString]) -> Result<(), String> {
             partial: prepared.partial,
             detail: None,
             inventory_json: None,
+            html: html.as_deref(),
         },
     )
 }
@@ -225,31 +258,51 @@ fn disk_settings(opts: &Options) -> Result<Option<wt_sweep::disk::DiskLimits>, S
 fn collect_disk(
     inventory: &mut Inventory,
     limits: Option<&wt_sweep::disk::DiskLimits>,
+    progress: &mut terminal::Progress,
 ) -> Result<(), String> {
     if let Some(disk_limits) = limits {
-        eprintln!("Measuring registered worktrees and shared Git directories...");
+        progress.update(
+            "Measuring registered worktrees and shared Git directories...",
+            true,
+        );
+        let mut visited = 0;
+        let mut incomplete = 0;
         wt_sweep::disk::collect(inventory, disk_limits, &mut |row| {
             let size = row
                 .bytes
                 .as_ref()
                 .map(|b| wt_sweep::disk::human_bytes(b.allocated))
                 .unwrap_or_else(|| "unknown".into());
-            eprintln!(
-                "  {}: {size} ({})",
-                row.path.display(),
-                if row.complete {
-                    "complete"
-                } else {
-                    "incomplete"
-                }
-            );
+            visited += 1;
+            incomplete += usize::from(!row.complete);
+            let message = if progress.verbose() {
+                format!(
+                    "  {}: {size} ({})",
+                    row.path.display(),
+                    if row.complete {
+                        "complete"
+                    } else {
+                        "incomplete"
+                    }
+                )
+            } else {
+                format!("Disk usage: {visited} roots visited; {incomplete} incomplete")
+            };
+            progress.update(&message, false);
         })
         .map_err(|e| e.to_string())?;
+        progress.update(
+            &format!("Disk measurement finished: {visited} roots; {incomplete} incomplete"),
+            true,
+        );
     }
     Ok(())
 }
 
-fn collect_inventory(opts: &Options) -> Result<Inventory, String> {
+fn collect_inventory(
+    opts: &Options,
+    progress: &mut terminal::Progress,
+) -> Result<Inventory, String> {
     let modes = ["--repo", "--root", "--all"]
         .iter()
         .filter(|name| opts.contains_key(**name))
@@ -285,7 +338,14 @@ fn collect_inventory(opts: &Options) -> Result<Inventory, String> {
             .ok_or("workers must be an integer between 1 and 8")?;
     }
     let inventory = scan_scope_with_progress(&scope, &limits, &LocalFilesystem, &mut |event| {
-        eprintln!("{}", wt_sweep::presentation::discovery_progress(event));
+        progress.update(
+            &wt_sweep::presentation::discovery_progress(event),
+            matches!(
+                event.phase,
+                wt_sweep::discover::DiscoveryPhase::Start
+                    | wt_sweep::discover::DiscoveryPhase::Finished
+            ),
+        );
     })
     .map_err(|e| e.to_string())?;
     Ok(inventory)
@@ -398,6 +458,9 @@ fn collect_local(inventory: &mut Inventory, publication_limits: &PublicationLimi
 }
 
 const PLAN_OPTIONS: &[&str] = &[
+    "--html",
+    "--verbose",
+    "--color",
     "--budget",
     "--worktree",
     "--target",
@@ -428,7 +491,8 @@ fn plan(args: &[OsString]) -> Result<(), String> {
         return Err("this is a historical review/1 archive, not an inventory; it provides no current C5 verification. Use wt-sweep review with an explicit scope, or create a fresh scan inventory for plan".into());
     }
     let inventory: Inventory = serde_json::from_value(value).map_err(|e| e.to_string())?;
-    produce_review(&opts, inventory, settings, false)
+    let mut progress = terminal::Progress::new(&opts);
+    produce_review(&opts, inventory, settings, false, &mut progress)
 }
 
 fn review(args: &[OsString]) -> Result<(), String> {
@@ -444,9 +508,10 @@ fn review(args: &[OsString]) -> Result<(), String> {
     let opts = options(args, &allowed, &["--root", "--target", "--changelog-path"])?;
     let settings = review_settings(&opts)?;
     let disk_limits = disk_settings(&opts)?;
-    let mut inventory = collect_inventory(&opts)?;
-    collect_disk(&mut inventory, disk_limits.as_ref())?;
-    produce_review(&opts, inventory, settings, true)
+    let mut progress = terminal::Progress::new(&opts);
+    let mut inventory = collect_inventory(&opts, &mut progress)?;
+    collect_disk(&mut inventory, disk_limits.as_ref(), &mut progress)?;
+    produce_review(&opts, inventory, settings, true, &mut progress)
 }
 
 struct ReviewSettings {
@@ -539,6 +604,7 @@ fn produce_review(
     inventory: Inventory,
     settings: ReviewSettings,
     combined: bool,
+    progress: &mut terminal::Progress,
 ) -> Result<(), String> {
     let ReviewSettings {
         filters,
@@ -558,6 +624,8 @@ fn produce_review(
         .as_ref()
         .map(TargetInput::Map)
         .unwrap_or(TargetInput::Simple(&targets));
+    let mut observed_history = false;
+    let mut observed_local = false;
     let facts = enrich_with_options(
         &inventory,
         target_input,
@@ -565,7 +633,19 @@ fn produce_review(
         &review_options,
         &wt_sweep::local::NativeHooks,
         &mut |event| {
-            eprintln!("{}", wt_sweep::presentation::review_progress(&event));
+            let first_observation = match &event.observation {
+                Some(wt_sweep::review::ProgressObservation::History { .. }) => {
+                    !std::mem::replace(&mut observed_history, true)
+                }
+                Some(wt_sweep::review::ProgressObservation::Local { .. }) => {
+                    !std::mem::replace(&mut observed_local, true)
+                }
+                None => false,
+            };
+            progress.update(
+                &wt_sweep::presentation::review_progress(&event),
+                first_observation || matches!(event.phase, "controls" | "complete"),
+            );
         },
     )
     .map_err(|e| e.to_string())?;
@@ -573,11 +653,23 @@ fn produce_review(
     if canonical_digest(&review).map_err(|e| e.to_string())? != review.digest_sha256 {
         return Err("review digest mismatch".into());
     }
-    let view = use_view
+    let view = (use_view || opts.contains_key("--html"))
         .then(|| wt_sweep::view::build(&inventory, &review, filters, &group_by))
         .transpose()
         .map_err(|e| e.to_string())?;
     let publication_limits = PublicationLimits::default();
+    let html = if opts.contains_key("--html") {
+        let view = view
+            .as_ref()
+            .ok_or("HTML review requires family bindings")?;
+        Some(
+            wt_sweep::presentation::html::review(view, publication_limits.report_bytes)
+                .map_err(|e| e.to_string())?,
+        )
+    } else {
+        None
+    };
+    let view = if use_view { view } else { None };
     let detail = if let Some(view) = &view {
         wt_sweep::presentation::view_detail_bounded(view, publication_limits.report_bytes)
     } else {
@@ -585,10 +677,11 @@ fn produce_review(
     }
     .map_err(|e| e.to_string())?;
     let mut table = if opts.contains_key("--summary") {
-        if let Some(view) = &view {
-            wt_sweep::presentation::view_summary(view)
-        } else {
-            wt_sweep::presentation::summary(&review)
+        match (&view, opts.contains_key("--verbose")) {
+            (Some(view), true) => wt_sweep::presentation::view_summary(view),
+            (None, true) => wt_sweep::presentation::summary(&review),
+            (Some(view), false) => wt_sweep::presentation::compact_view_summary(view),
+            (None, false) => wt_sweep::presentation::compact_summary(&review),
         }
     } else {
         detail.clone()
@@ -607,6 +700,7 @@ fn produce_review(
     } else {
         inventory
     };
+    progress.finish();
     deliver(
         opts,
         json,
@@ -626,6 +720,7 @@ fn produce_review(
                 || review.items.iter().any(|item| !item.unknowns.is_empty()),
             detail: Some(&detail),
             inventory_json: source_json.as_deref(),
+            html: html.as_deref(),
         },
     )
 }
@@ -642,7 +737,7 @@ fn forge(args: &[OsString]) -> Result<(), String> {
             let table = format!("Forge requests: {}; pagination complete: {}; temporal consistency: {}; absence proven: {}\n", export.requests.len(), export.coverage.pagination_complete, export.coverage.temporal_consistency, export.coverage.absence_proven);
             let mut opts = opts;
             if !opts.contains_key("--out") && !opts.contains_key("--format") { opts.insert("--format".into(), vec![OsString::from("json")]); }
-            deliver(&opts, bounded_json(&export, PublicationLimits::default().json_bytes).map_err(|e| e.to_string())?, table, &scope, RunInfo { command: "forge ingerer", name: "forge.json", partial: !export.coverage.gaps.is_empty() || !export.coverage.pagination_complete, detail: None, inventory_json: None })
+            deliver(&opts, bounded_json(&export, PublicationLimits::default().json_bytes).map_err(|e| e.to_string())?, table, &scope, RunInfo { command: "forge ingerer", name: "forge.json", partial: !export.coverage.gaps.is_empty() || !export.coverage.pagination_complete, detail: None, inventory_json: None, html: None })
         }
         _ => Err("use forge commandes or forge ingerer --raw FILE".into()),
     }
@@ -654,6 +749,7 @@ struct RunInfo<'a> {
     partial: bool,
     detail: Option<&'a str>,
     inventory_json: Option<&'a [u8]>,
+    html: Option<&'a str>,
 }
 
 fn deliver(
@@ -678,6 +774,7 @@ fn deliver(
             name: run.name,
             json: &json,
             report: run.detail.unwrap_or(&table),
+            html: run.html,
             partial: run.partial,
         };
         let path = if let Some(source) = run.inventory_json {
@@ -686,27 +783,45 @@ fn deliver(
             wt_sweep::run::publish(&base, artifact, inventory)
         }
         .map_err(|e| e.to_string())?;
+        let html_path = if run.html.is_some() {
+            format!(
+                "  HTML: {}\n",
+                BytePath::from_path(&path.join("report.html")).display()
+            )
+        } else {
+            String::new()
+        };
         if opts.get("--format").is_some_and(|v| v[0] == "json") {
             print(&json)
         } else if opts.contains_key("--summary") {
-            print(
-                format!(
-                    "{table}\nREPORT\n  {}\n",
+            print_table(
+                opts,
+                &format!(
+                    "{table}\nREPORT\n  {}\n{html_path}",
                     BytePath::from_path(&path.join("report.txt")).display()
-                )
-                .as_bytes(),
+                ),
             )
         } else {
-            print(format!("{table}Run: {}\n", BytePath::from_path(&path).display()).as_bytes())
+            print_table(
+                opts,
+                &format!(
+                    "{table}Run: {}\n{html_path}",
+                    BytePath::from_path(&path).display()
+                ),
+            )
         }
     } else if let Some(out) = one(opts, "--out") {
         write_new(&out, &json, inventory).map_err(|e| e.to_string())?;
-        print(table.as_bytes())
+        print_table(opts, &table)
     } else if opts.get("--format").is_some_and(|v| v[0] == "json") {
         print(&json)
     } else {
-        print(table.as_bytes())
+        print_table(opts, &table)
     }
+}
+
+fn print_table(opts: &Options, table: &str) -> Result<(), String> {
+    print(terminal::decorate(opts, table).as_bytes())
 }
 
 fn print(bytes: &[u8]) -> Result<(), String> {

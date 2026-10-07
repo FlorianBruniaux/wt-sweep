@@ -80,6 +80,27 @@ SHA-256 de l’exécutable de benchmark :
 La sortie locale est conservée dans `/private/tmp/wt-sweep-perf-benchmark.log` ;
 les mesures ci-dessus restent dans ce registre si le dossier temporaire disparaît.
 
+## Premier fait utile sur 50 et 100 worktrees
+
+La [mesure du 07/10/2026](research/collection-benchmark-2026-10-07.md)
+compare deux binaires release figés, avec sorties redirigée et PTY séparées.
+Le premier statut d’histoire complet arrive après 3,4 à 3,5 secondes sur le
+corpus de 50 worktrees en standard, puis 5,6 à 6 secondes sur celui de 100
+worktrees en thorough. Ce statut reste provisoire ; les verdicts attendent
+les vérifications finales. Les preuves, plafonds et états des fixtures sont
+identiques à l’intérieur de chaque couple retenu.
+
+Un couple à 100 worktrees en standard a été refusé comme benchmark comparable :
+les délais locaux et privés avaient produit des preuves différentes. Le rapport
+conserve ce résultat, dont un temps total après reste inconnu. Le passage en
+thorough utilise le profil public existant ; aucun plafond produit n’a changé.
+
+La sonde séparée de 400 fichiers ignorés conserve 50 worktrees et leurs raisons
+de `keep`. Elle mesure les lectures locales, mais ne se compare pas au temps
+total du corpus propre : les worktrees retenus évitent les vérifications
+approfondies réservées aux candidats. Les échantillons uniques et le cache OS
+non contrôlé ne démontrent pas un gain général de vitesse.
+
 ## Profils et mesure d’une nouvelle collecte
 
 `review` et `plan` acceptent `--budget standard|thorough`. Standard conserve les

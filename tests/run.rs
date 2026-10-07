@@ -38,6 +38,7 @@ fn artifact() -> Artifact<'static> {
         name: "inventory.json",
         json: b"{\"value\":true}\n",
         report: "observed report\n",
+        html: None,
         partial: true,
     }
 }
@@ -271,6 +272,7 @@ fn review_artifact() -> Artifact<'static> {
         name: "review.json",
         json: b"{\"schema\":\"synthetic-review\"}\n",
         report: "review report\n",
+        html: None,
         partial: false,
     }
 }
@@ -424,6 +426,111 @@ fn combined_publication_rejects_collisions_and_oversize_before_creating_any_run(
             },
             &boundaries,
             b"input"
+        )
+        .is_err()
+    );
+    assert_eq!(fs::read_dir(&fixture.0).expect("directory").count(), 0);
+}
+
+#[test]
+fn html_publication_receipt_binds_bytes_after_html_sync() {
+    use std::os::unix::fs::MetadataExt;
+    let fixture = Fixture::new();
+    let boundaries = fixture.boundaries();
+    let metadata = fs::metadata(&fixture.0).expect("parent");
+    let mut io = ShortWrites {
+        phases: Vec::new(),
+        parent_identity: (metadata.dev(), metadata.ino()),
+    };
+    let html = "<!doctype html><title>Observed worktrees</title>\n";
+    let path = publish_with_io(
+        &fixture.0,
+        Artifact {
+            html: Some(html),
+            ..artifact()
+        },
+        &boundaries,
+        &mut io,
+    )
+    .expect("HTML run");
+    assert_eq!(
+        fs::read(path.join("report.html")).expect("HTML bytes"),
+        html.as_bytes()
+    );
+    let receipt: serde_json::Value =
+        serde_json::from_slice(&fs::read(path.join("run.json")).expect("receipt")).expect("JSON");
+    let entry = receipt["artifacts"]
+        .as_array()
+        .expect("artifacts")
+        .iter()
+        .find(|entry| entry["name"] == "report.html")
+        .expect("HTML receipt binding");
+    assert_eq!(entry["sha256"], wt_sweep::output::sha256(html.as_bytes()));
+    assert_eq!(entry["bytes"], html.len());
+    let html_sync = io
+        .phases
+        .iter()
+        .position(|phase| *phase == PublicationPhase::HtmlSync)
+        .expect("HTML synced");
+    let receipt_sync = io
+        .phases
+        .iter()
+        .position(|phase| *phase == PublicationPhase::ReceiptSync)
+        .expect("receipt synced");
+    assert!(html_sync < receipt_sync);
+}
+
+#[test]
+fn html_write_or_sync_failure_never_publishes_a_receipt() {
+    let fixture = Fixture::new();
+    let boundaries = fixture.boundaries();
+    let html = "<!doctype html>synthetic partial HTML";
+    for phase in [PublicationPhase::HtmlWrite, PublicationPhase::HtmlSync] {
+        for errno in [28, 4] {
+            let error = publish_with_io(
+                &fixture.0,
+                Artifact {
+                    html: Some(html),
+                    ..artifact()
+                },
+                &boundaries,
+                &mut Failure {
+                    phase,
+                    prefix: true,
+                    wrote: false,
+                    errno,
+                },
+            )
+            .expect_err("HTML publication failure");
+            let path = error.path.expect("owned run path").to_path().expect("path");
+            assert_eq!(error.operation, phase.as_str());
+            assert!(!path.join("run.json").exists());
+            let expected = if phase == PublicationPhase::HtmlWrite {
+                &html.as_bytes()[..3]
+            } else {
+                html.as_bytes()
+            };
+            assert_eq!(
+                fs::read(path.join("report.html")).expect("retained prefix"),
+                expected
+            );
+        }
+    }
+}
+
+#[test]
+fn oversized_html_refuses_before_creating_a_run() {
+    let fixture = Fixture::new();
+    let boundaries = fixture.boundaries();
+    let html = "x".repeat(32 * 1024 * 1024 + 1);
+    assert!(
+        publish(
+            &fixture.0,
+            Artifact {
+                html: Some(&html),
+                ..artifact()
+            },
+            &boundaries
         )
         .is_err()
     );

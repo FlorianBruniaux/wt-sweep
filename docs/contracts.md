@@ -369,8 +369,12 @@ index with a missing staged blob can retain an exact staged change while its
 unstaged comparison remains incomplete. Positive work is retained after a later
 read failure. Inspect every required domain before drawing a conclusion.
 
-Ordinary index versions 2 and 3 are supported. Split index, version 4 and
-unsupported mandatory extensions remain explicit gaps. Skip-worktree and
+Ordinary index versions 2 and 3 are supported for SHA-1 and SHA-256
+repositories. An intent-to-add entry (`git add -N`) records a future addition,
+not staged content. A new intent-to-add path counts as unstaged, including
+an empty or subsequently absent file, without being counted as untracked.
+Its placeholder blob is not required to establish staged content. Split index,
+version 4 and unsupported mandatory extensions remain explicit gaps. Skip-worktree and
 assume-valid do not authorize skipping resident-byte comparisons. Special files,
 submodules, dataless content, inaccessible objects and observed drift prevent
 complete coverage. Sampling or diagnostic truncation sets `details_truncated`;
@@ -512,18 +516,23 @@ authenticity, writer exclusion, durability or approval.
 
 ## Run receipts
 
-Each `--run-dir BASE` invocation creates a unique child directory:
+Each `--run-dir BASE` invocation creates a unique child directory. The JSON
+artifacts depend on the command:
 
 ```text
 run-<unique-id>/
-  inventory.json   # review.json for plan; forge.json for ingestion
+  inventory.json   # scan or review
+  review.json      # plan or review
+  forge.json       # forge ingestion
   report.txt
+  report.html      # optional with --html for scan/review/plan
   run.json
 ```
 
 `run.json` names the command, run ID, publication start/end, status and the
-length/hash of the JSON and text report. It does not hash itself. Collection
-timestamps live inside the artifacts and can precede publication.
+length/hash of the JSON, text report and optional HTML report. It does not
+hash itself. Collection timestamps live inside the artifacts and can precede
+publication.
 
 | Command | `partial` when |
 | --- | --- |
@@ -550,6 +559,28 @@ the owned run path, stage and whether the receipt may be visible. Existing files
 are retained for inspection; the command does not claim successful durability. This protocol is not the U5 durable
 backup contract. No receipt grants permission to delete a worktree.
 
+
+## Offline HTML projection
+
+`scan`, `review` and `plan` accept `--html` only with `--run-dir BASE`.
+The renderer reads an `Inventory` or a `ReviewView` already in memory, without
+Git calls, filesystem collection or new judgement. A scan is labelled
+`not reviewed`; a review retains its source coverage, selected rows, verdicts
+and full identifiers. Browser filters change visible rows only, while disk
+totals still describe the source observations.
+
+`report.html` embeds its styles and script and requests no network resources.
+Paths, branch names and other collected strings are escaped as data, including
+control characters. Its byte budget is 32 MiB. Rendering over that limit
+refuses publication before a run directory is created; no evidence is silently
+removed to make the page fit. The publisher writes and synchronizes the HTML
+before binding its byte length and SHA-256 in `run.json`. HTML write or sync
+failures use the same incomplete-publication rules as the other artifacts.
+A later directory-sync failure can still leave a visible receipt.
+
+The page shows the saved observation interval, not a fresh observation when
+opened. It establishes neither backup durability nor removal permission.
+See the [HTML report guide](html-report-plan.md) for generation and reading.
 
 ## Per-family target maps
 
@@ -607,7 +638,8 @@ the entire inventory, including hidden rows. Unfiltered, ungrouped JSON remains
 
 `review` reuses discovery and the same judgement as `plan`. Its run contains the
 full original `inventory.json`, `review.json`, `report.txt` and `run.json`. The
-receipt binds all three data artifacts by byte length and SHA-256; the review
+receipt binds all three data artifacts by byte length and SHA-256, plus
+`report.html` when `--html` is requested; the review
 also records the inventory's canonical digest. A filtered view retains its full
 source review. Source inventory compaction is unavailable in this workflow:
 exceeding the publication limit causes refusal with a narrower-scope instruction.

@@ -1,0 +1,149 @@
+{
+  "schema": "wt-sweep.competitor-source-audit/1",
+  "observed_date": "2026-10-07",
+  "clone_root": "/Users/florianbruniaux/Sites/divers-tests/wt-sweep-comparison-20261007",
+  "clone_options": {
+    "depth": 1,
+    "tags": false,
+    "submodules": false,
+    "hooks_executed": false
+  },
+  "evidence": "targeted source and test reading; no product or test execution",
+  "sweep_checkout": "/Users/florianbruniaux/.codex/worktrees/html-reports/wt-sweep",
+  "sweep_base_sha": "14f00ea454795fd6df1f86dec72ec6573d3e546e",
+  "sweep_working_tree": "preexisting uncommitted product and documentation changes preserved",
+  "repositories": [
+    {
+      "repo": "Raed2180416/holt",
+      "path": "/Users/florianbruniaux/Sites/divers-tests/wt-sweep-comparison-20261007/holt",
+      "clone_exit": 0,
+      "clone_seconds": 5.76,
+      "sha": "b99e098e214f4e84388ffa9d6fa6b675f951732a",
+      "branch": "main",
+      "status": "",
+      "origin": "https://github.com/Raed2180416/holt.git",
+      "final_status": "clean"
+    },
+    {
+      "repo": "vincentkoc/agentrinse",
+      "path": "/Users/florianbruniaux/Sites/divers-tests/wt-sweep-comparison-20261007/agentrinse",
+      "clone_exit": 0,
+      "clone_seconds": 1.04,
+      "sha": "6d5e047e00ef0193f6b75b952060a80ea310b1a4",
+      "branch": "main",
+      "status": "",
+      "origin": "https://github.com/vincentkoc/agentrinse.git",
+      "final_status": "clean"
+    },
+    {
+      "repo": "retif/stalewood",
+      "path": "/Users/florianbruniaux/Sites/divers-tests/wt-sweep-comparison-20261007/stalewood",
+      "clone_exit": 0,
+      "clone_seconds": 0.73,
+      "sha": "1a9a61742efd45c7f9ceaf70a1304c34bbd16169",
+      "branch": "main",
+      "status": "",
+      "origin": "https://github.com/retif/stalewood.git",
+      "final_status": "clean"
+    },
+    {
+      "repo": "ai-ecoverse/gh-reaper",
+      "path": "/Users/florianbruniaux/Sites/divers-tests/wt-sweep-comparison-20261007/gh-reaper",
+      "clone_exit": 0,
+      "clone_seconds": 0.85,
+      "sha": "4dc9326eb10c8b03b8f6e23653f4dc02564c672a",
+      "branch": "main",
+      "status": "",
+      "origin": "https://github.com/ai-ecoverse/gh-reaper.git",
+      "final_status": "clean"
+    },
+    {
+      "repo": "max-sixty/worktrunk",
+      "path": "/Users/florianbruniaux/Sites/divers-tests/wt-sweep-comparison-20261007/worktrunk",
+      "clone_exit": 0,
+      "clone_seconds": 1.67,
+      "sha": "e4a25d6e37cc7bfa6d133ba625359c58fd3cda08",
+      "branch": "main",
+      "status": "",
+      "origin": "https://github.com/max-sixty/worktrunk.git",
+      "final_status": "clean"
+    },
+    {
+      "repo": "kenn-io/kwt",
+      "path": "/Users/florianbruniaux/Sites/divers-tests/wt-sweep-comparison-20261007/kwt",
+      "clone_exit": 0,
+      "clone_seconds": 1.18,
+      "sha": "fccb0f5aac82f21e3a2d379418e12ffb8a11dbe6",
+      "branch": "main",
+      "status": "",
+      "origin": "https://github.com/kenn-io/kwt.git",
+      "final_status": "clean"
+    },
+    {
+      "repo": "d-kuro/gwq",
+      "path": "/Users/florianbruniaux/Sites/divers-tests/wt-sweep-comparison-20261007/gwq",
+      "clone_exit": 0,
+      "clone_seconds": 0.95,
+      "sha": "ec0a9f3d6aef475c7c6ff7323f2038a372284ccd",
+      "branch": "main",
+      "status": "",
+      "origin": "https://github.com/d-kuro/gwq.git",
+      "final_status": "clean"
+    },
+    {
+      "repo": "fridiculous/workroot",
+      "path": "/Users/florianbruniaux/Sites/divers-tests/wt-sweep-comparison-20261007/workroot",
+      "clone_exit": 0,
+      "clone_seconds": 1.04,
+      "sha": "3f25c89cdc6e77fbd9d490d7ec905ef73c13c0f8",
+      "branch": "main",
+      "status": "",
+      "origin": "https://github.com/fridiculous/workroot.git",
+      "final_status": "clean"
+    },
+    {
+      "repo": "coderabbitai/git-worktree-runner",
+      "path": "/Users/florianbruniaux/Sites/divers-tests/wt-sweep-comparison-20261007/git-worktree-runner",
+      "clone_exit": 0,
+      "clone_seconds": 1.39,
+      "sha": "d576398fc0642dc91cc248f63635e4dea283d416",
+      "branch": "main",
+      "status": "",
+      "origin": "https://github.com/coderabbitai/git-worktree-runner.git",
+      "final_status": "clean"
+    },
+    {
+      "repo": "guoyongchang/worktree-manager",
+      "path": "/Users/florianbruniaux/Sites/divers-tests/wt-sweep-comparison-20261007/worktree-manager",
+      "clone_exit": 0,
+      "clone_seconds": 2.3,
+      "sha": "c7eeb3e08e97c957ffa1d618a40c39dd86325971",
+      "branch": "main",
+      "status": "",
+      "origin": "https://github.com/guoyongchang/worktree-manager.git",
+      "final_status": "clean"
+    },
+    {
+      "repo": "superset-sh/superset",
+      "path": "/Users/florianbruniaux/Sites/divers-tests/wt-sweep-comparison-20261007/superset",
+      "clone_exit": 0,
+      "clone_seconds": 11.38,
+      "sha": "9a50076c324b3d2575762e5bdcba6838061c8be5",
+      "branch": "main",
+      "status": "",
+      "origin": "https://github.com/superset-sh/superset.git",
+      "final_status": "clean"
+    },
+    {
+      "repo": "palmin/claude-cow-worktree",
+      "path": "/Users/florianbruniaux/Sites/divers-tests/wt-sweep-comparison-20261007/claude-cow-worktree",
+      "clone_exit": 0,
+      "clone_seconds": 1.02,
+      "sha": "68c5957bad4bb24c2d46378dd3323b80edcca60a",
+      "branch": "main",
+      "status": "",
+      "origin": "https://github.com/palmin/claude-cow-worktree.git",
+      "final_status": "clean"
+    }
+  ]
+}

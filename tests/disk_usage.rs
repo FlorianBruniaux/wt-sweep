@@ -338,6 +338,7 @@ fn review_publishes_native_disk_measurements_in_filtered_json_report_and_console
             "thorough",
             "--no-context",
             "--summary",
+            "--verbose",
             "--group-by",
             "directory",
             "--path-prefix",
@@ -452,6 +453,7 @@ fn plan_keeps_captured_disk_sizes_after_files_change_and_reports_missing_measure
                 "refs/heads/main",
                 "--no-context",
                 "--summary",
+                "--verbose",
                 "--run-dir",
             ])
             .arg(&destination)

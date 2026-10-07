@@ -652,6 +652,7 @@ impl Collector<'_> {
         path: &Path,
         index: &BTreeMap<BytePath, IndexEntry>,
         conflicts: &BTreeSet<BytePath>,
+        intent_to_add: &BTreeSet<BytePath>,
         known: bool,
     ) {
         self.s.disk_complete = true;
@@ -881,12 +882,13 @@ impl Collector<'_> {
                         self.metrics.cache_hits = self.metrics.cache_hits.saturating_add(1);
                     }
                     let expected = cached.and_then(|r| r.as_ref().ok());
-                    if mode != entry.mode
+                    if intent_to_add.contains(&bp)
+                        || mode != entry.mode
                         || digest.as_ref().zip(expected).is_some_and(|(a, b)| a != b)
                     {
                         observe(&mut self.s.unstaged, &bp);
                     }
-                    if digest.is_none() || expected.is_none() {
+                    if digest.is_none() || (expected.is_none() && !intent_to_add.contains(&bp)) {
                         self.s.unstaged.complete = false;
                     }
                 }
@@ -1141,9 +1143,11 @@ fn run(c: &mut Collector<'_>, w: &Worktree, path: &Path) -> io::Result<()> {
     };
     let mut index = BTreeMap::new();
     let mut conflicts = BTreeSet::new();
+    let mut intent_to_add = BTreeSet::new();
     if let Some((_, raw)) = &index_raw {
         match parse_raw_index(raw, hash_size, c.limits.max_index_entries) {
-            Ok(parsed) if parsed.shared.is_none() && !parsed.intent_to_add => {
+            Ok(parsed) if parsed.shared.is_none() => {
+                intent_to_add = parsed.intent_to_add;
                 let mut valid = true;
                 for e in parsed.entries {
                     if let Err(error) = c.reserve_path(e.path.hex.len() / 2) {
@@ -1197,13 +1201,9 @@ fn run(c: &mut Collector<'_>, w: &Worktree, path: &Path) -> io::Result<()> {
                     );
                 }
             }
-            Ok(parsed) => c.gap(
+            Ok(_) => c.gap(
                 &admin_path.join("index"),
-                if parsed.shared.is_some() {
-                    "split index refused without mutation"
-                } else {
-                    "intent-to-add index semantics unsupported"
-                },
+                "split index refused without mutation",
             ),
             Err(e) => c.gap(&admin_path.join("index"), e.to_string()),
         }
@@ -1251,7 +1251,9 @@ fn run(c: &mut Collector<'_>, w: &Worktree, path: &Path) -> io::Result<()> {
             .cloned()
             .collect::<BTreeSet<_>>();
         for bp in paths {
-            let different = match (head_tree.get(&bp), index.get(&bp)) {
+            // An intent entry records a future addition, not staged content.
+            let staged = index.get(&bp).filter(|_| !intent_to_add.contains(&bp));
+            let different = match (head_tree.get(&bp), staged) {
                 (Some(a), Some(b)) => a.mode != b.mode || a.oid != b.oid,
                 (None, None) => conflicts.contains(&bp),
                 _ => true,
@@ -1267,7 +1269,7 @@ fn run(c: &mut Collector<'_>, w: &Worktree, path: &Path) -> io::Result<()> {
         head_tree
             .values()
             .chain(index.values())
-            .filter(|entry| entry.mode != 0o160000)
+            .filter(|entry| entry.mode != 0o160000 && !intent_to_add.contains(&entry.path))
             .map(|entry| entry.oid.as_str()),
     );
     for entry in head_tree.values() {
@@ -1287,6 +1289,9 @@ fn run(c: &mut Collector<'_>, w: &Worktree, path: &Path) -> io::Result<()> {
     }
     let mut index_blobs_complete = c.s.index_complete;
     for entry in index.values() {
+        if intent_to_add.contains(&entry.path) {
+            continue;
+        }
         if entry.mode == 0o160000 {
             index_blobs_complete = false;
             continue;
@@ -1305,7 +1310,14 @@ fn run(c: &mut Collector<'_>, w: &Worktree, path: &Path) -> io::Result<()> {
             }
         }
     }
-    c.disk(&root, path, &index, &conflicts, c.s.index_complete);
+    c.disk(
+        &root,
+        path,
+        &index,
+        &conflicts,
+        &intent_to_add,
+        c.s.index_complete,
+    );
     c.s.unstaged.complete &= index_blobs_complete;
     // Revalidate bytes rather than trusting size/mtime or cached inventory HEAD.
     for (name, original, max) in [
@@ -1733,7 +1745,14 @@ mod timeout_tests {
             blobs: BTreeMap::new(),
         };
         let fd = open_absolute_directory(&f.0).unwrap_or_else(|e| panic!("{e}"));
-        c.disk(&fd, &f.0, &BTreeMap::new(), &BTreeSet::new(), true);
+        c.disk(
+            &fd,
+            &f.0,
+            &BTreeMap::new(),
+            &BTreeSet::new(),
+            &BTreeSet::new(),
+            true,
+        );
         assert_eq!(c.s.ignored.observed, 254, "{:?}", c.s);
         assert_eq!(c.s.untracked.observed, 2, "{:?}", c.s);
         assert!(!c.s.ignored.complete && !c.s.untracked.complete && !c.s.disk_complete);

@@ -120,7 +120,7 @@ fn three_versions_are_compared_separately_and_deletions_count() {
 }
 #[test]
 fn malformed_and_unsupported_indexes_never_report_complete_empty_index() {
-    for action in ["checksum", "v4", "split", "absent", "intent"] {
+    for action in ["checksum", "v4", "split", "absent"] {
         let f = Fixture::new("sha1");
         fs::write(f.0.join("file"), b"base").unwrap_or_else(|e| panic!("{e}"));
         f.commit();
@@ -140,10 +140,7 @@ fn malformed_and_unsupported_indexes_never_report_complete_empty_index() {
             "absent" => {
                 fs::remove_file(f.0.join(".git/index")).unwrap_or_else(|e| panic!("{e}"));
             }
-            _ => {
-                fs::write(f.0.join("new"), b"intent").unwrap_or_else(|e| panic!("{e}"));
-                f.git(&["add", "-N", "new"]);
-            }
+            _ => unreachable!(),
         }
         let s = f.summary();
         assert!(
@@ -153,6 +150,49 @@ fn malformed_and_unsupported_indexes_never_report_complete_empty_index() {
         assert!(!s.gaps.is_empty());
     }
 }
+#[test]
+fn intent_to_add_is_unstaged_for_present_empty_and_absent_files() {
+    for format in ["sha1", "sha256"] {
+        for content in [
+            None,
+            Some(b"".as_slice()),
+            Some(b"resident work".as_slice()),
+        ] {
+            let f = Fixture::new(format);
+            fs::write(f.0.join("file"), b"base").unwrap_or_else(|e| panic!("{e}"));
+            f.commit();
+            fs::write(f.0.join("intent"), content.unwrap_or(b"initial"))
+                .unwrap_or_else(|e| panic!("{e}"));
+            f.git(&["add", "-N", "intent"]);
+            if content.is_none() {
+                fs::remove_file(f.0.join("intent")).unwrap_or_else(|e| panic!("{e}"));
+            }
+            let before = fs::read(f.0.join(".git/index")).unwrap_or_else(|e| panic!("{e}"));
+            let s = f.summary();
+            assert!(
+                s.head_complete && s.index_complete && s.disk_complete,
+                "{s:?}"
+            );
+            assert!(
+                s.staged.complete && s.unstaged.complete && s.conflicts.complete,
+                "{s:?}"
+            );
+            assert_eq!(s.staged.observed, 0, "intent is not staged content: {s:?}");
+            assert_eq!(
+                s.unstaged.observed, 1,
+                "intent must retain even empty/absent work: {s:?}"
+            );
+            assert_eq!(s.untracked.observed, 0);
+            assert_eq!(s.ignored.observed, 0);
+            assert_eq!(s.conflicts.observed, 0);
+            assert_eq!(
+                fs::read(f.0.join(".git/index")).unwrap_or_else(|e| panic!("{e}")),
+                before
+            );
+        }
+    }
+}
+
 #[test]
 fn positive_ignored_presence_survives_content_refusal() {
     struct Refuse;

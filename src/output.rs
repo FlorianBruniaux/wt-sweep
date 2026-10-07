@@ -264,6 +264,7 @@ impl RunDirectory {
             "review.json",
             "forge.json",
             "report.txt",
+            "report.html",
             "run.json",
         ]
         .contains(&name)
