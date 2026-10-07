@@ -36,6 +36,7 @@ dates of their observations.
 | [Collection benchmark, 07/10](research/collection-benchmark-2026-10-07.md) | Before/after release samples at 50 and 100 worktrees, first provisional fact, comparable evidence and rejected measurements. |
 | [Review benchmark runner](../scripts/benchmark-review.py) | Frozen binaries, synthetic Git families, first observed fact, pipe/PTY output and conservation checks. Results need their binary hashes and evidence coverage. |
 | [Implementation results](progress.md) | Current checkpoint links followed by the dated U1-U4 validation record. |
+| [Recette réelle multi-projets, 07/10](research/multi-project-acceptance-2026-10-07.md) | 69 registered worktrees, matching text/JSON/HTML, partial disk and local coverage, and delivery limits. |
 | [Finishing ledger](finish-ledger.md) | Historical RETEX checkpoint, current triage checks, repository trial and remaining gates. |
 
 ## Design and decisions

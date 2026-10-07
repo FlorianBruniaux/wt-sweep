@@ -9,6 +9,10 @@ the Cargo package version is a development version.
 
 ### Added
 
+- Sanitized two-project acceptance record: 69 registered worktrees, matching
+  text/JSON/HTML reports, browser checks and explicit collection limits.
+  Records local evidence separately from remote delivery.
+
 - Release review benchmark runner for constant 50/100-worktree fixtures, pipe
   and live PTY output, first collected fact, phase costs and independent source
   conservation. The runner checks exact report identities and executable

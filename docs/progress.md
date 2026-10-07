@@ -650,3 +650,12 @@ séparément ; ils vérifient notamment l’identité des preuves, la persistanc
 mesures refusées et l’arrêt du groupe de processus possédé. Le test de signal
 observe le vrai appel système mais ne constitue pas un oracle de disparition de
 chaque descendant. Les deux tests du banc de comparaison des outils passent.
+
+
+La [recette réelle multi-projets](research/multi-project-acceptance-2026-10-07.md)
+a ensuite retrouvé les 69 inscriptions Git attendues : neuf `keep`, 60 `verify`,
+aucun candidat. Les artefacts texte/JSON/HTML concordent ; le navigateur les lit
+hors ligne. Les 69 résumés locaux restent partiels et seules dix mesures disque
+sur 71 sont complètes. Le commit local `bfdef510` a été essayé ; deux pushes ont
+été refusés pendant une panne GitHub. Publication, CI distante et recette sur
+le SHA intégré restent à vérifier dans #13. Aucun nettoyage réel exécuté.
