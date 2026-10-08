@@ -8,9 +8,9 @@ définit les lots et responsabilités ; leur validation exige les preuves du
 registre. Garder la comparaison des alternatives ouverte avant de développer le
 moteur de nettoyage.
 
-## Incréments locaux du 07/10/2026
+## Incréments du 07/10, livrés le 08/10/2026
 
-Le lot ajoute le [rapport HTML natif](html-report-plan.md) aux runs
+La PR #15 livre le [rapport HTML natif](html-report-plan.md) dans les runs
 `scan`, `review` et `plan`, et les premiers faits provisoires d’histoire et
 d’état local dans la progression. Le résumé local interprète aussi
 intent-to-add dans les index SHA-1 et SHA-256. Le [registre](progress.md) et

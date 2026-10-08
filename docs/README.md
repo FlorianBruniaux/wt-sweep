@@ -17,7 +17,7 @@ dates of their observations.
 | [Assistant skill (French)](assistant-skill.md) | Claude/Codex invocation, progressive report reading, cleanup suggestions and local verification. |
 | [Getting started](getting-started.md) | macOS setup, disposable demo, report interpretation and troubleshooting. |
 | [Espace disque](disk-usage.md) | Taille par worktree, Git partagé, total dédupliqué et limites de la mesure. |
-| [Rapport HTML par projet](html-report-plan.md) | Génération native hors ligne, lecture par famille, reçu et limites de publication. |
+| [Rapport HTML par projet](html-report-plan.md) | HTML hors ligne, lecture par famille, thème BoldGuy, unités lisibles, copie des chemins et reçus. |
 | [CLI reference](cli.md) | Implemented commands, output rules, exit codes and collection limits. |
 | [Targets and filters](targets-and-filters.md) | Select refs per repository and inspect a subset while retaining source evidence. |
 | [Offline forge imports](forge.md) | Supported exports, capture receipts and limits of MR/PR association. |

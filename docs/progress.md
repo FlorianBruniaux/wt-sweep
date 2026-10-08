@@ -6,6 +6,267 @@ Le [dernier checkpoint du lot audit](#audit-lisible--intégration-du-07102026)
 regroupe les validations HTML, collecte et assistant. Les sections précédentes
 conservent les observations historiques et leurs limites.
 
+## Validation du lot HTML pour livraison, 08/10/2026
+
+La branche `codex/html-report-polish` part du `main` fusionné par #15
+(`0c3e1a59e380175991fb2ab7d539d1e87e04f67e`). Elle rassemble les finitions
+HTML, les contrôles navigateur et la documentation suivis dans #16.
+
+Sur ce contenu, les validations obligatoires passent : formatage, Clippy,
+369 tests Rust réussis (3 ignorés), 298 cas Python (292 réussis, 6 ignorés),
+compilation release et cohérence des 22 fichiers de configuration générés.
+Les contrôles Chromium passent : 12 rendus de thème, copie et secours manuel,
+4 dispositions de chemins, 8 variantes d’aide, puis 8 variantes de repli pour
+la revue et 8 pour l’inventaire. La vérification documentaire couvre 233 liens
+locaux, 4 blocs shell et les empreintes des 4 captures.
+
+Le rapport régénéré conserve les 60 lignes et 126 blocs de preuves du rapport
+sauvegardé ; les cinq fichiers source sont inchangés. Aucun nouveau scan réel.
+Safari, Firefox, les lecteurs d’écran et la copie native hors du presse-papiers
+instrumenté ne sont pas vérifiés. Ces résultats sont locaux ; le statut CI
+et la fusion dans `main` restent suivis sur la PR de livraison et dans #16/#17.
+Les entrées ci-dessous décrivent les contrôles effectués avant cette livraison.
+
+## Fonds des grandes sections, 08/10/2026
+
+Les cinq sections repliables partagent désormais le même fond, les bordures,
+les arrondis et les marges internes. Les anciens styles sans carte de la
+synthèse et des familles Git sont retirés. Le bilan disque garde sa bordure
+supérieure orange. Le changement produit porte uniquement sur la feuille de
+styles HTML ; le guide et le changelog sont alignés.
+
+La compilation release, les 12 rendus du contrôle de thème et les 8 variantes
+du contrôle de repli passent. Les captures repliées desktop/mobile, clair/sombre,
+sont relues. Le HTML comparé à l’aperçu précédent ne diffère que par son CSS ;
+les cinq fichiers source sont inchangés. Pas de nouvelle collecte, de suite des
+collecteurs ni de vérification Safari/Firefox. Changements locaux, sans commit
+ni push.
+
+## Grandes sections repliables, 08/10/2026
+
+Les cinq grandes sections HTML utilisent des contrôles natifs ouverts par
+défaut : bilan disque, synthèse, familles Git, mesures disque et couverture.
+Le clic, Entrée et Espace changent leur état sans JavaScript. Deux boutons
+permettent de tout replier ou déplier avec JavaScript, en gardant l’état des
+preuves imbriquées. Le menu et les liens internes rouvrent leur destination,
+même lorsqu’on clique de nouveau sur l’ancre courante. Le message de lecture
+seule reste visible. Les styles d’impression montrent les grandes sections
+fermées sans modifier leur état à l’écran.
+
+Le nouveau contrôle navigateur échoue sur l’ancien rapport puis passe sur
+huit variantes de la revue et huit de l’inventaire : desktop/mobile,
+clair/sombre, avec/sans JavaScript. Il vérifie clavier, liens, actions groupées,
+conservation des preuves, filtres et impression. L’attente du contour de focus
+natif est bornée à deux secondes ; l’exigence de contour n’est pas abaissée.
+Les 12 rendus généraux du thème et les 8 variantes des aides du menu passent.
+Les quatre captures repliées desktop/mobile, clair/sombre, sont relues ; les
+deux actions groupées restent côte à côte sur mobile.
+Les 14 tests Rust HTML, les 5 tests Python de publication, Clippy, formatage,
+compilation release et cohérence des 22 fichiers générés passent.
+
+Les données sauvegardées restent identiques : 60 lignes, 126 blocs de preuves
+et cinq fichiers source inchangés. Aucun scan réel, aucune modification de
+verdict. Les suites générales des collecteurs, Safari, Firefox et les lecteurs
+d’écran ne sont pas vérifiés dans cette passe. Changements locaux, sans commit
+ni push.
+
+## Bilan disque en tête du rapport, 08/10/2026
+
+Le HTML présente d’abord l’allocation dédupliquée observée, la couverture des
+mesures et le nombre de candidats. Le gain récupérable reste **Not established** :
+les blocs partagés APFS et les snapshots empêchent de le déduire de ces tailles.
+Un repli liste les trois plus gros worktrees mesurés, avec chemins copiables et
+mesures partielles signalées. Le Git commun est exclu de cette liste ; les
+tailles des lignes ne sont pas additionnées. Les filtres gardent le périmètre
+disque source. Sans mesure, le rapport indique **Not measured** ; un zéro
+réellement mesuré reste affiché comme zéro.
+
+Sur les observations sauvegardées du rapport à 60 worktrees, le bloc affiche
+36,12 Go partiels, 8 racines complètes, 1 partielle et 52 non mesurées. Il reprend
+0 candidat et 50 worktrees à vérifier. Les 60 lignes, les 126 blocs de preuves
+et les cinq fichiers source sont inchangés. Aucune nouvelle collecte réelle.
+
+Les deux nouveaux tests de comportement échouent avant l’ajout du bloc puis
+passent. Les 14 tests Rust HTML, 5 tests Python de publication et 12 variantes
+générales Chromium passent. Quatre contrôles du nouveau repli vérifient l’ordre
+contre le JSON source, la copie exacte des chemins, les filtres et la largeur
+mobile. Les captures clair/sombre desktop/mobile sont relues. Formatage,
+Clippy, compilation release et cohérence des 22 fichiers générés passent.
+Les suites générales Git et les autres navigateurs ne sont pas rejoués.
+Changements locaux, sans commit ni push.
+
+## Aides de navigation, 08/10/2026
+
+Les quatre entrées du menu expliquent leur contenu au survol et au focus. Un
+bouton **?** distinct sert au clic et au tactile. Les popovers natifs évitent
+le rognage par le menu ; Échap et le clic extérieur les ferment. Les liens
+gardent leurs ancres. Sans JavaScript, les boutons ouvrent une aide native ;
+le survol et le placement près du lien sont propres au mode JavaScript.
+
+Les huit variantes du nouveau contrôle navigateur passent : 1440/390 px,
+clair/sombre, avec/sans JavaScript. Les quatre captures du mode JavaScript ont
+été relues. Les 12 tests Rust HTML, les 5 tests Python de publication et les
+12 variantes générales du thème passent. Formatage, Clippy, compilation release
+et cohérence des 22 fichiers générés passent également. Les relations ARIA
+sont vérifiées structurellement ; aucun lecteur d’écran n’a été exécuté.
+
+L’aperçu utilise les mêmes observations : 60 lignes et 126 blocs de preuves
+identiques, cinq fichiers source inchangés. Pas de nouvelle collecte réelle.
+Les suites générales Git, Safari et Firefox ne sont pas rejoués. Changements
+locaux, sans commit ni push.
+
+## Largeur du rapport, 08/10/2026
+
+Le conteneur principal n’est plus plafonné à 1200 px. Il prend la largeur
+disponible à droite du menu, avec les marges internes prévues sur desktop et
+mobile. Le contrôle du thème couvre désormais 2560, 1440 et 390 px et vérifie
+les deux bords du conteneur. Il échoue sur l’ancien rendu plafonné.
+
+Les douze rendus Chromium passent : trois largeurs, deux thèmes, avec et sans
+JavaScript. Les captures large/mobile ont été relues dans les deux thèmes.
+Les 12 tests Rust HTML passent et le binaire release est reconstruit. Le test
+d’ouverture des preuves attend depuis Node : une attente animée dans la page
+pouvait expirer sans JavaScript alors que la largeur finale était correcte.
+Le seuil d’agrandissement reste identique.
+
+L’aperçu est régénéré depuis les mêmes données à 60 worktrees. La comparaison
+avec l’aperçu précédent confirme que seule la feuille de styles change ; les
+cinq fichiers du rapport source sont inchangés. Pas de collecte réelle, de
+nouveau test des collecteurs ni de validation Safari/Firefox pour cette passe.
+Changements locaux, sans commit ni push.
+
+## Disposition des chemins et boutons, 08/10/2026
+
+Le défaut signalé plaçait le bouton de copie entre le chemin et le motif de
+lacune. Les trois listes concernées (disque, couverture, manifestes locaux)
+utilisent désormais une ligne chemin/bouton puis une ligne pour le motif.
+Sur mobile, le bouton passe sous le chemin. Les détails disque occupent toute
+la largeur ; leur bouton principal reste séparé du contrôle de dépliage.
+
+Le nouveau test navigateur échoue sur le rapport d’origine puis passe sur
+quatre rendus Chromium : 1440/390 px, clair/sombre. Les captures ont été relues.
+Les 12 tests Rust HTML et les 5 tests Python de publication passent, ainsi que
+formatage, Clippy, compilation release et cohérence des 22 fichiers générés.
+Le contrôle de copie passe. Le test général du thème a d’abord échoué sur une
+assertion immédiate de largeur ; un passage de diagnostic a mesuré 204 puis
+431 px, au-dessus du seuil. Le test attend désormais cette largeur avec un
+délai borné, sans abaisser le seuil. Les huit rendus du test final passent.
+
+Un nouvel aperçu utilise les données sauvegardées du rapport à 60 worktrees :
+les attributs des 60 lignes et les 126 blocs de preuves sont identiques. Les
+cinq fichiers du rapport source sont inchangés. Aucune nouvelle collecte ni
+mesure disque n’a été lancée sur les dépôts personnels. Les suites générales
+Git, Safari et Firefox n’ont pas été rejoués pour ce correctif de présentation.
+Changements locaux, sans commit ni push.
+
+## Positionnement du README, 08/10/2026
+
+Les deux README partent désormais du besoin donné par Florian : plus de place
+sur le disque. L’accroche précède le bloc auteur ; le problème et les résultats
+attendus précèdent les captures. Trois entrées orientent vers les parcours
+existants : tailles disque, worktrees dispersés et vérifications avant nettoyage.
+
+La structure s’inspire du
+[README Search Console MCP](https://github.com/FlorianBruniaux/google-search-console-mcp#readme),
+lu le 08/10/2026 : besoin utilisateur, parcours et résultat avant les détails
+techniques. Les formulations et résultats appartiennent à Sweep ; aucune
+promesse de place libérée ni de suppression automatique n’est ajoutée.
+Les captures, commandes et contrats restent inchangés. Cette passe porte sur
+la documentation, sans nouveau test produit ni scan réel.
+
+## README et captures du rapport, 08/10/2026
+
+Les README français et anglais présentent le HTML, les unités décimales et la
+copie des chemins. Leurs schémas Mermaid nomment les sorties HTML, texte et JSON.
+La roadmap distingue le jalon #8 clos, les finitions locales #16, le blocage CI
+#17 et la vision #14. Les anciens chiffres de recette restent dans les sections
+historiques ; le bilan courant cite le checkpoint intégré à 63 inscriptions.
+
+Le visuel principal devient une capture native du générateur sur quatre worktrees
+synthétiques : trois `keep`, un `cleanup_candidate`. Les captures clair/sombre
+montrent le bilan, puis les lignes dans un repli. Les fichiers des fixtures sont
+inchangés après la revue, les quatre verdicts HTML concordent avec le JSON et les
+reçus sont vérifiés. Le manifeste de capture est dans
+[les sources visuelles](assets/report-captures.json). Aucun dépôt personnel n’a
+été scanné ; aucun appel de génération d’image n’a été effectué.
+
+Les quatre captures ont été relues. Chromium ne signale ni erreur, requête
+externe ni débordement horizontal dans le viewport de 1440 px. Le contrôle
+documentaire vérifie 227 liens locaux, quatre blocs shell et les empreintes
+des quatre images. Le rendu GitHub et Mermaid sur GitHub n’ont pas été rejoués ;
+la mise à jour des schémas porte sur leurs libellés. Les suites générales ne
+sont pas rejouées pour ces modifications documentaires. Changements locaux,
+sans commit ni push.
+
+## Copie des chemins dans le HTML, 08/10/2026
+
+Les chemins du rapport ont un bouton **Copy path**. La copie utilise les octets
+enregistrés, sans transformer les échappements d’affichage en chemin. Les
+chemins UTF-8 conservent espaces, accents et guillemets. Un refus du presse-papiers
+ouvre un champ sélectionné pour la copie manuelle ; les octets non UTF-8 et les
+caractères de contrôle donnent un message explicite.
+
+Les 12 tests Rust de rendu HTML et les 5 tests Python de publication passent,
+ainsi que formatage, Clippy et compilation release. Le premier lancement Python
+utilisait un interpréteur trop ancien pour `hashlib.file_digest` ; la reprise
+avec le runtime Python fourni passe. Le test Chromium de copie couvre succès et
+refus avec un presse-papiers instrumenté, repli manuel, clavier, mobile et absence
+de JavaScript. Les huit rendus du thème passent ; les vues disque et copie
+manuelle ont été relues sur desktop et mobile.
+
+L’aperçu reprend le JSON du checkpoint précédent : ses 63 lignes et 133 blocs de
+preuves sont conservés. Il n’y a ni nouvelle collecte ni modification des reçus
+existants. Les suites générales Git n’ont pas été rejouées pour cet ajout de
+présentation. Safari, Firefox et leur presse-papiers natif ne sont pas vérifiés.
+Changements locaux, sans commit ni push.
+
+## Tailles lisibles dans le HTML, 08/10/2026
+
+Le rapport affiche les tailles en o, Ko, Mo, Go, To, Po ou Eo, en base 1000 et
+avec deux décimales à partir du Ko. L’arrondi se fait en entiers, jusqu’à la
+valeur maximale `u64`. Les octets exacts restent dans le JSON, les infobulles
+et les totaux dépliables ; le tri utilise toujours les octets bruts.
+
+Les 11 tests de rendu HTML passent, dont les seuils d’unité, les arrondis, zéro,
+les mesures absentes et les tailles maximales. Les 5 tests Python de publication
+HTML passent, ainsi que formatage, Clippy et compilation release. Les huit
+rendus navigateur du thème passent avec les unités ; les totaux et leurs détails
+exacts ont aussi été contrôlés sur desktop et mobile. Les 63 lignes et les
+133 blocs de preuves de l’aperçu sont conservés. Les suites générales Git du
+checkpoint précédent n’ont pas été rejouées pour ce changement d’affichage.
+
+## Thème BoldGuy, 08/10/2026
+
+Le générateur HTML utilise les fonds crème/noir, l’accent orange, les polices
+système et les métriques monospace de BoldGuy. Le choix clair/sombre est restauré
+avant le contenu quand le stockage local est autorisé. Le stockage refusé et
+l’absence de JavaScript gardent un affichage utilisable. Sur grand écran, une
+preuve ouverte reçoit davantage de largeur dans le tableau.
+
+Un aperçu a été régénéré depuis le `review.json` du contrôle réel précédent :
+**63 worktrees, 12 à conserver, 51 à vérifier, aucun candidat**. À ce checkpoint,
+avant la conversion des unités ci-dessus, les contenus HTML hors styles et
+scripts étaient identiques au rapport d’origine. Le JSON et le HTML
+d’origine correspondent toujours à leur reçu. Cette validation ne constitue pas
+une nouvelle collecte ni une nouvelle mesure disque.
+
+Les huit rendus Chromium combinent 1440/390 px, clair/sombre et JavaScript
+activé/désactivé. Les captures desktop et mobile ont été relues. Les contrôles couvrent recherche,
+filtre, tri, clavier, cibles de 44 px, contrastes de texte échantillonnés, mouvement
+réduit, préférence après rechargement, stockage refusé et fond d’impression.
+Safari et Firefox ne sont pas vérifiés ; ces contrôles ne constituent pas un
+audit d’accessibilité exhaustif. Le script facultatif `tests/html-theme.cjs` et
+son utilisation sont documentés dans le [guide HTML](html-report-plan.md#vérifier-le-thème).
+
+La suite Rust complète passe : **365 réussites, 3 tests ignorés**. Après le dernier
+ajustement CSS, les **10 tests de rendu HTML** passent de nouveau. Les **5 tests
+Python de publication HTML** passent sur le binaire reconstruit. Formatage,
+Clippy, compilation release et cohérence des 22 fichiers générés passent.
+La suite Python couvre ses 298 cas sur le passage interrompu puis la reprise
+des cas restants : **292 réussites, 6 ignorés, aucun échec**. Le contrôle
+d’ordre sur 46 et 100 worktrees passe lors de cette reprise.
+Les changements de thème restent locaux à ce checkpoint, sans commit ni push.
+
 ## Reprise du 07/10/2026
 
 Le checkout de travail précédent était absent. L’instantané Git

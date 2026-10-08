@@ -2,10 +2,37 @@
 
 [Documentation index](../README.md) · [Project overview](../../README.md)
 
-## Git integration and local files
+## Current HTML report
 
-The project README uses this example to show why a Git integration observation
-does not establish preservation of local files. The
+The English and French READMEs use captures of the native HTML report in
+[light](report-light.png) and [dark](report-dark.png) BoldGuy themes.
+They show a disposable synthetic Git family, not private worktrees.
+The report came from the current local generator on 2026-10-08; delivery of
+this presentation update is tracked in #16.
+
+The demo contains four worktrees: the main checkout, a clean linked worktree at
+the target commit, an untracked note and a branch with unmerged work. The CLI
+reports three `keep` and one `cleanup_candidate`. It still requires a usage
+check; the report does not authorize removal.
+
+The fixture builds on `HistoryFixture` in `tests/inventory_support.py`.
+The command shape is `review --repo FIXTURE --target refs/heads/main --disk-usage --summary --html --run-dir OUTPUT`. The before/after filesystem manifest is
+identical, HTML verdicts match JSON, and every published artifact matches its
+receipt size and SHA-256. The screenshots are native Chromium captures, without
+image generation or changes to the report contents. The [capture record](report-captures.json)
+names the viewport, dimensions, binary/report hashes and image hashes. Overview
+images show a 1440 × 800 viewport; detail images capture the full family section
+(1136 × 1427). Both themes were inspected at native size. All four rows remain
+in the source report; the overview screenshot only shows its summary.
+
+Workflow and classification remain editable Mermaid diagrams in both READMEs.
+Older SVG and Gemini images stay below as historical records; their earlier
+classification labels do not describe the current triage policy.
+
+## Historical Git integration illustration
+
+The project README previously used this example to show why a Git integration
+observation does not establish preservation of local files. The
 [disposable demo](../getting-started.md#disposable-demo) creates both observations:
 the worktree HEAD matches `refs/heads/main`, while `notes.txt` is untracked.
 `scan --local` records its hash and metadata without copying its contents.
@@ -20,8 +47,9 @@ description; the README also provides descriptive alt text.
 
 The text describes the demo and the [manifest contract](../contracts.md#inventory-and-local-manifests).
 The lower banner states the current [preservation limits](../decisions/apply-readiness.md).
-The existing Mermaid diagrams cover workflow and classification, so the README
-does not repeat that flow in this illustration.
+The SVG retains the historical `integration_observed` label. Current
+`triage/1` instead retains a worktree with observed untracked work as `keep`.
+It is archived here rather than used to describe the current interface.
 
 Reviewed on 2026-10-05 at native size and at 860px README width. All 21 text
 elements fit the canvas and their panels. Replaying the disposable demo
@@ -61,7 +89,7 @@ a cosmetic departure from the fully dark brief that preserves clear contrast.
   inventory, layout, four directed edges and product boundaries.
 - [Requested dark-theme brief](worktree-sweep-workflow-v3.prompt.md): AgentSec-style
   revision prepared on 2026-10-05 and not executed. The project README now uses
-  the SVG example; the historical image here remains the third response.
+  native HTML captures; the historical image here remains the third response.
 - [Original brief](worktree-sweep-workflow.prompt.md): retained for attempts 1–2.
 - [Mermaid source](worktree-sweep-workflow.mmd): editable logical content and the
   separate local-preservation example.

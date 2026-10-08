@@ -2,27 +2,41 @@
 
 [Index documentaire](README.md) · [Preuves du triage](finish-ledger.md#triage-t01-t09) · [Plan T01-T09](superpowers/plans/2026-10-05-worktree-triage-v2.md)
 
-## Jalon courant : audit lisible en lecture seule
+## Jalon d’audit livré le 08/10/2026
 
-[Milestone GitHub](https://github.com/FlorianBruniaux/wt-sweep/milestone/1) · [Épique de suivi #8](https://github.com/FlorianBruniaux/wt-sweep/issues/8)
+[Milestone clos](https://github.com/FlorianBruniaux/wt-sweep/milestone/1) · [Épique #8 close](https://github.com/FlorianBruniaux/wt-sweep/issues/8)
 
-Le jalon termine le parcours d'audit : choisir des racines, retrouver les
-worktrees, comprendre leur état et leur taille, puis lire un rapport HTML par
-projet. Les issues portent les critères d'acceptation et l'état courant ; ce
-document conserve le périmètre et les limites.
+La [PR #15](https://github.com/FlorianBruniaux/wt-sweep/pull/15) a livré les cinq lots au commit
+`0c3e1a59e380175991fb2ab7d539d1e87e04f67e`. Les issues conservent leurs critères,
+preuves et limites.
 
-| Ordre | Livrable suivi | Dépendances |
-| --- | --- | --- |
-| 1 | [#9 : stabiliser et publier les ajouts console, disque et métriques](https://github.com/FlorianBruniaux/wt-sweep/issues/9) | Vérifications complètes et écart intermittent à 100 worktrees à expliquer. |
-| 2 | [#10, D1 : HTML autonome par projet](https://github.com/FlorianBruniaux/wt-sweep/issues/10) | Intégration après #9 ; développement possible en parallèle de #11. |
-| 3 | [#11, D2 : collecte et premier résultat utile](https://github.com/FlorianBruniaux/wt-sweep/issues/11) | Intégration après #9 ; budgets et preuves préservés. |
-| 4 | [#12 : comparaison Sweep, Holt et AgentRinse sur fixtures](https://github.com/FlorianBruniaux/wt-sweep/issues/12) | Indépendante du HTML ; décision requise avant une extension de gestion. |
-| 5 | [#13 : recette multi-projets et documentation finale](https://github.com/FlorianBruniaux/wt-sweep/issues/13) | Après #9, #10 et #11 ; décision de #12 consignée. |
+| Livrable | État |
+| --- | --- |
+| [#9 : console, disque et métriques](https://github.com/FlorianBruniaux/wt-sweep/issues/9) | Livré ; validation locale complète, exception CI consignée. |
+| [#10 : HTML autonome par projet](https://github.com/FlorianBruniaux/wt-sweep/issues/10) | Livré ; recherche, tri, filtres et preuves capturées. |
+| [#11 : collecte et premier résultat utile](https://github.com/FlorianBruniaux/wt-sweep/issues/11) | Livré ; `intent-to-add` traité, mesures bornées, aucune accélération générale démontrée. |
+| [#12 : comparaison Sweep, Holt et AgentRinse](https://github.com/FlorianBruniaux/wt-sweep/issues/12) | 48 audits sur fixtures ; conserver le moteur d’audit Sweep. |
+| [#13 : recette multi-projets et documentation](https://github.com/FlorianBruniaux/wt-sweep/issues/13) | Terminée sur le contenu intégré ; limites de couverture conservées. |
 
-Le jalon se clôt avec les preuves des cinq tâches, une recette sur le SHA livré
-et des rapports texte, JSON et HTML concordants. Les inconnues justifiées restent
-visibles. La recette réelle porte sur des racines explicitement choisies ; la
-création des issues ne déclenche aucun scan.
+La [recette du 08/10](https://github.com/FlorianBruniaux/wt-sweep/issues/13#issuecomment-6052388331)
+retrouve 63 inscriptions connues sur deux racines choisies : 12 `keep`,
+51 `verify`, aucun candidat. Les 63 résumés locaux et 58 des 65 mesures disque
+restent partiels. Le parcours atteint sa limite de répertoires ; aucune exhaustivité
+machine ni estimation d’espace récupérable APFS n’est démontrée.
+
+## Travaux ouverts
+
+- [#16 : livrer les finitions HTML](https://github.com/FlorianBruniaux/wt-sweep/issues/16) :
+  thème BoldGuy, unités Ko/Mo/Go, copie des chemins, bilan disque, aides de
+  navigation et sections repliables. Le générateur, les contrôles navigateur
+  et la documentation sont prêts sur `codex/html-report-polish` ; l’issue suit
+  leur intégration dans `main`.
+- [#17 : rétablir la CI GitHub](https://github.com/FlorianBruniaux/wt-sweep/issues/17) :
+  le dernier job de main n’a pas démarré pour un problème de paiement ou de
+  plafond. Obtenir une exécution sur un SHA identifié après résolution.
+
+Le jalon clos décrit les livrables d’audit. Les finitions de présentation et la
+CI restent suivies séparément, sans modifier les conditions de nettoyage.
 
 ## Vision après ce jalon
 
@@ -37,7 +51,7 @@ recherchées, privilégier l'adoption ou un adaptateur. Sweep ne prévoit pas de
 reconstruire un gestionnaire de cycle de vie, un ADE ou un registre obligatoire.
 Le retrait reste soumis à E1/U5-U7.
 
-## État de référence
+## Référence historique du 06/10/2026
 
 État du 06/10/2026 : T01 à T09 sont fusionnés dans `main` par la
 [PR #1](https://github.com/FlorianBruniaux/wt-sweep/pull/1), commit
@@ -58,8 +72,10 @@ Les plafonds et l’index de la ligne restante gardent des preuves inconnues.
 | T09 | Commande `review`, aide par commande, inventaire original et rapports liés par un reçu. |
 | Documentation | README anglais/français, tutoriel jetable, commandes pour un dépôt réel, prompt d'exemple, contrats et guides CLI. |
 
-Les contrôles locaux et la CI réussie avant fusion sont détaillés dans le
-[registre de livraison](finish-ledger.md#livraison-github-du-06102026).
+Les contrôles du socle et son ancienne CI sont détaillés dans le
+[registre de livraison du 06/10](finish-ledger.md#livraison-github-du-06102026).
+Pour le contenu fusionné par #15, #9 consigne les contrôles locaux et #17 le
+blocage de la CI distante.
 Consulter le [workflow](https://github.com/FlorianBruniaux/wt-sweep/actions/workflows/ci.yml)
 pour le statut d'un commit précis. La publication des sources ne constitue pas
 une release binaire.
@@ -126,15 +142,16 @@ second réel ciblé examine 52 213 chemins et retient le worktree. Son état loc
 reste incomplet au plafond d’octets. Ces mesures ne prouvent pas la complétude
 de toute la famille ni une accélération d’énumération. Le [checkpoint de collecte](collection-performance.md#checkpoint-a1-a6--fixtures-et-recette-réelle)
 sépare les mesures synthétiques, les passages ciblés et le bilan de famille.
-Les phases locale et privée atteignent leurs plafonds. L’unique ligne `verify`
-garde une ascendance mais une entrée d’index `intent-to-add` non interprétée et
-une histoire privée incomplète ; ses zéros incomplets ne prouvent pas la propreté.
+Dans cette recette historique, les phases locale et privée atteignaient leurs
+plafonds. L’unique ligne `verify` gardait une ascendance, une entrée d’index
+`intent-to-add` non interprétée et une histoire privée incomplète. #11 a depuis
+corrigé l’interprétation de cette entrée ; des zéros incomplets ne prouvent
+toujours pas la propreté.
 Le dépôt évolue entre passages : aucune comparaison réelle n’est un benchmark
 contrôlé à données constantes.
 
-Une découverte multi-racines réelle demeure une exécution distincte : choisir
-les racines, comparer les familles connues, vérifier doublons, inscriptions
-extérieures et zones inaccessibles. Le scan global réel exige son périmètre
+La recette multi-racines suivante est consignée dans #13, avec ses racines,
+inscriptions connues et lacunes. Un nouveau scan global réel exige son périmètre
 explicitement demandé.
 
 X02 (lectures Git groupées) est désormais utilisé par le résumé local : les

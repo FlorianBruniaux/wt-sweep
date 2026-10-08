@@ -13,9 +13,9 @@ Le contrat courant `review/2`, ses verdicts et C1-C5 sont définis dans les
 [contrats des artefacts](contracts.md#triage-policy) et le plan T01-T09.
 Les conditions E1 et U5-U7 restent ouvertes ; le triage ne les remplace pas.
 
-## Incréments de lecture seule, 07/10/2026
+## Incréments de lecture seule, livrés le 08/10/2026
 
-Le [rapport HTML](html-report-plan.md) est implémenté dans le checkout local,
+Le [rapport HTML](html-report-plan.md) est livré par la PR #15,
 sans nouvelle règle de décision. Ses critères portent sur la fidélité au
 JSON, l’échappement, les vues filtrées, la limite de 32 MiB, les erreurs de
 publication et le reçu. La progression expose des faits d’histoire et
