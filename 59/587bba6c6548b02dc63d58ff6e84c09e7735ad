@@ -1,0 +1,101 @@
+CHANGELOG.md
+  s_160b3107588443::t_882afe3be1e7a6 12-32,249-267,328-337
+README.fr.md
+  s_4639210bbde494::t_86468c53db2298 5-6,26,32,34-36,38-53,55-58,60-64,68-79,81-87,89-97,160-162,228-230,251,255,310-314,327,343-363,381-386,398-401
+README.md
+  s_4639210bbde494::t_2bccf016cfd831 5-6,26,32,34-36,38-53,55-57,59-63,67-77,79-84,86-94,154-155,219-221,240,244,299-302,310,326-345,362-367,379-381
+docs/README.md
+  s_e488605d7362bc::t_458e56776b685d 20
+docs/assets/README.md
+  s_160b3107588443::t_a01980d286e130 5-35,50-52,92
+docs/assets/generation.json
+  s_160b3107588443::t_8736cea2c1fd76 153
+docs/assets/report-captures.json
+  s_160b3107588443::t_703adc365c86d9 1-57
+docs/html-report-plan.md
+  s_160b3107588443::t_288caed950656f 44-47,55-129,146-218
+docs/implementation.md
+  s_e488605d7362bc::t_aca6fc9477d8fd 11,13
+docs/plan.md
+  s_e488605d7362bc::t_cf64330505515a 16,18
+docs/progress.md
+  s_ec22837e58ecfe::t_3920b5b80432ad 9-269
+docs/roadmap.md
+  s_160b3107588443::t_22aeda4dbb670d 5,7,9-11,13-39,54,75-78,145-149,153-154
+src/presentation/html.rs
+  s_160b3107588443::t_4d2b7a5562b8ab 18,89-94,260-264,274-288,291-333,357,374,402-404,417,424-426,435-436,477,479,492-494,520,531,540-542,580-581,674,676,683,694-696,715-716,719,775-777,794-823,829-833,871-879,940-1035,1037-1038,1040-1044,1047,1065,1067,1069,1071,1073,1077,1086-1087,1092-1093,1096,1127,1132
+src/presentation/html/report.css
+  s_160b3107588443::t_b5338ecca9e8c6 1-420
+src/presentation/html/report.js
+  s_160b3107588443::t_df60de72e8ded2 11-16,23,58-125,127-177
+src/presentation/html/theme.js
+  s_160b3107588443::t_d0dd94a1457df6 1-9
+tests/html-copy.cjs
+  s_558d10d207a1da::t_9e25196d2cdfeb 1-88
+tests/html-layout.cjs
+  s_4639210bbde494::t_55f4119404b5e0 1-73
+tests/html-nav.cjs
+  s_160b3107588443::t_adc9d4ab9f0804 1-40
+tests/html-sections.cjs
+  s_160b3107588443::t_01805f5db14584 1-102
+tests/html-theme.cjs
+  s_160b3107588443::t_771b989814716e 1-91
+tests/html_report.rs
+  s_9e80b85afcc43a::t_9d2012caacf579 177-179,211,219-232,256,299,447-672
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "59587bba6c6548b02dc63d58ff6e84c09e7735ad",
+  "prompts": {},
+  "sessions": {
+    "s_160b3107588443": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a106f2-069b-7be2-aa09-88b1bbf2331e",
+        "model": "gpt-6-astra"
+      },
+      "human_author": "Florian BRUNIAUX <florian@bruniaux.com>"
+    },
+    "s_4639210bbde494": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a116d2-ed8c-7970-b224-d51d3af94f7f",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "Florian BRUNIAUX <florian@bruniaux.com>"
+    },
+    "s_558d10d207a1da": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "a78a36f4-c25c-43d0-9d9d-1858d6e6674d",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "Florian BRUNIAUX <florian@bruniaux.com>"
+    },
+    "s_9e80b85afcc43a": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a0f3be-9233-7710-ac57-7b3f9fa5c15c",
+        "model": "gpt-6-astra"
+      },
+      "human_author": "Florian BRUNIAUX <florian@bruniaux.com>"
+    },
+    "s_e488605d7362bc": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a1114b-25b9-7151-aca6-1a0a544c7bfd",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "Florian BRUNIAUX <florian@bruniaux.com>"
+    },
+    "s_ec22837e58ecfe": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a0f6a4-88a1-77b3-9270-14c46f3f921c",
+        "model": "gpt-6-sol"
+      },
+      "human_author": "Florian BRUNIAUX <florian@bruniaux.com>"
+    }
+  }
+}
