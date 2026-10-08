@@ -8,6 +8,39 @@ définit les lots et responsabilités ; leur validation exige les preuves du
 registre. Garder la comparaison des alternatives ouverte avant de développer le
 moteur de nettoyage.
 
+## Incréments locaux du 07/10/2026
+
+Le lot ajoute le [rapport HTML natif](html-report-plan.md) aux runs
+`scan`, `review` et `plan`, et les premiers faits provisoires d’histoire et
+d’état local dans la progression. Le résumé local interprète aussi
+intent-to-add dans les index SHA-1 et SHA-256. Le [registre](progress.md) et
+les issues du [jalon](roadmap.md) distinguent validation locale, SHA livré,
+CI et recette réelle. La présence des sources ne constitue pas une release binaire.
+
+Le [runner de mesure](../scripts/benchmark-review.py) compare des binaires
+figés sur des familles synthétiques. Le [rapport de comparaison runtime](research/worktree-runtime-comparison-2026-10-07.md)
+consigne les 48 audits natifs de Sweep, Holt et AgentRinse, avec leurs contrats
+différents. Les mesures avant/après de collecte ont leur registre séparé ; aucun
+gain chiffré n’est déduit de la présence du runner. Ces lots ne couvrent
+ni gestion d’environnements ni retrait.
+
+### Répartition du lot audit
+
+| Responsabilité | Agent et paramètres de lancement | Périmètre |
+| --- | --- | --- |
+| Rendu HTML | Rust, GPT-6.1 Sol `high` | Projection pure, styles, interactions et tests de rendu. |
+| Collecte et mesures | Implémentation Sweep, GPT-6.1 Sol `xhigh` | Index, histoire privée, observations progressives et corpus constants. |
+| Comparaison des outils | Architecture backend, GPT-6.1 Sol `high` | Copies jetables, CLI natives et oracle de conservation. |
+| Documentation et prompt | Rédaction technique, GPT-6.1 Sol `medium` | Guides, liens, aide et lecture d’un rapport synthétique. |
+| Revue indépendante | GPT-6 Astra `high` | Contrats, limites, correctifs de revue et protocole de mesure. |
+| Intégration | Coordinateur | CLI, types communs, publication, projections, suites et livraison. |
+
+Trois sous-agents au plus travaillent avec le coordinateur ; les rôles se
+relaient quand un lot se termine. Chaque lot possède ses fichiers. Les suites
+complètes et les mesures lourdes sont sérialisées pour éviter les conflits et
+la concurrence CPU pendant les benchmarks. Ce tableau décrit les
+paramètres de lancement, pas un classement mesuré des modèles.
+
 ## Collecte bornée A1-A6
 
 L’intégrateur possède les profils `standard|thorough`, les contrats optionnels de

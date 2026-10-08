@@ -10,6 +10,7 @@ pub struct Artifact<'a> {
     pub name: &'a str,
     pub json: &'a [u8],
     pub report: &'a str,
+    pub html: Option<&'a str>,
     pub partial: bool,
 }
 
@@ -83,6 +84,8 @@ pub enum PublicationPhase {
     JsonSync,
     ReportWrite,
     ReportSync,
+    HtmlWrite,
+    HtmlSync,
     ArtifactsDirectorySync,
     ReceiptWrite,
     ReceiptSync,
@@ -98,6 +101,8 @@ impl PublicationPhase {
             Self::JsonSync => "json_sync",
             Self::ReportWrite => "report_write",
             Self::ReportSync => "report_sync",
+            Self::HtmlWrite => "html_write",
+            Self::HtmlSync => "html_sync",
             Self::ArtifactsDirectorySync => "artifacts_directory_sync",
             Self::ReceiptWrite => "receipt_write",
             Self::ReceiptSync => "receipt_sync",
@@ -146,6 +151,9 @@ fn publish_internal(
     }
     if artifact.json.len() > limits.json_bytes
         || artifact.report.len() > limits.report_bytes
+        || artifact
+            .html
+            .is_some_and(|html| html.len() > limits.report_bytes)
         || inventory_json.is_some_and(|bytes| bytes.len() > limits.json_bytes)
     {
         return Err(SweepError::new(
@@ -198,6 +206,17 @@ fn publish_internal(
         ReportSync,
         false,
     )?;
+    if let Some(html) = artifact.html {
+        write_artifact(
+            &directory,
+            "report.html",
+            html.as_bytes(),
+            io,
+            HtmlWrite,
+            HtmlSync,
+            false,
+        )?;
+    }
     directory
         .verify()
         .map_err(|e| failed(&directory, ArtifactsDirectorySync, false, e))?;
@@ -209,6 +228,9 @@ fn publish_internal(
     }
     artifacts.push(serde_json::json!({"name": artifact.name, "sha256": sha256(artifact.json), "bytes": artifact.json.len()}));
     artifacts.push(serde_json::json!({"name": "report.txt", "sha256": sha256(artifact.report.as_bytes()), "bytes": artifact.report.len()}));
+    if let Some(html) = artifact.html {
+        artifacts.push(serde_json::json!({"name": "report.html", "sha256": sha256(html.as_bytes()), "bytes": html.len()}));
+    }
     let receipt = serde_json::json!({
         "schema": "wt-sweep.run/1", "run_id": run_id, "command": artifact.command,
         "status": if artifact.partial { "partial" } else { "complete" },

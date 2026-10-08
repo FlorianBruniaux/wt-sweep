@@ -277,11 +277,29 @@ impl ReviewLimits {
         Ok(())
     }
 }
+/// Provisional collected facts for progress display; never a cleanup verdict.
+#[derive(Clone, Debug)]
+pub enum ProgressObservation {
+    History {
+        path: BytePath,
+        head: Option<String>,
+        target_ref: BytePath,
+        target_oid: Option<String>,
+        result: String,
+        complete: bool,
+    },
+    Local {
+        path: BytePath,
+        summary: Box<LocalSummary>,
+    },
+}
+
 #[derive(Clone, Debug)]
 pub struct ProgressEvent {
     pub phase: &'static str,
     pub processed: u64,
     pub stop_reason: Option<String>,
+    pub observation: Option<ProgressObservation>,
 }
 fn progress(
     callback: &mut dyn FnMut(ProgressEvent),
@@ -293,6 +311,7 @@ fn progress(
         phase,
         processed,
         stop_reason,
+        observation: None,
     });
 }
 
@@ -1003,7 +1022,29 @@ fn local_summaries_collect(
         collect,
     )
 }
+#[cfg(test)]
 fn local_summaries_collect_with_limits(
+    inventory: &Inventory,
+    budget: usize,
+    stopped_families: &BTreeMap<(u64, u64), GitRead>,
+    limits: &crate::local::SummaryLimits,
+    phase_timeout: Duration,
+    collect: impl FnMut(
+        &Worktree,
+        &crate::local::SummaryLimits,
+    ) -> Result<crate::local::SummaryOutcome, SweepError>,
+) -> Result<LocalCollection, SweepError> {
+    local_summaries_collect_with_limits_and_progress(
+        inventory,
+        budget,
+        stopped_families,
+        limits,
+        phase_timeout,
+        collect,
+        &mut |_| {},
+    )
+}
+fn local_summaries_collect_with_limits_and_progress(
     inventory: &Inventory,
     budget: usize,
     stopped_families: &BTreeMap<(u64, u64), GitRead>,
@@ -1013,6 +1054,7 @@ fn local_summaries_collect_with_limits(
         &Worktree,
         &crate::local::SummaryLimits,
     ) -> Result<crate::local::SummaryOutcome, SweepError>,
+    callback: &mut dyn FnMut(ProgressEvent),
 ) -> Result<LocalCollection, SweepError> {
     let started = Instant::now();
     let mut output = LocalCollection {
@@ -1091,6 +1133,15 @@ fn local_summaries_collect_with_limits(
                 summary_bytes = budget;
             } else {
                 summary_bytes += bytes;
+                callback(ProgressEvent {
+                    phase: "local_observation",
+                    processed: output.summaries.len() as u64 + 1,
+                    stop_reason: summary.gaps.first().map(|gap| gap.reason.clone()),
+                    observation: Some(ProgressObservation::Local {
+                        path: worktree.path.clone(),
+                        summary: Box::new(summary.clone()),
+                    }),
+                });
                 output
                     .summaries
                     .insert(worktree.path.clone(), Some(summary));
@@ -1347,13 +1398,14 @@ fn collect_with_options(
         summaries: mut local_summaries,
         stopped_families,
         metrics: local_metrics,
-    } = local_summaries_collect_with_limits(
+    } = local_summaries_collect_with_limits_and_progress(
         &evidence_inventory,
         24 * 1024 * 1024,
         &history.stopped_families,
         &options.local,
         options.local_timeout,
         crate::local::collect_summary_for_review,
+        callback,
     )?;
     record_phase(
         &mut collection_metrics,
@@ -1697,6 +1749,10 @@ fn collect_with_options(
             ("traversal_steps", private_metrics.traversal_steps),
             ("anchors_verified", private_metrics.anchors_verified),
             ("roots_enumerated", private_metrics.roots_enumerated),
+            (
+                "output_serializations",
+                private_metrics.output_serializations,
+            ),
         ],
     );
     let phase_started = Instant::now();
@@ -1767,6 +1823,12 @@ fn collect_with_options(
         "revalidation",
         phase_started,
         [
+            (
+                "private_output_serializations",
+                private_after
+                    .output_serializations
+                    .saturating_sub(private_metrics.output_serializations),
+            ),
             (
                 "history_git_processes",
                 history
@@ -2097,6 +2159,7 @@ pub fn judge(facts: &Observations) -> Result<Review, SweepError> {
         item.risks.push("no removal authorized; ACLs, xattrs and unreachable objects outside enumerated roots are outside preservation scope".into());
     }
     let mut review = Review {
+        disk_usage: facts.inventory.disk_usage.clone(),
         context: facts.context.clone(),
         shared_stashes: facts.shared_stashes.clone(),
         history_metrics: facts.history_metrics.clone(),

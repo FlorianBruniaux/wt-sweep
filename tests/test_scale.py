@@ -250,7 +250,7 @@ class CliScaleTests(unittest.TestCase):
         path = self.fixture.root / "inventory.json"
         path.write_text(json.dumps(inventory))
         self.fixture.protected_files.append(path)
-        arguments = ["plan", "--inventory", path, "--format", "json"]
+        arguments = ["plan", "--inventory", path, "--format", "json", "--verbose"]
         for target in targets:
             arguments.extend(("--target", target))
         report, stderr = self.run_cli(*arguments)
@@ -276,8 +276,44 @@ class CliScaleTests(unittest.TestCase):
         # Comparison excludes real observation clocks and traversal-dependent metrics.
         return {path: (self.history(item)["source_oid"], self.history(item)["target_oid"],
                        self.history(item)["result"], self.history(item)["observed_result"],
-                       item["classification"], item["history_omitted_targets"])
+                       item["history_omitted_targets"])
                 for path, item in items.items()}
+
+    def decision_evidence(self, item):
+        # Clocks and their derived digest vary even when all collected proofs agree.
+        # Keep source hashes, identities, completeness, positives, and refusal causes.
+        ignored = {"started_unix_ms", "finished_unix_ms", "digest_sha256", "classification", "decision"}
+        def normalize(value):
+            if isinstance(value, dict):
+                return {key: normalize(child) for key, child in value.items() if key not in ignored}
+            if isinstance(value, list):
+                return [normalize(child) for child in value]
+            return value
+        return normalize(item)
+
+    def assert_order_verdicts_follow_collected_evidence(self, first, second):
+        for path in first:
+            a, b = first[path], second[path]
+            if self.decision_evidence(a) == self.decision_evidence(b):
+                self.assertEqual(a["classification"], b["classification"],
+                                 "identical collected proofs must give the same judgement")
+            elif a["classification"] != b["classification"]:
+                self.assertEqual({a["classification"], b["classification"]},
+                                 {"cleanup_candidate", "verify"}, "positive retention must not disappear")
+                partial = a if a["classification"] == "verify" else b
+                complete = b if partial is a else a
+                self.assertEqual(partial["decision"]["missing_conditions"], ["C4", "C5"],
+                                 "only the reproduced private final-proof gap explains this difference")
+                history = partial["private_history"]
+                self.assertFalse(history["enumeration_complete"])
+                self.assertTrue(any("final" in gap and ("validation" in gap or "check" in gap)
+                                    for gap in history["gaps"]), "final refusal cause must stay visible")
+                self.assertTrue(history["roots"], "unknown fallback must not erase collected private roots")
+                self.assertTrue(all(root["result"] == "unknown" and root["observed_result"] == "covered"
+                                    and root["reason"] for root in history["roots"]),
+                                "final deadline must preserve the positive observed coverage")
+                self.assertTrue(all(root["result"] == "covered"
+                                    for root in complete["private_history"]["roots"]))
 
     def test_46_then_100_distinct_heads_costly_first_have_history_and_order_invariance(self):
         for count in (46, 100):
@@ -306,13 +342,18 @@ class CliScaleTests(unittest.TestCase):
                 inventory["families"][0]["worktrees"].reverse()
                 _, second, _ = self.plan(inventory)
                 self.assertEqual(self.stable_results(first), self.stable_results(second),
-                                 "equivalent complete simple coverage must not depend on inventory order")
+                                 "equivalent commit-graph coverage must not depend on inventory order")
+                self.assert_order_verdicts_follow_collected_evidence(first, second)
                 self.fixture.close()
 
     def test_stdout_stays_json_and_stderr_records_phases_and_processed_count(self):
         self.fixture.many_worktrees(2, depth=3)
         report, _, stderr = self.plan(self.inventory())
         self.assertEqual(report["schema"], "wt-sweep.review/2", "stdout must remain strict JSON")
+        linked = next(item for item in report["items"]
+                      if decode_path(item["path"]) == os.fsencode(self.fixture.paths[1]))
+        self.assertEqual(linked["classification"], "cleanup_candidate",
+                         "small complete corpus must retain a positive final candidate")
         progress = stderr.decode(errors="replace")
         for phase in ("history", "local files", "Verifying commit", "Review finished"):
             self.assertIn(phase, progress, "CLI progress omitted an execution phase")

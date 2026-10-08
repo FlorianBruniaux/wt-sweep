@@ -2,8 +2,8 @@
 use super::text;
 use crate::{
     discover::{DiscoveryPhase, DiscoveryProgress},
-    model::{LocalSummary, Review, ReviewItem, ReviewView},
-    review::ProgressEvent,
+    model::{Coverage, LocalSummary, Review, ReviewItem, ReviewView},
+    review::{ProgressEvent, ProgressObservation},
 };
 use std::{collections::BTreeSet, fmt::Write};
 
@@ -172,6 +172,7 @@ fn render(review: &Review, rows: &[&ReviewItem], filtered: bool) -> String {
             "  Source totals: {k} keep, {c} candidates, {v} to verify"
         );
     }
+    crate::disk::render_summary(review.disk_usage.as_ref(), &mut output);
     let complete = review
         .items
         .iter()
@@ -248,26 +249,8 @@ fn render(review: &Review, rows: &[&ReviewItem], filtered: bool) -> String {
             "  None for unresolved worktrees. Retention reasons remain in the detail."
         );
     }
-    if let Some(metrics) = &review.collection_metrics {
-        let _ = writeln!(output, "\nCOLLECTION TIME");
-        for phase in &metrics.phases {
-            let title = match phase.name.as_str() {
-                "controls" => "Identity and protections",
-                "history" => "Commit history",
-                "local" => "Local files",
-                "deep" => "Candidate object verification",
-                "private_history" => "Private history",
-                "revalidation" => "Final checks",
-                "context" => "Optional context",
-                _ => "Other checks",
-            };
-            let _ = writeln!(
-                output,
-                "  {title}: {:.1}s",
-                phase.elapsed_ms as f64 / 1000.0
-            );
-        }
-    }
+    write_discovery_performance(&review.coverage, &mut output);
+    write_collection_performance(review, &mut output);
     let limits = limits(review);
     if !limits.is_empty() {
         let _ = writeln!(output, "\nCOLLECTION LIMITS");
@@ -293,6 +276,104 @@ fn render(review: &Review, rows: &[&ReviewItem], filtered: bool) -> String {
         "\nUsage by agents or terminals: not checked.\nRead-only review; no removal authorized.\nIncomplete checks do not mean a worktree is clean."
     );
     output
+}
+
+fn rate(count: u64, elapsed_ms: u64, unit: &str) -> String {
+    if elapsed_ms == 0 {
+        return "rate unavailable (<1 ms)".into();
+    }
+    format!("{:.1} {unit}/s", count as f64 * 1000.0 / elapsed_ms as f64)
+}
+
+pub fn write_discovery_performance(coverage: &Coverage, output: &mut impl Write) {
+    let Some(metrics) = &coverage.discovery_metrics else {
+        return;
+    };
+    let complete = coverage.traversal_complete
+        && coverage.gaps.is_empty()
+        && coverage.remaining.is_none()
+        && coverage.publication.is_none();
+    let _ = writeln!(output, "\nDISCOVERY PERFORMANCE (source inventory)");
+    let _ = writeln!(
+        output,
+        "  Elapsed: {:.3}s; metadata workers: {}",
+        metrics.elapsed_ms as f64 / 1000.0,
+        metrics.workers
+    );
+    let _ = writeln!(
+        output,
+        "  Directory read attempts: {}; entries listed: {}",
+        metrics.directory_read_attempts, metrics.entries_listed
+    );
+    if metrics.directory_read_attempts > 0 {
+        let _ = writeln!(
+            output,
+            "  Average discovery throughput: {}",
+            rate(metrics.entries_listed as u64, metrics.elapsed_ms, "entries")
+        );
+    }
+    let _ = writeln!(
+        output,
+        "  Coverage: {}; {} gaps. Timing excludes disk sizing, local analysis and publication.",
+        if complete { "complete" } else { "incomplete" },
+        coverage.gaps.len()
+    );
+}
+
+fn phase_title(name: &str) -> &'static str {
+    match name {
+        "controls" => "Identity and protections",
+        "history" => "Commit history",
+        "local" => "Local files",
+        "deep" => "Candidate object verification",
+        "private_history" => "Private history",
+        "revalidation" => "Final checks",
+        "context" => "Optional context",
+        _ => "Other checks",
+    }
+}
+
+pub fn write_collection_performance(review: &Review, output: &mut impl Write) {
+    let Some(metrics) = &review.collection_metrics else {
+        return;
+    };
+    let _ = writeln!(output, "\nCOLLECTION TIME");
+    let mut total = 0_u64;
+    for phase in &metrics.phases {
+        total = total.saturating_add(phase.elapsed_ms);
+        let _ = write!(
+            output,
+            "  {}: {:.1}s",
+            phase_title(&phase.name),
+            phase.elapsed_ms as f64 / 1000.0
+        );
+        if let Some(paths) = phase.counters.get("paths_checked") {
+            let _ = write!(
+                output,
+                "; {paths} paths checked ({})",
+                rate(*paths, phase.elapsed_ms, "paths")
+            );
+        }
+        if let Some(processes) = phase.counters.get("git_processes") {
+            let _ = write!(output, "; {processes} Git processes");
+        }
+        let _ = writeln!(output);
+    }
+    let _ = writeln!(
+        output,
+        "  Recorded phases: {:.1}s (excludes discovery, disk size measurement and publication)",
+        total as f64 / 1000.0
+    );
+    if total > 0 {
+        if let Some(slowest) = metrics.phases.iter().max_by_key(|phase| phase.elapsed_ms) {
+            let _ = writeln!(
+                output,
+                "  Slowest phase: {} ({:.1}% of recorded collection time)",
+                phase_title(&slowest.name),
+                slowest.elapsed_ms as f64 * 100.0 / total as f64
+            );
+        }
+    }
 }
 
 // Diagnostic wording only: never used to determine a verdict or completeness.
@@ -363,25 +444,69 @@ pub fn discovery_progress(event: &DiscoveryProgress) -> String {
     match event.phase {
         DiscoveryPhase::Start => "Discovering repositories...".into(),
         DiscoveryPhase::Progress => format!(
-            "  Searching: {} repositories found; {} known paths pending",
+            "  Searching: {} repositories found; {} known paths pending; {:.1}s; {}",
             event.families,
             event
                 .queued_paths
-                .saturating_add(event.metadata_ready_paths)
+                .saturating_add(event.metadata_ready_paths),
+            event.elapsed_ms as f64 / 1000.0,
+            rate(event.entries as u64, event.elapsed_ms, "entries")
         ),
         DiscoveryPhase::Finished => format!(
-            "Discovery finished: {} repositories found{}",
+            "Discovery finished: {} repositories found{}; {:.3}s",
             event.families,
             event
                 .stop
                 .as_ref()
                 .map(|s| format!("; stopped: {}", s.as_str()))
-                .unwrap_or_default()
+                .unwrap_or_default(),
+            event.elapsed_ms as f64 / 1000.0
         ),
     }
 }
 
 pub fn review_progress(event: &ProgressEvent) -> String {
+    if let Some(observation) = &event.observation {
+        return match observation {
+            ProgressObservation::History {
+                path,
+                head,
+                target_ref,
+                target_oid,
+                result,
+                complete,
+            } => {
+                format!(
+                    "Observed history: {} (provisional, {}); {} HEAD={} target={} {}{}",
+                    text(result, 80),
+                    if *complete { "complete" } else { "partial" },
+                    text(&path.display(), 180),
+                    head.as_deref()
+                        .map(|v| text(v, 128))
+                        .unwrap_or_else(|| "UNKNOWN".into()),
+                    text(&target_ref.display(), 160),
+                    target_oid
+                        .as_deref()
+                        .map(|v| text(v, 128))
+                        .unwrap_or_else(|| "UNKNOWN".into()),
+                    event
+                        .stop_reason
+                        .as_deref()
+                        .map(|v| format!("; {}", text(v, 160)))
+                        .unwrap_or_default()
+                )
+            }
+            ProgressObservation::Local { path, summary } => format!(
+                "Observed local: staged={} unstaged={} conflicts={} untracked={} ignored={} (provisional); {}",
+                super::local_count(&summary.staged),
+                super::local_count(&summary.unstaged),
+                super::local_count(&summary.conflicts),
+                super::local_count(&summary.untracked),
+                super::local_count(&summary.ignored),
+                text(&path.display(), 180)
+            ),
+        };
+    }
     let noun = if event.processed == 1 {
         "worktree"
     } else {
@@ -407,4 +532,225 @@ pub fn review_progress(event: &ProgressEvent) -> String {
         ),
         other => format!("Review phase: {}", text(other, 80)),
     }
+}
+
+/// Short console recap. The saved report still uses the detailed rendering above.
+pub fn compact_summary(review: &Review) -> String {
+    compact(review, &review.items.iter().collect::<Vec<_>>())
+}
+
+pub fn compact_view_summary(view: &ReviewView) -> String {
+    let selected: BTreeSet<_> = view.selected_paths.iter().collect();
+    compact(
+        &view.source,
+        &view
+            .source
+            .items
+            .iter()
+            .filter(|item| selected.contains(&item.path))
+            .collect::<Vec<_>>(),
+    )
+}
+
+fn compact(review: &Review, rows: &[&ReviewItem]) -> String {
+    let total = review.items.len();
+    let selected = rows.len();
+    let (keep, candidates, verify) = counts(rows);
+    let mut out = format!(
+        "\nWORKTREE SWEEP\n========================================\nWorktrees selected: {selected}/{total}\n"
+    );
+    let targets: BTreeSet<_> = rows
+        .iter()
+        .flat_map(|i| &i.history)
+        .map(|h| &h.target_ref)
+        .collect();
+    if !targets.is_empty() {
+        let _ = writeln!(
+            out,
+            "Targets: {}{}",
+            targets
+                .iter()
+                .take(3)
+                .map(|t| text(&t.display(), 80))
+                .collect::<Vec<_>>()
+                .join(", "),
+            if targets.len() > 3 {
+                " (more in report)"
+            } else {
+                ""
+            }
+        );
+    }
+    let not_requested = review
+        .items
+        .iter()
+        .filter(|item| {
+            item.unknowns
+                .iter()
+                .any(|r| r == "Not selected for evidence collection (--worktree).")
+        })
+        .count();
+    if not_requested > 0 {
+        let _ = writeln!(
+            out,
+            "Targeted collection: {} worktree(s); {not_requested} not requested",
+            total - not_requested
+        );
+    }
+    let _ = writeln!(
+        out,
+        "\nRESULTS (selected worktrees)\n  Keep: {keep}\n  Cleanup candidates: {candidates}\n  Needs verification: {verify}"
+    );
+    if selected != total {
+        let (k, c, v) = counts(&review.items.iter().collect::<Vec<_>>());
+        let _ = writeln!(
+            out,
+            "  Source totals: {k} keep, {c} candidates, {v} to verify"
+        );
+    }
+    let _ = writeln!(
+        out,
+        "\nDISK USAGE (all recorded roots, unaffected by review filters)"
+    );
+    if let Some(disk) = &review.disk_usage {
+        let complete = disk.measurements.iter().filter(|r| r.complete).count();
+        let _ = writeln!(
+            out,
+            "  Observed allocated, deduplicated: {}{}",
+            crate::disk::human_bytes(disk.unique_bytes.allocated),
+            if disk.complete { "" } else { " (INCOMPLETE)" }
+        );
+        let _ = writeln!(
+            out,
+            "  {complete}/{} roots complete; logical: {}; not reclaimable space.",
+            disk.measurements.len(),
+            crate::disk::human_bytes(disk.unique_bytes.logical)
+        );
+        let _ = writeln!(
+            out,
+            "  Captured sizes; observation interval and APFS limits in report."
+        );
+    } else {
+        let _ = writeln!(out, "  Not measured; use scan or review --disk-usage.");
+    }
+    let coverage = &review.coverage;
+    let discovery_complete = coverage.traversal_complete
+        && coverage.gaps.is_empty()
+        && coverage.remaining.is_none()
+        && coverage.publication.is_none();
+    let _ = writeln!(
+        out,
+        "\nCOVERAGE\n  Discovery: {}; {} source gaps",
+        if discovery_complete {
+            "complete"
+        } else {
+            "incomplete"
+        },
+        coverage.gaps.len()
+    );
+    if let Some(remaining) = &coverage.remaining {
+        let _ = writeln!(
+            out,
+            "  Discovery remaining: {}; {} known pending paths",
+            remaining.reason.as_str(),
+            remaining.known_pending_paths
+        );
+    }
+    if let Some(omitted) = &coverage.publication {
+        let _ = writeln!(
+            out,
+            "  Unpublished worktrees: {}; families: {}; local manifests: {}; markers: {}",
+            omitted.worktrees, omitted.families, omitted.local_inventories, omitted.markers
+        );
+    }
+    let complete = rows
+        .iter()
+        .filter(|i| i.local_summary.as_ref().is_some_and(local_complete))
+        .count();
+    let collected = rows
+        .iter()
+        .filter(|i| i.local_summary.as_ref().is_some_and(local_collected))
+        .count();
+    let _ = writeln!(
+        out,
+        "  Local checks (selected): {complete} complete, {} partial, {} not collected",
+        collected.saturating_sub(complete),
+        selected.saturating_sub(collected)
+    );
+    if verify > 0 {
+        let missing: Vec<_> = [
+            ("C1", "identity"),
+            ("C2", "integration"),
+            ("C3", "local files"),
+            ("C4", "private history"),
+            ("C5", "final checks"),
+        ]
+        .into_iter()
+        .filter_map(|(code, label)| {
+            let n = rows
+                .iter()
+                .filter(|i| {
+                    i.classification == "verify"
+                        && i.decision
+                            .as_ref()
+                            .is_none_or(|d| d.missing_conditions.iter().any(|c| c == code))
+                })
+                .count();
+            (n > 0).then(|| format!("{label} {n}"))
+        })
+        .collect();
+        if !missing.is_empty() {
+            let _ = writeln!(
+                out,
+                "  Missing checks (selected, unresolved): {}",
+                missing.join(", ")
+            );
+        }
+    }
+    let hit_limits = limits(review);
+    if !hit_limits.is_empty() {
+        let _ = writeln!(
+            out,
+            "  Collection limits reached: {} types (details in report or --verbose)",
+            hit_limits.len()
+        );
+    }
+    // These are separate recorded intervals, not an invented end-to-end duration.
+    let mut times = Vec::new();
+    if let Some(m) = &coverage.discovery_metrics {
+        times.push(format!("discovery {:.1}s", m.elapsed_ms as f64 / 1000.0));
+    }
+    if let Some(disk) = &review.disk_usage {
+        times.push(format!("disk {:.1}s", disk.elapsed_ms as f64 / 1000.0));
+    }
+    if let Some(m) = &review.collection_metrics {
+        let elapsed = m
+            .phases
+            .iter()
+            .fold(0u64, |sum, p| sum.saturating_add(p.elapsed_ms));
+        times.push(format!("review phases {:.1}s", elapsed as f64 / 1000.0));
+    }
+    if !times.is_empty() {
+        let _ = writeln!(
+            out,
+            "  Recorded time: {} (excludes publication)",
+            times.join("; ")
+        );
+    }
+    if verify > 0 || !discovery_complete {
+        let _ = writeln!(out, "\nNEXT CHECK");
+        let next = if !discovery_complete {
+            "Inspect discovery gaps in report.txt before treating the inventory as complete."
+        } else if not_requested > 0 {
+            "Inspect the selected worktree's gaps in report.txt; collection caps still apply."
+        } else {
+            "Inspect report.txt; retry a worktree with --worktree PATH --budget thorough."
+        };
+        let _ = writeln!(out, "  {next}");
+    }
+    let _ = writeln!(
+        out,
+        "\nUsage by agents or terminals: not checked. Read-only review; no removal authorized."
+    );
+    out
 }

@@ -216,6 +216,38 @@ class LocalSummaryTests(unittest.TestCase):
         self.assertIn(os.fsencode(self.fixture.repo / ".git/HEAD"), source_paths)
         self.assertIn(os.fsencode(self.fixture.repo / ".git/index"), source_paths)
 
+    def test_intent_to_add_preserves_positive_unstaged_change_and_source_state(self):
+        self.fixture.init()
+        linked = self.fixture.root / "intent-linked"
+        self.fixture.git("worktree", "add", "--detach", linked)
+        self.fixture.manifest_roots.add(linked)
+        inventory, _ = self.inventory()
+        for content in (b"", b"resident work", None):
+            with self.subTest(content=content):
+                target = linked / "intent.txt"
+                target.write_bytes(content if content is not None else b"initial")
+                self.fixture.git("-C", linked, "add", "-N", "intent.txt")
+                if content is None:
+                    target.unlink()
+                report = self.plan(inventory)
+                summary = self.item(report, linked)["local_summary"]
+                self.assertTrue(summary["index_complete"], "intent flag must be interpreted per path")
+                self.assertTrue(summary["head_complete"] and summary["disk_complete"])
+                self.assert_count(summary, "staged", 0)
+                self.assert_count(summary, "unstaged", 1)
+                self.assert_count(summary, "untracked", 0)
+                self.assert_count(summary, "ignored", 0)
+                self.assert_count(summary, "conflicts", 0)
+                self.assertEqual(self.item(report, linked)["classification"], "keep")
+                self.assertIn("local_unstaged", self.item(report, linked)["decision"]["keep_reasons"])
+        # Fully staging the addition changes semantics: staged and working bytes stay separate.
+        target.write_bytes(b"staged intent")
+        self.fixture.git("-C", linked, "add", "intent.txt")
+        target.write_bytes(b"different resident work")
+        summary = self.item(self.plan(inventory), linked)["local_summary"]
+        self.assert_count(summary, "staged", 1)
+        self.assert_count(summary, "unstaged", 1)
+
     def test_head_index_disk_are_separate_current_observations(self):
         self.fixture.init()
         inventory, _ = self.inventory()

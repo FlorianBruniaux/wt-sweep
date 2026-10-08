@@ -352,12 +352,13 @@ class EnrichedTests(unittest.TestCase):
         self.assertGreater(len(plan.stdout.splitlines()), 0)
         self.assertLessEqual(len(plan.stdout.splitlines()), 60)
         console = plan.stdout.decode()
-        for heading in ("RESULTS", "COVERAGE", "CHECKS STILL NEEDED", "REPORT"):
+        for heading in ("RESULTS", "COVERAGE", "REPORT"):
             self.assertIn(heading, console)
         self.assertIn(str(plan_directory / "report.txt"), console)
         self.assertIn("Keep: 1", console)
         self.assertIn("Cleanup candidates: 1", console)
-        self.assertIn("Local checks complete: 2", console)
+        self.assertIn("Needs verification: 0", console)
+        self.assertIn("Local checks (selected): 2 complete, 0 partial, 0 not collected", console)
         self.assertNotIn("processed=", plan.stderr.decode())
         detail = (plan_directory / "report.txt").read_text()
         for value in ("Base", "refs/heads/main", "UNKNOWN"):

@@ -86,6 +86,7 @@ impl DiscoveryPhase {
 }
 #[derive(Clone, Debug)]
 pub struct DiscoveryProgress {
+    pub elapsed_ms: u64,
     pub phase: DiscoveryPhase,
     pub directories: usize,
     pub entries: usize,
@@ -555,6 +556,7 @@ fn stop_discovery(
     inventory.coverage.traversal_complete = false;
 }
 struct ProgressReporter<'a> {
+    started: Instant,
     callback: &'a mut dyn FnMut(&DiscoveryProgress),
     last_emit: Instant,
     last_work: usize,
@@ -566,11 +568,27 @@ impl ProgressReporter<'_> {
             || work.saturating_sub(self.last_work) >= 128
             || self.last_emit.elapsed() >= Duration::from_millis(250)
         {
-            (self.callback)(event);
+            let mut timed = event.clone();
+            timed.elapsed_ms = self.started.elapsed().as_millis() as u64;
+            (self.callback)(&timed);
             self.last_emit = Instant::now();
             self.last_work = work;
         }
     }
+}
+
+fn record_metrics(
+    inventory: &mut Inventory,
+    event: &DiscoveryProgress,
+    started: Instant,
+    workers: usize,
+) {
+    inventory.coverage.discovery_metrics = Some(crate::model::DiscoveryMetrics {
+        elapsed_ms: started.elapsed().as_millis() as u64,
+        directory_read_attempts: event.directories,
+        entries_listed: event.entries,
+        workers,
+    });
 }
 
 pub fn scan_scope_with_progress(
@@ -581,6 +599,7 @@ pub fn scan_scope_with_progress(
 ) -> Result<Inventory, SweepError> {
     let started = Instant::now();
     let mut event = DiscoveryProgress {
+        elapsed_ms: 0,
         phase: DiscoveryPhase::Start,
         directories: 0,
         entries: 0,
@@ -595,6 +614,7 @@ pub fn scan_scope_with_progress(
         stop: None,
     };
     let mut reporter = ProgressReporter {
+        started,
         callback: progress,
         last_emit: started,
         last_work: 0,
@@ -625,6 +645,7 @@ pub fn scan_scope_with_progress(
         initial.finish();
         event.phase = DiscoveryPhase::Finished;
         event.stop = Some(reason);
+        record_metrics(&mut initial, &event, started, options.workers);
         reporter.emit(&event, true);
         return Ok(initial);
     }
@@ -659,6 +680,7 @@ pub fn scan_scope_with_progress(
             .remaining
             .as_ref()
             .map(|r| r.reason.clone());
+        record_metrics(&mut initial, &event, started, options.workers);
         reporter.emit(&event, true);
         return Ok(initial);
     }
@@ -1213,6 +1235,7 @@ pub fn scan_scope_with_progress(
         .remaining
         .as_ref()
         .map(|r| r.reason.clone());
+    record_metrics(&mut inventory, &event, started, options.workers);
     reporter.emit(&event, true);
     Ok(inventory)
 }

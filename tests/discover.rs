@@ -447,6 +447,11 @@ fn metadata_worker_count_preserves_results_at_entry_boundaries() {
                 .unwrap_or_else(|| panic!("inventory object"));
             object.remove("started_unix_ms");
             object.remove("finished_unix_ms");
+            let metrics = value["coverage"]["discovery_metrics"]
+                .as_object_mut()
+                .unwrap_or_else(|| panic!("discovery metrics"));
+            metrics.remove("elapsed_ms");
+            metrics.remove("workers");
             results.push(value);
         }
         assert_eq!(
@@ -1010,4 +1015,238 @@ fn observation_budget_retains_crossing_family_and_stops_before_more_io() {
         Some(&wt_sweep::model::DiscoveryStop::ObservationBudget)
     );
     assert!(!inventory.coverage.traversal_complete);
+}
+
+#[test]
+fn discovery_metrics_count_actual_walk_work_even_when_incomplete() {
+    let fixture = Fixture::new();
+    for directory in ["data", ".hidden"] {
+        fs::create_dir(fixture.0.join(directory))
+            .unwrap_or_else(|e| panic!("fixture or metric: {e}"));
+        fs::write(fixture.0.join(directory).join("leaf"), b"fixture")
+            .unwrap_or_else(|e| panic!("fixture or metric: {e}"));
+    }
+    fs::write(fixture.0.join("root.txt"), b"fixture")
+        .unwrap_or_else(|e| panic!("fixture or metric: {e}"));
+    let scope = ScanScope::Roots {
+        paths: vec![BytePath::from_path(&fixture.0)],
+    };
+    for workers in [1, 4] {
+        let options = DiscoveryOptions {
+            workers,
+            ..DiscoveryOptions::default()
+        };
+        let started = std::time::Instant::now();
+        let inventory = scan_scope_with(&scope, &options, &LocalFilesystem)
+            .unwrap_or_else(|e| panic!("fixture or metric: {e}"));
+        let value =
+            serde_json::to_value(&inventory).unwrap_or_else(|e| panic!("fixture or metric: {e}"));
+        let metrics = &value["coverage"]["discovery_metrics"];
+        assert_eq!(metrics["directory_read_attempts"], 3);
+        assert_eq!(metrics["entries_listed"], 5);
+        assert_eq!(metrics["workers"], workers);
+        assert!(
+            metrics["elapsed_ms"]
+                .as_u64()
+                .unwrap_or_else(|| panic!("missing elapsed time"))
+                <= started.elapsed().as_millis() as u64
+        );
+        assert!(inventory.coverage.traversal_complete);
+        let limited = scan_scope_with(
+            &scope,
+            &DiscoveryOptions {
+                max_directories: 1,
+                ..options
+            },
+            &LocalFilesystem,
+        )
+        .unwrap_or_else(|e| panic!("fixture or metric: {e}"));
+        let value =
+            serde_json::to_value(&limited).unwrap_or_else(|e| panic!("fixture or metric: {e}"));
+        assert_eq!(
+            value["coverage"]["discovery_metrics"]["directory_read_attempts"],
+            1
+        );
+        assert_eq!(value["coverage"]["discovery_metrics"]["entries_listed"], 3);
+        assert!(!limited.coverage.traversal_complete);
+        assert!(limited.coverage.remaining.is_some());
+        let report = wt_sweep::output::inventory_table(&limited);
+        assert!(report.contains("DISCOVERY PERFORMANCE"), "{report}");
+        assert!(report.contains("incomplete"), "{report}");
+    }
+}
+
+#[test]
+fn repo_metrics_do_not_claim_a_filesystem_walk_and_legacy_reports_still_read() {
+    let fixture = Fixture::new();
+    fixture.repo(&fixture.0);
+    let inventory = scan_scope(&ScanScope::Repo {
+        path: BytePath::from_path(&fixture.0),
+    })
+    .unwrap_or_else(|e| panic!("fixture or metric: {e}"));
+    let mut json =
+        serde_json::to_value(&inventory).unwrap_or_else(|e| panic!("fixture or metric: {e}"));
+    assert_eq!(
+        json["coverage"]["discovery_metrics"]["directory_read_attempts"],
+        0
+    );
+    assert_eq!(json["coverage"]["discovery_metrics"]["entries_listed"], 0);
+    assert_eq!(inventory.families.len(), 1);
+    json["coverage"]
+        .as_object_mut()
+        .unwrap_or_else(|| panic!("coverage object"))
+        .remove("discovery_metrics");
+    let legacy: wt_sweep::model::Inventory =
+        serde_json::from_value(json).unwrap_or_else(|e| panic!("fixture or metric: {e}"));
+    assert!(!wt_sweep::output::inventory_table(&legacy).contains("DISCOVERY PERFORMANCE"));
+}
+
+/// Opt-in measurement: no timing threshold, and every sample must find the exact corpus.
+#[test]
+#[ignore = "run the discovery benchmark explicitly with --release --ignored --nocapture"]
+fn benchmark_discovery() {
+    if cfg!(debug_assertions) {
+        panic!("use cargo test --release for comparable measurements");
+    }
+    let fixture = Fixture::new();
+    let mut expected = BTreeSet::new();
+    for relative in ["repo", ".hidden/repo"] {
+        let repo = fixture.0.join(relative);
+        fixture.repo(&repo);
+        let linked = repo.with_file_name("linked");
+        fixture.git(
+            &repo,
+            &[
+                "worktree".as_ref(),
+                "add".as_ref(),
+                "--detach".as_ref(),
+                linked.as_os_str(),
+            ],
+        );
+        expected.extend([repo, linked]);
+    }
+    for directory in 0..64 {
+        let path = fixture.0.join(format!("tree/directory-{directory:03}"));
+        fs::create_dir_all(&path).unwrap_or_else(|e| panic!("fixture: {e}"));
+        for file in 0..32 {
+            fs::write(
+                path.join(format!("file-{file:03}")),
+                format!("synthetic {directory} {file}\n"),
+            )
+            .unwrap_or_else(|e| panic!("fixture: {e}"));
+        }
+    }
+    fn manifest(path: &Path) -> std::collections::BTreeMap<PathBuf, (u32, u64, i64, i64, Vec<u8>)> {
+        use std::os::unix::fs::MetadataExt;
+        let mut found = std::collections::BTreeMap::new();
+        let mut queue = vec![path.to_path_buf()];
+        while let Some(path) = queue.pop() {
+            let meta = fs::symlink_metadata(&path).unwrap_or_else(|e| panic!("manifest: {e}"));
+            let bytes = if meta.is_file() {
+                fs::read(&path).unwrap_or_else(|e| panic!("read fixture: {e}"))
+            } else {
+                Vec::new()
+            };
+            if meta.is_dir() {
+                for entry in fs::read_dir(&path).unwrap_or_else(|e| panic!("fixture dir: {e}")) {
+                    queue.push(
+                        entry
+                            .unwrap_or_else(|e| panic!("fixture entry: {e}"))
+                            .path(),
+                    );
+                }
+            }
+            assert!(
+                !meta.file_type().is_symlink(),
+                "unexpected symlink in synthetic corpus"
+            );
+            found.insert(
+                path,
+                (
+                    meta.mode(),
+                    meta.ino(),
+                    meta.mtime(),
+                    meta.mtime_nsec(),
+                    bytes,
+                ),
+            );
+        }
+        found
+    }
+    let before = manifest(&fixture.0);
+    let scope = ScanScope::Roots {
+        paths: vec![BytePath::from_path(&fixture.0)],
+    };
+    let mut samples = [Vec::new(), Vec::new()];
+    let mut observed_work = None;
+    println!(
+        "Discovery benchmark: {} {}; release; 2 families, 4 worktrees, 2048 synthetic files; 1 warm-up per worker count, 3 measured samples; OS cache not cleared",
+        std::env::consts::OS,
+        std::env::consts::ARCH
+    );
+    for round in 0..4 {
+        // Alternate ordering to avoid always giving the same variant the first run.
+        for workers in if round % 2 == 0 { [1, 4] } else { [4, 1] } {
+            let start = std::time::Instant::now();
+            let inventory = scan_scope_with(
+                &scope,
+                &DiscoveryOptions {
+                    workers,
+                    ..DiscoveryOptions::default()
+                },
+                &LocalFilesystem,
+            )
+            .unwrap_or_else(|e| panic!("scan: {e}"));
+            let elapsed = start.elapsed().as_secs_f64();
+            assert!(
+                inventory.coverage.traversal_complete,
+                "incomplete sample cannot count as faster"
+            );
+            assert!(inventory.coverage.gaps.is_empty());
+            assert!(inventory.coverage.remaining.is_none());
+            assert_eq!(inventory.families.len(), 2);
+            let paths: BTreeSet<_> = inventory
+                .families
+                .iter()
+                .flat_map(|f| &f.worktrees)
+                .map(|w| w.path.to_path().unwrap_or_else(|e| panic!("path: {e}")))
+                .collect();
+            assert_eq!(paths, expected);
+            let metrics = inventory
+                .coverage
+                .discovery_metrics
+                .as_ref()
+                .unwrap_or_else(|| panic!("missing metrics"));
+            let work = (metrics.directory_read_attempts, metrics.entries_listed);
+            if let Some(expected_work) = observed_work {
+                assert_eq!(work, expected_work);
+            }
+            observed_work = Some(work);
+            if round > 0 {
+                samples[usize::from(workers == 4)].push(elapsed);
+            }
+            assert_eq!(
+                manifest(&fixture.0),
+                before,
+                "benchmark changed fixture bytes or metadata"
+            );
+        }
+    }
+    let (directories, entries) = observed_work.unwrap_or_else(|| panic!("no work measured"));
+    let mut medians = Vec::new();
+    for (workers, times) in [1, 4].into_iter().zip(&mut samples) {
+        times.sort_by(f64::total_cmp);
+        let median = times[1];
+        println!(
+            "workers={workers}: min={:.3}s median={median:.3}s max={:.3}s; {directories} directory attempts; {entries} entries; {:.1} entries/s; coverage complete",
+            times[0],
+            times[2],
+            entries as f64 / median
+        );
+        medians.push(median);
+    }
+    println!(
+        "workers=4 / workers=1 median duration ratio: {:.2} (below 1 means faster on this corpus)",
+        medians[1] / medians[0]
+    );
 }

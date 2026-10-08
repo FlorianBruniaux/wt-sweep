@@ -13,6 +13,24 @@ Le contrat courant `review/2`, ses verdicts et C1-C5 sont définis dans les
 [contrats des artefacts](contracts.md#triage-policy) et le plan T01-T09.
 Les conditions E1 et U5-U7 restent ouvertes ; le triage ne les remplace pas.
 
+## Incréments de lecture seule, 07/10/2026
+
+Le [rapport HTML](html-report-plan.md) est implémenté dans le checkout local,
+sans nouvelle règle de décision. Ses critères portent sur la fidélité au
+JSON, l’échappement, les vues filtrées, la limite de 32 MiB, les erreurs de
+publication et le reçu. La progression expose des faits d’histoire et
+d’état local provisoires ; seuls le rapport final et ses preuves portent
+la décision complète. Le résumé local doit conserver intent-to-add comme
+travail non indexé, pour les index SHA-1 et SHA-256.
+
+Les preuves locales sont dans le [registre](progress.md) ; le SHA livré,
+sa CI et la recette intégrée sont suivis dans
+[#13](https://github.com/FlorianBruniaux/wt-sweep/issues/13). Le [benchmark sur familles jetables](../scripts/benchmark-review.py)
+et la [comparaison runtime](research/worktree-runtime-comparison-2026-10-07.md)
+conservent argv, identités des binaires, sorties et limites de preuve. Les
+essais concurrents ne remplacent ni les contrôles Sweep encore attendus
+ni E1/U5-U7.
+
 ## Choisir ce qu'il faut construire
 
 Avant de figer le moteur d'application, comparer agentrinse aux mêmes fixtures :

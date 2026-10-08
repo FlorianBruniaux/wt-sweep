@@ -10,18 +10,19 @@ for example `--workers 4`. `scan`, `plan`, `review`, `forge`, `forge commandes` 
 
 ```text
 wt-sweep review (--repo PATH | --root PATH... | --all)
-  [--workers 1..8] [all plan options except --inventory]
+  [--workers 1..8] [--disk-usage] [--disk-budget standard|thorough]
+  [all plan options except --inventory]
 
 wt-sweep scan (--repo PATH | --root PATH... | --all)
-  [--workers 1..8] [--local] [--format json|table]
-  [--out FILE | --run-dir BASE]
+  [--workers 1..8] [--local] [--disk-usage] [--disk-budget standard|thorough] [--format json|table]
+  [--verbose] [--color auto|always|never] [--html] [--out FILE | --run-dir BASE]
 
 wt-sweep plan --inventory FILE [--target FULL_REF... | --target-map FILE]
   [--budget standard|thorough] [--worktree ABSOLUTE_PATH] [--filter-repo PATH] [--path-prefix PATH] [--branch FULL_REF]
   [--local-state clean|dirty|unknown] [--verdict keep|cleanup_candidate|verify]
   [--group-by repo|directory] [--forge FILE]
   [--changelog-path RELATIVE... | --no-context] [--summary] [--format json|table]
-  [--out FILE | --run-dir BASE]
+  [--verbose] [--color auto|always|never] [--html] [--out FILE | --run-dir BASE]
 
 wt-sweep forge commandes
 wt-sweep forge ingerer --raw FILE [--receipt FILE]
@@ -50,7 +51,8 @@ and all plan options listed below, except `--inventory`. `--local` belongs to
 
 This command reuses discovery, enrichment and judgement from `scan` and `plan`.
 It creates one run containing `inventory.json`, `review.json`, `report.txt` and
-`run.json`. The receipt records the size and SHA-256 of all three data artifacts.
+`run.json`. Add `--html` to include the offline `report.html`. The receipt records the size
+and SHA-256 of each saved data artifact.
 The review binds the saved inventory digest. Filters retain the complete review
 source and coverage in a `wt-sweep.review-view/1` document.
 
@@ -88,7 +90,9 @@ Unavailable paths, contradictory registrations and traversal errors remain
 observations. No repair, pruning or fetch is performed. Relative CLI paths are
 stored as absolute paths so replay from another directory preserves the scope.
 
-Discovery progress goes to stderr. The displayed pending count covers known queued paths, including
+Discovery progress goes to stderr. In a terminal it updates one line; redirected
+output keeps only start/end milestones. `--verbose` prints each event. The pending
+count shown in live or verbose progress covers known queued paths, including
 prefetched metadata; it is not an estimate of all remaining files. Stops distinguish
 interruption, deadline, entry, directory and observation-byte limits. The JSON
 keeps a conservative remaining-scope cover: retry the requested roots, knowing
@@ -118,7 +122,9 @@ overwritten or removed.
 | `--forge FILE` | Optional normalized `wt-sweep.forge/1` export. Its raw source and receipt, when supplied, must still be readable and match. |
 | `--changelog-path RELATIVE` | Read this tracked path at each recorded HEAD; repeat to replace the default changelog paths. Paths are relative to the repository root. |
 | `--no-context` | Skip optional commit samples and changelog reads. Cannot combine with `--changelog-path`. Decisions and their required checks remain the same. |
-| `--summary` | Print a structured recap of verdicts, source coverage and remaining checks; incompatible with `--format json`. |
+| `--summary` | Print a short recap of verdicts, disk sizes and coverage; incompatible with `--format json`. |
+| `--verbose` | Show detailed progress, disk paths and recap metrics. Also accepted by `scan`. |
+| `--color auto\|always\|never` | Control terminal colors and icons; default `auto`. Also accepted by `scan`. |
 
 The command first collects bounded commit-history results across worktrees, then
 collects current local summaries and checks deep Git relationships
@@ -161,7 +167,15 @@ fully local example. Raw inputs are limited to 16 MiB and receipts to 1 MiB.
 | `--format json` | JSON only | None, unless another output option is used |
 | `--out FILE` | Human-readable output, even with `--format json` | New JSON file |
 | `--run-dir BASE` | Selected format; human output also gives the run path | New run directory with JSON, `report.txt`, `run.json` |
+| `--html --run-dir BASE` | Same selected format; human output also gives the HTML path | Also saves a self-contained `report.html` |
 | `plan --summary --run-dir BASE` | Structured recap, including the saved detail path | Full detail in `report.txt`, JSON and receipt |
+
+`--html` is supported by `scan`, `review` and `plan`, and requires `--run-dir`.
+It renders the saved observations without new collection or judgement. A scan
+report says that worktrees have not been reviewed. CSS and JavaScript are embedded;
+all evidence remains readable without JavaScript. The HTML is capped at 32 MiB;
+an oversized report refuses publication before creating a run. A failed HTML
+write or sync produces no successful receipt. See the [HTML guide](html-report-plan.md).
 
 `--out` and `--run-dir` are mutually exclusive. `--out` always saves JSON;
 `--summary` changes the human output, not the saved review. Forge ingestion keeps
@@ -196,10 +210,23 @@ private roots/anchors/source-entry limits, optional context and publication caps
 remain bounded. A missing object, access failure, changed identity or unsupported
 index can still leave evidence unknown with `thorough`.
 
-`review` and `plan` write readable progress to stderr. The final `--summary` recap
-separates discovery, local collection and decision checks, and groups recurring
-history budgets, local budgets and Git timeouts. Other item-specific gaps remain
-in the full report. Its JSON stdout remains a single report. The first history turn is allocated across
+`review` and `plan` update a single progress line clipped to the terminal width. In a
+pipe, only a few milestones are printed, with no cursor controls. `--summary`
+shows selected verdicts and local checks, source discovery coverage, and source
+disk totals. Partial measurements are marked `INCOMPLETE`; they are not an
+estimate of reclaimable space. Missing checks count selected unresolved rows.
+`--summary --verbose` restores the detailed recap, with source-wide counters,
+phase timings, Git process counts and named collection limits. `report.txt`
+always retains the full detail, regardless of these display options.
+
+Colors and icons follow stdout and stderr independently. `--color auto` enables
+them on terminals, unless `TERM=dumb` or a nonempty `NO_COLOR` is set.
+`--color never` disables decoration and live cursor updates; `--color always`
+forces colors and icons in human stdout, including pipes. Cursor updates still
+require a capable terminal. JSON stdout and every saved artifact remain plain.
+`--verbose` prints progress as separate plain lines for diagnostic capture.
+
+The first history turn is allocated across
 worktrees before any second turn; this is a guarantee about history scheduling,
 not completeness or fairness of the local file collection. Limits may still leave
 results unknown. Caches live only for this execution.
@@ -301,6 +328,33 @@ can therefore give each worktree less than its maximum allowance.
 
 ## Collection metrics and console results
 
+During collection, `Observed history:` reports a bounded history observation
+and `Observed local:` reports collected change counts. They are provisional:
+final consistency checks and judgement have not completed. A redirected stream
+keeps the first observation of each kind; a terminal reuses its progress line.
+`--verbose` retains each event. An incomplete zero remains `UNKNOWN`, while a
+positive incomplete count is a lower bound. None is an early cleanup verdict.
+
+
+Discovery records optional `coverage.discovery_metrics` on inventories and their
+inherited review coverage. `elapsed_ms` uses a monotonic clock. The other fields
+are `directory_read_attempts` (including failed reads), `entries_listed` (files
+and directories returned by listings), and the requested metadata `workers`.
+Counts include work done before a stop. They do not count verified file contents.
+A `--repo` scan reads the Git family directly, so its traversal counts are zero.
+
+Progress on stderr shows elapsed time and average entries per second. Text
+reports include a `DISCOVERY PERFORMANCE` block with the same counts and a
+separate complete/incomplete coverage status. Rates are unavailable below one
+millisecond. No completion percentage or finish-time estimate is inferred from
+the pending queue: the full filesystem size is unknown. Discovery timing includes
+Git family validation, but excludes local analysis and report publication.
+For `plan`, this block describes the saved source inventory, not a fresh scan.
+
+See the [Rust benchmark recipe](collection-performance.md#benchmark-rust-reproductible)
+for a controlled comparison of worker settings. `--workers 4` is a setting to
+measure, not a promised speedup.
+
 Current `wt-sweep.review/2` reports can include optional `collection_metrics`:
 `budget_profile`, a numeric `applied_limits` map, and `phases` entries with
 `name`, `elapsed_ms` and `counters`. The phases describe controls, commit history,
@@ -323,7 +377,10 @@ may need an update to accept the new optional field.
 The console's `Resolved verdicts` counts `keep` plus `cleanup_candidate`, with
 `verify` listed separately. A positive retention reason can resolve `keep` even
 when other candidate conditions remain unknown. `CHECKS STILL NEEDED` lists
-conditions for unresolved rows; `COLLECTION TIME` shows recorded phase timings.
+conditions for unresolved rows; `COLLECTION TIME` shows recorded phase timings,
+local paths per second and Git process counts where those counters exist. The
+slowest phase's percentage uses the sum of recorded collection phases only.
+A missing counter stays absent; a partial scan can still have measured throughput.
 All source gaps remain in JSON and the detailed report.
 
 ## Exit codes
@@ -337,3 +394,31 @@ All source gaps remain in JSON and the detailed report.
 Diagnostics go to stderr. There is no separate exit code for incomplete coverage;
 consumers must inspect the JSON and [receipt status](contracts.md#run-receipts).
 `apply` always returns `2` because preservation and approval gates are not verified.
+
+## Disk usage
+
+`scan --disk-usage` and `review --disk-usage` measure logical file lengths and allocated blocks for each
+registered worktree and shared Git directory. It reads metadata without hashing
+contents; hidden and ignored files are included. It does not follow symlinks.
+The total deduplicates device/inode pairs across rows; allocated bytes are not
+an estimate of reclaimable APFS space. Missing sizes remain unknown.
+
+Limits: 30 seconds and 500,000 entries per root, 600 seconds and 2,000,000 entries
+overall, depth 128. `--disk-budget thorough` raises these limits to 120 seconds
+and 1,000,000 entries per root, 1,800 seconds and 10,000,000 entries overall.
+It requires `--disk-usage`. A cap, error, directory mutation or refused boundary makes
+that measurement partial. Discovery coverage remains separate; a complete size
+walk cannot account for repositories discovery missed.
+
+`review --disk-usage` measures after discovery, before decision evidence collection.
+Its disk budget is independent of `--budget`. It covers all inventoried roots,
+including when `--worktree` focuses Git/local checks or display filters select a
+subset. The console and report label that scope. The summary shows recorded
+totals and completeness; `report.txt` lists sizes per root. `review.json` retains
+the same `disk_usage` block as `inventory.json`, or `source.disk_usage` in a view.
+
+`plan` carries captured disk observations and their original interval into its
+reports without recounting sizes. Old inventories remain readable. When sizes
+were not collected, review and plan say so explicitly; no zero total is invented.
+Rendering is deterministic from captured data and requires no LLM. See the
+[disk usage guide](disk-usage.md) for examples and JSON.

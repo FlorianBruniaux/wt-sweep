@@ -57,7 +57,7 @@ isolated for the fixture.
   printf 'Local note, absent from the commit\n' > "$demo_dir/worktree/notes.txt"
 
   ./target/release/wt-sweep review --repo "$demo_dir/repo" \
-    --target refs/heads/main --summary --run-dir "$demo_dir/reports"
+    --target refs/heads/main --summary --html --run-dir "$demo_dir/reports"
   printf 'Demo and reports: %s\n' "$demo_dir"
 )
 ```
@@ -72,12 +72,16 @@ RESULTS
 ```
 
 `COVERAGE` separates discovery from local checks: complete, partial or not
-collected. `CHECKS STILL NEEDED` counts worktrees missing each decision condition;
+collected. When present, `CHECKS STILL NEEDED` counts worktrees missing each
+decision condition;
 `COLLECTION LIMITS` groups recurring budget and timeout diagnostics when present.
 With filters, verdicts describe the selection and coverage still describes the
 whole source review. Usage by agents or terminals is always reported as not checked.
 
-`REPORT` gives the saved `report.txt` path. The full report and JSON retain the
+`REPORT` gives the saved `report.txt` and `report.html` paths. Open the HTML
+path in a browser for family groups, search and collapsible evidence. The
+[HTML guide](html-report-plan.md) explains source, selected and visible totals.
+The full report and JSON retain the
 technical evidence and digests. The main checkout is kept as the repository entry
 point. The linked `worktree` is kept because of `notes.txt`. The linked
 `clean-worktree` can qualify as a candidate; its usage still needs confirmation.
@@ -85,8 +89,9 @@ All three HEADs match the target, which alone does not preserve the local note.
 
 Keep `XXXXXX` literally in the `mktemp` template; it creates a unique suffix.
 The fixture and its reports remain at the printed path for inspection. Each
-review run saves the original `inventory.json`, `review.json`, `report.txt` and
-`run.json`. The receipt binds the three artifacts; it is not a backup. The demo
+review run with `--html` saves the original `inventory.json`, `review.json`,
+`report.txt`, `report.html` and `run.json`. The receipt binds the four data
+artifacts; it is not a backup. The demo
 does not run cleanup. See [run receipts](contracts.md#run-receipts) to verify the
 published files, or the [forge demo](forge.md#replay-a-synthetic-export) to inspect
 offline MR data separately.
@@ -107,7 +112,7 @@ From the source checkout, enter the repository and target you have confirmed:
     show-ref --verify --quiet "$target_ref"
   report_dir="$(mktemp -d /private/tmp/wt-sweep-report.XXXXXX)"
   "$sweep_bin" review --repo "$repo_path" --target "$target_ref" \
-    --summary --run-dir "$report_dir"
+    --summary --html --run-dir "$report_dir"
   printf 'Reports: %s\n' "$report_dir"
 )
 ```
@@ -196,7 +201,11 @@ or a separate inventory workflow. See the [advanced commands in French](tutorial
 `wt-sweep.review/1` is a historical report, not a current inventory; use a fresh
 scan. It cannot supply current C5 controls.
 
-Progress on stderr records observed work, not a durable checkpoint. After an
+Progress on stderr records observed work. `Observed history:` and
+`Observed local:` lines are provisional collected facts, with partial or
+unknown counts preserved. They precede the final judgement and receipt; an
+interruption leaves no final verdict established by those lines alone.
+Progress is not a durable checkpoint. After an
 interruption or budget stop, read `coverage`, discovery remainder, publication
 omissions and facet gaps. The remaining cover is conservative and may overlap
 visited paths. Relaunch one family or a narrower root into a new report base.

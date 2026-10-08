@@ -1,6 +1,6 @@
 ---
 name: wt-sweep
-description: "Use to inventory Git worktrees in chosen repositories or directories, interpret saved wt-sweep reports, investigate keep/verify verdicts and missing evidence, retry capped worktree collection with standard/thorough budgets, or suggest worktree cleanup preparation. Analyse les worktrees, fichiers locaux, stashes et preuves Git par étapes. Read-only; not for creating worktrees, resolving merge conflicts, or executing deletion."
+description: "Use to inventory Git worktrees in chosen repositories or directories, generate or interpret offline HTML and saved wt-sweep reports, investigate keep/verify verdicts and missing evidence, retry capped worktree collection with standard/thorough budgets, or suggest worktree cleanup preparation. Analyse les worktrees, fichiers locaux, stashes et preuves Git par étapes. Read-only; not for creating worktrees, resolving merge conflicts, or executing deletion."
 ---
 
 # Worktree review with wt-sweep
@@ -72,11 +72,14 @@ A saved-report-only request can skip this step.
 ## 3. Collect and read progressively
 
 Use `review` with an explicit scope and target, `--format json`, and a unique run
-directory outside inspected repositories. Retain the exit status and all saved
+directory outside inspected repositories. Add `--html` for the human report and
+`--disk-usage` when measured sizes are requested. Retain the exit status and all saved
 artifacts. Read [report interpretation](references/reports.md) before interpreting
 results. An interrupted or partial run remains partial even if it has a receipt.
 
 1. Report the discovered scope, source totals and coverage gaps first.
+   Live history/local observations are provisional facts, not final verdicts.
+   Wait for the completed review and receipt before classifying candidates.
 2. Inspect retained work and missing evidence in small pages, for example five
    worktrees at a time. Read selected rows in full when investigating a reason.
 3. Keep a list of reviewed paths and remaining rows. Preserve original verdicts,
@@ -85,7 +88,9 @@ results. An interrupted or partial run remains partial even if it has a receipt.
 4. For multiple families, use confirmed per-family targets. Review families
    separately or use a target map built from the captured inventory. Never apply
    one guessed branch name to every repository.
-5. Finish with grouped totals and a short table: path, branch, CLI verdict,
+5. Offer the saved `report.html` when requested. Its browser filters change only
+   the visible rows; the source totals, coverage and disk measures remain fixed.
+   Finish with grouped totals and a short table: path, branch, CLI verdict,
    observed reason, missing check, proposed next action.
 
 Filters select the displayed view after judgement. They do not reduce collection

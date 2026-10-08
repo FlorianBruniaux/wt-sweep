@@ -39,14 +39,17 @@ review_status=0
   --target "$target_ref" \
   --group-by directory \
   --budget standard \
-  --format json \
+  --format json --html --disk-usage \
   --run-dir "$report_dir" > "$report_dir/console.json" || review_status=$?
 printf 'Exit status: %s\nReports: %s\n' "$review_status" "$report_dir"
 ```
 
 `mktemp` replaces the six X characters itself. Keep that suffix verbatim. The
 command creates a `run-*` child containing `inventory.json`, `review.json`,
-`report.txt` and `run.json`; do not guess the child name. Check the exit status
+`report.txt`, `report.html` and `run.json`; do not guess the child name.
+After checking the receipt, use `open "$report_dir"/run-*/report.html` on macOS.
+The report is self-contained and opens offline; no external script or service is
+needed. `--html` requires `--run-dir` and leaves JSON stdout undecorated. Check the exit status
 before accepting the output. `0` can still describe incomplete observations;
 `130` is interruption. Read other failure messages and do not assume publication.
 `console.json` is only a capture of stdout, not a receipted run artifact.
@@ -64,7 +67,7 @@ thorough_dir="$(mktemp -d /private/tmp/wt-sweep-thorough.XXXXXX)"
 review_status=0
 "$sweep_bin" review --repo "$repo_path" --target "$target_ref" \
   --worktree "$worktree_path" --path-prefix "$worktree_path" \
-  --budget thorough --format json --run-dir "$thorough_dir" \
+  --budget thorough --format json --html --disk-usage --run-dir "$thorough_dir" \
   > "$thorough_dir/console.json" || review_status=$?
 printf 'Exit status: %s\nReports: %s\n' "$review_status" "$thorough_dir"
 ```

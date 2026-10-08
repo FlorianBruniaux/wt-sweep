@@ -3,7 +3,11 @@ use crate::model::{BytePath, LocalCount, Review, ReviewItem, ReviewView};
 use std::fmt::Write;
 
 mod console;
-pub use console::{discovery_progress, review_progress, summary, view_summary};
+pub mod html;
+pub use console::{
+    compact_summary, compact_view_summary, discovery_progress, review_progress, summary,
+    view_summary, write_discovery_performance,
+};
 
 fn text(value: &str, limit: usize) -> String {
     let mut output = String::new();
@@ -101,7 +105,18 @@ fn detail_rows(
     items: &[&ReviewItem],
     groups: Option<&std::collections::BTreeMap<BytePath, BytePath>>,
 ) {
-    let _ = writeln!(output, "WORKTREE\tSUBJECT\tBRANCH\tHEAD\tCLASSIFICATION");
+    if groups.is_some() {
+        // Views already contain the console recap, including the disk totals.
+        if let Some(usage) = &review.disk_usage {
+            let _ = writeln!(output, "\nDISK DETAILS (all recorded roots)");
+            crate::disk::render_measurements(usage, &[], output);
+        }
+    } else if let Some(usage) = &review.disk_usage {
+        crate::disk::render(usage, &[], output);
+    } else {
+        crate::disk::render_summary(None, output);
+    }
+    let _ = writeln!(output, "\nWORKTREE\tSUBJECT\tBRANCH\tHEAD\tCLASSIFICATION");
     let contexts: std::collections::BTreeMap<_, _> = review
         .context
         .as_ref()
@@ -471,6 +486,8 @@ fn detail_rows(
             omitted.families, omitted.worktrees, omitted.local_inventories, omitted.markers
         );
     }
+    console::write_discovery_performance(&review.coverage, output);
+    console::write_collection_performance(review, output);
     if let Some(collection) = &review.collection_metrics {
         let _ = writeln!(
             output,

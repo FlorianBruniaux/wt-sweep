@@ -1,0 +1,236 @@
+{
+  "schema": "wt-sweep.acceptance/1",
+  "source_commit": "bfdef510928115ec2d2984d6aae8ea8061ef2ff7",
+  "binary_sha256": "a622edf51eb32ef8fe58991703f9b404bbc67d1526bddaec9f4950206d6f26bf",
+  "delivery_at_observation": "local commit; GitHub push rejected during service outage; remote CI and integration unverified",
+  "scope": {
+    "explicit_project_roots": 2,
+    "known_registered_worktrees_by_project": [
+      67,
+      2
+    ],
+    "known_paths_missing": 0,
+    "extra_paths_in_known_families": 0,
+    "machine_wide": false,
+    "refs_local_only": true
+  },
+  "commands": [
+    {
+      "label": "scan",
+      "exit": 0,
+      "elapsed_ms": 168947,
+      "started_unix_ms": 1791386229126,
+      "finished_unix_ms": 1791386398072
+    },
+    {
+      "label": "plan",
+      "exit": 0,
+      "elapsed_ms": 208927,
+      "started_unix_ms": 1791386398280,
+      "finished_unix_ms": 1791386607301
+    }
+  ],
+  "observations": {
+    "worktrees": 69,
+    "classifications": {
+      "verify": 60,
+      "keep": 9
+    },
+    "local_complete": 0,
+    "local_partial": 69,
+    "discovery_complete": false,
+    "discovery_gap_count": 1248,
+    "disk_roots": 71,
+    "disk_complete_roots": 10,
+    "disk_complete": false,
+    "disk_unique_bytes": {
+      "logical": 33181323981,
+      "allocated": 38037770240
+    },
+    "disk_elapsed_ms": 132207,
+    "disk_gaps": [
+      "disk total entry budget reached"
+    ]
+  },
+  "collection_metrics": {
+    "budget_profile": "standard",
+    "applied_limits": {
+      "deep_object_bytes": 33554432,
+      "deep_object_reads": 2048,
+      "deep_per_target_steps": 512,
+      "deep_traversal_steps": 65536,
+      "history_object_bytes": 33554432,
+      "history_object_reads": 2048,
+      "history_per_target_steps": 512,
+      "history_timeout_ms": 60000,
+      "history_traversal_steps": 65536,
+      "local_max_objects": 4096,
+      "local_max_total_bytes": 134217728,
+      "local_phase_timeout_ms": 120000,
+      "local_worktree_timeout_ms": 30000,
+      "private_git_processes": 4096,
+      "private_object_bytes": 33554432,
+      "private_object_reads": 2048,
+      "private_pending_oids": 4096,
+      "private_per_root_steps": 512,
+      "private_timeout_ms": 60000,
+      "private_traversal_steps": 65536
+    },
+    "phases": [
+      {
+        "name": "controls",
+        "elapsed_ms": 3850,
+        "counters": {}
+      },
+      {
+        "name": "history",
+        "elapsed_ms": 16033,
+        "counters": {
+          "cache_hits": 79,
+          "git_processes": 582,
+          "object_bytes": 1530662,
+          "object_reads": 580,
+          "traversal_steps": 523
+        }
+      },
+      {
+        "name": "local",
+        "elapsed_ms": 120012,
+        "counters": {
+          "cache_hits": 729,
+          "git_processes": 3178,
+          "object_bytes": 137888706,
+          "object_reads": 148072,
+          "paths_checked": 533
+        }
+      },
+      {
+        "name": "deep",
+        "elapsed_ms": 1792,
+        "counters": {
+          "cache_hits": 6,
+          "git_processes": 65,
+          "object_bytes": 35106,
+          "object_reads": 63,
+          "traversal_steps": 0
+        }
+      },
+      {
+        "name": "private_history",
+        "elapsed_ms": 60140,
+        "counters": {
+          "anchors_verified": 1487,
+          "cache_hits": 86,
+          "git_processes": 2277,
+          "object_bytes": 2343451,
+          "object_reads": 1604,
+          "output_serializations": 4717,
+          "roots_enumerated": 1286,
+          "traversal_steps": 1249
+        }
+      },
+      {
+        "name": "revalidation",
+        "elapsed_ms": 2087,
+        "counters": {
+          "history_git_processes": 2,
+          "private_git_processes": 0,
+          "private_output_serializations": 78
+        }
+      },
+      {
+        "name": "context",
+        "elapsed_ms": 3903,
+        "counters": {}
+      }
+    ]
+  },
+  "consistency": {
+    "html_rows_match": true,
+    "text_counts_match": true,
+    "artifact_receipts_match": true,
+    "disk_observations_preserved": true
+  },
+  "source_conservation": "not asserted for live mutable sources; synthetic conservation tests are separate",
+  "temporal_consistency": "not_guaranteed",
+  "artifacts": [
+    {
+      "status": "partial",
+      "artifacts": [
+        {
+          "bytes": 8454036,
+          "name": "inventory.json",
+          "sha256": "bb8d458b5e5a3a3fcfb5b76327ab3725474e197fd1f98ae4a426b4e1fe59f1f9"
+        },
+        {
+          "bytes": 288293,
+          "name": "report.txt",
+          "sha256": "65eadfa933e89bc67923e97a5c579255c6b83dfc65142b40d32268a9b7a69bd1"
+        },
+        {
+          "bytes": 9443455,
+          "name": "report.html",
+          "sha256": "03efbec9564203b01d7af5fdd33d031ea4da15f291edb15b0eb86f23b0e78d3f"
+        }
+      ]
+    },
+    {
+      "status": "partial",
+      "artifacts": [
+        {
+          "bytes": 16194082,
+          "name": "review.json",
+          "sha256": "7ac4e63ab7ef5db0973cd8d3a9f31cfd3f7261db3f8a725b55f79a8feef29ccd"
+        },
+        {
+          "bytes": 715365,
+          "name": "report.txt",
+          "sha256": "f34f57c28e0da36bd5b4af4bc36d50cb7c41e2ad0a32cb04d10a76be03807d61"
+        },
+        {
+          "bytes": 17546272,
+          "name": "report.html",
+          "sha256": "4b7cbe21a210718459ac2464141cce5605107dceb8dcc4ba4f2a855470518b29"
+        }
+      ]
+    }
+  ],
+  "browser": [
+    {
+      "javascript": true,
+      "width": 1280,
+      "rows": 69,
+      "scroll": 1280,
+      "network_requests": 0,
+      "page_errors": 0,
+      "keyboard_details": true
+    },
+    {
+      "javascript": true,
+      "width": 390,
+      "rows": 69,
+      "scroll": 390,
+      "network_requests": 0,
+      "page_errors": 0,
+      "keyboard_details": true
+    },
+    {
+      "javascript": false,
+      "width": 1280,
+      "rows": 69,
+      "scroll": 1280,
+      "network_requests": 0,
+      "page_errors": 0,
+      "keyboard_details": true
+    },
+    {
+      "javascript": false,
+      "width": 390,
+      "rows": 69,
+      "scroll": 390,
+      "network_requests": 0,
+      "page_errors": 0,
+      "keyboard_details": true
+    }
+  ]
+}

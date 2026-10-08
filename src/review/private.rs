@@ -158,6 +158,7 @@ pub(super) struct PrivateHistoryMetrics {
     pub(super) traversal_steps: u64,
     pub(super) anchors_verified: u64,
     pub(super) roots_enumerated: u64,
+    pub(super) output_serializations: u64,
 }
 pub(super) struct PrivateHistoryRun<'a> {
     pub(super) output: PrivateHistoryCollection,
@@ -177,6 +178,7 @@ pub(super) struct PrivateHistoryRun<'a> {
     anchors: usize,
     source_bytes: usize,
     source_output: usize,
+    output_serializations: u64,
 }
 fn private_name(name: &[u8]) -> bool {
     [
@@ -363,6 +365,7 @@ impl<'a> PrivateHistoryRun<'a> {
             traversal_steps: self.steps as u64,
             anchors_verified: self.anchors_verified as u64,
             roots_enumerated: self.roots as u64,
+            output_serializations: self.output_serializations,
         }
     }
     fn id(f: &Family) -> FamilyId {
@@ -803,6 +806,7 @@ impl<'a> PrivateHistoryRun<'a> {
             anchors: 0,
             source_bytes: 0,
             source_output: 0,
+            output_serializations: 0,
         };
         let mut identities = BTreeSet::new();
         for (index, family) in inventory.families.iter().enumerate() {
@@ -1678,7 +1682,8 @@ impl<'a> PrivateHistoryRun<'a> {
         let mut left = self.limits.output_bytes.saturating_sub(16);
         let mut omitted = Vec::new();
         for (path, h) in &mut self.output.histories {
-            let size = serde_json::to_vec(h)
+            self.output_serializations += 1;
+            let mut size = serde_json::to_vec(h)
                 .map_err(|e| error(e.to_string()))?
                 .len();
             if size > left {
@@ -1690,12 +1695,14 @@ impl<'a> PrivateHistoryRun<'a> {
                 }
                 h.gaps =
                     vec!["private history facts omitted: run output byte budget reached".into()];
-                while serde_json::to_vec(h)
-                    .map_err(|e| error(e.to_string()))?
-                    .len()
-                    > left
-                    && !h.roots.is_empty()
-                {
+                loop {
+                    self.output_serializations += 1;
+                    size = serde_json::to_vec(h)
+                        .map_err(|e| error(e.to_string()))?
+                        .len();
+                    if size <= left || h.roots.is_empty() {
+                        break;
+                    }
                     let i = h
                         .roots
                         .iter()
@@ -1704,9 +1711,6 @@ impl<'a> PrivateHistoryRun<'a> {
                     h.roots.remove(i);
                 }
             }
-            let size = serde_json::to_vec(h)
-                .map_err(|e| error(e.to_string()))?
-                .len();
             if size > left {
                 omitted.push(path.clone());
             } else {
@@ -1717,7 +1721,8 @@ impl<'a> PrivateHistoryRun<'a> {
             self.output.histories.remove(&path);
         }
         self.output.shared_stashes.retain_mut(|s| {
-            let size = serde_json::to_vec(s).map(|b| b.len()).unwrap_or(usize::MAX);
+            self.output_serializations += 1;
+            let mut size = serde_json::to_vec(s).map(|b| b.len()).unwrap_or(usize::MAX);
             if size > left {
                 s.enumeration_complete = false;
                 s.sources.clear();
@@ -1726,16 +1731,18 @@ impl<'a> PrivateHistoryRun<'a> {
                     entry.files_complete = false;
                     entry
                         .gaps
-                        .push("stash paths omitted: run output byte budget reached".into());
+                        .push("stash paths omitted: output byte budget reached".into());
                 }
                 s.gaps = vec!["stash facts omitted: run output byte budget reached".into()];
-                while serde_json::to_vec(s).map(|b| b.len()).unwrap_or(usize::MAX) > left
-                    && !s.entries.is_empty()
-                {
+                loop {
+                    self.output_serializations += 1;
+                    size = serde_json::to_vec(s).map(|b| b.len()).unwrap_or(usize::MAX);
+                    if size <= left || s.entries.is_empty() {
+                        break;
+                    }
                     s.entries.pop();
                 }
             }
-            let size = serde_json::to_vec(s).map(|b| b.len()).unwrap_or(usize::MAX);
             if size > left {
                 false
             } else {
@@ -1994,6 +2001,56 @@ mod priority_tests {
         fn drop(&mut self) {
             let _ = fs::remove_dir_all(&self.0);
         }
+    }
+
+    #[test]
+    fn unchanged_bounded_private_facts_are_serialized_once_and_caps_still_refuse() {
+        let fixture = Fixture::new();
+        let inventory = crate::git::scan_family(&fixture.0).unwrap();
+        let targets = [BytePath::from_bytes(b"refs/heads/main")];
+        let bound =
+            FamilyTargets::bind_with(&inventory, TargetInput::Simple(&targets), &NativeHooks)
+                .unwrap();
+        let mut run = PrivateHistoryRun::collect(
+            &inventory,
+            &bound,
+            &Default::default(),
+            &NativeHooks,
+            &BTreeMap::new(),
+        )
+        .unwrap();
+        assert!(
+            run.output
+                .histories
+                .values()
+                .all(|history| history.enumeration_complete && !history.roots.is_empty()),
+            "positive source evidence required"
+        );
+        let before = serde_json::to_value((
+            run.output.histories.iter().collect::<Vec<_>>(),
+            &run.output.shared_stashes,
+        ))
+        .unwrap();
+        let expected = (run.output.histories.len() + run.output.shared_stashes.len()) as u64;
+        let serializations = run.metrics().output_serializations;
+        run.bound_output().unwrap();
+        let after = serde_json::to_value((
+            run.output.histories.iter().collect::<Vec<_>>(),
+            &run.output.shared_stashes,
+        ))
+        .unwrap();
+        assert_eq!(before, after, "budgeting changed complete under-cap facts");
+        assert_eq!(
+            run.metrics().output_serializations - serializations,
+            expected,
+            "each unchanged record needs one measured serialization per budgeting pass"
+        );
+        run.limits.output_bytes = 16;
+        run.bound_output().unwrap();
+        assert!(
+            run.output.histories.is_empty() && run.output.shared_stashes.is_empty(),
+            "finite output cap must still omit unavailable records"
+        );
     }
 
     #[test]
