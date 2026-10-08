@@ -1,0 +1,145 @@
+{
+  "before_sha256": "1cd373b86c397790f90a62fc05c1f003847c6969227b72ab3adc33c71b680e6b",
+  "after_sha256": "ff193a7bbf8a2d58c35eee68c434a43d976a8f2f506993f3bbcf469cc4fdfb32",
+  "samples": [
+    {
+      "files_per_linked_worktree": 20,
+      "measured_roots": 6,
+      "before": [
+        {
+          "wall_seconds": 0.08677783299935982,
+          "disk_ms": 0,
+          "entries": 174
+        },
+        {
+          "wall_seconds": 0.0961585000040941,
+          "disk_ms": 1,
+          "entries": 174
+        },
+        {
+          "wall_seconds": 0.0931007920007687,
+          "disk_ms": 1,
+          "entries": 174
+        }
+      ],
+      "after": [
+        {
+          "wall_seconds": 0.0896380830090493,
+          "disk_ms": 0,
+          "entries": 174
+        },
+        {
+          "wall_seconds": 0.0959682920074556,
+          "disk_ms": 1,
+          "entries": 174
+        },
+        {
+          "wall_seconds": 0.09381570800906047,
+          "disk_ms": 1,
+          "entries": 174
+        }
+      ],
+      "oracle_sizes_match": true,
+      "before_median_disk_ms": 1,
+      "after_median_disk_ms": 1,
+      "median_disk_ratio": 1.0,
+      "fixture_unchanged": true
+    },
+    {
+      "files_per_linked_worktree": 200,
+      "measured_roots": 6,
+      "before": [
+        {
+          "wall_seconds": 0.10335499999928288,
+          "disk_ms": 2,
+          "entries": 894
+        },
+        {
+          "wall_seconds": 0.09382483300578315,
+          "disk_ms": 2,
+          "entries": 894
+        },
+        {
+          "wall_seconds": 0.09101254200504627,
+          "disk_ms": 2,
+          "entries": 894
+        }
+      ],
+      "after": [
+        {
+          "wall_seconds": 0.10373029099719133,
+          "disk_ms": 2,
+          "entries": 894
+        },
+        {
+          "wall_seconds": 0.09458195800834801,
+          "disk_ms": 2,
+          "entries": 894
+        },
+        {
+          "wall_seconds": 0.09315429200069048,
+          "disk_ms": 2,
+          "entries": 894
+        }
+      ],
+      "oracle_sizes_match": true,
+      "before_median_disk_ms": 2,
+      "after_median_disk_ms": 2,
+      "median_disk_ratio": 1.0,
+      "fixture_unchanged": true
+    },
+    {
+      "files_per_linked_worktree": 2000,
+      "measured_roots": 6,
+      "before": [
+        {
+          "wall_seconds": 0.11924366700986866,
+          "disk_ms": 18,
+          "entries": 8094
+        },
+        {
+          "wall_seconds": 0.1179029159975471,
+          "disk_ms": 19,
+          "entries": 8094
+        },
+        {
+          "wall_seconds": 0.11862520800787024,
+          "disk_ms": 18,
+          "entries": 8094
+        }
+      ],
+      "after": [
+        {
+          "wall_seconds": 0.11586074999650009,
+          "disk_ms": 19,
+          "entries": 8094
+        },
+        {
+          "wall_seconds": 0.11873937500058673,
+          "disk_ms": 18,
+          "entries": 8094
+        },
+        {
+          "wall_seconds": 0.13138758299464826,
+          "disk_ms": 19,
+          "entries": 8094
+        }
+      ],
+      "oracle_sizes_match": true,
+      "before_median_disk_ms": 18,
+      "after_median_disk_ms": 19,
+      "median_disk_ratio": 1.0555555555555556,
+      "fixture_unchanged": true
+    }
+  ],
+  "protocol": "macOS; release; 4 linked worktrees plus main/shared Git; one warm-up per binary, 3 alternating measured samples; caches not cleared; fixture creation excluded",
+  "script_sha256": "15558600c4c1fba4e007226ae9d3e5b6ee5b438ba3cedc60dbdced060b57b0f3",
+  "source_base_commit": "9d69df95b1fbe6da12b6e047d114d714c08e4583",
+  "candidate_diff_paths": [
+    "src/disk.rs",
+    "src/main.rs",
+    "src/presentation/console.rs",
+    "src/presentation/html.rs"
+  ],
+  "candidate_diff_sha256": "460ef3234746a4601dadcf05ad3502cd125d0bb6ea8c17a91d86fcb366cb93e4"
+}

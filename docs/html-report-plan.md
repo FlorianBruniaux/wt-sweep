@@ -56,15 +56,17 @@ suppression ; `apply` reste indisponible. Un reçu n’est pas une sauvegarde.
 
 Le bloc **Disk space review** apparaît en tête du rapport. Il distingue :
 
-- **Observed disk footprint** : allocation dédupliquée de toutes les racines
-  enregistrées, Git commun compris. Le libellé signale une observation partielle.
+- **Observed disk footprint** : allocation dédupliquée des racines mesurées.
+  Par défaut, toutes les racines enregistrées sont demandées, Git commun compris.
+  Avec `--disk-root`, le total porte sur cette sélection explicite. Le libellé
+  conserve la couverture partielle du périmètre source.
 - **Recoverable space** : gain non établi. Les clones et snapshots APFS peuvent
   partager des blocs ; une taille allouée ne prédit pas l’espace libéré.
 - **Cleanup review** : candidats et worktrees restant à vérifier dans le rapport
   source. Un inventaire seul indique que cette revue n’a pas été effectuée.
 
-La couverture distingue les racines mesurées complètement, partiellement et
-sans mesure. Une taille absente n’est pas un zéro. Le repli **Largest observed
+La couverture distingue les racines demandées et non demandées, puis les mesures
+complètes, partielles et absentes. Une taille absente n’est pas un zéro. Le repli **Largest observed
 worktree sizes** liste jusqu’à trois worktrees par allocation décroissante,
 avec chemins copiables. Il exclut le Git commun ; les worktrees non mesurés
 peuvent être plus grands. Les tailles peuvent se recouvrir et ne sont pas

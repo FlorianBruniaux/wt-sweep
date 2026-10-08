@@ -9,6 +9,15 @@ the Cargo package version is a development version.
 
 ### Added
 
+- `scan` and `review --disk-usage` accept repeatable `--disk-root` selections
+  of exact registered worktree or shared Git paths. Reports retain all roots,
+  distinguish requested from unrequested rows, and keep subset totals explicit.
+  Unused entry/time allowances pass to later roots; each remaining requested
+  root receives a share before a large early directory can consume the budget.
+  Count-only disk progress is emitted every five seconds on stderr, including
+  redirected output, subject to filesystem calls returning. A fixed-corpus
+  comparison recipe checks byte counts and fixture conservation between binaries.
+
 - Collapsible HTML sections for the disk recap, overview, Git families, disk
   measurements and coverage. Native controls work without JavaScript. Bulk
   expand/collapse controls preserve nested evidence state, and navigation opens

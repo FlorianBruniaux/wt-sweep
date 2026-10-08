@@ -967,6 +967,7 @@ fn optional_incomplete_disk_measurement_does_not_change_a_candidate() {
     let baseline = wt_sweep::review::judge(&facts).unwrap();
     assert_eq!(baseline.items[0].classification, "cleanup_candidate");
     facts.inventory.disk_usage = Some(wt_sweep::disk::DiskUsage {
+        requested_paths: None,
         started_unix_ms: 10,
         finished_unix_ms: 20,
         elapsed_ms: 10,

@@ -176,3 +176,28 @@ fn thorough_disk_profile_is_recorded_on_an_empty_explicit_scope() {
             .is_empty()
     );
 }
+
+#[test]
+fn disk_root_requires_explicit_disk_opt_in_and_absolute_path_before_discovery() {
+    for command in ["scan", "review"] {
+        for (extra, message) in [
+            (
+                vec!["--disk-root", "/unread"],
+                "--disk-root requires --disk-usage",
+            ),
+            (
+                vec!["--disk-usage", "--disk-root", "relative"],
+                "--disk-root requires an absolute",
+            ),
+        ] {
+            let mut args = vec![command, "--repo", "/must/not/read"];
+            args.extend(extra);
+            let output = run(&args);
+            assert_eq!(output.status.code(), Some(2));
+            let error = String::from_utf8_lossy(&output.stderr);
+            assert!(error.contains(message), "{error}");
+            assert!(!error.contains("Discovering repositories"));
+            assert!(output.stdout.is_empty());
+        }
+    }
+}

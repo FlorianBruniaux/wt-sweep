@@ -308,7 +308,10 @@ précisent les limites de lecture et de publication des rapports.
 **Espace disque :** ajouter `--disk-usage` à `scan` ou `review` pour mesurer chaque
 worktree et son dossier Git partagé, avec un total dédupliqué. La CLI écrit les
 chiffres dans le récapitulatif console, le texte, le JSON et le HTML demandé.
-`plan` conserve les mesures capturées. Les fichiers ignorés sont inclus et les mesures partielles
+`--disk-root CHEMIN_ABSOLU` limite la mesure aux racines enregistrées choisies ;
+les autres restent listées comme non demandées. Le budget restant est réparti
+entre les racines encore à visiter. `plan` conserve les mesures capturées.
+Les fichiers ignorés sont inclus et les mesures partielles
 signalées. Le HTML utilise les unités décimales Ko/Mo/Go et conserve les octets
 exacts dans les détails. Les octets alloués n’estiment pas l’espace récupérable
 sur APFS. [Mesurer l’espace disque](docs/disk-usage.md).

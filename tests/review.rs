@@ -171,6 +171,7 @@ fn disk_observations_are_digested_and_rendered_without_changing_verdicts() {
     let mut facts = observations();
     let without_disk = wt_sweep::review::judge(&facts).unwrap();
     facts.inventory.disk_usage = Some(DiskUsage {
+        requested_paths: None,
         started_unix_ms: 10,
         finished_unix_ms: 20,
         elapsed_ms: 10,
@@ -182,6 +183,7 @@ fn disk_observations_are_digested_and_rendered_without_changing_verdicts() {
             allocated: 4096,
         },
         measurements: vec![DiskMeasurement {
+            requested: true,
             path: facts.items[0].path.clone(),
             kind: DiskKind::Worktree,
             identity: None,

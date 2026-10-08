@@ -24,19 +24,39 @@ retrouve 63 inscriptions connues sur deux racines choisies : 12 `keep`,
 restent partiels. Le parcours atteint sa limite de répertoires ; aucune exhaustivité
 machine ni estimation d’espace récupérable APFS n’est démontrée.
 
-## Travaux ouverts
+## Suite de la recette réelle du 08/10
 
-- [#16 : livrer les finitions HTML](https://github.com/FlorianBruniaux/wt-sweep/issues/16) :
-  thème BoldGuy, unités Ko/Mo/Go, copie des chemins, bilan disque, aides de
-  navigation et sections repliables. Le générateur, les contrôles navigateur
-  et la documentation sont prêts sur `codex/html-report-polish` ; l’issue suit
-  leur intégration dans `main`.
-- [#17 : rétablir la CI GitHub](https://github.com/FlorianBruniaux/wt-sweep/issues/17) :
-  le dernier job de main n’a pas démarré pour un problème de paiement ou de
-  plafond. Obtenir une exécution sur un SHA identifié après résolution.
+La [PR #18](https://github.com/FlorianBruniaux/wt-sweep/pull/18) a livré les
+finitions HTML au commit `9d69df95b1fbe6da12b6e047d114d714c08e4583`.
+Les issues #16 et #17 sont closes ; la
+[CI de ce SHA](https://github.com/FlorianBruniaux/wt-sweep/actions/runs/37762302133)
+a réussi. La cause administrative du blocage précédent n'a pas été inspectée.
 
-Le jalon clos décrit les livrables d’audit. Les finitions de présentation et la
-CI restent suivies séparément, sans modifier les conditions de nettoyage.
+La recette multi-racines trouve 307 familles et 418 chemins de worktree avant
+la limite de découverte, avec 8 366 chemins encore en attente. Le comptage
+disque observe 184,42 Go alloués, partiels et sans estimation de récupération
+APFS. Sur 725 racines, 45 sont complètes, une partielle et 679 non mesurées.
+Deux revues ciblées conservent les worktrees examinés ; leurs preuves locales
+et privées restent partielles. Les rapports privés sont conservés localement.
+
+L'ordre de correction suit ces mesures :
+
+1. [#20 : mesure disque ciblée et répartition du budget](https://github.com/FlorianBruniaux/wt-sweep/issues/20).
+   Séparer les racines demandées des autres et donner du travail aux petites
+   racines situées après les grandes. La voie native groupée reste une sonde,
+   sans intégration produit ni promesse d'accélération générale.
+2. [#21 : lectures Git groupées](https://github.com/FlorianBruniaux/wt-sweep/issues/21).
+   Réduire les processus pour l'histoire et les reflogs, en gardant la
+   vérification des objets et les revalidations courantes.
+3. [#19 : poursuite d'une découverte interrompue](https://github.com/FlorianBruniaux/wt-sweep/issues/19).
+   Conserver une frontière de parcours vérifiable et distinguer les intervalles
+   de chaque passage, sans prétendre disposer d'un instantané. La reprise doit
+   rejouer le répertoire interrompu et relire les métadonnées des chemins en
+   attente. Le listing courant tronque avant de trier : le dernier nom trié
+   ne constitue donc pas un curseur de reprise fiable.
+
+Chaque correctif doit garder les verdicts et la conservation sur fixtures,
+puis fournir une mesure à données constantes avant une nouvelle recette réelle.
 
 ## Vision après ce jalon
 

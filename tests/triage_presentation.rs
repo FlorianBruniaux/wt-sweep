@@ -404,6 +404,7 @@ fn compact_view_keeps_source_gaps_and_partial_disk_but_counts_selected_checks()
         cover: RemainingCover::RequestedScope,
     });
     source.disk_usage = Some(wt_sweep::disk::DiskUsage {
+        requested_paths: None,
         started_unix_ms: 10,
         finished_unix_ms: 20,
         elapsed_ms: 10,
@@ -415,6 +416,7 @@ fn compact_view_keeps_source_gaps_and_partial_disk_but_counts_selected_checks()
             logical: 2048,
         },
         measurements: vec![wt_sweep::disk::DiskMeasurement {
+            requested: true,
             path: BytePath::from_bytes(b"/fixture/partial"),
             kind: wt_sweep::disk::DiskKind::Worktree,
             identity: None,

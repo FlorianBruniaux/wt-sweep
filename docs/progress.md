@@ -6,6 +6,60 @@ Le [dernier checkpoint du lot audit](#audit-lisible--intégration-du-07102026)
 regroupe les validations HTML, collecte et assistant. Les sections précédentes
 conservent les observations historiques et leurs limites.
 
+## Mesure disque ciblée, 08/10/2026
+
+Le lot [#20](https://github.com/FlorianBruniaux/wt-sweep/issues/20) ajoute
+`--disk-root` à `scan` et `review`, avec sélection exacte de racines enregistrées.
+Les lignes hors sélection restent présentes, sans mesure ni fausse lacune de
+collecte. Les rapports distinguent demandé, mesuré et non demandé ; une mesure
+complète de la sélection ne rend pas le total source complet. Les anciens JSON
+sans sélection conservent leur digest canonique.
+
+Les budgets globaux d'entrées et de temps sont répartis entre les racines encore
+à visiter. La fixture avec un gros premier dossier vérifie que le petit dernier
+dossier est mesuré complètement, que le premier reste partiel et que le plafond
+global d'entrées tient. Elle ne simule pas des appels système lents pour prouver
+l'équité temporelle. La progression périodique est indépendante des fins de
+racine et fonctionne aussi lorsque la sortie est redirigée. Un test reproduit
+le report de la cadence trouvé en revue, puis passe avec sa correction.
+
+La [comparaison reproductible](../experiments/disk-scope/README.md) couvre trois
+corpus fixes, avec un oracle de tailles indépendant et conservation des sources.
+Les médianes disque ancien/nouveau sont 1/1 ms pour 174 entrées, 2/2 ms pour 894
+et 18/19 ms pour 8 094. Toutes les racines sont complètes ; aucune accélération
+générale n'est démontrée par ces petits corpus.
+
+La recette réelle reste ciblée sur une seule racine déjà choisie. Elle mesure
+354 743 entrées en 18,737 s, soit 7 546 957 824 octets alloués et 6 681 793 058
+octets logiques. Cette racine est complète ; 70 autres sont non demandées. Le
+reçu reste `partial` pour le périmètre source. Les compteurs stderr paraissent
+à 5, 10 et 15 secondes, stdout reste du JSON valide et les artefacts correspondent
+aux tailles et empreintes du reçu. Le passage ne mesure pas l'espace récupérable
+APFS et ne constitue pas un benchmark avant/après. Les chemins et rapports réels
+restent locaux.
+
+Validation locale : 375 tests Rust réussis, trois ignorés ; formatage et Clippy
+sans avertissement, compilation release, six tests d'exclusion et deux tests du
+harness de comparaison réussis. Après le dernier ajout de progression entre les
+racines, les 13 tests disque, dix tests CLI et le test de cadence repassent.
+La suite Python finale exécute 298 tests : 292 réussis et six ignorés. La première
+exécution avait détecté une reconstruction du binaire pendant son oracle ; la
+suite a été entièrement relancée avec le binaire final figé.
+Les 22 fichiers générés sont cohérents. Dans un cache de routage isolé, Claude
+et Codex sélectionnent le skill sur ses 14 exemples positifs et aucun de ses
+six contre-exemples ; cela ne prouve pas son activation native.
+
+Le contrôle navigateur initial a rencontré un timeout de clic sans JavaScript.
+Une relance diagnostique conserve les assertions et passe les huit variantes
+bureau/mobile, clair/sombre et avec/sans JavaScript. L'échec initial n'est pas
+reproduit ; aucune correction CSS n'est déduite de ce résultat. La relecture
+indépendante du correctif disque ne relève plus de finding après correction.
+La livraison distante et la CI restent à vérifier sur le commit publié.
+
+La collecte Git groupée (#21), la reprise de découverte (#19) et l'intégration
+de `getattrlistbulk` restent hors de ce correctif. Les verdicts et la disponibilité
+de `apply` ne changent pas.
+
 ## Validation du lot HTML pour livraison, 08/10/2026
 
 La branche `codex/html-report-polish` part du `main` fusionné par #15

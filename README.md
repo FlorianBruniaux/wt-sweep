@@ -297,7 +297,10 @@ describe the read and publication boundaries.
 **Disk usage:** add `--disk-usage` to `scan` or `review` for allocated and logical
 sizes per worktree, shared Git storage and a deduplicated total. The CLI writes
 these figures directly to the console recap, text report, JSON and optional HTML.
-`plan` retains captured measurements. Ignored files are included; incomplete measurements stay
+`--disk-root ABSOLUTE_PATH` restricts measurement to exact registered roots;
+other roots remain listed as not requested. The remaining entry/time budget is
+shared between roots still to visit. `plan` retains captured measurements.
+Ignored files are included; incomplete measurements stay
 visible. HTML uses decimal units (Ko/Mo/Go) and retains exact bytes in details.
 Allocated bytes do not estimate recoverable APFS space. [Measure disk usage](docs/disk-usage.md).
 

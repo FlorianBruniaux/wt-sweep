@@ -61,7 +61,12 @@ Logical bytes describe file lengths. Allocated bytes describe the filesystem's
 reported allocation. Keep partial or absent measurements visible; the global
 deduplicated total can differ from project sums. Neither value is a promise of
 space reclaimed by deleting an APFS clone. The HTML does not recalculate disk
-figures when a reader filters the visible rows.
+figures when a reader filters the visible rows. If `requested_paths` is present,
+the size total covers that explicit disk selection. Rows with `requested: false`
+were intentionally not measured; do not call this budget exhaustion. `complete`
+still covers all recorded roots, so it stays false for a strict subset even
+when each requested root finishes. Missing selection fields in an old report
+mean all recorded roots were requested.
 
 `Observed history:` and `Observed local:` lines are collected, provisional facts.
 They appear before final consistency checks. Do not use them as a completed
