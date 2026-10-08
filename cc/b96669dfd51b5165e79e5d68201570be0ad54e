@@ -1,0 +1,93 @@
+.agents/skills/wt-sweep/references/commands.md
+  s_160b3107588443::t_bea86b20db8768 70-71,79-83
+.agents/skills/wt-sweep/references/reports.md
+  s_160b3107588443::t_c42803cdc1ab04 64-69
+.claude/skills/wt-sweep/references/commands.md
+  s_160b3107588443::t_c6b839dcb48ff4 70-71,79-83
+.claude/skills/wt-sweep/references/reports.md
+  s_160b3107588443::t_eb2e3c3a5a83fe 64-69
+.harness-generated.json
+  s_160b3107588443::t_dbb53c00f5964e 5,7,14,16
+CHANGELOG.md
+  s_05ea773ff72f20::t_7a13eade742e78 12-20
+README.fr.md
+  s_312dceb5d1c7f5::t_609356e186ae0b 311-314
+README.md
+  s_312dceb5d1c7f5::t_58303682adb733 300-303
+docs/assistant-skill.md
+  s_05ea773ff72f20::t_c39e70833691fe 100-104
+docs/cli.md
+  s_160b3107588443::t_40a2f7c8bb611c 414,420-433
+docs/contracts.md
+  s_160b3107588443::t_ba03f2a80f7fa1 665-673
+docs/disk-usage.md
+  s_160b3107588443::t_6707068734bfed 75,85-122,134,195-202
+docs/html-report-plan.md
+  s_05ea773ff72f20::t_05bdcc27217898 59-62,68-69
+docs/progress.md
+  s_05ea773ff72f20::t_639b629ce61bc5 9-62
+docs/roadmap.md
+  s_312dceb5d1c7f5::t_98f9c3eca7ed25 27-59
+experiments/disk-scope/README.md
+  s_05ea773ff72f20::t_ef14852bb3db07 1-43
+experiments/disk-scope/benchmark.py
+  s_160b3107588443::t_d9ac706f472d37 1-96
+experiments/disk-scope/result-2026-10-08.json
+  s_05ea773ff72f20::t_5a40b611ac02c5 1-145
+harness/skills/wt-sweep/references/commands.md
+  s_160b3107588443::t_b2f68c38ec6baa 70-71,79-83
+harness/skills/wt-sweep/references/reports.md
+  s_160b3107588443::t_bd646218050b51 64-69
+src/disk.rs
+  s_160b3107588443::t_35fc768de1fcd9 9,62-63,79-81,93-123,184-187,197-198,205-219,227-232,237-242,278,352-365,367-368,417-431,449-465,472-475,486-489,494,500-508,512,564,579-581,641-649,654,698-744
+src/main.rs
+  s_160b3107588443::t_682701f15fcae3 29,172,175,198,203,247-264,274-277,282,285,291-310,520,522-526
+src/presentation/console.rs
+  s_160b3107588443::t_1138867d4549d7 613-622,625
+src/presentation/html.rs
+  s_160b3107588443::t_4035106e45f52a 828-830,949,988-990,1004,1044,1046-1048,1101
+tests/cli.rs
+  s_160b3107588443::t_dbb7f26f64a822 179-203
+tests/disk_usage.rs
+  s_160b3107588443::t_0149d4971f4e98 495-672
+tests/html_report.rs
+  s_312dceb5d1c7f5::t_96245cd54f5cf7 67,79
+tests/review.rs
+  s_312dceb5d1c7f5::t_44e5dd071e0942 174,186
+tests/triage.rs
+  s_312dceb5d1c7f5::t_ec0e196abdff11 970
+tests/triage_presentation.rs
+  s_312dceb5d1c7f5::t_09ac9d1220eb3b 407,419
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "ccb96669dfd51b5165e79e5d68201570be0ad54e",
+  "prompts": {},
+  "sessions": {
+    "s_05ea773ff72f20": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a116be-a2cd-75a1-a076-6afacdef72a0",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "Florian BRUNIAUX <florian@bruniaux.com>"
+    },
+    "s_160b3107588443": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a106f2-069b-7be2-aa09-88b1bbf2331e",
+        "model": "gpt-6-astra"
+      },
+      "human_author": "Florian BRUNIAUX <florian@bruniaux.com>"
+    },
+    "s_312dceb5d1c7f5": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a10705-778c-7a00-bd10-95a2f8d1b51e",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "Florian BRUNIAUX <florian@bruniaux.com>"
+    }
+  }
+}
