@@ -286,6 +286,21 @@ fn rate(count: u64, elapsed_ms: u64, unit: &str) -> String {
 }
 
 pub fn write_discovery_performance(coverage: &Coverage, output: &mut impl Write) {
+    if !coverage.discovery_intervals.is_empty() {
+        let _ = writeln!(
+            output,
+            "Discovery observation intervals: {} (not a snapshot)",
+            coverage.discovery_intervals.len()
+        );
+        for interval in &coverage.discovery_intervals {
+            let _ = writeln!(
+                output,
+                "  Unix ms {}..{}",
+                interval.started_unix_ms, interval.finished_unix_ms
+            );
+        }
+    }
+
     let Some(metrics) = &coverage.discovery_metrics else {
         return;
     };

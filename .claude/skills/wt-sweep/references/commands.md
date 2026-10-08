@@ -103,6 +103,30 @@ unique run directory. Alternatively use `plan --inventory` with an explicit
 An explicit machine-wide request may use `scan --all`, subject to the same
 coverage limits. Never use that mode for a development smoke test.
 
+## Continue explicit-root discovery
+
+Check `scan --help` first. To retain progress, start an authorized root scan with
+`--checkpoint-out "$inventory_dir/pass-1.json"`. When its traversal stops:
+
+```sh
+"$sweep_bin" scan --resume "$inventory_dir/pass-1.json" \
+  --checkpoint-out "$inventory_dir/pass-2.json" --run-dir "$inventory_dir" --html
+```
+
+Use a new destination at every pass. The checkpoint supplies the original roots;
+never silently expand them. `--repo`, `--all` and `review` cannot resume this state.
+Read `coverage.traversal_complete`, gaps and `discovery_intervals` before calling
+it complete. An incomplete directory is replayed; a wide listing may need a
+larger `--discovery-entries` allowance. A changed recorded directory identity or observed alias target is refused.
+Paths still pending are read freshly.
+Completed subtrees remain historical observations, while known Git candidates
+are collected again. Preserve the separate intervals; this is not a snapshot.
+Checkpoint state contains no saved HEAD, verdict, local hashes or disk measures.
+
+Completion: the new checkpoint and report exist, or the exit diagnostic is
+reported without claiming saved progress. A failed digest or identity check
+requires a fresh authorized scan, not manual checkpoint editing.
+
 ## Inspect an existing run in pages
 
 Set `run_dir` to the exact saved `run-*` directory. Read `run.json` first, check

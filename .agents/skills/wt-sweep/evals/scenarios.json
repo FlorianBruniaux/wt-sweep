@@ -14,7 +14,9 @@
     "Le budget d'historique de wt-sweep est épuisé, explique quels worktrees restent à vérifier.",
     "Prepare a read-only worktree cleanup review, retaining incomplete evidence and original CLI verdicts.",
     "Génère un rapport HTML hors ligne de mes worktrees avec leur poids et les vérifications manquantes.",
-    "Open this saved wt-sweep HTML audit and explain the per-project worktree totals without rescanning."
+    "Open this saved wt-sweep HTML audit and explain the per-project worktree totals without rescanning.",
+    "Reprends la découverte des worktrees depuis ce checkpoint wt-sweep sans changer les racines.",
+    "Resume the interrupted explicit-root wt-sweep discovery and retain each observation interval."
   ],
   "negative": [
     "Crée un nouveau worktree Git pour développer cette fonctionnalité.",

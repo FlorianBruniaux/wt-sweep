@@ -1,4 +1,5 @@
 //! Serial bounded filesystem discovery, separate from deterministic judgement.
+pub mod resume;
 use crate::git::scan_family;
 use crate::model::{
     BytePath, DiscoveryRemainder, DiscoveryStop, Gap, Inventory, Marker, NativeMountDetails,
@@ -597,7 +598,17 @@ pub fn scan_scope_with_progress(
     provider: &dyn DiscoveryProvider,
     progress: &mut dyn FnMut(&DiscoveryProgress),
 ) -> Result<Inventory, SweepError> {
-    let started = Instant::now();
+    scan_scope_with_progress_state(scope, options, provider, progress, None, Instant::now())
+}
+
+fn scan_scope_with_progress_state(
+    scope: &ScanScope,
+    options: &DiscoveryOptions,
+    provider: &dyn DiscoveryProvider,
+    progress: &mut dyn FnMut(&DiscoveryProgress),
+    mut resume: Option<&mut resume::WalkState>,
+    started: Instant,
+) -> Result<Inventory, SweepError> {
     let mut event = DiscoveryProgress {
         elapsed_ms: 0,
         phase: DiscoveryPhase::Start,
@@ -685,6 +696,9 @@ pub fn scan_scope_with_progress(
         return Ok(initial);
     }
     let mut inventory = Inventory::new(scope.clone());
+    if let Some(state) = resume.as_deref() {
+        state.seed(&mut inventory);
+    }
     let mounted_before = if matches!(scope, ScanScope::AllMounted) {
         if !provider.mount_inventory_complete() {
             gap(
@@ -770,12 +784,50 @@ pub fn scan_scope_with_progress(
         .map(|path| (path, 0usize, None))
         .collect();
     let mut seen_directories = BTreeSet::new();
+    if let Some(state) = resume.as_deref() {
+        queue = state.queue()?;
+        seen_directories.extend(
+            state
+                .completed
+                .iter()
+                .map(|d| (d.identity.device, d.identity.inode)),
+        );
+    }
     let mut families = BTreeSet::new();
+    let mut validation_gaps = BTreeSet::new();
+    if let Some(state) = resume.as_deref() {
+        for candidate in &state.candidates {
+            budget.charge(&inventory)?;
+            if let Some(reason) = requested_stop(provider, started, options, budget.bytes) {
+                stop_discovery(&mut inventory, reason, queue.len(), None);
+                break;
+            }
+            let gap_start = inventory.coverage.gaps.len();
+            validate_candidate(
+                &mut inventory,
+                provider,
+                &candidate.directory.to_path()?,
+                &candidate.marker.to_path()?,
+                &candidate.kind,
+                &mut families,
+                &context,
+            );
+            validation_gaps.extend(gap_start..inventory.coverage.gaps.len());
+        }
+    }
     let mut entry_count = 0usize;
     let mut directory_count = 0usize;
     let mut metadata_ready: VecDeque<(PendingPath, io::Result<fs::Metadata>)> = VecDeque::new();
     let mut current: Option<PathBuf> = None;
-    while !queue.is_empty() || !metadata_ready.is_empty() {
+    let mut current_entry: Option<PendingPath> = None;
+    let mut current_guard = None;
+    let mut current_gap_start = inventory.coverage.gaps.len();
+    while inventory.coverage.remaining.is_none()
+        && (!queue.is_empty() || !metadata_ready.is_empty())
+    {
+        current = None;
+        current_entry = None;
+        current_guard = None;
         budget.charge(&inventory)?;
         event.phase = DiscoveryPhase::Progress;
         event.directories = directory_count;
@@ -828,6 +880,8 @@ pub fn scan_scope_with_progress(
             break;
         };
         current = Some(path.clone());
+        current_entry = Some((path.clone(), depth, parent_device));
+        current_gap_start = inventory.coverage.gaps.len();
         let metadata = match metadata {
             Ok(metadata) => metadata,
             Err(error) => {
@@ -854,6 +908,19 @@ pub fn scan_scope_with_progress(
                     .map(|metadata| (canonical, metadata))
             }) {
                 Ok((canonical, target)) => {
+                    if let Some(state) = resume.as_deref_mut() {
+                        let guard = resume::AliasGuard {
+                            path: BytePath::from_path(&path),
+                            canonical: BytePath::from_path(&canonical),
+                            identity: crate::model::Identity {
+                                device: metadata.dev(),
+                                inode: metadata.ino(),
+                            },
+                        };
+                        if !state.alias_guards.iter().any(|old| old.path == guard.path) {
+                            state.alias_guards.push(guard);
+                        }
+                    }
                     inventory.coverage.aliases.push(PathAlias {
                         path: BytePath::from_path(&path),
                         canonical: BytePath::from_path(&canonical),
@@ -901,8 +968,9 @@ pub fn scan_scope_with_progress(
         if !metadata.is_dir() {
             continue;
         }
+        current_guard = Some(resume::DirectoryGuard::observed(&path, &metadata));
         let directory_id = (metadata.dev(), metadata.ino());
-        if !seen_directories.insert(directory_id) {
+        if seen_directories.contains(&directory_id) {
             continue;
         }
         if parent_device.is_some_and(|device| device != metadata.dev()) {
@@ -984,15 +1052,12 @@ pub fn scan_scope_with_progress(
                 "directory listing incomplete or entry limit reached",
             );
         }
-        for error in listing.errors {
+        for error in &listing.errors {
             gap(
                 &mut inventory,
                 &path,
                 format!("directory entry read failed: {error}"),
             );
-        }
-        for entry in &listing.entries {
-            queue.push_back((entry.clone(), depth + 1, Some(metadata.dev())));
         }
         budget.charge(&inventory)?;
         if let Some(reason) = requested_stop(provider, started, options, budget.bytes) {
@@ -1034,6 +1099,10 @@ pub fn scan_scope_with_progress(
                 );
                 break;
             }
+            if let Some(state) = resume.as_deref_mut() {
+                state.candidate(&path, &path.join(".git"), "git_marker");
+            }
+            let validation_start = inventory.coverage.gaps.len();
             validate_candidate(
                 &mut inventory,
                 provider,
@@ -1043,6 +1112,7 @@ pub fn scan_scope_with_progress(
                 &mut families,
                 &context,
             );
+            validation_gaps.extend(validation_start..inventory.coverage.gaps.len());
         }
         budget.charge(&inventory)?;
         if let Some(reason) = requested_stop(provider, started, options, budget.bytes) {
@@ -1078,6 +1148,10 @@ pub fn scan_scope_with_progress(
                 );
                 break;
             }
+            if let Some(state) = resume.as_deref_mut() {
+                state.candidate(&path, &path, "bare_or_administration");
+            }
+            let validation_start = inventory.coverage.gaps.len();
             validate_candidate(
                 &mut inventory,
                 provider,
@@ -1087,6 +1161,7 @@ pub fn scan_scope_with_progress(
                 &mut families,
                 &context,
             );
+            validation_gaps.extend(validation_start..inventory.coverage.gaps.len());
         }
         budget.charge(&inventory)?;
         if let Some(reason) = requested_stop(provider, started, options, budget.bytes) {
@@ -1101,7 +1176,7 @@ pub fn scan_scope_with_progress(
             );
             break;
         }
-        if !listing.complete && entry_count >= options.max_entries {
+        if !listing.complete && (resume.is_some() || entry_count >= options.max_entries) {
             stop_discovery(
                 &mut inventory,
                 DiscoveryStop::EntryBudget,
@@ -1113,6 +1188,22 @@ pub fn scan_scope_with_progress(
             );
             break;
         }
+        // Children and completed identity commit together only after the parent
+        // listing and all Git marker validations have finished.
+        for entry in &listing.entries {
+            queue.push_back((entry.clone(), depth + 1, Some(metadata.dev())));
+        }
+        seen_directories.insert(directory_id);
+        if let Some(state) = resume.as_deref_mut() {
+            if listing.complete && listing.errors.is_empty() {
+                state
+                    .completed
+                    .push(resume::DirectoryGuard::observed(&path, &metadata));
+            }
+        }
+        current = None;
+        current_entry = None;
+        current_guard = None;
     }
     if matches!(scope, ScanScope::AllMounted) {
         match provider.mounted_roots() {
@@ -1207,11 +1298,65 @@ pub fn scan_scope_with_progress(
         );
     }
     inventory
+        .coverage
+        .aliases
+        .sort_by(|a, b| (&a.path, &a.canonical).cmp(&(&b.path, &b.canonical)));
+    inventory
+        .coverage
+        .aliases
+        .dedup_by(|a, b| a.path == b.path && a.canonical == b.canonical);
+    if let Some(state) = resume {
+        let unfinished = inventory.coverage.remaining.is_some() && current_guard.is_some();
+        state.gaps = inventory
+            .coverage
+            .gaps
+            .iter()
+            .enumerate()
+            .filter(|(index, record)| {
+                !(validation_gaps.contains(index)
+                    || unfinished && *index >= current_gap_start
+                    || record.reason.starts_with("discovery stopped:"))
+            })
+            .map(|(_, record)| record.clone())
+            .collect();
+        state
+            .gaps
+            .sort_by(|a, b| (&a.path, &a.reason).cmp(&(&b.path, &b.reason)));
+        state
+            .gaps
+            .dedup_by(|a, b| a.path == b.path && a.reason == b.reason);
+        state.aliases = inventory.coverage.aliases.clone();
+        state.volumes = inventory.coverage.volumes.clone();
+        state.pending = metadata_ready
+            .iter()
+            .map(|(pending, _)| resume::SavedPath::from_pending(pending))
+            .chain(queue.iter().map(resume::SavedPath::from_pending))
+            .collect();
+        state.current = if inventory.coverage.remaining.is_some() {
+            current_entry.as_ref().map(resume::SavedPath::from_pending)
+        } else {
+            None
+        };
+        state.current_guard = if state.current.is_some() {
+            current_guard
+        } else {
+            None
+        };
+    }
+    inventory
         .families
         .sort_by(|a, b| a.common_dir.cmp(&b.common_dir));
-    inventory
-        .markers
-        .sort_by(|a, b| (&a.path, &a.origin, &a.kind).cmp(&(&b.path, &b.origin, &b.kind)));
+    inventory.markers.sort_by(|a, b| {
+        (&a.path, &a.origin, &a.kind, &a.common_dir).cmp(&(
+            &b.path,
+            &b.origin,
+            &b.kind,
+            &b.common_dir,
+        ))
+    });
+    inventory.markers.dedup_by(|a, b| {
+        a.path == b.path && a.origin == b.origin && a.kind == b.kind && a.common_dir == b.common_dir
+    });
     inventory
         .coverage
         .aliases

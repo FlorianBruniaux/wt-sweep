@@ -210,6 +210,7 @@ The larger finite caps include ignored files and do not guarantee completion.
 | --- | --- | --- |
 | Repository families | Discover the main checkout, linked and detached worktrees, and missing registrations. | `scan --repo PATH` |
 | Scoped discovery | Walk selected roots, including hidden, ignored and nested directories, with coverage gaps retained. | `scan --root PATH` |
+| Resumable discovery | Continue a saved explicit-root traversal; reread Git families and retain separate observation intervals. | [Checkpoint commands](docs/discovery-resume.md) |
 | One-command review | Discover an explicit scope and collect current review evidence. | `review --repo PATH` |
 | Current local state | Compare HEAD, index and files with separate complete or partial counts. | `review` or `plan` |
 | Local file manifests | Inspect file hashes, metadata, index entries and selected worktree administration. | `scan --local` |

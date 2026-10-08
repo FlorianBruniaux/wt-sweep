@@ -16,13 +16,16 @@ use std::process::{Child, Command, Stdio};
 use std::time::{Duration, Instant};
 
 mod batch;
+mod session;
 pub(crate) use batch::{parse_object_info, parse_objects};
+pub(crate) use session::CommitSession;
 
 /// Closed set: new reads require reviewing their executable and network behavior.
 #[derive(Clone, Debug)]
 pub enum GitRead {
     ObjectInfo { oids: Vec<String> },
     Objects { oids: Vec<String> },
+    CommitBatch { oids: Vec<String> },
     CommonDir,
     GitDir,
     TopLevel,
@@ -161,6 +164,14 @@ impl ControlledGit {
             matches!(&read, GitRead::RemoteUrls | GitRead::IgnorePaths { .. });
         let mut input = Vec::new();
         let operation = match read {
+            GitRead::CommitBatch { .. } => {
+                return Err(SweepError::new(
+                    "git_argument",
+                    "commit_batch",
+                    repo,
+                    "adaptive commit batches require the finite session API",
+                ));
+            }
             GitRead::ObjectInfo { oids } | GitRead::Objects { oids } => {
                 if oids.is_empty()
                     || oids.len() > 128

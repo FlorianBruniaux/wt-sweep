@@ -9,6 +9,18 @@ the Cargo package version is a development version.
 
 ### Added
 
+- Explicit-root discovery checkpoints: `scan --checkpoint-out NEW_FILE`, then
+  `scan --resume FILE --checkpoint-out NEW_FILE`. Revalidate saved identities,
+  replay interrupted directories, reread Git families and retain each interval
+  in JSON, text and HTML. Discovery allowances are selectable within finite caps.
+
+- Adaptive commit sessions for history and private-history traversal. Read and
+  hash each requested object in traversal order, then accept the staged evidence
+  only after a successful child exit. Object and phase byte caps remain; each
+  session has an aggregate transport allowance and a separate 64 KiB stderr cap.
+  A fixed-corpus runner records processes, bytes, durations and conservation for
+  two frozen binaries; the documented measurements separate gains from limits.
+
 - `scan` and `review --disk-usage` accept repeatable `--disk-root` selections
   of exact registered worktree or shared Git paths. Reports retain all roots,
   distinguish requested from unrequested rows, and keep subset totals explicit.

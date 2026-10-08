@@ -108,6 +108,21 @@ Pour plusieurs racines, demandez leur inventaire puis confirmez les cibles par
 famille. Le skill peut examiner chaque famille séparément ou employer la table
 de cibles prévue par la CLI. Il ne devine pas une branche commune à tous les dépôts.
 
+## Poursuivre une découverte interrompue
+
+```text
+$wt-sweep Lis le checkpoint de découverte et le dernier rapport indiqués.
+Vérifie les options dans scan --help. Poursuis uniquement les racines enregistrées
+avec --resume et un nouveau --checkpoint-out hors des dépôts inspectés.
+Conserve chaque intervalle, explique la couverture et les lacunes du nouveau
+passage. En cas de refus d'identité ou d'empreinte, ne modifie pas le checkpoint.
+```
+
+Ce parcours reprend la découverte de racines explicites. Les preuves de revue,
+les fichiers locaux et le disque sont collectés à nouveau lorsqu'on les demande.
+Le [guide de reprise](discovery-resume.md) décrit les cas sans progression et les
+conditions qui imposent un scan neuf.
+
 ## Compléter une collecte bornée
 
 ```text

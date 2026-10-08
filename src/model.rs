@@ -162,6 +162,9 @@ pub struct Gap {
 #[derive(Clone, Debug, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct Coverage {
+    /// Separate discovery passes; these intervals do not form an atomic snapshot.
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub discovery_intervals: Vec<ObservationInterval>,
     /// Diagnostic telemetry from discovery, never a completeness or decision proof.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub discovery_metrics: Option<DiscoveryMetrics>,
@@ -178,6 +181,13 @@ pub struct Coverage {
     pub remaining: Option<DiscoveryRemainder>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub publication: Option<PublicationOmissions>,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct ObservationInterval {
+    pub started_unix_ms: u64,
+    pub finished_unix_ms: u64,
 }
 
 /// Monotonic wall time; listing counts include incomplete discovery, not verified files.
@@ -425,6 +435,7 @@ impl Inventory {
             finished_unix_ms: started_unix_ms,
             families: Vec::new(),
             coverage: Coverage {
+                discovery_intervals: Vec::new(),
                 discovery_metrics: None,
                 traversal_complete: false,
                 temporal_consistency: "not_guaranteed".into(),

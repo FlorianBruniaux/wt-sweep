@@ -208,8 +208,10 @@ interruption leaves no final verdict established by those lines alone.
 Progress is not a durable checkpoint. After an
 interruption or budget stop, read `coverage`, discovery remainder, publication
 omissions and facet gaps. The remaining cover is conservative and may overlap
-visited paths. Relaunch one family or a narrower root into a new report base.
-This is a new observation, not an exact continuation of the earlier interval.
+visited paths. An explicit-root `scan --checkpoint-out` can save its traversal;
+[resume it](discovery-resume.md) with `scan --resume` and a new checkpoint output.
+Otherwise, relaunch one family or a narrower root into a new report base.
+Review evidence is collected anew; observation intervals remain separate.
 
 A failed publication or a partial directory without a final receipt does not
 establish a saved run. If final synchronization fails after a receipt becomes

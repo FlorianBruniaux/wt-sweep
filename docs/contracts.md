@@ -12,6 +12,7 @@ They contain no cleanup actions. Field definitions are in
 | Schema | Producer | Main contents |
 | --- | --- | --- |
 | `wt-sweep.inventory/1` | `scan` | Scope, interval, families, registrations, path states, discovery coverage and optional local manifests |
+| `wt-sweep.discovery-checkpoint/1` | `scan --checkpoint-out` | Explicit root identities, traversal state, candidate markers and separate intervals; no saved HEAD or Git-family evidence |
 | `wt-sweep.review/2` | `plan` | Inventory digest, live local summaries, policy version, classifications, Git observations, forge facts, risks and unknowns |
 | `wt-sweep.forge/1` | `forge ingerer` | Normalized requests, raw-source identity, receipt metadata and coverage |
 | `wt-sweep.forge-receipt/1` | External capture executor | Actual invocation, scope, interval, exit status, pages and raw-file hash |
@@ -115,6 +116,23 @@ Rescan before publishing. Marker-only or local-manifest omissions do not remove
 family boundaries. A fresh scan checks its original full observations before
 compacting output. A filtered view keeps the complete source review and inherited
 coverage, even when no row is selected.
+
+## Discovery checkpoints
+
+`scan --checkpoint-out` publishes a separate file bounded to 24 MiB. Its SHA-256
+covers serialized traversal state and detects accidental alteration, not authorship.
+Unknown fields, versions, invalid path relationships and digest mismatches are
+refused. Files are created outside inspected roots without replacement.
+`--resume` revalidates root, completed-directory and alias identities; it replays
+an interrupted directory and collects known candidate families again. HEADs,
+refs, worktree registrations and verdicts are not serialized in this checkpoint.
+
+The optional `coverage.discovery_intervals` array contains `started_unix_ms` and
+`finished_unix_ms` for every pass. It is absent when empty, preserving older
+canonical inventory digests. Strict older readers may reject it. More than one
+interval sets `temporal_consistency` to `multiple_observation_intervals_no_snapshot`.
+Completed subtrees remain historical observations: additions inside them require
+a fresh scan. [Resume discovery](discovery-resume.md) defines allowances and refusals.
 
 ## Reviews and relationships
 

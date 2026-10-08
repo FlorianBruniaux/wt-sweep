@@ -2,9 +2,83 @@
 
 [Index documentaire](README.md) · [Contrats des artefacts](contracts.md) · [Feuille de route](roadmap.md)
 
-Le [dernier checkpoint du lot audit](#audit-lisible--intégration-du-07102026)
-regroupe les validations HTML, collecte et assistant. Les sections précédentes
+Le [dernier lot de collecte](#sessions-git-et-reprise-de-découverte-08102026)
+regroupe les validations courantes ; le [checkpoint du lot audit](#audit-lisible--intégration-du-07102026)
+conserve les validations HTML, collecte et assistant précédentes. Les sections plus anciennes
 conservent les observations historiques et leurs limites.
+
+## Sessions Git et reprise de découverte, 08/10/2026
+
+Le lot #21 groupe les lectures de commits dans des sessions bornées, avec
+vérification des OID et validation du lot après sortie réussie de Git. Les lots
+interrompus ne publient pas leurs preuves provisoires. Le lot #19 ajoute
+`scan --checkpoint-out`, puis `scan --resume`, pour des racines explicites.
+Les identités enregistrées sont revalidées, les chemins en attente relus et les
+familles Git collectées à nouveau. Les répertoires terminés restent historiques ;
+les intervalles séparés empêchent de présenter la reprise comme un instantané.
+
+La [campagne sur corpus fixe](research/history-batch-benchmark-2026-10-08.md)
+conserve les mêmes preuves sur huit passages. Pour 145 commits, les processus
+passent de 146 à 39 en histoire et de 180 à 45 en histoire privée. La médiane
+complète passe de 21 032 à 12 146 ms. La charge de l'hôte et les trois paires
+mesurées limitent la portée de ces temps. Les plafonds des phases sont inchangés ;
+le transport des sessions utilise désormais un plafond agrégé documenté,
+avec 8 Mio maximum par commit et 10 secondes par processus.
+
+La fixture de reprise retrouve trois dépôts en 24 passages : 48 listings et
+122 entrées, identiques au scan neuf. Les préflights Git répétés s’accompagnent d’un
+coût supérieur sur ce petit corpus : 36 174 ms cumulées contre 1 475 ms en une
+passe. Ce résultat mesure une capacité de continuation sans relister les dossiers
+terminés, pas une accélération face à une découverte qui peut déjà terminer.
+
+### Recette réelle ciblée
+
+Une revue release `thorough` sélectionne un worktree sur 67 inscriptions de sa
+famille, sans scan global ni nouvelle mesure disque. Le journal local
+`execution.json` du lanceur mesure 230,540 s au chronomètre monotone. La commande
+termine avec le code 0 et `keep` pour au moins 7 994 fichiers ignorés observés. Les quatre
+artefacts texte, HTML, inventaire et revue correspondent aux tailles et SHA-256
+du reçu `partial`. Le rapport et les chemins privés restent locaux.
+
+| Phase | Temps enregistré | Travail |
+| --- | ---: | --- |
+| Contrôles d'identité | 3 939 ms | Contrôles de la famille conservés |
+| Histoire | 62 679 ms | 5 004 objets, 1 261 processus, 9 162 640 octets |
+| Fichiers locaux | 60 473 ms | 20 500 chemins ; plafond cumulé d'octets atteint |
+| Histoire privée | 97 279 ms | 25 518 objets, 1 056 processus, 21 688 747 octets |
+| Revalidations | 4 369 ms | Histoire et racines privées recontrôlées |
+
+La cible a changé pendant l'analyse : la relation observée `not_ancestor` est
+rendue `unknown` avec le motif de changement. Une ref privée a aussi changé ;
+23 racines restent couvertes dans le rapport et trois inconnues, avec couverture
+des ancres incomplète. C2, C3, C4 et C5 restent manquantes. Le `keep` repose sur
+une raison positive de conservation et ne certifie pas une revue exhaustive.
+
+Ce dépôt est actif. Une partie de la suite Rust s'exécutait aussi pendant la fin
+de la recette ; ces durées réelles ne sont pas comparées causalement aux anciens
+runs. La comparaison de performance ci-dessus a été exécutée séparément sur son
+corpus fixe. Aucun changement des règles de verdict ni activation de `apply`.
+
+### Validation du lot
+
+Le test de séparateur de payload erroné échoue d'abord avec une clôture Git
+acceptée, puis passe après mémorisation de l'erreur de framing. Le test de racine
+manquante conserve une preuve positive indépendante ; les deux cas sont distincts.
+La revue indépendante ne relève plus de constat dans les deltas examinés.
+Validation finale : formatage et Clippy passent ; 404 tests Rust réussissent,
+trois sont ignorés. La suite Python exécute 305 tests : 299 réussissent et six
+sont ignorés. Les six tests d'exclusion et les deux tests du harness de
+comparaison passent aussi. Les binaires debug et release ainsi que les 35
+empreintes du manifeste source correspondent à la campagne de mesure.
+La publication et la CI distante restent à vérifier sur le commit livré.
+
+Les README anglais et français, référence CLI, tutoriel, contrats, guides de
+performance et skill sont alignés. Les 22 fichiers générés sont cohérents. Dans
+un cache de routage isolé, les projections Claude et Codex sélectionnent le skill
+sur 16 exemples positifs et aucun des six contre-exemples. Cela ne prouve pas
+l'activation native dans un client. Les chemins Unicode et contenant un saut de
+ligne sont testés octet par octet ; la création native d'un nom non UTF-8 est
+refusée par le système de fichiers de cet hôte et reste non vérifiée ici.
 
 ## Mesure disque ciblée, 08/10/2026
 
