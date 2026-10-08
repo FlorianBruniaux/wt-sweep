@@ -174,9 +174,9 @@ fn inventory_retains_distinct_families_bytes_sizes_and_untriaged_status() {
         "refs/heads/topic&lt;&amp;&quot;",
         "detached",
         "Not triaged",
-        "1234 B",
-        "8192 B",
-        "4096 B",
+        "1,23 Ko",
+        "8,19 Ko",
+        "4,10 Ko",
         "partial",
         "disk refused",
         "Additional disk gaps: 6",
@@ -208,7 +208,7 @@ fn review_preserves_source_and_view_totals_and_exact_decisions_without_script_in
         "&lt;/script&gt;&lt;script&gt;alert(1)&lt;/script&gt;",
         "\\u{202e}",
         "No removal authorized",
-        "8192 B",
+        "8,19 Ko",
         &"b".repeat(64),
         &review.digest_sha256,
         &selected.digest_sha256,
@@ -216,7 +216,20 @@ fn review_preserves_source_and_view_totals_and_exact_decisions_without_script_in
         assert!(report.contains(expected), "missing {expected}: {report}");
     }
     assert!(!report.contains("<script>alert(1)"));
-    assert_eq!(report.matches("<script>").count(), 1);
+    let scripts: Vec<&str> = report
+        .split("<script>")
+        .skip(1)
+        .map(|part| part.split_once("</script>").unwrap().0)
+        .collect();
+    assert_eq!(
+        scripts,
+        vec![
+            include_str!("../src/presentation/html/theme.js"),
+            include_str!("../src/presentation/html/report.js"),
+        ]
+    );
+    assert_eq!(report.matches("</script>").count(), 2);
+    assert!(report.find("<script>").unwrap() < report.find("</head>").unwrap());
     assert_eq!(report.matches("data-worktree=\"").count(), 2);
     assert_eq!(serde_json::to_vec(&selected).unwrap(), before);
 }
@@ -240,7 +253,7 @@ fn filtered_and_empty_views_keep_original_counts_coverage_and_deduplicated_total
         for expected in [
             "Source totals",
             "Selected totals",
-            "8192 B",
+            "8,19 Ko",
             "permission &lt;denied&gt;",
             "5 worktrees",
             "1 cleanup_candidate",
@@ -283,7 +296,7 @@ fn missing_measurements_and_current_branch_uncertainty_stay_visible() {
     let report = html::inventory(&inventory, 1_000_000).unwrap();
     assert!(report.contains("Not measured"));
     assert!(report.contains("Branch UNKNOWN"));
-    assert!(!report.contains("0 B"));
+    assert!(!report.contains("0 o</span>"));
 }
 
 #[test]
@@ -430,4 +443,230 @@ fn local_manifest_summaries_retain_per_worktree_gaps_omissions_and_completeness(
             .code,
         "publication_limit"
     );
+}
+
+#[test]
+fn disk_sizes_use_decimal_units_and_preserve_exact_counts() {
+    for (bytes, label) in [
+        (0, "0 o"),
+        (999, "999 o"),
+        (1000, "1,00 Ko"),
+        (1234, "1,23 Ko"),
+        (999_994, "999,99 Ko"),
+        (999_995, "1,00 Mo"),
+        (1_000_000, "1,00 Mo"),
+        (38_037_770_240, "38,04 Go"),
+        (33_181_323_981, "33,18 Go"),
+        (1_000_000_000_000, "1,00 To"),
+        (u64::MAX, "18,45 Eo"),
+    ] {
+        let (mut inventory, _) = fixture();
+        let common = inventory.families[0].common_dir.clone();
+        let usage = inventory.disk_usage.as_mut().unwrap();
+        usage.unique_bytes = DiskBytes {
+            logical: bytes,
+            allocated: bytes,
+        };
+        usage.measurements[0].bytes = Some(usage.unique_bytes.clone());
+        let mut shared = usage.measurements[0].clone();
+        shared.path = common;
+        shared.kind = DiskKind::GitCommon;
+        usage.measurements.push(shared);
+        let before = serde_json::to_vec(&inventory).unwrap();
+        let report = html::inventory(&inventory, 1_000_000).unwrap();
+        let value = format!("<span class=\"byte-size\" title=\"{bytes} octets\">{label}</span>");
+        assert_eq!(
+            report.matches(&value).count(),
+            12,
+            "overview, shortlist, totals, worktree and shared Git measurements: {label}"
+        );
+        assert!(report.contains(&format!("data-allocated=\"{bytes}\"")));
+        assert!(report.contains("Exact totals (octets)"));
+        assert!(report.contains("1 Ko = 1000 octets"));
+        assert!(report.contains("partial; totals cover observed entries only"));
+        assert_eq!(serde_json::to_vec(&inventory).unwrap(), before);
+    }
+}
+
+#[test]
+fn copy_controls_preserve_path_bytes_and_exclude_branches_and_subjects() {
+    let (mut inventory, review) = fixture();
+    let unicode = bp("/synthetic/été & \"notes\"/résumé".as_bytes());
+    let newline = bp(b"/synthetic/line\nbreak");
+    let selected = view::build(&inventory, &review, Default::default(), "repo").unwrap();
+    inventory.scope = ScanScope::Roots {
+        paths: vec![unicode.clone(), newline.clone()],
+    };
+    let before = serde_json::to_vec(&selected).unwrap();
+    for report in [
+        html::inventory(&inventory, 1_000_000).unwrap(),
+        html::review(&selected, 1_000_000).unwrap(),
+    ] {
+        for path in inventory
+            .families
+            .iter()
+            .flat_map(|f| std::iter::once(&f.common_dir).chain(f.worktrees.iter().map(|w| &w.path)))
+        {
+            assert!(
+                report.contains(&format!("data-copy-path=\"{}\"", path.hex)),
+                "missing copy control for {}",
+                path.hex
+            );
+        }
+        for non_path in [
+            inventory.families[0].worktrees[0].branch.as_ref().unwrap(),
+            review.items[0].subject.as_ref().unwrap(),
+        ] {
+            assert!(!report.contains(&format!("data-copy-path=\"{}\"", non_path.hex)));
+        }
+        assert!(report.contains("id=\"copy-status\""));
+        assert!(report.contains("<dialog id=\"copy-dialog\""));
+        assert!(report.contains("readonly"));
+    }
+    let report = html::inventory(&inventory, 1_000_000).unwrap();
+    for path in [
+        &unicode,
+        &newline,
+        &inventory.coverage.gaps[0].path,
+        &inventory.disk_usage.as_ref().unwrap().measurements[0].gaps[0].path,
+    ] {
+        assert!(report.contains(&format!("data-copy-path=\"{}\"", path.hex)));
+    }
+    assert_eq!(serde_json::to_vec(&selected).unwrap(), before);
+}
+
+fn disk_priority_section(report: &str) -> &str {
+    report
+        .split_once("id=\"disk-priority\"")
+        .unwrap()
+        .1
+        .split_once("<div class=\"notice\">")
+        .unwrap()
+        .0
+}
+
+#[test]
+fn disk_priority_retains_source_scope_without_claiming_reclaimable_bytes() {
+    let (mut inventory, mut review) = fixture();
+    let usage = inventory.disk_usage.as_mut().unwrap();
+    let original = usage.measurements[0].clone();
+    for (path, bytes, complete, kind) in [
+        (
+            b"/synthetic/large-a".as_slice(),
+            Some(6000),
+            false,
+            DiskKind::Worktree,
+        ),
+        (
+            b"/synthetic/large-b".as_slice(),
+            Some(6000),
+            true,
+            DiskKind::Worktree,
+        ),
+        (
+            b"/synthetic/shared".as_slice(),
+            Some(999999),
+            true,
+            DiskKind::GitCommon,
+        ),
+        (
+            b"/synthetic/unknown".as_slice(),
+            None,
+            false,
+            DiskKind::Worktree,
+        ),
+    ] {
+        let mut measurement = original.clone();
+        measurement.path = bp(path);
+        measurement.bytes = bytes.map(|allocated| DiskBytes {
+            allocated,
+            logical: allocated,
+        });
+        measurement.complete = complete;
+        measurement.kind = kind;
+        usage.measurements.push(measurement);
+    }
+    review.disk_usage = inventory.disk_usage.clone();
+    review.inventory_sha256 = canonical_digest(&inventory).unwrap();
+    review.digest_sha256.clear();
+    review.digest_sha256 = canonical_digest(&review).unwrap();
+    let selected = view::build(
+        &inventory,
+        &review,
+        ReviewFilters {
+            path_prefix: Some(bp(b"/no-match")),
+            ..Default::default()
+        },
+        "repo",
+    )
+    .unwrap();
+    assert!(selected.selected_paths.is_empty());
+    let before = serde_json::to_vec(&selected).unwrap();
+    let report = html::review(&selected, 1_000_000).unwrap();
+    let section = disk_priority_section(&report);
+    assert!(
+        section.contains("8,19 Ko"),
+        "retain deduplicated source total"
+    );
+    assert!(
+        !section.contains("12,00 Ko"),
+        "never sum overlapping row allocations"
+    );
+    assert!(section.contains("Recoverable space</span><strong>Not established"));
+    assert!(
+        section.contains("1 candidate"),
+        "source count survives empty view"
+    );
+    assert!(section.contains("2/5 roots fully measured"));
+    assert!(section.contains("2 partial; 1 not measured"));
+    assert!(section.contains("APFS"));
+    assert!(section.contains("unaffected by filters"));
+    assert!(
+        !section.contains("/synthetic/shared"),
+        "shared Git excluded from worktree shortlist"
+    );
+    assert!(
+        !section.contains("/synthetic/unknown"),
+        "unknown size is not ranked as zero"
+    );
+    assert!(
+        section.find("/synthetic/large-a").unwrap() < section.find("/synthetic/large-b").unwrap()
+    );
+    assert!(
+        section.find("/synthetic/large-b").unwrap() < section.find("/synthetic/a/project").unwrap()
+    );
+    assert!(section.contains("Partial observation"));
+    assert!(
+        report.find("id=\"disk-priority\"").unwrap()
+            < report.find("No removal authorized.</strong>").unwrap()
+    );
+    assert_eq!(serde_json::to_vec(&selected).unwrap(), before);
+}
+
+#[test]
+fn disk_priority_distinguishes_absent_measurements_from_measured_zero() {
+    let (mut inventory, _) = fixture();
+    for empty in [false, true] {
+        let mut source = inventory.clone();
+        if empty {
+            source.disk_usage.as_mut().unwrap().measurements.clear();
+        } else {
+            source.disk_usage = None;
+        }
+        let report = html::inventory(&source, 1_000_000).unwrap();
+        let section = disk_priority_section(&report);
+        assert!(section.contains("Not measured"));
+        assert!(section.contains("Not reviewed"));
+        assert!(!section.contains("0 o</span>"));
+    }
+    let usage = inventory.disk_usage.as_mut().unwrap();
+    usage.unique_bytes = DiskBytes::default();
+    usage.measurements[0].bytes = Some(DiskBytes::default());
+    usage.measurements[0].complete = true;
+    usage.complete = true;
+    let report = html::inventory(&inventory, 1_000_000).unwrap();
+    let section = disk_priority_section(&report);
+    assert!(section.contains("0 o</span>"));
+    assert!(section.contains("1/1 roots fully measured"));
+    assert!(section.contains("Recoverable space</span><strong>Not established"));
 }

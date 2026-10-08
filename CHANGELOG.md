@@ -9,6 +9,27 @@ the Cargo package version is a development version.
 
 ### Added
 
+- Collapsible HTML sections for the disk recap, overview, Git families, disk
+  measurements and coverage. Native controls work without JavaScript. Bulk
+  expand/collapse controls preserve nested evidence state, and navigation opens
+  the targeted section when JavaScript is available. Print styles retain the
+  section contents even after folding them.
+
+- Put disk measurements at the top of the HTML report: source-wide deduplicated
+  allocation, measurement coverage, cleanup candidate count and the three
+  largest observed worktree sizes with copyable paths. Recoverable space remains
+  unestablished; missing sizes are not zero, and overlapping row sizes are not
+  added together. Filtering keeps this source-wide scope.
+
+- Explain each HTML navigation section with hover/focus help and a separate
+  touch-friendly help button. Native popovers support click and Escape without
+  JavaScript; section links keep their navigation behavior.
+
+- Copy-path buttons in HTML worktree rows, Git families, disk observations and
+  coverage details. UTF-8 paths are copied from their exact bytes, with visible
+  confirmation and a selected-text fallback when clipboard access is refused.
+  Non-UTF-8 paths and control characters are reported without substitution.
+
 - Sanitized two-project acceptance record: 69 registered worktrees, matching
   text/JSON/HTML reports, browser checks and explicit collection limits.
   Records local evidence separately from remote delivery.
@@ -225,6 +246,25 @@ the Cargo package version is a development version.
 
 ### Changed
 
+- Lead both READMEs with the original storage problem and three user needs:
+  disk pressure, scattered worktrees and uncertain cleanup decisions. Move the
+  problem and expected outcomes before the report preview; keep removal and
+  recoverable-space limits explicit.
+
+- Refresh both READMEs and the roadmap with the completed audit milestone,
+  explicit CI and HTML-delivery follow-ups, and the bounded 63-worktree acceptance.
+  Replace the historical hero diagram with light/dark captures of a real synthetic
+  CLI report; update Mermaid output labels and keep earlier visuals as archives.
+
+- Display HTML disk sizes in decimal octet units (Ko, Mo, Go and larger), with
+  exact counts in tooltips and expandable totals. Sorting still uses raw bytes.
+
+- Apply the BoldGuy visual theme to offline HTML reports: warm light surfaces,
+  neutral dark surfaces, orange focus and navigation, system fonts and
+  monospace metrics. Theme choice persists when browser storage is available;
+  system preference remains the fallback. Expanded desktop evidence gets more
+  reading space. Add a repeatable browser check for themes and navigation.
+
 - Reuse the measured serialized size of unchanged private-history records
   within an output-budget pass; modified records are measured again. Finite
   caps and final evidence checks remain in force.
@@ -284,6 +324,16 @@ the Cargo package version is a development version.
 - Kept local handoffs outside tracked source to avoid distributing private paths.
 
 ### Fixed
+
+- Use the same surface, border, corners and padding for all five collapsible
+  HTML sections. The disk recap retains its orange top border.
+
+- Use the available report width beside the sidebar on large screens instead
+  of centering the content inside a 1200 px cap. Keep responsive mobile spacing.
+
+- HTML disk and coverage details separate long paths, copy controls and gap
+  reasons. Expanded disk evidence uses the full width; mobile controls sit below
+  the path without interrupting the explanation.
 
 - Keep the redirected progress milestone available until a known history relation
   or numeric local count is collected. Pending history and all-unknown local

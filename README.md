@@ -2,6 +2,8 @@
 
 **English** · [Français](README.fr.md)
 
+**Running out of disk space: find the worktrees to review and the work to keep.**
+
 <table>
   <tr>
     <td width="64">
@@ -16,49 +18,80 @@
 
 ---
 
-**A macOS CLI to inventory Git worktrees and compare their commits with refs you select.**
-
 [![Read-only MVP checks](https://github.com/FlorianBruniaux/wt-sweep/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/FlorianBruniaux/wt-sweep/actions/workflows/ci.yml)
 [![Rust toolchain: 1.95.0](https://img.shields.io/badge/Rust-1.95.0-dc7336?logo=rust)](rust-toolchain.toml)
 [![Runtime: macOS](https://img.shields.io/badge/Runtime-macOS-597ee5)](docs/getting-started.md#prerequisites)
 [![License: FSL-1.1-ALv2](https://img.shields.io/badge/License-FSL--1.1--ALv2-597ee5)](LICENSE.md)
 
-[Quick start](#quick-start) · [Features](#features) · [How it works](#how-it-works) · [Documentation](#documentation)
+[Quick start](#quick-start) · [HTML report](#html-report) · [Features](#features) · [How it works](#how-it-works) · [Documentation](#documentation)
 
 [Tutorial and tests](docs/tutorial.fr.md) · [Example prompt](docs/tutorial.fr.md#prompt-à-donner-à-un-assistant) · [Roadmap](docs/roadmap.md) · [Changelog](CHANGELOG.md) · [Contributing](CONTRIBUTING.md)
 
 ---
 
-Worktree Sweep (`wt-sweep`) finds repositories and their worktrees within a scope
-you choose. It checks local Git relationships and can include file manifests and
-captured GitHub or GitLab data in its reports. The Rust CLI writes text and
-versioned JSON; it runs locally without a service, forge account or AI model.
+## Why it exists
+
+I built Worktree Sweep because I had run out of disk space. Before cleaning up,
+I needed to find my Git worktrees, measure their size and check which ones still
+contained work worth keeping.
+
+Worktrees can be spread across project folders and directories used by coding
+agents. A merged branch can still contain uncommitted changes, ignored files or
+local notes. Checking them one directory at a time means repeating Git commands
+and piecing together the results.
+
+Worktree Sweep (`wt-sweep`) brings that review into one report: paths, branches,
+disk sizes and reasons to keep a worktree or investigate it further. It runs
+locally on macOS, without an AI model, service or forge account.
+
+## Start with the problem you have
+
+| Your problem | What Sweep gives you | Where to start |
+| --- | --- | --- |
+| **No disk space left** | Measured sizes per worktree and shared Git storage, with missing or partial measurements identified. Sort the HTML report by size to choose what to inspect first. | [Review with disk usage](#inspect-one-repository-family) |
+| **Worktrees scattered across folders** | An inventory grouped by Git family, with paths and branches. Discovery covers the roots you select and retains access gaps. | [Choose repositories or roots](docs/cli.md) |
+| **Unsure which worktrees you can clean up** | Git integration checks, local changes and private-history evidence. The report separates work to keep, missing checks and cleanup candidates. | [Read the verdicts](#read-the-result) |
+
+Size helps prioritize the review; it does not prove a worktree can be removed.
+On APFS, measured allocation is not an estimate of space you would recover.
+A cleanup candidate still needs confirmation that no agent or terminal is using it.
 
 > [!NOTE]
-> **Status: read-only MVP for macOS.** Discovery and review are implemented;
-> backup, restore and removal are unavailable. `apply` refuses every invocation.
-> The project name is provisional and no release has been published.
-
-![Historical illustration: a matching Git HEAD does not preserve untracked local files.](docs/assets/git-and-local-work.svg)
-
-Historical evidence illustration. With `triage/1`, observed untracked work gives `keep`.
-
-Reproduce this case with the [disposable demo](docs/getting-started.md#disposable-demo).
-The [visual sources and review notes](docs/assets/README.md) include the editable SVG.
+> **Read-only MVP for macOS.** Sweep prepares a cleanup review; it does not free
+> disk space itself. Backup, restore and removal are unavailable, and `apply`
+> refuses every invocation. The project name is provisional and no release has
+> been published.
 
 ---
 
-## Why it exists
+## HTML report
 
-Parallel development leaves worktrees spread across clones, hidden directories
-and temporary locations. A branch can look merged while its worktree still
-contains untracked notes, ignored files or a different staged version.
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="docs/assets/report-dark.png" />
+  <img src="docs/assets/report-light.png" alt="Worktree Sweep HTML report on a synthetic Git family: four worktrees, three to keep and one cleanup candidate, with source totals, search and verdict filters." />
+</picture>
 
-The report lists each worktree's full HEAD, its relationships to the refs you
-selected, associated PRs or MRs, and any risks or missing evidence. `review` and
-`plan` compare the current HEAD, index and files. With `scan --local`, the inventory
-also records detailed hashes and metadata. These records help inspect what
-remains in a worktree; they contain no backup of its files.
+Actual CLI output from a disposable demo, using this checkout's BoldGuy theme.
+The demo has four worktrees: three to keep and one candidate whose use still
+needs confirmation. These are synthetic results, not a scan of your machine.
+[Capture provenance and earlier illustrations](docs/assets/README.md).
+
+The report groups worktrees by Git family. Search, verdict filters, size sorting
+and expandable evidence help narrow the review. Light/dark themes, sizes in
+Ko/Mo/Go and **Copy path** buttons are available in this checkout; their delivery
+is tracked in [#16](https://github.com/FlorianBruniaux/wt-sweep/issues/16).
+The report and expandable evidence work offline and without JavaScript.
+Search, sorting and path copying require JavaScript.
+
+<details>
+<summary>See worktree rows, disk sizes and copy buttons</summary>
+
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="docs/assets/report-details-dark.png" />
+  <img src="docs/assets/report-details-light.png" alt="Four worktree rows with branches, retention reasons, a cleanup candidate, sizes in Ko and Copy path buttons." />
+</picture>
+
+</details>
 
 ---
 
@@ -118,7 +151,8 @@ one command. Its new run directory contains the original `inventory.json`,
 `review.json`, full `report.txt`, offline `report.html` and publication receipt
 `run.json`. The HTML groups worktrees by Git family and offers search, sorting
 and collapsible evidence. Its totals distinguish source, selected and visible rows.
-See the [HTML report guide](docs/html-report-plan.md).
+Copy a path directly from its row; if clipboard access is refused, the report
+selects the text for manual copying. See the [HTML report guide](docs/html-report-plan.md).
 
 For detailed file hashes, or to review a saved inventory separately, use the
 [advanced scan and plan path](docs/tutorial.fr.md#parcours-avancé-scan-puis-plan).
@@ -182,6 +216,9 @@ The larger finite caps include ignored files and do not guarantee completion.
 | Git relationships | Observe identical commits, ancestry and identical trees against named refs. | `plan --target FULL_REF` |
 | Offline forge evidence | Import captured GitHub/GitLab data with provenance, without contacting a forge. | `forge ingerer` |
 | Human and machine output | Read the detailed report or structured console recap; retain full path bytes and OIDs in JSON. | `--summary`, `--format json` |
+| Disk usage | Measure logical and allocated sizes, including ignored files, with partial results and inode deduplication. | `--disk-usage` |
+| Offline HTML | Browse worktrees by family, search, sort and inspect captured evidence. | `--html --run-dir BASE` |
+| Focused collection | Spend the per-worktree allowance on one selected path after reading its gaps. | `--worktree PATH --budget thorough` |
 | Separate runs | Keep concurrent reports in distinct directories with artifact hashes and publication timestamps. | `--run-dir BASE` |
 
 Global discovery is also available through `scan --all` and `review --all`. It uses visible mounted
@@ -200,11 +237,11 @@ remain available for detailed manifests and saved-input workflows:
 ```mermaid
 flowchart LR
     Review["review<br/>Explicit scope"] --> Scan["Fresh discovery"]
-    Scan --> Inventory["Original inventory JSON"]
+    Scan --> Inventory["Original inventory JSON<br/>Disk measurements if requested"]
     Inventory --> Plan["Current evidence and judgement"]
     Targets["Explicit integration refs"] --> Plan
     Forge["Captured forge export"] -. optional .-> Plan
-    Plan --> Report["Review JSON and report<br/>Reasons and missing conditions"]
+    Plan --> Report["HTML · text · JSON<br/>Verdicts, sizes and missing checks"]
 ```
 
 `review` and `plan` collect commit-graph facts and a fresh local summary, then reserve
@@ -259,9 +296,10 @@ describe the read and publication boundaries.
 
 **Disk usage:** add `--disk-usage` to `scan` or `review` for allocated and logical
 sizes per worktree, shared Git storage and a deduplicated total. The CLI writes
-these figures directly to the console recap, text report and JSON. `plan` retains
-captured measurements. Ignored files are included; incomplete measurements stay
-visible. [Measure disk usage](docs/disk-usage.md).
+these figures directly to the console recap, text report, JSON and optional HTML.
+`plan` retains captured measurements. Ignored files are included; incomplete measurements stay
+visible. HTML uses decimal units (Ko/Mo/Go) and retains exact bytes in details.
+Allocated bytes do not estimate recoverable APFS space. [Measure disk usage](docs/disk-usage.md).
 
 ## Documentation
 
@@ -269,6 +307,7 @@ visible. [Measure disk usage](docs/disk-usage.md).
 | --- | --- |
 | [Hands-on tutorial (French)](docs/tutorial.fr.md) | Disposable trial, local tests, first real repository and a copyable assistant prompt |
 | [Getting started](docs/getting-started.md) | Setup, disposable demo, report interpretation and troubleshooting |
+| [HTML report](docs/html-report-plan.md) | Generation, navigation, themes, path copying and recorded evidence |
 | [CLI reference](docs/cli.md) | Commands, defaults, output modes, limits and exit codes |
 | [Targets and filters](docs/targets-and-filters.md) | Per-repository targets, filtering and grouped reports |
 | [Offline forge imports](docs/forge.md) | Exports, executor receipts and association limits |
@@ -284,14 +323,26 @@ records are retained in French.
 
 ## Roadmap and validation
 
-T01-T09 triage is merged into `main`. The [collection changes](docs/collection-performance.md)
-batch object reads, share target walks and expose finite `standard|thorough`
-budgets. The completed thorough trial of one live family found 50 worktrees:
-49 `keep`, no candidate and one `verify`. Ten local summaries were complete,
-40 partial. Retention reasons do not imply exhaustive analysis, and incomplete
-zero counts do not mean clean. Phase metrics and the [roadmap](docs/roadmap.md)
-retain the remaining evidence limits. Writer exclusion is unproven, so backup,
-restore and removal are unavailable.
+The read-only audit milestone [#8](https://github.com/FlorianBruniaux/wt-sweep/issues/8)
+was completed by [PR #15](https://github.com/FlorianBruniaux/wt-sweep/pull/15),
+merged on 2026-10-08 as `0c3e1a59e380175991fb2ab7d539d1e87e04f67e`.
+It delivers HTML reports, disk measurements, progressive facts, collection
+benchmarks and the fixture-based tool comparison.
+
+The [integrated acceptance run](https://github.com/FlorianBruniaux/wt-sweep/issues/13#issuecomment-6052388331)
+found all 63 known registrations across two selected roots: 12 `keep`,
+51 `verify`, no candidate. All 63 local summaries remained partial; 58 of
+65 disk measurements were partial. The directory walk also hit its limit.
+This is a bounded observation, not an exhaustive machine inventory.
+
+Next: deliver the local HTML refinements in
+[#16](https://github.com/FlorianBruniaux/wt-sweep/issues/16) and restore remote CI
+in [#17](https://github.com/FlorianBruniaux/wt-sweep/issues/17).
+GitHub refused to start the latest main job because of account payment or
+spending limits. Local test results do not establish a remote CI pass.
+Management options remain in the separate
+[vision #14](https://github.com/FlorianBruniaux/wt-sweep/issues/14);
+backup, restore and removal remain unavailable.
 
 <details>
 <summary>Implementation stages and recorded validation</summary>
@@ -308,11 +359,12 @@ restore and removal are unavailable.
 The [acceptance plan](docs/plan.md) defines the gates. The
 [apply decision](docs/decisions/apply-readiness.md) records why they remain closed.
 
-The original U1-U4 checkpoint recorded 92 passing Rust tests and 78 passing
-Python tests. Those counts describe the historical foundation. The current
-triage checkpoint, final checks and repository trial are recorded separately in
-the [validation ledger](docs/finish-ledger.md#triage-t01-t09).
-The CI badge links to remote workflow results, separate from these local checks.
+The source tree merged by #15 passed 365 Rust tests (3 ignored) and 292 Python
+cases (6 skipped) locally; [#9](https://github.com/FlorianBruniaux/wt-sweep/issues/9)
+records the checked commit and skipped cases. Subsequent presentation checks
+are recorded separately in [progress](docs/progress.md). Historical checkpoints
+remain in the [validation ledger](docs/finish-ledger.md#triage-t01-t09).
+The CI badge links to remote workflow results, separate from local checks.
 Real FileProvider placeholders, actual TCC denials and a machine-wide snapshot
 have not been verified.
 
@@ -324,8 +376,9 @@ have not been verified.
 
 See [CONTRIBUTING.md](CONTRIBUTING.md) for the build, test commands, disposable
 fixtures and documentation conventions. The [changelog](CHANGELOG.md) tracks
-unreleased changes; [related tools](docs/references.md) remain candidates for
-behavioral comparison before a removal engine is built.
+unreleased changes. The [executed comparison](docs/research/worktree-runtime-comparison-2026-10-07.md)
+covers 48 native audits across Sweep, Holt and AgentRinse on disposable fixtures.
+It does not validate recovery or removal.
 
 The source checkout is the current distribution. Cargo publishing is disabled;
 no package release has been published.

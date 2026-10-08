@@ -150,7 +150,7 @@
     "source_attempt": 3,
     "normalization": "None; no upscale, crop, stretch or retouching"
   },
-  "integration_status": "Retained in docs/assets/README.md as the previous workflow image; the project README now uses git-and-local-work.svg",
+  "integration_status": "Retained in docs/assets/README.md as the historical workflow image; the project README now uses native HTML report captures (see report-captures.json)",
   "api_authentication": "successful provider image response",
   "next_proposed_prompt": {
     "path": "worktree-sweep-workflow-v2.prompt.md",

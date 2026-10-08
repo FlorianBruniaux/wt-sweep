@@ -15,6 +15,7 @@ use std::{
 
 const CSS: &str = include_str!("html/report.css");
 const JS: &str = include_str!("html/report.js");
+const THEME_INIT: &str = include_str!("html/theme.js");
 type FamilyKey<'a> = (&'a BytePath, u64, u64);
 // bool distinguishes shared Git from worktree measurements without changing the model.
 type MeasurementIndex<'a> = BTreeMap<(&'a BytePath, bool), Vec<&'a DiskMeasurement>>;
@@ -84,6 +85,12 @@ impl Html {
             }
         }
         Ok(())
+    }
+    fn copy_button(&mut self, path: &BytePath) -> fmt::Result {
+        // Only call after path() has validated and displayed this filesystem path.
+        self.raw("<button class=\"copy-path js-only\" type=\"button\" data-copy-path=\"")?;
+        self.text(&path.hex)?;
+        self.raw("\"><span class=\"copy-icon\" aria-hidden=\"true\"></span>Copy path</button>")
     }
     fn bad_path(&mut self) -> fmt::Result {
         self.invalid = Some(error(
@@ -250,7 +257,11 @@ fn start(h: &mut Html, title: &str, started: u64, finished: u64) -> fmt::Result 
     h.text(title)?;
     h.raw(" | Worktree Sweep</title><style>")?;
     h.raw(CSS)?;
-    h.raw("</style></head><body><a class=\"skip\" href=\"#content\">Skip to report</a><div class=\"layout\"><aside class=\"sidebar\" aria-label=\"Report navigation\"><div class=\"brand\"><span class=\"mark\" aria-hidden=\"true\"></span>wt-sweep</div><p class=\"eyebrow\">Read-only report</p><nav aria-label=\"Contents\"><a href=\"#overview\">Overview</a><a href=\"#worktree-families\">Git families</a><a href=\"#disk\">Disk observations</a><a href=\"#coverage\">Coverage &amp; evidence</a></nav><p class=\"boundary\">Captured facts, deterministic verdicts.<br>No removal authorized.<br>Offline; no external resources.</p></aside><main class=\"main\" id=\"content\"><header class=\"top\" id=\"overview\"><div><p class=\"eyebrow\">Worktree Sweep / captured observations</p><h1>")?;
+    h.raw("</style><script>")?;
+    h.raw(THEME_INIT)?;
+    h.raw("</script></head><body><a class=\"skip\" href=\"#content\">Skip to report</a><div class=\"layout\"><aside class=\"sidebar\" aria-label=\"Report navigation\"><div class=\"brand\"><span class=\"mark\" aria-hidden=\"true\"></span>wt-sweep</div><p class=\"eyebrow\">Read-only report</p>")?;
+    navigation(h)?;
+    h.raw("<p class=\"boundary\">Captured facts, deterministic verdicts.<br>No removal authorized.<br>Offline; no external resources.</p></aside><main class=\"main\" id=\"content\"><header class=\"top\"><div><p class=\"eyebrow\">Worktree Sweep / captured observations</p><h1>")?;
     h.text(title)?;
     h.raw("</h1><p class=\"meta\">Observation interval: ")?;
     date(h, started)?;
@@ -260,7 +271,65 @@ fn start(h: &mut Html, title: &str, started: u64, finished: u64) -> fmt::Result 
         h.out,
         "<br>Unix ms: {started}..{finished}</p></div><button class=\"theme js-only\" id=\"theme\" type=\"button\">Switch theme</button></header>"
     )?;
+    h.raw("<div class=\"section-controls js-only\" role=\"group\" aria-label=\"Report sections\"><span>Report sections</span><button type=\"button\" id=\"collapse-sections\">Collapse all sections</button><button type=\"button\" id=\"expand-sections\">Expand all sections</button></div>")
+}
+fn section_start(h: &mut Html, id: &str, title: &str, class: &str) -> fmt::Result {
+    h.raw("<details class=\"report-section ")?;
+    h.text(class)?;
+    h.raw("\" id=\"")?;
+    h.text(id)?;
+    h.raw("\" open><summary><h2>")?;
+    h.text(title)?;
+    h.raw("</h2></summary><div class=\"section-body\">")
+}
+fn section_end(h: &mut Html) -> fmt::Result {
+    h.raw("</div></details>")
+}
+fn boundary_notice(h: &mut Html) -> fmt::Result {
     h.raw("<div class=\"notice\"><strong>No removal authorized.</strong> A cleanup candidate still needs a usage check. Writer exclusion, durable backup and independent restore are not established by this report. Observations are not an atomic snapshot.</div>")
+}
+fn navigation(h: &mut Html) -> fmt::Result {
+    h.raw("<nav aria-label=\"Contents\">")?;
+    for (id, label, help) in [
+        (
+            "overview",
+            "Overview",
+            "Recorded totals, review verdicts and the observation period. A discovery-only scan has no cleanup verdict.",
+        ),
+        (
+            "worktree-families",
+            "Git families",
+            "Worktrees grouped by their shared Git repository: paths, branches, HEAD commits, sizes and collected evidence. Reviews also include verdicts.",
+        ),
+        (
+            "disk",
+            "Disk observations",
+            "Measured allocated and logical sizes per worktree and shared Git directory. Partial totals are marked. These figures are not recoverable disk space.",
+        ),
+        (
+            "coverage",
+            "Coverage & evidence",
+            "Discovery coverage, recorded access errors, collection limits and evidence that was not collected. Incomplete checks remain explicit.",
+        ),
+    ] {
+        write!(
+            h.out,
+            "<div class=\"nav-item\"><a href=\"#{id}\" aria-describedby=\"help-{id}\">"
+        )?;
+        h.text(label)?;
+        write!(
+            h.out,
+            "</a><button class=\"nav-help\" type=\"button\" popovertarget=\"help-{id}\" aria-label=\"About "
+        )?;
+        h.text(label)?;
+        write!(
+            h.out,
+            "\">?</button><div class=\"nav-tooltip\" id=\"help-{id}\" role=\"tooltip\" popover>"
+        )?;
+        h.text(help)?;
+        h.raw("</div></div>")?;
+    }
+    h.raw("</nav>")
 }
 fn date(h: &mut Html, ms: u64) -> fmt::Result {
     // Gregorian civil date from Unix days; arithmetic remains valid for all u64 ms.
@@ -285,6 +354,7 @@ fn date(h: &mut Html, ms: u64) -> fmt::Result {
     )
 }
 fn end(h: &mut Html) -> fmt::Result {
+    h.raw("<div id=\"copy-status\" class=\"copy-status js-only\" role=\"status\" aria-live=\"polite\" aria-atomic=\"true\"></div><dialog id=\"copy-dialog\" aria-labelledby=\"copy-title\" aria-describedby=\"copy-help\"><h2 id=\"copy-title\">Copy path</h2><p id=\"copy-help\">Automatic copy is unavailable. The exact path is selected below. Press ⌘C on Mac or Ctrl+C, or use your device’s Copy action.</p><label for=\"copy-value\">Path (plain text)</label><textarea id=\"copy-value\" class=\"mono\" readonly spellcheck=\"false\" rows=\"4\"></textarea><button id=\"copy-close\" type=\"button\">Close</button></dialog>")?;
     h.raw("<footer class=\"footnote\">Generated locally from captured observations. Git family grouping uses historical registrations; it does not establish current controls. Path labels use reversible byte escapes; full hex identities remain in recorded evidence.</footer></main></div><script>")?;
     h.raw(JS)?;
     h.raw("</script></body></html>\n")
@@ -301,7 +371,7 @@ fn controls(h: &mut Html, triaged: bool, selected: usize) -> fmt::Result {
         h.out,
         "<p class=\"view-status\" id=\"visible-status\" role=\"status\" aria-live=\"polite\">Visible {selected} selected worktrees. Source totals and disk measurements are unchanged.</p>"
     )?;
-    h.raw("<noscript><p class=\"notice\">JavaScript is disabled. All selected rows and recorded evidence remain readable; family links and expandable details work. Search, sorting and the theme button require JavaScript.</p></noscript><p id=\"no-matches\" class=\"empty\" hidden>No rows match. Clear the search or verdict filter.</p>")
+    h.raw("<noscript><p class=\"notice\">JavaScript is disabled. All selected rows and recorded evidence remain readable; family links and expandable details work. Search, sorting, path copying and the theme button require JavaScript.</p></noscript><p id=\"no-matches\" class=\"empty\" hidden>No rows match. Clear the search or verdict filter.</p>")
 }
 fn counts<'a>(h: &mut Html, rows: impl Iterator<Item = &'a ReviewItem>) -> fmt::Result {
     let (mut keep, mut verify, mut candidates, mut other) = (0, 0, 0, 0);
@@ -329,6 +399,9 @@ fn inventory_into(h: &mut Html, source: &Inventory) -> fmt::Result {
         source.started_unix_ms,
         source.finished_unix_ms,
     )?;
+    disk_priority(h, source.disk_usage.as_ref(), None)?;
+    boundary_notice(h)?;
+    section_start(h, "overview", "Overview", "overview-section")?;
     let total: usize = source.families.iter().map(|f| f.worktrees.len()).sum();
     write!(
         h.out,
@@ -341,13 +414,16 @@ fn inventory_into(h: &mut Html, source: &Inventory) -> fmt::Result {
             h.raw("Repository: <code>")?;
             h.path(path)?;
             h.raw("</code>")?;
+            h.copy_button(path)?;
         }
         ScanScope::Roots { paths } => {
             h.raw("Explicit roots:<ul class=\"coverage-list\">")?;
             for path in paths {
                 h.raw("<li><code>")?;
                 h.path(path)?;
-                h.raw("</code></li>")?;
+                h.raw("</code>")?;
+                h.copy_button(path)?;
+                h.raw("</li>")?;
             }
             h.raw("</ul>")?;
         }
@@ -356,8 +432,9 @@ fn inventory_into(h: &mut Html, source: &Inventory) -> fmt::Result {
         )?,
     }
     h.raw("</details>")?;
+    section_end(h)?;
+    section_start(h, "worktree-families", "Git families", "families-section")?;
     controls(h, false, total)?;
-    h.raw("<div id=\"worktree-families\"><h2 class=\"section-title\">Git families</h2>")?;
     let sizes = measurements(source.disk_usage.as_ref());
     let mut families: Vec<_> = source.families.iter().collect();
     families.sort_by_key(|f| (&f.common_dir, f.identity.device, f.identity.inode));
@@ -397,8 +474,9 @@ fn inventory_into(h: &mut Html, source: &Inventory) -> fmt::Result {
     if total == 0 {
         h.raw("<p class=\"empty\">No worktrees selected. Source coverage and omissions remain below.</p>")?;
     }
-    h.raw("</div>")?;
+    section_end(h)?;
     disk_overview(h, source.disk_usage.as_ref())?;
+    section_start(h, "coverage", "Coverage & evidence limits", "panel")?;
     coverage(h, &source.coverage, &source.not_collected)?;
     h.raw("<details class=\"panel\"><summary>Additional inventory evidence</summary>")?;
     h.json(&source.markers)?;
@@ -411,7 +489,9 @@ fn inventory_into(h: &mut Html, source: &Inventory) -> fmt::Result {
     for manifest in &source.local_inventories {
         h.raw("<details><summary>Local manifest: ")?;
         h.path(&manifest.worktree)?;
-        h.raw("</summary><p>Traversal: ")?;
+        h.raw("</summary>")?;
+        h.copy_button(&manifest.worktree)?;
+        h.raw("<p>Traversal: ")?;
         h.raw(if manifest.traversal_complete {
             "complete"
         } else {
@@ -437,11 +517,7 @@ fn inventory_into(h: &mut Html, source: &Inventory) -> fmt::Result {
             manifest.gaps.len()
         )?;
         for gap in &manifest.gaps {
-            h.raw("<li><code>")?;
-            h.path(&gap.path)?;
-            h.raw("</code>: ")?;
-            h.text(&gap.reason)?;
-            h.raw("</li>")?;
+            gap_item(h, gap)?;
         }
         write!(
             h.out,
@@ -452,6 +528,7 @@ fn inventory_into(h: &mut Html, source: &Inventory) -> fmt::Result {
         h.raw("</details>")?;
     }
     h.raw("</details>")?;
+    section_end(h)?;
     end(h)
 }
 fn review_into(
@@ -460,6 +537,9 @@ fn review_into(
     families: &BTreeMap<FamilyKey<'_>, Vec<&ReviewItem>>,
 ) -> fmt::Result {
     let source = &view.source;
+    disk_priority(h, source.disk_usage.as_ref(), Some(&source.items))?;
+    boundary_notice(h)?;
+    section_start(h, "overview", "Overview", "overview-section")?;
     write!(
         h.out,
         "<div class=\"metrics\"><div class=\"metric\"><span class=\"eyebrow\">Source totals</span><strong>{} worktrees</strong><span class=\"breakdown\">",
@@ -497,8 +577,9 @@ fn review_into(
         h.raw("</code></p>")?;
     }
     h.raw("</details>")?;
+    section_end(h)?;
+    section_start(h, "worktree-families", "Git families", "families-section")?;
     controls(h, true, view.selected_paths.len())?;
-    h.raw("<div id=\"worktree-families\"><h2 class=\"section-title\">Git families</h2>")?;
     family_index(
         h,
         families
@@ -590,14 +671,16 @@ fn review_into(
     if view.selected_paths.is_empty() {
         h.raw("<p class=\"empty\">No worktrees selected. Source totals, coverage and disk observations are retained.</p>")?;
     }
-    h.raw("</div>")?;
+    section_end(h)?;
     disk_overview(h, source.disk_usage.as_ref())?;
+    section_start(h, "coverage", "Coverage & evidence limits", "panel")?;
     coverage(h, &source.coverage, &source.not_collected)?;
     h.raw("<details class=\"panel\"><summary>Shared and descriptive evidence</summary><p>Shared stashes and descriptive context are source observations; they do not change a verdict or prove integration.</p>")?;
     h.json(&source.shared_stashes)?;
     h.json(&source.context)?;
     h.json(&source.local_inventory_refs)?;
     h.raw("</details>")?;
+    section_end(h)?;
     end(h)
 }
 fn family_index<'a>(
@@ -608,7 +691,9 @@ fn family_index<'a>(
     for (index, common) in families {
         write!(h.out, "<li><a class=\"mono\" href=\"#family-{index}\">")?;
         h.path(common)?;
-        h.raw("</a></li>")?;
+        h.raw("</a>")?;
+        h.copy_button(common)?;
+        h.raw("</li>")?;
     }
     h.raw("</ul></nav></details>")
 }
@@ -627,9 +712,11 @@ fn family_start(
         index + 1
     )?;
     h.path(common)?;
+    h.raw("</h2>")?;
+    h.copy_button(common)?;
     write!(
         h.out,
-        "</h2><p class=\"identity muted\">Historical device {} / inode {}. Current identity is not established by grouping.</p></div><div class=\"family-summary\"><span class=\"visible-count\">{selected}</span> visible / {selected} selected / {source_count} source rows",
+        "<p class=\"identity muted\">Historical device {} / inode {}. Current identity is not established by grouping.</p></div><div class=\"family-summary\"><span class=\"visible-count\">{selected}</span> visible / {selected} selected / {source_count} source rows",
         identity.device, identity.inode
     )?;
     if let Some(rows) = sizes.get(&(common, true)) {
@@ -685,7 +772,9 @@ fn row_start(
 fn path_cell(h: &mut Html, path: &BytePath, head: Option<&str>) -> fmt::Result {
     h.raw("<td data-label=\"Worktree and full HEAD\"><span class=\"path mono\">")?;
     h.path(path)?;
-    h.raw("</span><span class=\"head mono\">HEAD ")?;
+    h.raw("</span>")?;
+    h.copy_button(path)?;
+    h.raw("<span class=\"head mono\">HEAD ")?;
     h.text(head.unwrap_or("UNKNOWN"))?;
     h.raw("</span></td>")
 }
@@ -702,16 +791,46 @@ fn branch_cell(h: &mut Html, branch: Option<&BytePath>, tree: Option<&Worktree>)
     }
     h.raw("</span></td>")
 }
+fn byte_size(h: &mut Html, bytes: u64) -> fmt::Result {
+    const UNITS: [&str; 7] = ["o", "Ko", "Mo", "Go", "To", "Po", "Eo"];
+    write!(h.out, "<span class=\"byte-size\" title=\"{bytes} octets\">")?;
+    if bytes < 1000 {
+        write!(h.out, "{bytes} o")?;
+    } else {
+        let value = u128::from(bytes);
+        let mut divisor = 1000_u128;
+        let mut unit = 1;
+        while value >= divisor * 1000 && unit + 1 < UNITS.len() {
+            divisor *= 1000;
+            unit += 1;
+        }
+        // Integer rounding preserves precision up to u64::MAX.
+        let mut hundredths = (value * 100 + divisor / 2) / divisor;
+        if hundredths >= 100_000 && unit + 1 < UNITS.len() {
+            divisor *= 1000;
+            unit += 1;
+            hundredths = (value * 100 + divisor / 2) / divisor;
+        }
+        write!(
+            h.out,
+            "{},{:02} {}",
+            hundredths / 100,
+            hundredths % 100,
+            UNITS[unit]
+        )?;
+    }
+    h.raw("</span>")
+}
 fn disk_size(h: &mut Html, row: Option<&DiskMeasurement>) -> fmt::Result {
     let Some(row) = row else {
         return h.raw("Not measured; size UNKNOWN");
     };
     if let Some(bytes) = &row.bytes {
-        write!(
-            h.out,
-            "<strong>{} B allocated</strong><small>{} B logical</small>",
-            bytes.allocated, bytes.logical
-        )?;
+        h.raw("<strong>")?;
+        byte_size(h, bytes.allocated)?;
+        h.raw(" allocated</strong><small>")?;
+        byte_size(h, bytes.logical)?;
+        h.raw(" logical</small>")?;
         h.raw(if row.complete {
             "<small>complete</small>"
         } else {
@@ -748,6 +867,15 @@ fn list(h: &mut Html, values: &[String]) -> fmt::Result {
         h.raw("</li>")?;
     }
     h.raw("</ul>")
+}
+fn gap_item(h: &mut Html, gap: &Gap) -> fmt::Result {
+    h.raw("<li class=\"path-gap\"><div class=\"path-actions\"><code>")?;
+    h.path(&gap.path)?;
+    h.raw("</code>")?;
+    h.copy_button(&gap.path)?;
+    h.raw("</div><p class=\"gap-reason\">")?;
+    h.text(&gap.reason)?;
+    h.raw("</p></li>")
 }
 fn review_evidence(h: &mut Html, row: &ReviewItem) -> fmt::Result {
     h.raw("<td data-label=\"Evidence and gaps\"><details><summary>Inspect evidence")?;
@@ -809,12 +937,114 @@ fn review_evidence(h: &mut Html, row: &ReviewItem) -> fmt::Result {
     h.json(row)?;
     h.raw("</details></td>")
 }
-fn disk_overview(h: &mut Html, usage: Option<&DiskUsage>) -> fmt::Result {
-    h.raw("<section class=\"panel\" id=\"disk\"><h2>Disk observations</h2><p class=\"muted\">All recorded source roots. Review and browser filters do not narrow this scope.</p>")?;
-    if let Some(usage) = usage {
+fn disk_priority(
+    h: &mut Html,
+    usage: Option<&DiskUsage>,
+    items: Option<&[ReviewItem]>,
+) -> fmt::Result {
+    section_start(h, "disk-priority", "Disk space review", "disk-priority")?;
+    h.raw("<p class=\"muted\">All recorded roots, including shared Git; unaffected by filters.</p><div class=\"space-metrics\"><div class=\"space-primary\"><span class=\"eyebrow\">Observed disk footprint</span><strong>")?;
+    if let Some(usage) = usage.filter(|u| u.measurements.iter().any(|m| m.bytes.is_some())) {
+        byte_size(h, usage.unique_bytes.allocated)?;
+        h.raw("</strong><span class=\"space-caption\">")?;
+        h.raw(if usage.complete {
+            "Captured allocation, deduplicated"
+        } else {
+            "Partial observation, deduplicated"
+        })?;
+    } else {
+        h.raw(
+            "Not measured</strong><span class=\"space-caption\">Use --disk-usage to collect sizes",
+        )?;
+    }
+    h.raw("</span></div><div><span class=\"eyebrow\">Recoverable space</span><strong>Not established</strong><span class=\"space-caption\">APFS clones and snapshots can share blocks. Allocation does not predict freed space.</span></div><div><span class=\"eyebrow\">Cleanup review</span><strong>")?;
+    if let Some(items) = items {
+        let candidates = items
+            .iter()
+            .filter(|i| i.classification == "cleanup_candidate")
+            .count();
+        let verify = items
+            .iter()
+            .filter(|i| i.classification == "verify")
+            .count();
         write!(
             h.out,
-            "<div class=\"disk-totals\"><div><span class=\"eyebrow\">Deduplicated allocated</span><strong>{} B</strong></div><div><span class=\"eyebrow\">Deduplicated logical</span><strong>{} B</strong></div></div><p>{} measurements, ",
+            "{candidates} candidate{}",
+            if candidates == 1 { "" } else { "s" }
+        )?;
+        write!(
+            h.out,
+            "</strong><span class=\"space-caption\">{verify} still need verification across {} recorded worktrees. Candidates still need a usage check.",
+            items.len()
+        )?;
+    } else {
+        h.raw("Not reviewed</strong><span class=\"space-caption\">Run review or plan to inspect cleanup evidence.")?;
+    }
+    h.raw("</span></div></div>")?;
+    if let Some(usage) = usage {
+        let complete = usage
+            .measurements
+            .iter()
+            .filter(|m| m.complete && m.bytes.is_some())
+            .count();
+        let partial = usage
+            .measurements
+            .iter()
+            .filter(|m| !m.complete && m.bytes.is_some())
+            .count();
+        let missing = usage
+            .measurements
+            .iter()
+            .filter(|m| m.bytes.is_none())
+            .count();
+        write!(
+            h.out,
+            "<p class=\"space-coverage\"><strong>{complete}/{} roots fully measured</strong> · {partial} partial; {missing} not measured. Missing sizes remain unknown.</p>",
+            usage.measurements.len()
+        )?;
+        let mut largest: Vec<_> = usage
+            .measurements
+            .iter()
+            .filter(|m| m.kind == DiskKind::Worktree)
+            .filter_map(|m| m.bytes.as_ref().map(|b| (m, b.allocated)))
+            .collect();
+        largest.sort_by(|(a, ab), (b, bb)| bb.cmp(ab).then_with(|| a.path.cmp(&b.path)));
+        if !largest.is_empty() {
+            h.raw("<details class=\"space-largest\"><summary>Largest observed worktree sizes (up to 3)</summary><p class=\"muted\">Start the size review here. Unmeasured worktrees may be larger. Row sizes may overlap and are not added together. Check each verdict before planning cleanup.</p><ol>")?;
+            for (row, allocated) in largest.into_iter().take(3) {
+                h.raw("<li><div class=\"path-actions\"><code>")?;
+                h.path(&row.path)?;
+                h.raw("</code>")?;
+                h.copy_button(&row.path)?;
+                h.raw("</div><span class=\"space-entry-size\">")?;
+                byte_size(h, allocated)?;
+                h.raw(if row.complete {
+                    " allocated · Complete measurement"
+                } else {
+                    " allocated · Partial observation"
+                })?;
+                h.raw("</span></li>")?;
+            }
+            h.raw("</ol></details>")?;
+        }
+    } else {
+        h.raw("<p class=\"space-coverage\">Disk coverage: not collected.</p>")?;
+    }
+    h.raw("<a class=\"space-details-link\" href=\"#disk\">See disk measurements and limits &#8594;</a>")?;
+    section_end(h)
+}
+fn disk_overview(h: &mut Html, usage: Option<&DiskUsage>) -> fmt::Result {
+    section_start(h, "disk", "Disk observations", "panel")?;
+    h.raw("<p class=\"muted\">All recorded source roots. Review and browser filters do not narrow this scope.</p>")?;
+    if let Some(usage) = usage {
+        h.raw("<div class=\"disk-totals\"><div><span class=\"eyebrow\">Deduplicated allocated</span><strong>")?;
+        byte_size(h, usage.unique_bytes.allocated)?;
+        h.raw("</strong></div><div><span class=\"eyebrow\">Deduplicated logical</span><strong>")?;
+        byte_size(h, usage.unique_bytes.logical)?;
+        h.raw("</strong></div></div><p class=\"muted\">Decimal units (1 Ko = 1000 octets). Display rounded to two decimals; exact counts are available on hover or in the details.</p>")?;
+        write!(
+            h.out,
+            "<details><summary>Exact totals (octets)</summary><dl class=\"evidence\"><dt>Deduplicated allocated</dt><dd>{}</dd><dt>Deduplicated logical</dt><dd>{}</dd></dl></details><p>{} measurements, ",
             usage.unique_bytes.allocated,
             usage.unique_bytes.logical,
             usage.measurements.len()
@@ -832,22 +1062,19 @@ fn disk_overview(h: &mut Html, usage: Option<&DiskUsage>) -> fmt::Result {
         h.text(&usage.temporal_consistency)?;
         h.raw(".</p>")?;
         for row in &usage.measurements {
-            h.raw("<details><summary>")?;
+            h.raw("<div class=\"copyable-details\"><details><summary><span class=\"disk-title\">")?;
             h.raw(if row.kind == DiskKind::GitCommon {
-                "Shared Git: "
+                "Shared Git"
             } else {
-                "Worktree: "
+                "Worktree"
             })?;
+            h.raw("</span><code class=\"disk-path\">")?;
             h.path(&row.path)?;
-            h.raw("</summary><div class=\"size\">")?;
+            h.raw("</code></summary><div class=\"size\">")?;
             disk_size(h, Some(row))?;
             h.raw("</div><ul class=\"coverage-list\">")?;
             for gap in &row.gaps {
-                h.raw("<li><code>")?;
-                h.path(&gap.path)?;
-                h.raw("</code>: ")?;
-                h.text(&gap.reason)?;
-                h.raw("</li>")?;
+                gap_item(h, gap)?;
             }
             write!(
                 h.out,
@@ -856,14 +1083,17 @@ fn disk_overview(h: &mut Html, usage: Option<&DiskUsage>) -> fmt::Result {
             )?;
             h.json(row)?;
             h.raw("</details>")?;
+            h.copy_button(&row.path)?;
+            h.raw("</div>")?;
         }
     } else {
         h.raw("<p>Not measured; sizes UNKNOWN. Use scan or review --disk-usage to collect measurements.</p>")?;
     }
-    h.raw("<p class=\"footnote\">Hidden and ignored files are included in captured measurements; symlink targets are not followed. Row and family sizes may overlap. The deduplicated total uses device/inode across all roots, including shared Git. APFS shared extents and snapshots are not deduplicated. These figures are not reclaimable space and do not affect a verdict.</p></section>")
+    h.raw("<p class=\"footnote\">Hidden and ignored files are included in captured measurements; symlink targets are not followed. Row and family sizes may overlap. The deduplicated total uses device/inode across all roots, including shared Git. APFS shared extents and snapshots are not deduplicated. These figures are not reclaimable space and do not affect a verdict.</p>")?;
+    section_end(h)
 }
 fn coverage(h: &mut Html, coverage: &Coverage, not_collected: &[String]) -> fmt::Result {
-    h.raw("<section class=\"panel\" id=\"coverage\"><h2>Coverage &amp; evidence limits</h2><p>Traversal: ")?;
+    h.raw("<p>Traversal: ")?;
     h.raw(if coverage.traversal_complete {
         "complete"
     } else {
@@ -894,15 +1124,10 @@ fn coverage(h: &mut Html, coverage: &Coverage, not_collected: &[String]) -> fmt:
     }
     h.raw("<ul class=\"coverage-list\">")?;
     for gap in &coverage.gaps {
-        h.raw("<li><code>")?;
-        h.path(&gap.path)?;
-        h.raw("</code>: ")?;
-        h.text(&gap.reason)?;
-        h.raw("</li>")?;
+        gap_item(h, gap)?;
     }
     h.raw("</ul><details><summary>Not collected</summary>")?;
     list(h, not_collected)?;
     h.raw("</details>")?;
-    h.json(coverage)?;
-    h.raw("</section>")
+    h.json(coverage)
 }
