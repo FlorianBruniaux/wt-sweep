@@ -13,7 +13,9 @@ wt-sweep review (--repo PATH | --root PATH... | --all)
   [--workers 1..8] [--disk-usage] [--disk-budget standard|thorough]
   [all plan options except --inventory]
 
-wt-sweep scan (--repo PATH | --root PATH... | --all)
+wt-sweep scan (--repo PATH | --root PATH... | --all | --resume FILE)
+  [--checkpoint-out NEW_FILE] [--discovery-directories N]
+  [--discovery-entries N] [--discovery-seconds N]
   [--workers 1..8] [--local] [--disk-usage] [--disk-budget standard|thorough] [--format json|table]
   [--verbose] [--color auto|always|never] [--html] [--out FILE | --run-dir BASE]
 
@@ -74,7 +76,8 @@ run to retry. `scan` remains available to emit discovery observations separately
 ## scan
 
 Exactly one scope is required. Repeated `--root` values are allowed;
-`--repo`, `--root` and `--all` cannot be combined.
+`--repo`, `--root` and `--all` cannot be combined. With `--resume`, the checkpoint
+supplies the original explicit roots; any repeated `--root` list must match it.
 
 | Option | Behavior |
 | --- | --- |
@@ -83,6 +86,11 @@ Exactly one scope is required. Repeated `--root` values are allowed;
 | `--all` | Discover from kernel-reported visible mounts, preserving coverage gaps. |
 | `--workers N` | Parallel metadata reads, from 1 to 8; default 1. Git calls remain sequential. |
 | `--local` | Collect bounded resident-file manifests, index evidence and the worktree's own HEAD reflog. Off by default. |
+| `--checkpoint-out NEW_FILE` | Save explicit-root traversal state outside inspected roots, without overwriting a file. |
+| `--resume FILE` | Continue a saved explicit-root discovery; requires a new `--checkpoint-out`. Known Git families are read again. |
+| `--discovery-directories N` | Per-pass directory allowance, 1 to 100,000; default 100,000. |
+| `--discovery-entries N` | Per-pass entry allowance, 1 to 1,000,000; default 1,000,000. |
+| `--discovery-seconds N` | Per-pass time allowance, 1 to 600 seconds; default 60. |
 
 Discovery does not silently exclude hidden or ignored directories. It also
 looks for nested repositories, bare repositories and separated administration.
@@ -96,7 +104,7 @@ count shown in live or verbose progress covers known queued paths, including
 prefetched metadata; it is not an estimate of all remaining files. Stops distinguish
 interruption, deadline, entry, directory and observation-byte limits. The JSON
 keeps a conservative remaining-scope cover: retry the requested roots, knowing
-that some paths may already have been visited. This is not a resumable checkpoint.
+that some paths may already have been visited. The remainder alone is not a checkpoint; use the [explicit-root checkpoint workflow](discovery-resume.md) to continue traversal.
 
 Ctrl-C stops new collection work and attempts a partial report. A bounded Git
 read or a blocked filesystem call may finish first. Successful partial publication
@@ -263,7 +271,8 @@ the surrounding registrations and preserving the original inventory.
 | --- | --- |
 | Root/global discovery | 1,000,000 entries, 100,000 directories, depth 256, 60 seconds |
 | Discovery observation records | Soft 24 MiB serialized-record budget. Collection stops after the bounded operation that crosses it; pending traversal storage has separate entry limits. This is not a resident-memory ceiling. |
-| One controlled Git call | 10 seconds, 8 MiB combined captured output |
+| One ordinary controlled Git call | 10 seconds, 8 MiB combined captured output |
+| Adaptive history commit session | 10 seconds from child launch, at most 128 requested objects; 8 MiB per commit. Aggregate payload transport allowance is the phase bytes remaining when the session starts, capped at 128 MiB, plus bounded framing. Stderr is separately capped at 64 KiB. |
 | Local manifest per worktree | 20,000 combined file/index/administration entries; 64 MiB per file; 256 MiB read; 8 MiB compact manifest; depth 256; 60 seconds |
 | Local manifests across one scan | 25,000 combined entries; 256 MiB published hashed content; 24 MiB compact manifests; 120 seconds |
 | Current controls per review | 4,096 source entries; 64 KiB per file; 4 MiB source bytes including final checks; 4 MiB output; 60 seconds of control collection work. |
@@ -294,7 +303,8 @@ rereads. Limit hits produce explicit gaps or a command refusal. Deadlines bound
 controlled work; a syscall blocked in the kernel may not return immediately.
 These ceilings are not performance measurements. `--workers` controls metadata
 concurrency; `--budget` selects the review allowances below. Neither adds a
-resumable checkpoint or a deadline override.
+resumable checkpoint. The separate scan options `--checkpoint-out`, `--resume` and
+`--discovery-*` are described in [Resume discovery](discovery-resume.md).
 
 Commit subjects are bounded to 240 bytes. Human output escapes control bytes
 and bounds descriptive titles and links. Descriptions never affect classification;

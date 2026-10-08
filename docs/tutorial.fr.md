@@ -247,8 +247,11 @@ La progression sur stderr indique le travail observé ; elle n’est pas un
 checkpoint durable. Après une interruption ou une limite, lisez les lacunes,
 la couverture restante et les omissions de publication. Cette couverture est
 prudente et peut inclure des chemins déjà visités ; elle n’est pas une liste
-exacte de reprise. Relancez une famille ou une racine ciblée vers une nouvelle
-sortie. Les appels noyau bloqués peuvent retarder l’arrêt.
+exacte de reprise. Pour conserver le parcours de racines explicites, ajoutez
+`scan --checkpoint-out FICHIER_NEUF`, puis utilisez `scan --resume FICHIER`
+avec un nouveau `--checkpoint-out`. Le [guide de reprise](discovery-resume.md)
+donne les commandes, les plafonds et les refus. La revue Git ciblée reste une
+nouvelle collecte. Les appels noyau bloqués peuvent retarder l’arrêt.
 
 Un dossier incomplet sans reçu final n’établit pas un run sauvegardé. Si la
 synchronisation finale échoue après apparition du reçu, la durabilité reste

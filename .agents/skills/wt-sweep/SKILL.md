@@ -1,6 +1,6 @@
 ---
 name: wt-sweep
-description: "Use to inventory Git worktrees in chosen repositories or directories, generate or interpret offline HTML and saved wt-sweep reports, investigate keep/verify verdicts and missing evidence, retry capped worktree collection with standard/thorough budgets, or suggest worktree cleanup preparation. Analyse les worktrees, fichiers locaux, stashes et preuves Git par étapes. Read-only; not for creating worktrees, resolving merge conflicts, or executing deletion."
+description: "Use to inventory Git worktrees in chosen repositories or directories, generate or interpret offline HTML and saved wt-sweep reports, investigate keep/verify verdicts and missing evidence, retry capped worktree collection with standard/thorough budgets, resume explicit-root discovery from a saved checkpoint, or suggest worktree cleanup preparation. Analyse les worktrees, fichiers locaux, stashes et preuves Git par étapes. Read-only; not for creating worktrees, resolving merge conflicts, or executing deletion."
 ---
 
 # Worktree review with wt-sweep
@@ -103,7 +103,11 @@ or unsupported indexes need their own checks; more allowance does not fix them.
 
 Retain the earlier report and label each observation time. The two profiles are
 finite allowances, not throughput or completeness guarantees. Neither excludes
-ignored files. Do not invent `--resume`, custom timeout or arbitrary budget flags.
+ignored files. For an incomplete explicit-root discovery, read `scan --help`
+and the checkpoint recipe in [commands](references/commands.md). Use a saved
+checkpoint with `scan --resume` and a new `--checkpoint-out`; retain the exact
+scope and each observation interval. These options do not resume `review`, local
+hashing or disk measurement. Do not invent other timeout or budget flags.
 Separate runs are not one atomic snapshot.
 
 Completion: every displayed row is either reviewed or explicitly left pending;

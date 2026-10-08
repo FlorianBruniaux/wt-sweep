@@ -12,7 +12,7 @@ const HELP: &str = "Worktree Sweep (wt-sweep)
 
 Usage:
   wt-sweep review (--repo PATH | --root PATH... | --all) [--workers 1..8] [--disk-usage] [--disk-budget standard|thorough] [PLAN OPTIONS]
-  wt-sweep scan (--repo PATH | --root PATH... | --all) [--workers 1..8] [--local] [--disk-usage] [--disk-budget standard|thorough] [--format json|table] [--out FILE | --run-dir BASE]
+  wt-sweep scan (--repo PATH | --root PATH... | --all | --resume FILE) [--workers 1..8] [--local] [--disk-usage] [--disk-budget standard|thorough] [--format json|table] [--out FILE | --run-dir BASE]
   wt-sweep plan --inventory FILE [--target FULL_REF... | --target-map FILE] [--filter-repo PATH] [--path-prefix PATH] [--branch FULL_REF] [--local-state clean|dirty|unknown] [--verdict keep|cleanup_candidate|verify] [--group-by repo|directory] [--changelog-path RELATIVE...] [--no-context] [--forge FILE] [--summary] [--format json|table] [--out FILE | --run-dir BASE]
   wt-sweep forge commandes
   wt-sweep forge ingerer --raw FILE [--receipt FILE] [--out FILE | --run-dir BASE]
@@ -24,7 +24,7 @@ JSON preserves path bytes as hexadecimal; tables escape control bytes.
 Use --target for one repository family, or --target-map for explicit targets per family.
 Filters select reviewed rows; JSON views retain the full source and its coverage.
 Global discovery reports gaps and does not establish a machine-wide snapshot.
---workers bounds parallel metadata reads; aggregation order stays deterministic.
+--checkpoint-out NEW_FILE saves explicit-root discovery; --resume FILE continues it.\n--workers bounds parallel metadata reads; aggregation order stays deterministic.
 --disk-usage measures file sizes and allocated blocks without reading contents (scan and review).
 --disk-root ABSOLUTE_PATH limits disk collection to an exact registered root (repeatable).
 --local hashes local files and index within explicit budgets; gaps remain visible.
@@ -152,7 +152,7 @@ fn run(args: Vec<OsString>) -> Result<(), String> {
 fn command_help(command: &str) -> Result<(), String> {
     let usage = match command {
         "scan" => {
-            "wt-sweep scan (--repo PATH | --root PATH... | --all) [--workers 1..8] [--local] [--disk-usage] [--disk-budget standard|thorough] [--format json|table] [--out FILE | --run-dir BASE]"
+            "wt-sweep scan (--repo PATH | --root PATH... | --all | --resume FILE) [--workers 1..8] [--local] [--disk-usage] [--disk-budget standard|thorough] [--format json|table] [--out FILE | --run-dir BASE]"
         }
         "plan" => "wt-sweep plan --inventory FILE [REVIEW OPTIONS]",
         "review" => {
@@ -169,7 +169,7 @@ fn command_help(command: &str) -> Result<(), String> {
     };
     let notes = match command {
         "scan" => {
-            "Discovery requires an explicit scope. --disk-usage measures registered roots, including ignored files, without hashing.\nDisk budgets: 30s/500,000 entries per root; 600s/2,000,000 entries overall; depth 128.\n--disk-budget thorough: 120s/1,000,000 entries per root; 1800s/10,000,000 overall.\n--disk-root ABSOLUTE_PATH (repeatable) selects exact registered roots; requires --disk-usage.\nRemaining total entries and time are shared among roots still to visit.\nAllocated blocks are not a reclaim estimate; partial measurements remain explicit.\n--local additionally hashes local content within budgets.\n--html adds report.html to the run and requires --run-dir BASE.\nProgress is compact on stderr. --verbose adds paths and discovery counters.\n--color auto|always|never controls terminal color and icons.\nReports retain discovery metrics and coverage separately. Gaps and unfinished scope remain in the inventory.\n"
+            "Discovery requires an explicit scope.\n--checkpoint-out NEW_FILE saves traversal state for --root scopes.\n--resume FILE --checkpoint-out NEW_FILE resumes the saved exact roots; no old Git HEAD is reused.\n--discovery-directories 1..100000, --discovery-entries 1..1000000, --discovery-seconds 1..600 bound each pass.\nDefaults: 100000 directories, 1000000 entries, 60 seconds. Intervals remain separate; this is not a snapshot.\n--disk-usage measures registered roots, including ignored files, without hashing.\nDisk budgets: 30s/500,000 entries per root; 600s/2,000,000 entries overall; depth 128.\n--disk-budget thorough: 120s/1,000,000 entries per root; 1800s/10,000,000 overall.\n--disk-root ABSOLUTE_PATH (repeatable) selects exact registered roots; requires --disk-usage.\nRemaining total entries and time are shared among roots still to visit.\nAllocated blocks are not a reclaim estimate; partial measurements remain explicit.\n--local additionally hashes local content within budgets.\n--html adds report.html to the run and requires --run-dir BASE.\nProgress is compact on stderr. --verbose adds paths and discovery counters.\n--color auto|always|never controls terminal color and icons.\nReports retain discovery metrics and coverage separately. Gaps and unfinished scope remain in the inventory.\n"
         }
         "plan" | "review" => {
             "REVIEW OPTIONS:\n  --budget standard|thorough (default: standard; larger finite collection allowances)\n  --target FULL_REF... | --target-map FILE\n  --worktree ABSOLUTE_PATH (collect evidence for this exact recorded worktree)\n  --filter-repo PATH  --path-prefix PATH  --branch FULL_REF\n  --local-state clean|dirty|unknown  --verdict keep|cleanup_candidate|verify\n  --group-by repo|directory  --forge FILE\n  --changelog-path RELATIVE... | --no-context\n  --summary  --format json|table  --out FILE | --run-dir BASE\n  --html (offline report.html; requires --run-dir BASE)\n\nTargets must be explicit; no target leaves integration unknown.\nFilters select rows after judgement and retain source coverage in JSON views.\n--worktree narrows history/local/private/context reads; full inventory and identity checks remain.\nOther rows explicitly retain missing evidence. Add --path-prefix for a focused display.\n--summary cannot be combined with --format json. Progress is compact on stderr.\n--verbose adds detailed progress and recap metrics.\n--color auto|always|never (default: auto; respects NO_COLOR and TERM=dumb).\nJSON and saved report.txt files are always plain text.\n--run-dir needs an existing directory outside inspected targets.\nreview accepts --disk-usage [--disk-budget standard|thorough] for metadata-only sizes.\nDisk measurement covers all inventoried roots by default. --disk-root ABSOLUTE_PATH (repeatable) selects exact roots.\n--disk-root requires --disk-usage and is independent of --worktree and display filters.\nRemaining total entries and time are shared among roots still to visit; unused shares go forward.\nIts budget is separate from --budget; defaults: 30s/root, 600s overall; thorough: 120s/root, 1800s overall.\nreview saves inventory.json, review.json, report.txt and run.json together.\nplan reuses saved disk observations with their original interval; it does not recount sizes.\nplan saves review.json, report.txt and run.json.\nA cleanup_candidate still requires confirmation of its use. apply is unavailable.\n"
@@ -191,6 +191,11 @@ fn scan(args: &[OsString]) -> Result<(), String> {
             "--out",
             "--format",
             "--workers",
+            "--checkpoint-out",
+            "--resume",
+            "--discovery-directories",
+            "--discovery-entries",
+            "--discovery-seconds",
             "--local",
             "--html",
             "--disk-usage",
@@ -204,13 +209,13 @@ fn scan(args: &[OsString]) -> Result<(), String> {
     )?;
     let disk_limits = disk_settings(&opts)?;
     let mut progress = terminal::Progress::new(&opts);
-    let mut inventory = collect_inventory(&opts, &mut progress)?;
+    let (mut inventory, checkpoint) = collect_inventory_with_checkpoint(&opts, &mut progress)?;
     collect_disk(&mut inventory, disk_limits.as_ref(), &mut progress)?;
     let publication_limits = PublicationLimits::default();
     if opts.contains_key("--local") {
         collect_local(&mut inventory, &publication_limits);
     }
-    let prepared = wt_sweep::output::prepare_inventory(&inventory, &publication_limits)
+    let mut prepared = wt_sweep::output::prepare_inventory(&inventory, &publication_limits)
         .map_err(|e| e.to_string())?;
     let html = opts
         .contains_key("--html")
@@ -222,11 +227,31 @@ fn scan(args: &[OsString]) -> Result<(), String> {
         })
         .transpose()
         .map_err(|e| e.to_string())?;
-    let boundaries = if opts.contains_key("--out") || opts.contains_key("--run-dir") {
-        wt_sweep::output::revalidate_boundaries(&inventory).map_err(|e| e.to_string())?
-    } else {
-        inventory
-    };
+    let boundaries =
+        if opts.contains_key("--out") || opts.contains_key("--run-dir") || checkpoint.is_some() {
+            wt_sweep::output::revalidate_boundaries(&inventory).map_err(|e| e.to_string())?
+        } else {
+            inventory
+        };
+    if let Some(bytes) = checkpoint {
+        let path = std::path::absolute(
+            one(&opts, "--checkpoint-out").ok_or("missing checkpoint destination")?,
+        )
+        .map_err(|e| e.to_string())?;
+        write_new(&path, &bytes, &boundaries).map_err(|e| e.to_string())?;
+        prepared.report.push_str(&format!(
+            "\nDiscovery checkpoint: {}\n",
+            BytePath::from_path(&path).display()
+        ));
+        if !boundaries.coverage.traversal_complete {
+            if let Some(path_text) = path.to_str().filter(|p| !p.chars().any(char::is_control)) {
+                let quote = |value: &str| format!("'{}'", value.replace('\'', "'\"'\"'"));
+                prepared.report.push_str(&format!("Continue discovery (new observation interval):\n  wt-sweep scan --resume {} --checkpoint-out {}\n", quote(path_text), quote(&format!("{path_text}.next"))));
+            } else {
+                prepared.report.push_str("Continue with scan --resume CHECKPOINT --checkpoint-out NEW_FILE, preserving the checkpoint path bytes.\n");
+            }
+        }
+    }
     progress.finish();
     deliver(
         &opts,
@@ -316,11 +341,36 @@ fn collect_inventory(
     opts: &Options,
     progress: &mut terminal::Progress,
 ) -> Result<Inventory, String> {
+    collect_inventory_with_checkpoint(opts, progress).map(|(inventory, _)| inventory)
+}
+
+fn collect_inventory_with_checkpoint(
+    opts: &Options,
+    progress: &mut terminal::Progress,
+) -> Result<(Inventory, Option<Vec<u8>>), String> {
+    use wt_sweep::discover::resume::{
+        DiscoveryCheckpoint, MAX_CHECKPOINT_BYTES, scan_scope_resumable_with_progress,
+    };
+    let resuming = opts.contains_key("--resume");
+    let checkpointing = opts.contains_key("--checkpoint-out");
+    if resuming && !checkpointing {
+        return Err("--resume requires --checkpoint-out NEW_FILE".into());
+    }
+    if checkpointing && (opts.contains_key("--repo") || opts.contains_key("--all")) {
+        return Err("discovery checkpoints require explicit --root scope".into());
+    }
+    let checkpoint: Option<DiscoveryCheckpoint> = one(opts, "--resume")
+        .map(|path| wt_sweep::output::read_artifact_bounded(&path, MAX_CHECKPOINT_BYTES as u64))
+        .transpose()
+        .map_err(|e| e.to_string())?;
+    if let Some(saved) = &checkpoint {
+        saved.to_bytes().map_err(|e| e.to_string())?;
+    }
     let modes = ["--repo", "--root", "--all"]
         .iter()
         .filter(|name| opts.contains_key(**name))
         .count();
-    if modes != 1 {
+    if modes != 1 && !(resuming && modes == 0) {
         return Err(
             "scan/review requires exactly one explicit scope: --repo, --root or --all".into(),
         );
@@ -339,6 +389,8 @@ fn collect_inventory(
                 .collect::<Result<Vec<_>, _>>()
                 .map_err(|e| e.to_string())?,
         }
+    } else if let Some(saved) = &checkpoint {
+        saved.scope().clone()
     } else {
         ScanScope::AllMounted
     };
@@ -350,7 +402,31 @@ fn collect_inventory(
             .filter(|workers| (1..=8).contains(workers))
             .ok_or("workers must be an integer between 1 and 8")?;
     }
-    let inventory = scan_scope_with_progress(&scope, &limits, &LocalFilesystem, &mut |event| {
+    for (name, maximum, slot) in [
+        (
+            "--discovery-directories",
+            100_000,
+            &mut limits.max_directories,
+        ),
+        ("--discovery-entries", 1_000_000, &mut limits.max_entries),
+    ] {
+        if let Some(value) = opts.get(name).and_then(|v| v.first()) {
+            *slot = value
+                .to_str()
+                .and_then(|v| v.parse::<usize>().ok())
+                .filter(|v| (1..=maximum).contains(v))
+                .ok_or_else(|| format!("{name} must be between 1 and {maximum}"))?;
+        }
+    }
+    if let Some(value) = opts.get("--discovery-seconds").and_then(|v| v.first()) {
+        let seconds = value
+            .to_str()
+            .and_then(|v| v.parse::<u64>().ok())
+            .filter(|v| (1..=600).contains(v))
+            .ok_or("--discovery-seconds must be between 1 and 600")?;
+        limits.timeout = std::time::Duration::from_secs(seconds);
+    }
+    let mut notify = |event: &wt_sweep::discover::DiscoveryProgress| {
         progress.update(
             &wt_sweep::presentation::discovery_progress(event),
             matches!(
@@ -359,9 +435,23 @@ fn collect_inventory(
                     | wt_sweep::discover::DiscoveryPhase::Finished
             ),
         );
-    })
-    .map_err(|e| e.to_string())?;
-    Ok(inventory)
+    };
+    if checkpointing {
+        let batch = scan_scope_resumable_with_progress(
+            &scope,
+            &limits,
+            &LocalFilesystem,
+            checkpoint.as_ref(),
+            &mut notify,
+        )
+        .map_err(|e| e.to_string())?;
+        let bytes = batch.checkpoint.to_bytes().map_err(|e| e.to_string())?;
+        Ok((batch.inventory, Some(bytes)))
+    } else {
+        scan_scope_with_progress(&scope, &limits, &LocalFilesystem, &mut notify)
+            .map(|inventory| (inventory, None))
+            .map_err(|e| e.to_string())
+    }
 }
 
 fn collect_local(inventory: &mut Inventory, publication_limits: &PublicationLimits) {

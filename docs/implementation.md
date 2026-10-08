@@ -8,6 +8,21 @@ définit les lots et responsabilités ; leur validation exige les preuves du
 registre. Garder la comparaison des alternatives ouverte avant de développer le
 moteur de nettoyage.
 
+## Collecte et reprise du 08/10/2026
+
+Le coordinateur possède le transport Git adaptatif, les types communs, le
+raccordement CLI, les rapports et les contrats. L'agent Sweep GPT-6.1 Sol `xhigh`
+possède le parcours reprenable et ses fixtures. Un agent de test GPT-6.1 Sol
+`high` prépare le benchmark sur corpus constant ; la revue indépendante utilise
+GPT-6 Astra `high`. Les compilations, suites lourdes et mesures sont sérialisées.
+Ces réglages décrivent les lancements observés, sans classement de modèles.
+
+Les sessions de commits regroupent les lectures demandées par le parcours, sans
+précharger une autre histoire. Les preuves restent provisoires jusqu'à la sortie
+réussie du processus. La reprise ne conserve aucune preuve Git : elle garde la
+frontière de découverte et les dates, puis relit les candidats dans un nouvel
+intervalle. Les contrôles et la publication sont consignés dans [progress.md](progress.md).
+
 ## Incréments du 07/10, livrés le 08/10/2026
 
 La PR #15 livre le [rapport HTML natif](html-report-plan.md) dans les runs

@@ -219,6 +219,7 @@ garantissent pas une collecte complète.
 | --- | --- | --- |
 | Familles de dépôts | Repérer le worktree principal, les worktrees liés et ceux à HEAD détaché, ainsi que les worktrees enregistrés mais absents. | `scan --repo PATH` |
 | Découverte ciblée | Parcourir les racines choisies, y compris les dossiers cachés, ignorés et imbriqués, en conservant les lacunes de couverture. | `scan --root PATH` |
+| Découverte reprenable | Poursuivre le parcours de racines explicites, relire les familles Git et conserver les intervalles séparés. | [Commandes de reprise](docs/discovery-resume.md) |
 | Revue en une commande | Découvrir le périmètre et collecter les preuves courantes du triage. | `review --repo PATH` |
 | État local courant | Comparer HEAD, index et fichiers avec compteurs complets ou partiels. | `review` ou `plan` |
 | Inventaires de fichiers locaux | Examiner les empreintes, métadonnées, entrées d’index et certains éléments d’administration du worktree. | `scan --local` |

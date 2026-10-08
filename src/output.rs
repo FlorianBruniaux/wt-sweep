@@ -18,6 +18,14 @@ pub fn canonical_digest<T: serde::Serialize>(value: &T) -> Result<String, SweepE
 }
 
 pub fn read_artifact<T: serde::de::DeserializeOwned>(path: &Path) -> Result<T, SweepError> {
+    read_artifact_bounded(path, 32 * 1024 * 1024)
+}
+
+pub fn read_artifact_bounded<T: serde::de::DeserializeOwned>(
+    path: &Path,
+    limit: u64,
+) -> Result<T, SweepError> {
+    let limit = limit.min(32 * 1024 * 1024);
     crate::residency::ensure_no_materialization()?;
     use rustix::fs::{Mode, OFlags, open};
     use std::io::Read;
@@ -30,19 +38,18 @@ pub fn read_artifact<T: serde::de::DeserializeOwned>(path: &Path) -> Result<T, S
     )
     .map_err(|e| error(e.to_string()))?;
     let mut file = fs::File::from(fd);
-    const LIMIT: u64 = 32 * 1024 * 1024;
     let metadata = file.metadata().map_err(|e| error(e.to_string()))?;
-    if !metadata.is_file() || metadata.len() > LIMIT {
-        return Err(error(
-            "expected regular artifact within 32 MiB limit".into(),
-        ));
+    if !metadata.is_file() || metadata.len() > limit {
+        return Err(error(format!(
+            "expected regular artifact within {limit} byte limit"
+        )));
     }
     let mut bytes = Vec::new();
     (&mut file)
-        .take(LIMIT + 1)
+        .take(limit + 1)
         .read_to_end(&mut bytes)
         .map_err(|e| error(e.to_string()))?;
-    if bytes.len() as u64 > LIMIT {
+    if bytes.len() as u64 > limit {
         return Err(error("artifact size limit exceeded".into()));
     }
     serde_json::from_slice(&bytes).map_err(|e| error(e.to_string()))

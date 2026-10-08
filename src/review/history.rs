@@ -9,6 +9,7 @@ type CommitKey = (FamilyKey, String);
 type TargetKey = (FamilyKey, BytePath);
 // Resolved aliases share a graph only within the same physical family.
 type WalkKey = (FamilyKey, String);
+#[derive(Clone)]
 struct TargetWalk {
     frontier: VecDeque<String>,
     pending: BTreeSet<String>,
@@ -177,6 +178,68 @@ impl HistoryRun {
         self.commits.insert(key, result.clone());
         result
     }
+    fn staged_commit(
+        &mut self,
+        family: &Family,
+        oid: &str,
+        staged: &mut BTreeMap<CommitKey, Result<Commit, SweepError>>,
+        session: &mut Option<(crate::git::CommitSession, Duration)>,
+        allowance: usize,
+    ) -> Result<Commit, SweepError> {
+        if let Some(reason) = self.stopped(family) {
+            return Err(reason);
+        }
+        let oid = oid.to_ascii_lowercase();
+        let key = (Self::family_key(family), oid.clone());
+        if let Some(result) = staged.get(&key).or_else(|| self.commits.get(&key)) {
+            self.metrics.cache_hits += 1;
+            return result.clone();
+        }
+        if let Some(reason) = self.stop() {
+            return Err(error(reason));
+        }
+        if !valid_oid(&oid) {
+            return Err(error("source commit OID invalid"));
+        }
+        if session.is_none() {
+            let git = ControlledGit::with_output_limit(
+                self.limits.timeout.saturating_sub(self.started.elapsed()),
+                self.limits
+                    .object_bytes
+                    .saturating_sub(self.metrics.object_bytes as usize),
+            );
+            let created = git.commit_session(
+                &family.common_dir.to_path()?,
+                allowance.min(128),
+                self.limits
+                    .object_bytes
+                    .saturating_sub(self.metrics.object_bytes as usize)
+                    .min(128 * 1024 * 1024),
+            );
+            self.metrics.spawned_processes += git.spawned_processes();
+            *session = Some((created?, git.timeout_limit()));
+        }
+        self.metrics.object_read_attempts += 1;
+        let result = session
+            .as_mut()
+            .ok_or_else(|| error("commit session unavailable"))?
+            .0
+            .read(
+                &oid,
+                self.limits
+                    .object_bytes
+                    .saturating_sub(self.metrics.object_bytes as usize)
+                    .min(8 * 1024 * 1024),
+                self.limits.timeout.saturating_sub(self.started.elapsed()),
+            )
+            .and_then(|raw| {
+                self.metrics.object_bytes += raw.len() as u64;
+                verify_object("commit", &oid, &raw)?;
+                parse_commit(&raw, oid.len())
+            });
+        staged.insert(key, result.clone());
+        result
+    }
     fn resolve_target(
         &mut self,
         family: &Family,
@@ -319,15 +382,25 @@ impl HistoryRun {
             );
             return;
         };
+        let before_pending = walk.pending.len();
+        let before_queued = self.queued_ids;
+        let mut added_seen = Vec::new();
+        let mut staged = BTreeMap::new();
+        let mut session = None;
+        let session_allowance = self
+            .limits
+            .slice_object_read_attempts
+            .saturating_sub((self.metrics.object_read_attempts - reads) as usize)
+            .min(128);
         loop {
             // Verified positives and a complete graph remain usable after read budgets.
-            if let Some((result, reason)) = walk.result(&source) {
-                self.complete(job, family, result, reason);
+            if walk.result(&source).is_some() {
                 break;
             }
             // A slice yields; it must not turn resumable work into a cached refusal.
-            if self.metrics.object_read_attempts - reads
-                >= self.limits.slice_object_read_attempts as u64
+            if staged.len() >= session_allowance
+                || self.metrics.object_read_attempts - reads
+                    >= self.limits.slice_object_read_attempts as u64
                 || self.metrics.object_bytes - bytes >= self.limits.slice_object_bytes as u64
                 || self.metrics.traversal_steps - steps >= self.limits.slice_traversal_steps as u64
             {
@@ -354,7 +427,13 @@ impl HistoryRun {
             let Some(oid) = walk.frontier.front().cloned() else {
                 continue;
             };
-            let commit = match self.read_commit(family, &oid) {
+            let commit = match self.staged_commit(
+                family,
+                &oid,
+                &mut staged,
+                &mut session,
+                session_allowance,
+            ) {
                 Ok(commit) => commit,
                 Err(e) => {
                     self.stop_walk(&mut walk, e.to_string());
@@ -364,7 +443,8 @@ impl HistoryRun {
             walk.frontier.pop_front();
             walk.pending.remove(&oid);
             self.queued_ids -= 1;
-            walk.seen.insert(oid);
+            walk.seen.insert(oid.clone());
+            added_seen.push(oid);
             self.metrics.traversal_steps += 1;
             let mut unique = BTreeSet::new();
             let parents: Vec<_> = commit
@@ -391,6 +471,33 @@ impl HistoryRun {
                 walk.pending.insert(parent.clone());
                 walk.frontier.push_back(parent);
             }
+        }
+        if let Some((session, child_timeout)) = session {
+            let remaining = self.limits.timeout.saturating_sub(self.started.elapsed());
+            let child_timeout = child_timeout.min(remaining);
+            let mut result = session.finish(remaining);
+            self.remember_timeout(
+                family,
+                GitRead::CommitBatch { oids: Vec::new() },
+                &mut result,
+                child_timeout,
+                self.limits.timeout,
+            );
+            if let Err(e) = result {
+                // Earlier committed cache facts remain valid; tentative graph updates do not.
+                for oid in added_seen {
+                    walk.seen.remove(&oid);
+                }
+                self.queued_ids = before_queued.saturating_sub(before_pending);
+                walk.frontier.clear();
+                walk.pending.clear();
+                walk.terminal_reason = Some(e.to_string());
+                staged.clear();
+            }
+        }
+        self.commits.extend(staged);
+        if let Some((result, reason)) = walk.result(&source) {
+            self.complete(job, family, result, reason);
         }
         self.walks.insert(key, walk);
     }
@@ -889,6 +996,52 @@ mod deadline_tests {
     }
     fn near_deadline(run: &mut HistoryRun) {
         run.started = Instant::now() - (run.limits.timeout - Duration::from_millis(200));
+    }
+
+    #[test]
+    fn commit_chain_keeps_verified_ancestry_with_fewer_git_processes() {
+        let f = Fixture::new();
+        let source = f.git(&["rev-parse", "HEAD"]);
+        let tree = f.git(&["rev-parse", "HEAD^{tree}"]);
+        let mut target = source.clone();
+        for index in 0..128 {
+            target = f.git(&[
+                "commit-tree",
+                &tree,
+                "-p",
+                &target,
+                "-m",
+                &format!("chain {index}"),
+            ]);
+        }
+        f.git(&["update-ref", "refs/heads/integration", &target]);
+        let inventory = crate::git::scan_family(&f.0).unwrap();
+        let targets = [BytePath::from_bytes(b"refs/heads/integration")];
+        let bound = FamilyTargets::bind(&inventory, TargetInput::Simple(&targets)).unwrap();
+        crate::git::take_child_read_journal();
+        let run = HistoryRun::collect(
+            &inventory,
+            &bound,
+            &ReviewLimits::default(),
+            &BTreeMap::new(),
+            &mut |_| {},
+        )
+        .unwrap();
+        let children = crate::git::take_child_read_journal();
+        assert_eq!(run.rows[0].observations[0].result, "ancestor");
+        assert_eq!(
+            run.rows[0].observations[0].target_oid.as_deref(),
+            Some(target.as_str())
+        );
+        assert_eq!(run.metrics.object_read_attempts, 129);
+        assert_eq!(run.metrics.traversal_steps, 129);
+        assert_eq!(run.metrics.spawned_processes as usize, children.len());
+        assert!(
+            children.len() * 3 < 129 * 2,
+            "129 verified commits used {} native Git processes: {:?}",
+            children.len(),
+            run.metrics,
+        );
     }
 
     #[test]

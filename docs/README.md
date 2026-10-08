@@ -18,6 +18,7 @@ dates of their observations.
 | [Getting started](getting-started.md) | macOS setup, disposable demo, report interpretation and troubleshooting. |
 | [Espace disque](disk-usage.md) | Taille par worktree, Git partagé, total dédupliqué et limites de la mesure. |
 | [Rapport HTML par projet](html-report-plan.md) | HTML hors ligne, lecture par famille, thème BoldGuy, unités lisibles, copie des chemins et reçus. |
+| [Resume discovery](discovery-resume.md) | Save an explicit-root traversal, continue it and interpret separate observation intervals. |
 | [CLI reference](cli.md) | Implemented commands, output rules, exit codes and collection limits. |
 | [Targets and filters](targets-and-filters.md) | Select refs per repository and inspect a subset while retaining source evidence. |
 | [Offline forge imports](forge.md) | Supported exports, capture receipts and limits of MR/PR association. |
@@ -34,6 +35,7 @@ dates of their observations.
 | [AI development harness](harness.md) | Canonical instructions, generated host files and separate checks for native activation. |
 | [Collection measurements](collection-performance.md) | Discovery throughput, reproducible Rust benchmark, budget profiles, phase metrics and observed coverage. |
 | [Collection benchmark, 07/10](research/collection-benchmark-2026-10-07.md) | Before/after release samples at 50 and 100 worktrees, first provisional fact, comparable evidence and rejected measurements. |
+| [Lectures Git groupées, 08/10](research/history-batch-benchmark-2026-10-08.md) | Processus, durées et preuves sur corpus fixe ; coût mesuré de la reprise de découverte. |
 | [Review benchmark runner](../scripts/benchmark-review.py) | Frozen binaries, synthetic Git families, first observed fact, pipe/PTY output and conservation checks. Results need their binary hashes and evidence coverage. |
 | [Implementation results](progress.md) | Current checkpoint links followed by the dated U1-U4 validation record. |
 | [Recette réelle multi-projets, 07/10](research/multi-project-acceptance-2026-10-07.md) | 69 registered worktrees, matching text/JSON/HTML, partial disk and local coverage, and delivery limits. |

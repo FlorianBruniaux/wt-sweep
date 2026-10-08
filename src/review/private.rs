@@ -437,6 +437,71 @@ impl<'a> PrivateHistoryRun<'a> {
     fn commit(&mut self, f: &Family, oid: &str) -> Result<Commit, SweepError> {
         parse_commit(&self.object(f, "commit", oid)?, oid.len())
     }
+    fn staged_commit(
+        &mut self,
+        f: &Family,
+        oid: &str,
+        staged: &mut BTreeMap<ObjectKey, ObjectResult>,
+        session: &mut Option<(crate::git::CommitSession, Duration)>,
+    ) -> Result<Commit, SweepError> {
+        if let Some(old) = self.stopped_families.get(&Self::id(f)) {
+            return Err(error(family_timeout_reason(old)));
+        }
+        if !valid_oid(oid) {
+            return Err(error("invalid history object OID"));
+        }
+        let oid = oid.to_ascii_lowercase();
+        let key = (Self::id(f), "commit".into(), oid.clone());
+        if let Some(raw) = staged.get(&key).or_else(|| self.objects.get(&key)) {
+            self.cache_hits += 1;
+            return parse_commit(&raw.clone()?, oid.len());
+        }
+        if self.reads >= self.limits.object_reads || self.bytes >= self.limits.object_bytes {
+            return Err(error("private history object or byte budget reached"));
+        }
+        if self.started.elapsed() >= self.limits.timeout {
+            return Err(error("private history time budget reached"));
+        }
+        if session.is_none() {
+            if self.processes >= self.limits.git_processes {
+                return Err(error("private history Git process or time budget reached"));
+            }
+            let git = ControlledGit::with_output_limit(
+                self.limits.timeout.saturating_sub(self.started.elapsed()),
+                self.limits.object_bytes.saturating_sub(self.bytes),
+            );
+            let created = git.commit_session(
+                &f.common_dir.to_path()?,
+                32,
+                self.limits
+                    .object_bytes
+                    .saturating_sub(self.bytes)
+                    .min(128 * 1024 * 1024),
+            );
+            self.processes += git.spawned_processes() as usize;
+            *session = Some((created?, git.timeout_limit()));
+        }
+        self.reads += 1;
+        let raw = session
+            .as_mut()
+            .ok_or_else(|| error("commit session unavailable"))?
+            .0
+            .read(
+                &oid,
+                self.limits
+                    .object_bytes
+                    .saturating_sub(self.bytes)
+                    .min(8 * 1024 * 1024),
+                self.limits.timeout.saturating_sub(self.started.elapsed()),
+            )
+            .and_then(|raw| {
+                self.bytes += raw.len();
+                verify_object("commit", &oid, &raw)?;
+                Ok(Rc::new(raw))
+            });
+        staged.insert(key, raw.clone());
+        parse_commit(&raw?, oid.len())
+    }
     fn admin(
         &mut self,
         f: &Family,
@@ -679,67 +744,120 @@ impl<'a> PrivateHistoryRun<'a> {
         for root in &roots {
             let mut spent = 0;
             while !covered.contains_key(root) && (!queue.is_empty() || !warm.is_empty()) {
-                if spent >= self.limits.per_root_steps
-                    || self.steps >= self.limits.traversal_steps
-                    || self.started.elapsed() >= self.limits.timeout
-                {
-                    break;
-                }
-                if warm_steps >= WARM_STEPS {
-                    queue.append(&mut warm);
-                }
-                let priority = !warm.is_empty();
-                let next = if priority {
-                    warm_steps += 1;
-                    warm.pop_front()
-                } else {
-                    queue.pop_front()
-                };
-                let Some((oid, witness)) = next else {
-                    break;
-                };
-                spent += 1;
-                self.steps += 1;
-                match self.commit(f, &oid) {
-                    Ok(commit) => {
-                        if let Some(indices) = anchor_oids.get(&oid) {
-                            verified_anchors.extend(indices.iter().copied());
-                        }
-                        covered.insert(oid, witness);
-                        for parent in commit.parents {
-                            if scheduled.contains(&parent) {
-                                // A parent may already be a cold anchor. Move its
-                                // existing slot, never duplicate or uncharge it.
-                                if priority
-                                    && warm_steps < WARM_STEPS
-                                    && let Some(index) =
-                                        queue.iter().position(|(oid, _)| *oid == parent)
-                                    && let Some(entry) = queue.remove(index)
-                                {
-                                    warm.push_back(entry);
+                let mut added_covered = Vec::new();
+                let mut added_anchors = Vec::new();
+                let before_spent = spent;
+                let mut staged = BTreeMap::new();
+                let mut session = None;
+                // Stage one bounded scheduler quantum; do not prefetch unrequested parents.
+                for _ in 0..32 {
+                    if covered.contains_key(root) || (queue.is_empty() && warm.is_empty()) {
+                        break;
+                    }
+                    if spent >= self.limits.per_root_steps
+                        || self.steps >= self.limits.traversal_steps
+                        || self.started.elapsed() >= self.limits.timeout
+                    {
+                        break;
+                    }
+                    if warm_steps >= WARM_STEPS {
+                        queue.append(&mut warm);
+                    }
+                    let priority = !warm.is_empty();
+                    let next = if priority {
+                        warm_steps += 1;
+                        warm.pop_front()
+                    } else {
+                        queue.pop_front()
+                    };
+                    let Some((oid, witness)) = next else {
+                        break;
+                    };
+                    spent += 1;
+                    self.steps += 1;
+                    match self.staged_commit(f, &oid, &mut staged, &mut session) {
+                        Ok(commit) => {
+                            if let Some(indices) = anchor_oids.get(&oid) {
+                                for index in indices {
+                                    if verified_anchors.insert(*index) {
+                                        added_anchors.push(*index);
+                                    }
                                 }
-                                continue;
                             }
-                            if scheduled.len() >= self.limits.pending_oids {
-                                incomplete.get_or_insert_with(|| {
-                                    "private ancestry pending OID budget reached".into()
-                                });
-                                continue;
-                            }
-                            scheduled.insert(parent.clone());
-                            if priority {
-                                warm.push_back((parent, witness));
-                            } else {
-                                queue.push_back((parent, witness));
+                            added_covered.push(oid.clone());
+                            covered.insert(oid, witness);
+                            for parent in commit.parents {
+                                if scheduled.contains(&parent) {
+                                    // A parent may already be a cold anchor. Move its
+                                    // existing slot, never duplicate or uncharge it.
+                                    if priority
+                                        && warm_steps < WARM_STEPS
+                                        && let Some(index) =
+                                            queue.iter().position(|(oid, _)| *oid == parent)
+                                        && let Some(entry) = queue.remove(index)
+                                    {
+                                        warm.push_back(entry);
+                                    }
+                                    continue;
+                                }
+                                if scheduled.len() >= self.limits.pending_oids {
+                                    incomplete.get_or_insert_with(|| {
+                                        "private ancestry pending OID budget reached".into()
+                                    });
+                                    continue;
+                                }
+                                scheduled.insert(parent.clone());
+                                if priority {
+                                    warm.push_back((parent, witness));
+                                } else {
+                                    queue.push_back((parent, witness));
+                                }
                             }
                         }
+                        Err(e) => {
+                            invalid_anchor |= anchor_oids.contains_key(&oid);
+                            incomplete.get_or_insert_with(|| {
+                                format!("retained anchor traversal incomplete or unsupported: {e}")
+                            });
+                        }
                     }
-                    Err(e) => {
-                        invalid_anchor |= anchor_oids.contains_key(&oid);
-                        incomplete.get_or_insert_with(|| {
-                            format!("retained anchor traversal incomplete or unsupported: {e}")
-                        });
+                }
+                if let Some((session, child_timeout)) = session {
+                    let remaining = self.limits.timeout.saturating_sub(self.started.elapsed());
+                    let result = session.finish(remaining);
+                    if let Err(e) = result {
+                        let reason = if e.code == "git_timeout" {
+                            if child_timeout.min(remaining)
+                                < ControlledGit::default().timeout_limit()
+                                && self.started.elapsed() >= self.limits.timeout
+                            {
+                                "private history time budget exhausted during Git read; dependent private reads refused".into()
+                            } else {
+                                let operation = GitRead::CommitBatch { oids: Vec::new() };
+                                self.stopped_families
+                                    .entry(Self::id(f))
+                                    .or_insert(operation.clone());
+                                family_timeout_reason(&operation)
+                            }
+                        } else {
+                            e.to_string()
+                        };
+                        for oid in added_covered {
+                            covered.remove(&oid);
+                        }
+                        for index in added_anchors {
+                            verified_anchors.remove(&index);
+                        }
+                        staged.clear();
+                        incomplete = Some(reason);
+                        invalid_anchor = true;
+                        queue.clear();
+                        warm.clear();
                     }
+                }
+                self.objects.extend(staged);
+                if spent == before_spent {
+                    break;
                 }
             }
         }
@@ -2004,6 +2122,61 @@ mod priority_tests {
     }
 
     #[test]
+    fn private_commit_chain_preserves_roots_with_fewer_git_processes() {
+        let fixture = Fixture::new();
+        let root = fixture.git(&["rev-parse", "HEAD"]);
+        let tree = fixture.git(&["rev-parse", "HEAD^{tree}"]);
+        let mut head = root.clone();
+        for index in 0..128 {
+            head = fixture.git(&[
+                "commit-tree",
+                &tree,
+                "-p",
+                &head,
+                "-m",
+                &format!("chain {index}"),
+            ]);
+        }
+        fixture.git(&["update-ref", "refs/heads/main", &head]);
+        fs::write(fixture.0.join(".git/ORIG_HEAD"), format!("{root}\n")).unwrap();
+        let inventory = crate::git::scan_family(&fixture.0).unwrap();
+        let targets =
+            FamilyTargets::bind_with(&inventory, TargetInput::Simple(&[]), &NativeHooks).unwrap();
+        crate::git::take_child_read_journal();
+        let mut run = PrivateHistoryRun::collect(
+            &inventory,
+            &targets,
+            &PrivateHistoryLimits::default(),
+            &NativeHooks,
+            &BTreeMap::new(),
+        )
+        .unwrap();
+        let children = crate::git::take_child_read_journal();
+        assert_eq!(run.metrics().object_read_attempts, 129);
+        assert_eq!(run.metrics().git_processes as usize, children.len());
+        run.finish(&inventory, &BTreeMap::new()).unwrap();
+        assert!(
+            run.output
+                .histories
+                .values()
+                .flat_map(|h| &h.roots)
+                .any(|r| r.oid == root)
+        );
+        assert!(
+            run.output
+                .histories
+                .values()
+                .flat_map(|h| &h.roots)
+                .all(|r| r.result == "covered")
+        );
+        assert!(
+            children.len() * 3 < 129 * 2,
+            "129 private commits used {} native processes",
+            children.len()
+        );
+    }
+
+    #[test]
     fn unchanged_bounded_private_facts_are_serialized_once_and_caps_still_refuse() {
         let fixture = Fixture::new();
         let inventory = crate::git::scan_family(&fixture.0).unwrap();
@@ -2054,6 +2227,39 @@ mod priority_tests {
     }
 
     #[test]
+    fn commit_session_can_cover_more_than_one_object_allowance() {
+        let fixture = Fixture::new();
+        let root = fixture.git(&["rev-parse", "HEAD"]);
+        let tree = fixture.git(&["rev-parse", "HEAD^{tree}"]);
+        let mut message = b"large synthetic commit\n\n".to_vec();
+        message.resize(5 * 1024 * 1024, b'x');
+        fs::write(fixture.0.join("message"), &message).unwrap();
+        let middle = fixture.git(&["commit-tree", &tree, "-p", &root, "-F", "message"]);
+        let next = fixture.git(&["commit-tree", &tree, "-p", &middle, "-F", "message"]);
+        let head = fixture.git(&["commit-tree", &tree, "-p", &next, "-F", "message"]);
+        fixture.git(&["update-ref", "refs/heads/main", &head]);
+        fs::write(fixture.0.join(".git/ORIG_HEAD"), format!("{root}\n")).unwrap();
+        let inventory = crate::git::scan_family(&fixture.0).unwrap();
+        let targets =
+            FamilyTargets::bind_with(&inventory, TargetInput::Simple(&[]), &NativeHooks).unwrap();
+        let mut run = PrivateHistoryRun::collect(
+            &inventory,
+            &targets,
+            &PrivateHistoryLimits::default(),
+            &NativeHooks,
+            &BTreeMap::new(),
+        )
+        .unwrap();
+        assert!(run.bytes > 10 * 1024 * 1024);
+        run.finish(&inventory, &BTreeMap::new()).unwrap();
+        let history = run.output.histories.values().next().unwrap();
+        assert!(
+            history.roots.iter().all(|r| r.result == "covered"),
+            "{:?}",
+            history.roots
+        );
+    }
+    #[test]
     fn useful_anchor_priority_counts_native_children() {
         let fixture = Fixture::new();
         let root = fixture.git(&["rev-parse", "main"]);
@@ -2085,9 +2291,10 @@ mod priority_tests {
         let children = crate::git::take_child_read_journal();
         let commit_oids = children
             .iter()
-            .filter_map(|(_, op)| match op {
-                GitRead::Commit { oid } => Some(oid.clone()),
-                _ => None,
+            .flat_map(|(_, op)| match op {
+                GitRead::Commit { oid } => vec![oid.clone()],
+                GitRead::CommitBatch { oids } => oids.clone(),
+                _ => Vec::new(),
             })
             .collect::<Vec<_>>();
         // This journal is recorded at the actual child boundary, independently of

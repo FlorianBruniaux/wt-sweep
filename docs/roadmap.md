@@ -39,21 +39,32 @@ APFS. Sur 725 racines, 45 sont complètes, une partielle et 679 non mesurées.
 Deux revues ciblées conservent les worktrees examinés ; leurs preuves locales
 et privées restent partielles. Les rapports privés sont conservés localement.
 
-L'ordre de correction suit ces mesures :
+La [PR #22](https://github.com/FlorianBruniaux/wt-sweep/pull/22) a livré la mesure
+disque ciblée et le partage de budget au commit
+`d99fefd67e6a533339b5100233aed0e9f53866da`. La
+[CI de main](https://github.com/FlorianBruniaux/wt-sweep/actions/runs/37797546747)
+a réussi. La voie native `getattrlistbulk` reste expérimentale.
+
+Les lots suivants prolongent ces mesures :
 
 1. [#20 : mesure disque ciblée et répartition du budget](https://github.com/FlorianBruniaux/wt-sweep/issues/20).
-   Séparer les racines demandées des autres et donner du travail aux petites
-   racines situées après les grandes. La voie native groupée reste une sonde,
+   Livré par #22 : racines demandées distinctes, partage des plafonds et
+   progression bornée en sortie redirigée. La voie native groupée reste une sonde,
    sans intégration produit ni promesse d'accélération générale.
 2. [#21 : lectures Git groupées](https://github.com/FlorianBruniaux/wt-sweep/issues/21).
-   Réduire les processus pour l'histoire et les reflogs, en gardant la
-   vérification des objets et les revalidations courantes.
+   Sessions de commits bornées, vérification des objets et revalidations courantes.
+   Le [corpus fixe](research/history-batch-benchmark-2026-10-08.md) conserve les
+   mêmes preuves : médiane de 21,0 à 12,1 s, avec les limites de mesure documentées.
+   La [recette ciblée](progress.md#recette-réelle-ciblée) conserve un worktree
+   et signale les refs modifiées pendant la collecte. Validation locale terminée ; livraison distante suivie dans la PR.
 3. [#19 : poursuite d'une découverte interrompue](https://github.com/FlorianBruniaux/wt-sweep/issues/19).
-   Conserver une frontière de parcours vérifiable et distinguer les intervalles
-   de chaque passage, sans prétendre disposer d'un instantané. La reprise doit
+   `scan --checkpoint-out` puis `scan --resume` pour des racines explicites. Le [guide](discovery-resume.md) décrit la frontière
+   conservée, les contrôles d'identité et les intervalles séparés. La reprise doit
    rejouer le répertoire interrompu et relire les métadonnées des chemins en
    attente. Le listing courant tronque avant de trier : le dernier nom trié
-   ne constitue donc pas un curseur de reprise fiable.
+   ne constitue donc pas un curseur de reprise fiable. La fixture retrouve trois
+   dépôts sans relister les dossiers terminés ; les 24 passages coûtent davantage
+   qu’un scan complet en une passe. Validation locale terminée ; livraison distante suivie dans la PR.
 
 Chaque correctif doit garder les verdicts et la conservation sur fixtures,
 puis fournir une mesure à données constantes avant une nouvelle recette réelle.

@@ -2,6 +2,54 @@
 
 [Index documentaire](README.md) · [Limites CLI](cli.md#resource-limits) · [Collecte ciblée](targets-and-filters.md#complete-the-evidence-for-one-worktree)
 
+## Lectures Git groupées et reprise de découverte
+
+Les parcours d'histoire et d'histoire privée lisent les commits demandés dans
+une session `cat-file --batch-command`. L'ordre des parents, les plafonds de phase
+et la vérification de chaque OID sont conservés. Un lot ne devient une preuve
+qu'après sa clôture réussie. Les annulations retirent seulement les ajouts du lot,
+sans recopier le graphe entier à chaque passage.
+
+Le transport dispose d'un plafond agrégé égal aux octets restants de la phase,
+au plus 128 Mio, avec des en-têtes bornés et 64 Kio de stderr. Chaque commit reste
+limité à 8 Mio et chaque processus à 10 secondes depuis son lancement. Cela
+remplace le plafond de sortie de 8 Mio par processus pour ces seules sessions ;
+les appels ordinaires et les plafonds des phases restent inchangés.
+
+La [reprise de découverte](discovery-resume.md) réduit les listings répétés des
+répertoires terminés. Elle revalide les identités et relit les familles Git ; un
+checkpoint volumineux peut donc consommer son budget sans avancer. Les mesures
+de découverte concernent le passage courant, tandis que `discovery_intervals`
+conserve les dates des passages précédents. Aucun gain général n'est déduit de
+ces changements sans comparaison sur données constantes.
+
+## Comparer les lectures de commits
+
+Le runner [benchmark-history-batches.py](../scripts/benchmark-history-batches.py)
+compare deux binaires release figés avec Python 3.11 ou plus récent :
+
+```sh
+measurement_dir="$(mktemp -d /private/tmp/wt-sweep-history-benchmark.XXXXXX)"
+python3 -B scripts/benchmark-history-batches.py \
+  --baseline /absolute/path/to/baseline-wt-sweep \
+  --after /absolute/path/to/new-wt-sweep \
+  --out "$measurement_dir/result.json"
+```
+
+Il construit 128 commits en chaîne, une branche de 16 commits et une fusion
+à deux parents, puis examine trois worktrees avec des racines privées éparses.
+Un échauffement précède trois paires alternées. Le runner conserve temps,
+processus, octets et rapports bruts ; il refuse une comparaison si les preuves,
+les plafonds de phase, les binaires ou les sources ont changé. Les durées ne
+comprennent pas la création du corpus. Le cache OS n'est pas vidé.
+
+Le corpus force des lectures privées au-delà des racines déjà connues. Les
+contrôles de protocole restent séparés : ce benchmark positif ne remplace pas
+les tests d'erreur, de délais, de conservation et de refus d'une preuve inconnue.
+
+Les [résultats du 08/10](research/history-batch-benchmark-2026-10-08.md) consignent
+les processus, les durées et les limites de cette comparaison.
+
 ## Indicateurs de performance
 
 Le bilan de `scan` affiche le temps de découverte, les tentatives de lecture de
@@ -19,8 +67,9 @@ ce total. Avec `plan`, les mesures de découverte viennent de l’inventaire sou
 Lire la couverture à côté du débit : une collecte qui atteint son plafond peut
 être rapide et incomplète. Un compteur absent reste absent. Le nombre de chemins
 connus en attente ne permet pas de calculer un pourcentage d’avancement fiable.
-Le plafond de découverte reste de 60 secondes ; le profil `thorough` ne le change
-pas. Aucun point de reprise du parcours n’est ajouté par ces mesures.
+Le budget de découverte vaut 60 secondes par défaut ; le profil `thorough` ne
+le change pas. Pour `scan`, `--discovery-seconds` le règle entre 1 et 600 secondes.
+La reprise des racines explicites est décrite dans le guide ci-dessus.
 
 ## Benchmark Rust reproductible
 

@@ -1115,6 +1115,17 @@ fn coverage(h: &mut Html, coverage: &Coverage, not_collected: &[String]) -> fmt:
         ". {} recorded coverage gaps.</p>",
         coverage.gaps.len()
     )?;
+    if !coverage.discovery_intervals.is_empty() {
+        h.raw("<details><summary>Discovery observation intervals</summary><p>Separate observations, not a snapshot. Git family data, when available, belongs to the latest pass.</p><ul>")?;
+        for interval in &coverage.discovery_intervals {
+            write!(
+                h.out,
+                "<li>Unix ms {}..{}</li>",
+                interval.started_unix_ms, interval.finished_unix_ms
+            )?;
+        }
+        h.raw("</ul></details>")?;
+    }
     if let Some(remaining) = &coverage.remaining {
         h.raw("<p>Unvisited scope: ")?;
         h.text(remaining.reason.as_str())?;

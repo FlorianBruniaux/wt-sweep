@@ -961,6 +961,7 @@ fn stops_family_history(operation: &GitRead) -> bool {
 fn family_timeout_reason(operation: &GitRead) -> String {
     let operation = match operation {
         GitRead::Objects { .. } => "Objects".into(),
+        GitRead::CommitBatch { .. } => "CommitBatch".into(),
         GitRead::ObjectInfo { .. } => "ObjectInfo".into(),
         GitRead::Commit { oid } => format!("Commit {oid}"),
         GitRead::Tree { oid } => format!("Tree {oid}"),
