@@ -825,6 +825,9 @@ fn disk_size(h: &mut Html, row: Option<&DiskMeasurement>) -> fmt::Result {
     let Some(row) = row else {
         return h.raw("Not measured; size UNKNOWN");
     };
+    if !row.requested {
+        return h.raw("Not requested; outside disk collection selection");
+    }
     if let Some(bytes) = &row.bytes {
         h.raw("<strong>")?;
         byte_size(h, bytes.allocated)?;
@@ -943,7 +946,7 @@ fn disk_priority(
     items: Option<&[ReviewItem]>,
 ) -> fmt::Result {
     section_start(h, "disk-priority", "Disk space review", "disk-priority")?;
-    h.raw("<p class=\"muted\">All recorded roots, including shared Git; unaffected by filters.</p><div class=\"space-metrics\"><div class=\"space-primary\"><span class=\"eyebrow\">Observed disk footprint</span><strong>")?;
+    h.raw("<p class=\"muted\">Captured disk collection; unaffected by filters (review and browser).</p><div class=\"space-metrics\"><div class=\"space-primary\"><span class=\"eyebrow\">Observed disk footprint</span><strong>")?;
     if let Some(usage) = usage.filter(|u| u.measurements.iter().any(|m| m.bytes.is_some())) {
         byte_size(h, usage.unique_bytes.allocated)?;
         h.raw("</strong><span class=\"space-caption\">")?;
@@ -982,6 +985,9 @@ fn disk_priority(
     }
     h.raw("</span></div></div>")?;
     if let Some(usage) = usage {
+        h.raw("<p class=\"space-coverage\">")?;
+        h.text(&usage.scope_summary())?;
+        h.raw(".</p>")?;
         let complete = usage
             .measurements
             .iter()
@@ -995,7 +1001,7 @@ fn disk_priority(
         let missing = usage
             .measurements
             .iter()
-            .filter(|m| m.bytes.is_none())
+            .filter(|m| m.requested && m.bytes.is_none())
             .count();
         write!(
             h.out,
@@ -1035,8 +1041,11 @@ fn disk_priority(
 }
 fn disk_overview(h: &mut Html, usage: Option<&DiskUsage>) -> fmt::Result {
     section_start(h, "disk", "Disk observations", "panel")?;
-    h.raw("<p class=\"muted\">All recorded source roots. Review and browser filters do not narrow this scope.</p>")?;
+    h.raw("<p class=\"muted\">All recorded source roots are listed. Review and browser filters do not narrow the disk collection selection.</p>")?;
     if let Some(usage) = usage {
+        h.raw("<p>")?;
+        h.text(&usage.scope_summary())?;
+        h.raw(".</p>")?;
         h.raw("<div class=\"disk-totals\"><div><span class=\"eyebrow\">Deduplicated allocated</span><strong>")?;
         byte_size(h, usage.unique_bytes.allocated)?;
         h.raw("</strong></div><div><span class=\"eyebrow\">Deduplicated logical</span><strong>")?;
@@ -1089,7 +1098,7 @@ fn disk_overview(h: &mut Html, usage: Option<&DiskUsage>) -> fmt::Result {
     } else {
         h.raw("<p>Not measured; sizes UNKNOWN. Use scan or review --disk-usage to collect measurements.</p>")?;
     }
-    h.raw("<p class=\"footnote\">Hidden and ignored files are included in captured measurements; symlink targets are not followed. Row and family sizes may overlap. The deduplicated total uses device/inode across all roots, including shared Git. APFS shared extents and snapshots are not deduplicated. These figures are not reclaimable space and do not affect a verdict.</p>")?;
+    h.raw("<p class=\"footnote\">Hidden and ignored files are included in captured measurements; symlink targets are not followed. Row and family sizes may overlap. The deduplicated total uses device/inode across measured requested roots. Shared Git is included when requested. APFS shared extents and snapshots are not deduplicated. These figures are not reclaimable space and do not affect a verdict.</p>")?;
     section_end(h)
 }
 fn coverage(h: &mut Html, coverage: &Coverage, not_collected: &[String]) -> fmt::Result {

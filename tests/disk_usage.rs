@@ -492,3 +492,181 @@ fn plan_keeps_captured_disk_sizes_after_files_change_and_reports_missing_measure
         }
     }
 }
+
+// Regression: a large first root must not starve the later small worktree.
+#[test]
+fn disk_budget_reserves_work_for_later_roots() {
+    let f = Fixture::new();
+    let p = f.repo();
+    let large = f.0.join("a-large");
+    let small = f.0.join("z-small");
+    for (branch, path) in [("large", &large), ("small", &small)] {
+        f.git(
+            &p,
+            &[
+                "worktree",
+                "add",
+                "-b",
+                branch,
+                path.to_str().expect("disk fixture"),
+            ],
+        );
+    }
+    for n in 0..200 {
+        fs::write(large.join(format!("file-{n}")), b"data").expect("disk fixture");
+    }
+    fs::write(small.join("note"), b"small").expect("disk fixture");
+    let mut inv = scan_scope(&ScanScope::Repo {
+        path: BytePath::from_path(&p),
+    })
+    .expect("disk fixture");
+    let limits = wt_sweep::disk::DiskLimits {
+        max_entries: 60,
+        max_entries_per_root: 60,
+        ..Default::default()
+    };
+    wt_sweep::disk::collect(&mut inv, &limits, &mut |_| {}).expect("disk fixture");
+    let usage = inv.disk_usage.expect("disk fixture");
+    let small_row = usage
+        .measurements
+        .iter()
+        .find(|r| r.path == BytePath::from_path(&small))
+        .expect("disk fixture");
+    assert!(
+        small_row.complete,
+        "later small root must receive its budget: {small_row:?}"
+    );
+    assert!(small_row.bytes.as_ref().expect("disk fixture").logical >= 5);
+    let large_row = usage
+        .measurements
+        .iter()
+        .find(|r| r.path == BytePath::from_path(&large))
+        .expect("disk fixture");
+    assert!(!large_row.complete);
+    assert!(large_row.bytes.is_some());
+    assert!(
+        usage
+            .measurements
+            .iter()
+            .map(|r| r.entries_checked)
+            .sum::<usize>()
+            <= 60
+    );
+    assert!(!usage.complete);
+}
+
+// Regression: a disk-only selection must retain inventory rows but never scan their contents.
+#[test]
+fn disk_root_selection_retains_scope_and_excludes_unrequested_roots() {
+    let f = Fixture::new();
+    let p = f.repo();
+    let nested = p.join("nested");
+    f.git(
+        &p,
+        &[
+            "worktree",
+            "add",
+            "-b",
+            "nested",
+            nested.to_str().expect("disk fixture"),
+        ],
+    );
+    fs::write(p.join("note"), b"selected").expect("disk fixture");
+    fs::write(nested.join("outside-selection"), vec![1; 8192]).expect("disk fixture");
+    let out = f.0.join("reports");
+    fs::create_dir(&out).expect("disk fixture");
+    let o = Command::new(env!("CARGO_BIN_EXE_wt-sweep"))
+        .args(["scan", "--repo"])
+        .arg(&p)
+        .args(["--disk-usage", "--disk-root"])
+        .arg(&p)
+        .arg("--disk-root")
+        .arg(&p)
+        .args(["--format", "json", "--html", "--run-dir"])
+        .arg(&out)
+        .output()
+        .expect("disk fixture");
+    assert!(o.status.success(), "{}", String::from_utf8_lossy(&o.stderr));
+    let value: serde_json::Value = serde_json::from_slice(&o.stdout).expect("disk fixture");
+    let disk = &value["disk_usage"];
+    assert_eq!(
+        disk["requested_paths"],
+        serde_json::json!([BytePath::from_path(&p)])
+    );
+    let rows = disk["measurements"].as_array().expect("disk fixture");
+    assert_eq!(rows.len(), 3);
+    let chosen = rows
+        .iter()
+        .find(|r| r["path"] == serde_json::json!(BytePath::from_path(&p)))
+        .expect("disk fixture");
+    assert_eq!(chosen["bytes"]["logical"], 8);
+    assert_eq!(chosen["complete"], true);
+    assert_eq!(chosen["excluded_registered_roots"], 2);
+    assert_eq!(disk["complete"], false, "source scope remains incomplete");
+    for row in rows.iter().filter(|r| r["path"] != chosen["path"]) {
+        assert_eq!(row["requested"], false);
+        assert!(row["bytes"].is_null());
+        assert_eq!(row["entries_checked"], 0);
+        assert_eq!(row["gaps"], serde_json::json!([]));
+    }
+    let run = fs::read_dir(&out)
+        .expect("disk fixture")
+        .next()
+        .expect("disk fixture")
+        .expect("disk fixture")
+        .path();
+    for name in ["report.txt", "report.html"] {
+        let report = fs::read_to_string(run.join(name)).expect("disk fixture");
+        assert!(
+            report.contains("1 requested") && report.contains("2 not requested"),
+            "{name}: explicit scope missing"
+        );
+        assert!(report.contains("Not requested") || report.contains("not requested"));
+    }
+    assert!(String::from_utf8_lossy(&o.stderr).contains("1 requested"));
+    assert_eq!(
+        value["families"][0]["worktrees"]
+            .as_array()
+            .expect("disk fixture")
+            .len(),
+        2
+    );
+}
+
+#[test]
+fn disk_selection_rejects_unknown_roots_without_replacing_observations() {
+    let f = Fixture::new();
+    let p = f.repo();
+    let mut inv = scan_scope(&ScanScope::Repo {
+        path: BytePath::from_path(&p),
+    })
+    .expect("disk fixture");
+    wt_sweep::disk::collect(&mut inv, &Default::default(), &mut |_| {}).expect("disk fixture");
+    let before = serde_json::to_vec(&inv).expect("disk fixture");
+    let mut events = 0;
+    let error = wt_sweep::disk::collect_selected(
+        &mut inv,
+        &Default::default(),
+        &[BytePath::from_path(&p.join("not-a-registered-root"))],
+        &mut |_| events += 1,
+    )
+    .expect_err("unknown disk root must be refused");
+    assert_eq!(error.code, "disk_selection");
+    assert_eq!(events, 0);
+    assert_eq!(serde_json::to_vec(&inv).expect("disk fixture"), before);
+}
+
+#[test]
+fn historical_disk_format_keeps_its_canonical_digest() {
+    // Frozen all-roots format from before explicit disk selection. Synthetic paths,
+    // counts and timestamps; no new-code serialization is used as the oracle.
+    let historical = r#"{"complete":false,"elapsed_ms":1,"finished_unix_ms":2,"limits":{"max_depth":128,"max_entries":10,"max_entries_per_root":10,"timeout":{"nanos":0,"secs":600},"timeout_per_root":{"nanos":0,"secs":30}},"measurements":[{"bytes":{"allocated":4096,"logical":8},"complete":false,"elapsed_ms":1,"entries_checked":2,"excluded_registered_roots":0,"gaps":[],"gaps_omitted":0,"identity":null,"kind":"worktree","path":{"hex":"2f66697874757265"}}],"started_unix_ms":1,"temporal_consistency":"not_guaranteed","unique_bytes":{"allocated":4096,"logical":8}}"#;
+    let restored: wt_sweep::disk::DiskUsage =
+        serde_json::from_str(historical).expect("historical disk fixture");
+    assert!(restored.requested_paths.is_none());
+    assert!(restored.measurements.iter().all(|r| r.requested));
+    assert_eq!(
+        wt_sweep::output::canonical_digest(&restored).expect("historical digest"),
+        "aaadf76145bd8a9eb216b8c6d9a11225ac527af60d98a56d4740c84876419038"
+    );
+}

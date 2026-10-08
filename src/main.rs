@@ -26,6 +26,7 @@ Filters select reviewed rows; JSON views retain the full source and its coverage
 Global discovery reports gaps and does not establish a machine-wide snapshot.
 --workers bounds parallel metadata reads; aggregation order stays deterministic.
 --disk-usage measures file sizes and allocated blocks without reading contents (scan and review).
+--disk-root ABSOLUTE_PATH limits disk collection to an exact registered root (repeatable).
 --local hashes local files and index within explicit budgets; gaps remain visible.
 review and plan report readable progress on stderr and keep JSON on stdout.
 --summary prints a compact recap; --verbose adds detailed progress and metrics.
@@ -168,10 +169,10 @@ fn command_help(command: &str) -> Result<(), String> {
     };
     let notes = match command {
         "scan" => {
-            "Discovery requires an explicit scope. --disk-usage measures registered roots, including ignored files, without hashing.\nDisk budgets: 30s/500,000 entries per root; 600s/2,000,000 entries overall; depth 128.\n--disk-budget thorough: 120s/1,000,000 entries per root; 1800s/10,000,000 overall.\nAllocated blocks are not a reclaim estimate; partial measurements remain explicit.\n--local additionally hashes local content within budgets.\n--html adds report.html to the run and requires --run-dir BASE.\nProgress is compact on stderr. --verbose adds paths and discovery counters.\n--color auto|always|never controls terminal color and icons.\nReports retain discovery metrics and coverage separately. Gaps and unfinished scope remain in the inventory.\n"
+            "Discovery requires an explicit scope. --disk-usage measures registered roots, including ignored files, without hashing.\nDisk budgets: 30s/500,000 entries per root; 600s/2,000,000 entries overall; depth 128.\n--disk-budget thorough: 120s/1,000,000 entries per root; 1800s/10,000,000 overall.\n--disk-root ABSOLUTE_PATH (repeatable) selects exact registered roots; requires --disk-usage.\nRemaining total entries and time are shared among roots still to visit.\nAllocated blocks are not a reclaim estimate; partial measurements remain explicit.\n--local additionally hashes local content within budgets.\n--html adds report.html to the run and requires --run-dir BASE.\nProgress is compact on stderr. --verbose adds paths and discovery counters.\n--color auto|always|never controls terminal color and icons.\nReports retain discovery metrics and coverage separately. Gaps and unfinished scope remain in the inventory.\n"
         }
         "plan" | "review" => {
-            "REVIEW OPTIONS:\n  --budget standard|thorough (default: standard; larger finite collection allowances)\n  --target FULL_REF... | --target-map FILE\n  --worktree ABSOLUTE_PATH (collect evidence for this exact recorded worktree)\n  --filter-repo PATH  --path-prefix PATH  --branch FULL_REF\n  --local-state clean|dirty|unknown  --verdict keep|cleanup_candidate|verify\n  --group-by repo|directory  --forge FILE\n  --changelog-path RELATIVE... | --no-context\n  --summary  --format json|table  --out FILE | --run-dir BASE\n  --html (offline report.html; requires --run-dir BASE)\n\nTargets must be explicit; no target leaves integration unknown.\nFilters select rows after judgement and retain source coverage in JSON views.\n--worktree narrows history/local/private/context reads; full inventory and identity checks remain.\nOther rows explicitly retain missing evidence. Add --path-prefix for a focused display.\n--summary cannot be combined with --format json. Progress is compact on stderr.\n--verbose adds detailed progress and recap metrics.\n--color auto|always|never (default: auto; respects NO_COLOR and TERM=dumb).\nJSON and saved report.txt files are always plain text.\n--run-dir needs an existing directory outside inspected targets.\nreview accepts --disk-usage [--disk-budget standard|thorough] for metadata-only sizes.\nDisk measurement covers all inventoried roots, independently of --worktree and display filters.\nIts budget is separate from --budget; defaults: 30s/root, 600s overall; thorough: 120s/root, 1800s overall.\nreview saves inventory.json, review.json, report.txt and run.json together.\nplan reuses saved disk observations with their original interval; it does not recount sizes.\nplan saves review.json, report.txt and run.json.\nA cleanup_candidate still requires confirmation of its use. apply is unavailable.\n"
+            "REVIEW OPTIONS:\n  --budget standard|thorough (default: standard; larger finite collection allowances)\n  --target FULL_REF... | --target-map FILE\n  --worktree ABSOLUTE_PATH (collect evidence for this exact recorded worktree)\n  --filter-repo PATH  --path-prefix PATH  --branch FULL_REF\n  --local-state clean|dirty|unknown  --verdict keep|cleanup_candidate|verify\n  --group-by repo|directory  --forge FILE\n  --changelog-path RELATIVE... | --no-context\n  --summary  --format json|table  --out FILE | --run-dir BASE\n  --html (offline report.html; requires --run-dir BASE)\n\nTargets must be explicit; no target leaves integration unknown.\nFilters select rows after judgement and retain source coverage in JSON views.\n--worktree narrows history/local/private/context reads; full inventory and identity checks remain.\nOther rows explicitly retain missing evidence. Add --path-prefix for a focused display.\n--summary cannot be combined with --format json. Progress is compact on stderr.\n--verbose adds detailed progress and recap metrics.\n--color auto|always|never (default: auto; respects NO_COLOR and TERM=dumb).\nJSON and saved report.txt files are always plain text.\n--run-dir needs an existing directory outside inspected targets.\nreview accepts --disk-usage [--disk-budget standard|thorough] for metadata-only sizes.\nDisk measurement covers all inventoried roots by default. --disk-root ABSOLUTE_PATH (repeatable) selects exact roots.\n--disk-root requires --disk-usage and is independent of --worktree and display filters.\nRemaining total entries and time are shared among roots still to visit; unused shares go forward.\nIts budget is separate from --budget; defaults: 30s/root, 600s overall; thorough: 120s/root, 1800s overall.\nreview saves inventory.json, review.json, report.txt and run.json together.\nplan reuses saved disk observations with their original interval; it does not recount sizes.\nplan saves review.json, report.txt and run.json.\nA cleanup_candidate still requires confirmation of its use. apply is unavailable.\n"
         }
         _ => {
             "Offline evidence only. No network command is executed by these subcommands.\ncommandes prints capture guidance; ingerer reads captured raw data and its receipt.\n"
@@ -194,11 +195,12 @@ fn scan(args: &[OsString]) -> Result<(), String> {
             "--html",
             "--disk-usage",
             "--disk-budget",
+            "--disk-root",
             "--verbose",
             "--color",
             "--run-dir",
         ],
-        &["--root"],
+        &["--root", "--disk-root"],
     )?;
     let disk_limits = disk_settings(&opts)?;
     let mut progress = terminal::Progress::new(&opts);
@@ -242,7 +244,24 @@ fn scan(args: &[OsString]) -> Result<(), String> {
     )
 }
 
-fn disk_settings(opts: &Options) -> Result<Option<wt_sweep::disk::DiskLimits>, String> {
+struct DiskSettings {
+    limits: wt_sweep::disk::DiskLimits,
+    paths: Vec<BytePath>,
+}
+
+fn disk_settings(opts: &Options) -> Result<Option<DiskSettings>, String> {
+    let paths: Vec<_> = opts
+        .get("--disk-root")
+        .into_iter()
+        .flatten()
+        .map(PathBuf::from)
+        .collect();
+    if !paths.is_empty() && !opts.contains_key("--disk-usage") {
+        return Err("--disk-root requires --disk-usage".into());
+    }
+    if paths.iter().any(|p| !p.is_absolute()) {
+        return Err("--disk-root requires an absolute registered path".into());
+    }
     let limits = match opts.get("--disk-budget").and_then(|values| values.first()) {
         Some(_) if !opts.contains_key("--disk-usage") => {
             return Err("--disk-budget requires --disk-usage".into());
@@ -252,49 +271,43 @@ fn disk_settings(opts: &Options) -> Result<Option<wt_sweep::disk::DiskLimits>, S
         Some(_) => return Err("--disk-budget must be standard or thorough".into()),
         None => wt_sweep::disk::DiskLimits::default(),
     };
-    Ok(opts.contains_key("--disk-usage").then_some(limits))
+    Ok(opts.contains_key("--disk-usage").then_some(DiskSettings {
+        limits,
+        paths: paths.iter().map(|p| BytePath::from_path(p)).collect(),
+    }))
 }
 
 fn collect_disk(
     inventory: &mut Inventory,
-    limits: Option<&wt_sweep::disk::DiskLimits>,
+    settings: Option<&DiskSettings>,
     progress: &mut terminal::Progress,
 ) -> Result<(), String> {
-    if let Some(disk_limits) = limits {
+    if let Some(settings) = settings {
         progress.update(
             "Measuring registered worktrees and shared Git directories...",
             true,
         );
-        let mut visited = 0;
         let mut incomplete = 0;
-        wt_sweep::disk::collect(inventory, disk_limits, &mut |row| {
-            let size = row
-                .bytes
-                .as_ref()
-                .map(|b| wt_sweep::disk::human_bytes(b.allocated))
-                .unwrap_or_else(|| "unknown".into());
-            visited += 1;
-            incomplete += usize::from(!row.complete);
-            let message = if progress.verbose() {
-                format!(
-                    "  {}: {size} ({})",
-                    row.path.display(),
-                    if row.complete {
-                        "complete"
-                    } else {
-                        "incomplete"
-                    }
-                )
-            } else {
-                format!("Disk usage: {visited} roots visited; {incomplete} incomplete")
-            };
-            progress.update(&message, false);
-        })
-        .map_err(|e| e.to_string())?;
-        progress.update(
-            &format!("Disk measurement finished: {visited} roots; {incomplete} incomplete"),
-            true,
-        );
+        wt_sweep::disk::collect_selected(inventory, &settings.limits, &settings.paths, &mut |event| {
+            if let Some(row) = event.completed {
+                incomplete += usize::from(!row.complete);
+                if progress.verbose() {
+                    let size = row.bytes.as_ref().map(|b| wt_sweep::disk::human_bytes(b.allocated)).unwrap_or_else(|| "unknown".into());
+                    progress.update(&format!("  {}: {size} ({})", row.path.display(), if row.complete { "complete" } else { "incomplete" }), false);
+                }
+            }
+            let visible = event.completed.is_none();
+            progress.update(&format!("Disk usage: {}/{} roots visited; {} entries; {:.1}s; {incomplete} incomplete", event.roots_completed, event.roots_requested, event.entries_checked, event.elapsed_ms as f64 / 1000.0), visible);
+        }).map_err(|e| e.to_string())?;
+        if let Some(usage) = &inventory.disk_usage {
+            progress.update(
+                &format!(
+                    "Disk measurement finished: {}; {incomplete} incomplete",
+                    usage.scope_summary()
+                ),
+                true,
+            );
+        }
     }
     Ok(())
 }
@@ -504,8 +517,13 @@ fn review(args: &[OsString]) -> Result<(), String> {
         "--workers",
         "--disk-usage",
         "--disk-budget",
+        "--disk-root",
     ]);
-    let opts = options(args, &allowed, &["--root", "--target", "--changelog-path"])?;
+    let opts = options(
+        args,
+        &allowed,
+        &["--root", "--disk-root", "--target", "--changelog-path"],
+    )?;
     let settings = review_settings(&opts)?;
     let disk_limits = disk_settings(&opts)?;
     let mut progress = terminal::Progress::new(&opts);

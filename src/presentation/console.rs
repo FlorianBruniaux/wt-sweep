@@ -610,9 +610,19 @@ fn compact(review: &Review, rows: &[&ReviewItem]) -> String {
     }
     let _ = writeln!(
         out,
-        "\nDISK USAGE (all recorded roots, unaffected by review filters)"
+        "\nDISK USAGE ({}, unaffected by review filters)",
+        if review
+            .disk_usage
+            .as_ref()
+            .is_some_and(|u| u.requested_paths.is_some())
+        {
+            "explicit disk selection"
+        } else {
+            "all recorded roots"
+        }
     );
     if let Some(disk) = &review.disk_usage {
+        let _ = writeln!(out, "  Disk collection: {}", disk.scope_summary());
         let complete = disk.measurements.iter().filter(|r| r.complete).count();
         let _ = writeln!(
             out,

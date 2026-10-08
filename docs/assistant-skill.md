@@ -97,6 +97,11 @@ passage ciblé `--worktree` avec `--budget thorough` si les plafonds standard so
 la cause des données manquantes. Il examine ce résultat avant de lancer toute la
 famille avec le profil plus large. Les plafonds accrus ne garantissent pas que
 la collecte termine et ne retirent aucun fichier ignoré du périmètre.
+Pour mesurer le disque d'un seul dossier, le skill ajoute séparément
+`--disk-usage --disk-root CHEMIN_ABSOLU`. `--worktree` limite les preuves Git et
+locales ; il ne réduit pas la collecte disque. Le budget disque est indépendant
+et utilise `--disk-budget standard|thorough`. Les autres racines restent listées
+comme non demandées, et un total ciblé ne représente pas l'inventaire entier.
 Les rapports de plusieurs exécutions conservent leurs dates et leurs périmètres.
 
 Pour plusieurs racines, demandez leur inventaire puis confirmez les cibles par

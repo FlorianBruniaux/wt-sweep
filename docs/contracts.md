@@ -662,6 +662,15 @@ never establishes cleanup eligibility or changes C1-C5.
 checked, excluded registered roots, duration and capped gap examples with an
 omitted count. Null bytes mean no measurement; partial bytes mean observed data.
 
+An optional `requested_paths` list records exact paths selected with `--disk-root`.
+Its absence means all registered roots were requested. Every row remains in
+`measurements`; rows outside the selection have `requested: false`, null bytes,
+zero entries, `complete: false` and no collection gaps. Missing `requested`
+means true, preserving the serialized form and digests of older reports.
+`complete` continues to cover all recorded roots, so selecting a strict subset
+leaves it false even when every requested root completes. Reports print the
+requested, measured and unrequested counts next to the captured total.
+
 `unique_bytes` deduplicates device/inode identities across every measured root.
 `complete` concerns the disk walks, independently of discovery coverage. The
 block also records limits, timestamps, monotonic elapsed time and

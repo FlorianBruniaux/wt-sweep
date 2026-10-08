@@ -64,6 +64,7 @@ fn fixture() -> (Inventory, Review) {
         });
     }
     inventory.disk_usage = Some(DiskUsage {
+        requested_paths: None,
         started_unix_ms: 101,
         finished_unix_ms: 150,
         elapsed_ms: 49,
@@ -75,6 +76,7 @@ fn fixture() -> (Inventory, Review) {
             allocated: 8192,
         },
         measurements: vec![DiskMeasurement {
+            requested: true,
             path: inventory.families[0].worktrees[0].path.clone(),
             kind: DiskKind::Worktree,
             identity: None,

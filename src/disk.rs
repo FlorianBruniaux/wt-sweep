@@ -6,7 +6,7 @@ use rustix::{
 };
 use serde::{Deserialize, Serialize};
 use std::{
-    collections::{BTreeMap, HashSet},
+    collections::{BTreeMap, BTreeSet, HashSet},
     ffi::OsString,
     os::unix::ffi::OsStringExt,
     path::{Path, PathBuf},
@@ -59,6 +59,8 @@ pub enum DiskKind {
 #[derive(Clone, Debug, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct DiskMeasurement {
+    #[serde(default = "requested_by_default", skip_serializing_if = "is_requested")]
+    pub requested: bool,
     pub path: BytePath,
     pub kind: DiskKind,
     pub identity: Option<Identity>,
@@ -74,6 +76,9 @@ pub struct DiskMeasurement {
 #[derive(Clone, Debug, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct DiskUsage {
+    /// None preserves the historical all-roots scope. Some contains exact requested paths.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub requested_paths: Option<Vec<BytePath>>,
     pub started_unix_ms: u64,
     pub finished_unix_ms: u64,
     pub elapsed_ms: u64,
@@ -83,6 +88,37 @@ pub struct DiskUsage {
     /// Distinct (device, inode) across all roots; excludes unresolved observations.
     pub unique_bytes: DiskBytes,
     pub measurements: Vec<DiskMeasurement>,
+}
+
+fn requested_by_default() -> bool {
+    true
+}
+fn is_requested(value: &bool) -> bool {
+    *value
+}
+
+impl DiskUsage {
+    pub fn scope_summary(&self) -> String {
+        let requested = self.measurements.iter().filter(|r| r.requested).count();
+        let measured = self
+            .measurements
+            .iter()
+            .filter(|r| r.requested && r.bytes.is_some())
+            .count();
+        format!(
+            "{requested} requested, {measured} measured, {} not requested; totals cover requested roots only",
+            self.measurements.len() - requested
+        )
+    }
+}
+
+/// Counts only. A completed row is attached once per requested root.
+pub struct DiskProgress<'a> {
+    pub roots_requested: usize,
+    pub roots_completed: usize,
+    pub entries_checked: usize,
+    pub elapsed_ms: u64,
+    pub completed: Option<&'a DiskMeasurement>,
 }
 
 const DIRECTORY: OFlags = OFlags::RDONLY
@@ -145,6 +181,10 @@ fn gap(row: &mut DiskMeasurement, path: &Path, reason: impl Into<String>) {
     }
 }
 struct Collector<'a> {
+    progress: &'a mut dyn FnMut(DiskProgress<'_>),
+    last_progress: Instant,
+    roots_requested: usize,
+    roots_completed: usize,
     limits: &'a DiskLimits,
     started: Instant,
     entries: usize,
@@ -154,12 +194,29 @@ struct Collector<'a> {
     unique: DiskBytes,
 }
 struct Walk {
+    entry_allowance: usize,
+    time_allowance: Duration,
     started: Instant,
     seen: HashSet<Key>,
     device: u64,
     row: DiskMeasurement,
 }
 impl Collector<'_> {
+    fn report_progress(&mut self, completed: Option<&DiskMeasurement>) {
+        if completed.is_none() && self.last_progress.elapsed() < Duration::from_secs(5) {
+            return;
+        }
+        (self.progress)(DiskProgress {
+            roots_requested: self.roots_requested,
+            roots_completed: self.roots_completed,
+            entries_checked: self.entries,
+            elapsed_ms: millis(self.started),
+            completed,
+        });
+        if completed.is_none() {
+            self.last_progress = Instant::now();
+        }
+    }
     fn check(&self, w: &Walk) -> Result<(), &'static str> {
         if crate::cancel::requested() {
             return Err("interrupted");
@@ -167,14 +224,22 @@ impl Collector<'_> {
         if self.started.elapsed() >= self.limits.timeout {
             return Err("disk total time budget reached");
         }
-        if w.started.elapsed() >= self.limits.timeout_per_root {
-            return Err("disk root time budget reached");
+        if w.started.elapsed() >= w.time_allowance {
+            return Err(if w.time_allowance < self.limits.timeout_per_root {
+                "disk fair-share time budget reached"
+            } else {
+                "disk root time budget reached"
+            });
         }
         if self.entries >= self.limits.max_entries {
             return Err("disk total entry budget reached");
         }
-        if w.row.entries_checked >= self.limits.max_entries_per_root {
-            return Err("disk root entry budget reached");
+        if w.row.entries_checked >= w.entry_allowance {
+            return Err(if w.entry_allowance < self.limits.max_entries_per_root {
+                "disk fair-share entry budget reached"
+            } else {
+                "disk root entry budget reached"
+            });
         }
         Ok(())
     }
@@ -210,6 +275,7 @@ impl Collector<'_> {
             }
         };
         loop {
+            self.report_progress(None);
             if let Err(e) = self.check(w) {
                 gap(&mut w.row, path, e);
                 break;
@@ -283,7 +349,23 @@ impl Collector<'_> {
         }
     }
     fn root(&mut self, row: DiskMeasurement) -> DiskMeasurement {
+        let remaining = self
+            .roots_requested
+            .saturating_sub(self.roots_completed)
+            .max(1);
+        // Reserve a share for every remaining requested root. Unused shares go forward;
+        // a partial root is not revisited and never becomes complete by redistribution.
+        let entry_allowance = (self.limits.max_entries.saturating_sub(self.entries) / remaining)
+            .min(self.limits.max_entries_per_root);
+        let time_allowance = self
+            .limits
+            .timeout
+            .saturating_sub(self.started.elapsed())
+            .div_f64(remaining as f64)
+            .min(self.limits.timeout_per_root);
         let mut w = Walk {
+            entry_allowance,
+            time_allowance,
             started: Instant::now(),
             seen: HashSet::new(),
             device: 0,
@@ -333,6 +415,21 @@ pub fn collect(
     limits: &DiskLimits,
     progress: &mut dyn FnMut(&DiskMeasurement),
 ) -> Result<(), SweepError> {
+    collect_selected(inventory, limits, &[], &mut |event| {
+        if let Some(row) = event.completed {
+            progress(row);
+        }
+    })
+}
+
+/// Select exact registered roots, retaining all other rows as not requested.
+/// Emits periodic count-only progress and one completed-row event per requested root.
+pub fn collect_selected(
+    inventory: &mut Inventory,
+    limits: &DiskLimits,
+    requested_paths: &[BytePath],
+    progress: &mut dyn FnMut(DiskProgress<'_>),
+) -> Result<(), SweepError> {
     crate::residency::ensure_no_materialization()?;
     let started = Instant::now();
     let started_unix_ms = now_ms();
@@ -349,12 +446,33 @@ pub fn collect(
             }
         }
     }
+    let selected: BTreeSet<_> = requested_paths.iter().cloned().collect();
+    for path in &selected {
+        let decoded = path.to_path()?;
+        if !decoded.is_absolute() || !rows.contains_key(path) {
+            return Err(SweepError::new(
+                "disk_selection",
+                "measure_disk",
+                &decoded,
+                "--disk-root must match an absolute registered worktree or shared Git directory",
+            ));
+        }
+    }
+    let roots_requested = if selected.is_empty() {
+        rows.len()
+    } else {
+        selected.len()
+    };
     let roots = rows
         .values()
         .filter_map(|(_, id)| id.as_ref().map(identity_key))
         .collect();
     let root_paths = rows.keys().filter_map(|p| p.to_path().ok()).collect();
     let mut collector = Collector {
+        progress,
+        last_progress: Instant::now(),
+        roots_requested,
+        roots_completed: 0,
         limits,
         started,
         entries: 0,
@@ -365,22 +483,33 @@ pub fn collect(
     };
     let mut measurements = Vec::with_capacity(rows.len());
     for (path, (kind, identity)) in rows {
-        let row = collector.root(DiskMeasurement {
+        collector.report_progress(None);
+        let requested = selected.is_empty() || selected.contains(&path);
+        let row = DiskMeasurement {
+            requested,
             path,
             kind,
             identity,
             bytes: None,
-            complete: true,
+            complete: requested,
             entries_checked: 0,
             excluded_registered_roots: 0,
             elapsed_ms: 0,
             gaps: Vec::new(),
             gaps_omitted: 0,
-        });
-        progress(&row);
+        };
+        let row = if requested {
+            let row = collector.root(row);
+            collector.roots_completed += 1;
+            collector.report_progress(Some(&row));
+            row
+        } else {
+            row
+        };
         measurements.push(row);
     }
     inventory.disk_usage = Some(DiskUsage {
+        requested_paths: (!selected.is_empty()).then(|| selected.into_iter().collect()),
         started_unix_ms,
         finished_unix_ms: now_ms(),
         elapsed_ms: millis(started),
@@ -432,7 +561,7 @@ pub fn render_measurements(
     let entries: usize = usage.measurements.iter().map(|r| r.entries_checked).sum();
     let _ = writeln!(
         out,
-        "  Entries checked: {entries}; shared Git is included in the total."
+        "  Entries checked: {entries}; only requested roots contribute to the total."
     );
     let mut rows: Vec<_> = usage.measurements.iter().collect();
     rows.sort_by_key(|r| {
@@ -447,7 +576,9 @@ pub fn render_measurements(
         } else {
             "Shared Git"
         };
-        let state = if row.complete {
+        let state = if !row.requested {
+            "not requested"
+        } else if row.complete {
             "complete"
         } else if row.bytes.is_some() {
             "partial"
@@ -507,11 +638,20 @@ pub fn render_measurements(
 /// Stable rendering of captured measurements. Does not access the filesystem or Git.
 /// The scope always covers the source inventory, even in a filtered review view.
 pub fn render_summary(usage: Option<&DiskUsage>, out: &mut impl std::fmt::Write) {
-    let _ = writeln!(out, "\nDISK USAGE (all recorded roots, metadata only)");
+    let _ = writeln!(
+        out,
+        "\nDISK USAGE ({}, metadata only)",
+        if usage.is_some_and(|u| u.requested_paths.is_some()) {
+            "explicit disk selection"
+        } else {
+            "all recorded roots"
+        }
+    );
     let Some(usage) = usage else {
         let _ = writeln!(out, "  Not measured; use scan or review --disk-usage.");
         return;
     };
+    let _ = writeln!(out, "  Disk collection: {}", usage.scope_summary());
     let completed = usage.measurements.iter().filter(|r| r.complete).count();
     let worktrees = usage
         .measurements
@@ -552,6 +692,53 @@ pub fn render_summary(usage: Option<&DiskUsage>, out: &mut impl std::fmt::Write)
         let _ = writeln!(
             out,
             "  INCOMPLETE: totals cover observed entries only; missing sizes are unknown."
+        );
+    }
+}
+
+#[cfg(test)]
+mod progress_tests {
+    use super::*;
+
+    #[test]
+    fn root_completion_does_not_postpone_periodic_progress() {
+        let limits = DiskLimits::default();
+        let started = Instant::now() - Duration::from_millis(4900);
+        let mut events = Vec::new();
+        let mut callback = |event: DiskProgress<'_>| events.push(event.completed.is_some());
+        let mut collector = Collector {
+            progress: &mut callback,
+            last_progress: started,
+            roots_requested: 2,
+            roots_completed: 1,
+            limits: &limits,
+            started,
+            entries: 4,
+            roots: HashSet::new(),
+            root_paths: HashSet::new(),
+            seen: HashSet::new(),
+            unique: DiskBytes::default(),
+        };
+        let row = DiskMeasurement {
+            requested: true,
+            path: BytePath::from_bytes(b"/synthetic"),
+            kind: DiskKind::Worktree,
+            identity: None,
+            bytes: None,
+            complete: false,
+            entries_checked: 4,
+            excluded_registered_roots: 0,
+            elapsed_ms: 4900,
+            gaps: Vec::new(),
+            gaps_omitted: 0,
+        };
+        collector.report_progress(Some(&row));
+        std::thread::sleep(Duration::from_millis(150));
+        collector.report_progress(None);
+        assert_eq!(
+            events,
+            [true, false],
+            "completion must not defer the periodic counter"
         );
     }
 }

@@ -72,7 +72,7 @@ avec leur intervalle d’origine, sans les recalculer. Un inventaire ancien sans
 tailles reste lisible. Les mêmes observations donnent le même rapport de tailles.
 
 Le budget disque est indépendant de `--budget`, qui concerne les vérifications
-Git et locales. Le comptage disque couvre **toutes les racines inventoriées** :
+Git et locales. Par défaut, le comptage disque couvre **toutes les racines inventoriées** :
 `--worktree` et les filtres de présentation ne le réduisent pas. Les totaux sont
 étiquetés en conséquence, même si une seule ligne de revue est sélectionnée.
 
@@ -81,6 +81,44 @@ affiche les mêmes mesures capturées. La recherche et les filtres du navigateur
 changent les lignes visibles, sans recalculer les totaux source. L’absence de
 mesure et les lacunes restent affichées ; `run.json` lie aussi `report.html`.
 `report.txt` reste disponible dans le même dossier.
+
+## Reprendre une mesure sur un dossier précis
+
+Ajouter `--disk-root` suivi du chemin absolu exact lu dans l'inventaire :
+
+L'exemple mesure seulement le checkout principal. Pour un worktree lié,
+remplacer la valeur de `worktree_path` par son chemin enregistré.
+
+```sh
+(
+  set -eu
+  repo_path="$HOME/Sites/MethodeAristote/app"
+  worktree_path="$repo_path"
+  report_dir="$(mktemp -d /private/tmp/wt-sweep-disk.XXXXXX)"
+  ./target/release/wt-sweep scan \
+    --repo "$repo_path" \
+    --disk-usage --disk-budget thorough \
+    --disk-root "$worktree_path" \
+    --html --run-dir "$report_dir"
+  open "$report_dir"/run-*/report.html
+)
+```
+
+`worktree_path` désigne le dossier enregistré à mesurer. Répéter `--disk-root`
+pour plusieurs dossiers, y compris le Git commun si sa taille est souhaitée.
+Un chemin inconnu est refusé. L'option ne suit pas les liens et n'inclut pas
+les autres racines enregistrées imbriquées dans le dossier choisi.
+
+Les rapports distinguent les racines demandées, mesurées et non demandées.
+Le total porte uniquement sur les observations demandées. Une sélection
+partielle ne devient jamais un total complet de l'inventaire.
+
+Le budget global restant est partagé entre les racines demandées encore à
+visiter, dans la limite du plafond par racine. Les parts inutilisées passent
+aux suivantes. Un gros dossier peut donc atteindre sa part avant le plafond
+habituel ; sa mesure reste partielle et n'est pas recommencée dans ce run.
+La progression donne les compteurs toutes les cinq secondes, également en
+sortie redirigée, à condition que les appels au système de fichiers répondent.
 
 ## Lire le bilan
 
@@ -93,6 +131,7 @@ mesure et les lacunes restent affichées ; `run.json` lie aussi `report.html`.
 | Total dédupliqué | Chaque couple périphérique/inode observé est compté une seule fois, tous dossiers confondus. |
 | `complete` | Parcours de cette racine terminé sans lacune détectée. Ne certifie pas une photographie instantanée des fichiers. |
 | `partial` | Une partie seulement a été mesurée ; la valeur affichée est le cumul des observations. |
+| `not requested` | Racine conservée dans le rapport, hors de la sélection disque explicite. |
 | `not measured` | Aucune taille disponible. Ce n’est pas une taille nulle. |
 
 Un autre worktree enregistré imbriqué dans un dossier est mesuré dans sa propre
@@ -153,3 +192,11 @@ Tests du collecteur sur des dépôts temporaires :
 ```sh
 cargo test --locked --offline --test disk_usage
 ```
+
+## Comparer deux versions sur un corpus fixe
+
+La [recette de comparaison](../experiments/disk-scope/README.md) mesure deux
+binaires release sur les mêmes dépôts jetables, avec trois tailles de dossiers.
+Un parcours `lstat` indépendant vérifie les octets logiques, alloués et dédupliqués ;
+les contenus et métadonnées des fixtures doivent rester inchangés. Exécuter la
+recette après les autres suites pour éviter leur charge concurrente.

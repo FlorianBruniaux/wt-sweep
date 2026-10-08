@@ -411,11 +411,25 @@ that measurement partial. Discovery coverage remains separate; a complete size
 walk cannot account for repositories discovery missed.
 
 `review --disk-usage` measures after discovery, before decision evidence collection.
-Its disk budget is independent of `--budget`. It covers all inventoried roots,
+Its disk budget is independent of `--budget`. By default it covers all inventoried roots,
 including when `--worktree` focuses Git/local checks or display filters select a
 subset. The console and report label that scope. The summary shows recorded
 totals and completeness; `report.txt` lists sizes per root. `review.json` retains
 the same `disk_usage` block as `inventory.json`, or `source.disk_usage` in a view.
+
+Use `--disk-root ABSOLUTE_PATH` with `--disk-usage` to measure one exact
+registered worktree or shared Git directory. Repeat the option for several roots;
+duplicates count once. Unknown paths are refused before disk traversal. Nested
+registered roots are still excluded from their parent's row, even when unrequested.
+The inventory is retained; omitted disk roots are labeled `not requested` and do
+not contribute bytes. Subset totals never represent complete source coverage.
+
+Remaining total entries and time are divided among the requested roots still to
+visit, capped by each root's allowance. Unused shares pass forward. Earlier
+partial roots are not revisited. Fair-share limits can therefore stop a large
+root before its nominal per-root ceiling; target it explicitly for a focused run.
+Progress emits count-only milestones at most every five seconds, even in pipes.
+A blocked filesystem call can delay a milestone; this is not a hard I/O deadline.
 
 `plan` carries captured disk observations and their original interval into its
 reports without recounting sizes. Old inventories remain readable. When sizes

@@ -67,7 +67,8 @@ thorough_dir="$(mktemp -d /private/tmp/wt-sweep-thorough.XXXXXX)"
 review_status=0
 "$sweep_bin" review --repo "$repo_path" --target "$target_ref" \
   --worktree "$worktree_path" --path-prefix "$worktree_path" \
-  --budget thorough --format json --html --disk-usage --run-dir "$thorough_dir" \
+  --budget thorough --format json --html --disk-usage \
+  --disk-root "$worktree_path" --run-dir "$thorough_dir" \
   > "$thorough_dir/console.json" || review_status=$?
 printf 'Exit status: %s\nReports: %s\n' "$review_status" "$thorough_dir"
 ```
@@ -75,6 +76,11 @@ printf 'Exit status: %s\nReports: %s\n' "$review_status" "$thorough_dir"
 Inspect this run before selecting the whole family for thorough collection.
 `--worktree` focuses evidence I/O; `--path-prefix` only filters display. The
 original inventory and other rows remain in the saved source with their gaps.
+`--disk-root` separately selects an exact registered disk root; it requires
+`--disk-usage` and can be repeated. Other disk rows are retained as `not requested`.
+Omit `--disk-root` only when the requested task needs all registered sizes.
+A focused size total never covers the whole inventory, even if its one root
+finishes. Use the report's requested/measured/unrequested counts.
 `plan --inventory` accepts the same budget selector. Profile ceilings are in the
 checkout's `docs/cli.md`; larger allowances still retain ignored files and may
 stop with unknown evidence. A new run is not a resumed snapshot.
