@@ -22,14 +22,22 @@ cargo fetch --locked
 Run the local checks from the repository root:
 
 ```sh
-cargo fmt --all -- --check
-cargo clippy --all-targets --locked --offline -- -D warnings
-cargo test --locked --offline
-cargo build --locked --offline
-python3 -B -m unittest discover -s tests -p 'test_*.py' -v
-python3 -B -m unittest discover -s experiments/exclusion -p 'test_*.py' -v
-python3 -B scripts/sync-ai.py --check
+(
+  set -eu
+  python3 -c 'import sys; sys.exit(0 if sys.version_info >= (3, 11) else "Python 3.11+ is required")'
+  cargo fmt --all -- --check
+  cargo clippy --all-targets --locked --offline -- -D warnings
+  cargo test --locked --offline
+  cargo build --locked --offline
+  python3 -B -m unittest discover -s tests -p 'test_*.py' -v
+  python3 -B -m unittest discover -s experiments/exclusion -p 'test_*.py' -v
+  python3 -B scripts/sync-ai.py --check
+)
 ```
+
+The version check stops before the suites if `python3` resolves to an older
+system runtime. Select a Python 3.11+ executable for the session first;
+`hashlib.file_digest` and `tomllib` are required by the tests.
 
 The Python product tests execute `target/debug/wt-sweep`, so rebuild it after
 changing Rust code. The repository's [CI workflow](.github/workflows/ci.yml)

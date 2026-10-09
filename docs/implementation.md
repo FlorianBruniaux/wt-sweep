@@ -8,6 +8,21 @@ définit les lots et responsabilités ; leur validation exige les preuves du
 registre. Garder la comparaison des alternatives ouverte avant de développer le
 moteur de nettoyage.
 
+## État de livraison et prochain lot
+
+La collecte et la reprise ci-dessous sont fusionnées par #23 dans `main`.
+Le [registre](progress.md#état-publié-et-suite-au-09102026) distingue la CI avant
+fusion réussie du job de main non démarré. Le prochain lot porte sur l’évaluation
+native de #20, selon les [critères de la roadmap](roadmap.md#prochain-lot--terminer-lévaluation-native-de-20).
+Le ciblage disque et le partage du budget sont déjà livrés par #22.
+
+Cette évaluation devra préserver le contrat disque existant, garder un oracle
+indépendant et comparer le collecteur complet sur corpus fixe. Les propriétaires
+des fichiers et les éventuelles délégations seront définis au lancement du lot ;
+les tableaux ci-dessous décrivent les exécutions passées. Aucun changement des
+verdicts, de la disponibilité de `apply` ou du harness n’est nécessaire à cette
+mise à jour documentaire.
+
 ## Collecte et reprise du 08/10/2026
 
 Le coordinateur possède le transport Git adaptatif, les types communs, le

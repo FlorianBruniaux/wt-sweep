@@ -9,6 +9,10 @@ the Cargo package version is a development version.
 
 ### Added
 
+- Sanitized 9 October acceptance record: 71 registered worktrees in one real
+  family, two focused reviews, five complete priority disk measurements and
+  explicit limits on the cross-run summary, APFS sizes and cache diagnosis.
+
 - Explicit-root discovery checkpoints: `scan --checkpoint-out NEW_FILE`, then
   `scan --resume FILE --checkpoint-out NEW_FILE`. Revalidate saved identities,
   replay interrupted directories, reread Git families and retain each interval
@@ -266,6 +270,14 @@ the Cargo package version is a development version.
   the AgentSec presentation block.
 
 ### Changed
+
+- Check Python 3.11+ before the documented test sequence, so an older system
+  interpreter stops before running suites that need `file_digest` and `tomllib`.
+
+- Align both READMEs, roadmap, delivery record and guide index with merged
+  PRs #18, #22 and #23. Record successful pre-merge checks separately from
+  the main job blocked by account billing. Scope the remaining #20 work to
+  native disk collection experiments and keep management in vision #14.
 
 - Lead both READMEs with the original storage problem and three user needs:
   disk pressure, scattered worktrees and uncertain cleanup decisions. Move the

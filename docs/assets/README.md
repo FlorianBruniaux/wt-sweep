@@ -7,8 +7,10 @@
 The English and French READMEs use captures of the native HTML report in
 [light](report-light.png) and [dark](report-dark.png) BoldGuy themes.
 They show a disposable synthetic Git family, not private worktrees.
-The report came from the current local generator on 2026-10-08; delivery of
-this presentation update is tracked in #16.
+The report was captured on 2026-10-08. The presentation changes were merged by
+[PR #18](https://github.com/FlorianBruniaux/wt-sweep/pull/18); #16 is closed.
+These dated captures retain their original provenance. They do not demonstrate
+the later targeted disk selection or discovery checkpoints.
 
 The demo contains four worktrees: the main checkout, a clean linked worktree at
 the target commit, an untracked note and a branch with unmerged work. The CLI

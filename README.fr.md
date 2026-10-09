@@ -80,9 +80,9 @@ ils ne proviennent pas d’un scan de votre machine.
 
 Le rapport regroupe les worktrees par famille Git. Recherche, filtres de verdict,
 tri par taille et preuves repliables permettent de cibler la revue. Le thème
-clair/sombre, les tailles en Ko/Mo/Go et les boutons **Copy path** sont disponibles
-dans ce checkout ; leur livraison est suivie dans
-[#16](https://github.com/FlorianBruniaux/wt-sweep/issues/16).
+clair/sombre, les tailles en Ko/Mo/Go, les boutons **Copy path**, l’aide de
+navigation et les grandes sections repliables sont fusionnés dans `main` par la
+[PR #18](https://github.com/FlorianBruniaux/wt-sweep/pull/18).
 Le rapport et ses preuves repliables fonctionnent hors ligne et sans JavaScript.
 La recherche, le tri et la copie demandent JavaScript. Le rapport est en anglais.
 
@@ -336,35 +336,41 @@ permet de comparer les workers sur un corpus constant, avec contrôle de couvert
 | [Architecture](docs/architecture.md) | Rôle des modules, limites de lecture et stratégie de test |
 | [Index documentaire](docs/README.md) | Ensemble des guides, décisions de conception et relevés de validation |
 
-Le tutoriel est en français ; les autres guides d’utilisation détaillés sont en
-anglais. Les documents de conception, d’expérimentation et d’implémentation sont
-conservés dans leur version française d’origine.
+Le tutoriel et les guides assistant et disque sont en français ; les autres
+guides d’utilisation sont en anglais. Les documents de conception, d’expérimentation
+et d’implémentation conservent leur langue d’origine.
 
 ---
 
 ## Feuille de route et validation
 
-Le jalon d’audit en lecture seule
-[#8](https://github.com/FlorianBruniaux/wt-sweep/issues/8) est clos. La
-[PR #15](https://github.com/FlorianBruniaux/wt-sweep/pull/15), fusionnée le
-08/10/2026 au commit `0c3e1a59e380175991fb2ab7d539d1e87e04f67e`, livre le
-HTML, les tailles disque, les faits progressifs, les mesures de collecte et la
-comparaison d’outils sur dépôts jetables.
+Le jalon d’audit en lecture seule est livré. Les fusions suivantes ont ajouté
+les finitions HTML BoldGuy ([#18](https://github.com/FlorianBruniaux/wt-sweep/pull/18)),
+le disque ciblé et le partage de budget ([#22](https://github.com/FlorianBruniaux/wt-sweep/pull/22)),
+puis les lectures Git groupées et la découverte reprenable
+([#23](https://github.com/FlorianBruniaux/wt-sweep/pull/23)).
 
-La [recette du contenu intégré](https://github.com/FlorianBruniaux/wt-sweep/issues/13#issuecomment-6052388331)
-retrouve les 63 inscriptions connues sur deux racines choisies : 12 `keep`,
-51 `verify`, aucun candidat. Les 63 résumés locaux restent partiels, ainsi que
-58 des 65 mesures disque. Le parcours des dossiers a aussi atteint sa limite.
-Ce relevé borné ne constitue pas un inventaire exhaustif de la machine.
+La [recette du 9 octobre](docs/research/real-family-acceptance-2026-10-09.md)
+porte sur une famille réelle de 71 worktrees enregistrés. La revue initiale donne
+10 `keep`, 61 `verify`, aucun candidat. Deux revues ciblées passent ces lignes
+en `keep` ; la synthèse du dernier verdict par chemin donne 12 / 59 / 0.
+Ces observations séparées ne sont ni un nouveau verdict CLI ni un instantané.
+Cinq worktrees prioritaires ont une mesure disque complète. Les 53,64 Go alloués
+observés sur la famille restent partiels, sans estimation du gain possible sur APFS.
 
-La suite porte sur la livraison des finitions HTML locales
-[#16](https://github.com/FlorianBruniaux/wt-sweep/issues/16) et le rétablissement
-de la CI [#17](https://github.com/FlorianBruniaux/wt-sweep/issues/17).
-GitHub n’a pas démarré le dernier job de main à cause du paiement ou du plafond
-de dépense du compte. Les tests locaux ne valent pas succès de CI distante.
-Les options de gestion restent dans la
-[vision #14](https://github.com/FlorianBruniaux/wt-sweep/issues/14) ;
-sauvegarde, restauration et suppression restent indisponibles.
+La prochaine étape est [#20](https://github.com/FlorianBruniaux/wt-sweep/issues/20) :
+évaluer un collecteur disque natif macOS face à l’implémentation actuelle.
+Le ciblage et le partage de budget sont déjà livrés ; la collecte native groupée
+doit encore passer les contrôles de justesse, de conservation et les mesures
+du collecteur complet. Les options de gestion restent dans la
+[vision #14](https://github.com/FlorianBruniaux/wt-sweep/issues/14).
+Sauvegarde, restauration et suppression restent indisponibles.
+
+Au contrôle du 9 octobre, la CI de #23 avant fusion a réussi. Le
+[run de main sur `bc054af`](https://github.com/FlorianBruniaux/wt-sweep/actions/runs/37850898399)
+n’a pas démarré son job à cause du paiement ou du plafond de dépense du compte.
+L’ancienne issue CI #17 est close ; ce nouvel échec demande une correction côté
+compte puis une relance. [État publié et validations](docs/progress.md#état-publié-et-suite-au-09102026).
 
 <details>
 <summary>Étapes d’implémentation et validations consignées</summary>
@@ -382,12 +388,12 @@ Le [plan d’acceptation](docs/plan.md) définit les conditions à remplir. La
 [décision concernant `apply`](docs/decisions/apply-readiness.md) consigne
 pourquoi elles ne sont pas remplies.
 
-L’arbre source fusionné par #15 a passé localement 365 tests Rust (3 ignorés)
-et 292 cas Python (6 ignorés). [#9](https://github.com/FlorianBruniaux/wt-sweep/issues/9)
-consigne le commit vérifié et les cas ignorés. Les contrôles de présentation
-suivants sont séparés dans le [registre courant](docs/progress.md). Le
-[registre historique](docs/finish-ledger.md#triage-t01-t09) conserve les anciens
-checkpoints. Le badge CI renvoie aux résultats distants.
+L’arbre source fusionné par #23 a passé localement 404 tests Rust (3 ignorés)
+et 305 cas Python (299 réussis, 6 ignorés). Ces résultats portent sur cet arbre
+source ; ils ne décrivent pas une nouvelle exécution à chaque retouche documentaire.
+Le [registre courant](docs/progress.md) sépare tests locaux, CI avant fusion et
+CI de main. Le [registre historique](docs/finish-ledger.md#triage-t01-t09)
+conserve les anciens checkpoints. Le badge CI renvoie aux résultats distants.
 Les vrais placeholders FileProvider, refus TCC et instantanés machine restent
 non vérifiés.
 

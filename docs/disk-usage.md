@@ -31,8 +31,10 @@ Depuis le checkout de Worktree Sweep, sur macOS :
 Les `XXXXXX` sont remplacés automatiquement par `mktemp`, pour créer un dossier
 neuf. Pour cibler un dépôt, remplacer les deux `--root` par `--repo` suivi de son
 chemin absolu. Pour les volumes montés visibles, les remplacer par `--all`.
-La découverte conserve sa limite de 60 secondes : `--all` ne garantit pas que
-chaque worktree de la machine sera trouvé. Les enregistrements Git peuvent
+La découverte utilise par défaut une limite de 60 secondes : `--all` ne garantit
+pas que chaque worktree de la machine sera trouvé. Pour continuer une découverte
+de racines explicites, utiliser les [checkpoints de découverte](discovery-resume.md) ;
+ils ne reprennent pas un comptage disque interrompu. Les enregistrements Git peuvent
 ajouter des worktrees situés hors des racines parcourues.
 
 ## Mesurer et analyser dans la même commande
@@ -144,6 +146,20 @@ Un dépôt nu apparaît seulement dans les administrations Git.
 instantanés ou extents partagés peuvent changer ce qu’une suppression libérerait.
 Le collecteur ne mesure pas ces relations. Voir la [description des clones APFS par Apple](https://developer.apple.com/documentation/foundation/about-apple-file-system). Il ne parcourt pas non plus les
 alternates Git ou les dépendances situées hors des dossiers mesurés.
+
+## État observé et travail restant
+
+Le ciblage et la répartition du budget sont livrés par #22. Lors de la
+[recette réelle du 9 octobre](research/real-family-acceptance-2026-10-09.md),
+le scan familial ne termine que 11 mesures sur 72 racines. Des passages ciblés
+donnent ensuite cinq tailles complètes. Le ciblage aide à obtenir une mesure
+utilisable ; il ne rend pas complet le total du scan précédent.
+
+Le collecteur produit utilise encore les lectures scalaires de métadonnées.
+L’[évaluation native de #20](roadmap.md#prochain-lot--terminer-lévaluation-native-de-20)
+doit comparer le parcours complet, y compris ses refus, à cette référence.
+La sonde `getattrlistbulk` n’est pas intégrée. Sweep ne ventile pas actuellement
+le volume par catégorie de cache et ne propose pas d’effacement automatique.
 
 ## Coût et limites
 
