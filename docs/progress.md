@@ -2,10 +2,75 @@
 
 [Index documentaire](README.md) · [Contrats des artefacts](contracts.md) · [Feuille de route](roadmap.md)
 
-Le [dernier lot de collecte](#sessions-git-et-reprise-de-découverte-08102026)
-regroupe les validations courantes ; le [checkpoint du lot audit](#audit-lisible--intégration-du-07102026)
-conserve les validations HTML, collecte et assistant précédentes. Les sections plus anciennes
-conservent les observations historiques et leurs limites.
+L’[état publié](#état-publié-et-suite-au-09102026) sépare livraison, CI et recette
+réelle. Le [lot de collecte](#sessions-git-et-reprise-de-découverte-08102026)
+conserve les tests du code livré ; les sections plus anciennes sont des observations
+datées, pas une description des tâches encore ouvertes.
+
+## État publié et suite au 09/10/2026
+
+| Livraison | Commit sur main | État distant observé |
+| --- | --- | --- |
+| [#18 : finitions HTML](https://github.com/FlorianBruniaux/wt-sweep/pull/18) | `9d69df95b1fbe6da12b6e047d114d714c08e4583` | [CI réussie](https://github.com/FlorianBruniaux/wt-sweep/actions/runs/37762302133) ; #16 et #17 closes. |
+| [#22 : disque ciblé et partage du budget](https://github.com/FlorianBruniaux/wt-sweep/pull/22) | `d99fefd67e6a533339b5100233aed0e9f53866da` | [CI réussie](https://github.com/FlorianBruniaux/wt-sweep/actions/runs/37797546747). |
+| [#23 : lectures Git groupées et reprise](https://github.com/FlorianBruniaux/wt-sweep/pull/23) | `bc054af0c75ae3299fa69e094ca9d6d33e813db2` | Fusion le 08/10 à 22:02 UTC ; #19 et #21 closes. |
+
+Les deux contrôles avant fusion de #23 ont réussi :
+[run 37848305297](https://github.com/FlorianBruniaux/wt-sweep/actions/runs/37848305297)
+et [run 37848280607](https://github.com/FlorianBruniaux/wt-sweep/actions/runs/37848280607).
+Le [run de main 37850898399](https://github.com/FlorianBruniaux/wt-sweep/actions/runs/37850898399)
+est en échec avant le démarrage du job. L’annotation GitHub, relue le 09/10,
+signale le paiement du compte ou son plafond de dépense. Aucun test du code
+n’a été exécuté par ce job. Une correction côté compte et une relance restent
+nécessaires ; la clôture antérieure de #17 ne valide pas ce nouveau run.
+
+La [recette locale du 9 octobre](research/real-family-acceptance-2026-10-09.md)
+utilise un binaire figé dont l’arbre source est identique à ce main. Elle couvre
+71 inscriptions dans une famille, avec 18 artefacts vérifiés. La revue initiale
+donne 10 `keep`, 61 `verify`, aucun candidat ; deux reprises donnent `keep`.
+La synthèse des derniers verdicts par chemin est 12 / 59 / 0, sans constituer
+un nouveau verdict global ni un instantané. Cinq tailles prioritaires sont
+complètes ; la mesure familiale de 53,64 Go reste partielle.
+
+La reprise de découverte sur deux racines choisies retrouve les mêmes familles,
+HEAD et identités qu’un scan neuf, sur deux intervalles. Douze artefacts de cette
+campagne préalable ont aussi été vérifiés. Les fichiers HTML correspondent à
+leurs reçus ; leur rendu navigateur n’a pas été revérifié lors de ces campagnes.
+Aucun worktree ni cache n’a été supprimé.
+
+Le prochain lot est l’évaluation du collecteur natif de [#20](https://github.com/FlorianBruniaux/wt-sweep/issues/20),
+avec les [critères d’arrêt et de validation](roadmap.md#prochain-lot--terminer-lévaluation-native-de-20).
+La vision #14 reste séparée. Aucun changement des verdicts, d’activation de
+`apply`, de configuration Claude/Codex ou de hook n’est inclus dans cette
+synchronisation documentaire.
+
+### Vérification de la mise à jour documentaire
+
+La synchronisation documentaire ne change ni le code Rust, ni les tests, ni
+les contrats ou projections du harness. La première suite Rust a échoué sur
+`git::session::tests::provisional_payload_is_refused_when_child_exits_unsuccessfully` :
+`input_io` reçu au lieu de `git_exit`. La relance isolée puis la suite complète
+passent sans correction : 404 tests réussis, trois ignorés. L’échec initial
+reste enregistré ; ces relances ne démontrent pas sa stabilisation.
+
+Le code refuse les preuves dans les deux cas observés. La fermeture du canal
+peut précéder la lecture du statut de sortie ; cette course est une hypothèse
+issue de la lecture du code, pas une cause reproduite indépendamment.
+Le diagnostic reste à reprendre si ce test échoue à nouveau.
+
+La première suite Python a utilisé par erreur Python 3.9.6, inférieur au
+prérequis 3.11 : `hashlib.file_digest` et `tomllib` y manquent. Ce passage ne
+valide pas le produit. Avec Python 3.12.14, les 305 cas se terminent : 299 réussis,
+six ignorés. Les commandes du tutoriel et du guide de contribution vérifient
+désormais la version avant les suites ; le contrôle refuse 3.9.6 et accepte 3.12.14.
+
+Formatage, Clippy, build debug et cohérence des 22 fichiers générés passent.
+Les 341 liens locaux et les 22 blocs shell des 14 documents modifiés sont
+vérifiés ; les 30 artefacts cités correspondent aux neuf reçus des campagnes.
+Ces vérifications de syntaxe et de fichiers ne sont pas une nouvelle exécution
+des tutoriels ou un contrôle visuel des captures. Les illustrations datées sont
+conservées et leur provenance est précisée. L’activation native du harness
+reste non vérifiée.
 
 ## Sessions Git et reprise de découverte, 08/10/2026
 
@@ -70,7 +135,8 @@ trois sont ignorés. La suite Python exécute 305 tests : 299 réussissent et si
 sont ignorés. Les six tests d'exclusion et les deux tests du harness de
 comparaison passent aussi. Les binaires debug et release ainsi que les 35
 empreintes du manifeste source correspondent à la campagne de mesure.
-La publication et la CI distante restent à vérifier sur le commit livré.
+Publication confirmée par #23 ; les contrôles distants sont consignés dans
+l’[état publié](#état-publié-et-suite-au-09102026).
 
 Les README anglais et français, référence CLI, tutoriel, contrats, guides de
 performance et skill sont alignés. Les 22 fichiers générés sont cohérents. Dans
@@ -128,7 +194,8 @@ Une relance diagnostique conserve les assertions et passe les huit variantes
 bureau/mobile, clair/sombre et avec/sans JavaScript. L'échec initial n'est pas
 reproduit ; aucune correction CSS n'est déduite de ce résultat. La relecture
 indépendante du correctif disque ne relève plus de finding après correction.
-La livraison distante et la CI restent à vérifier sur le commit publié.
+Livré par #22 ; la CI du commit fusionné a réussi, voir
+l’[état publié](#état-publié-et-suite-au-09102026).
 
 La collecte Git groupée (#21), la reprise de découverte (#19) et l'intégration
 de `getattrlistbulk` restent hors de ce correctif. Les verdicts et la disponibilité
@@ -151,9 +218,9 @@ locaux, 4 blocs shell et les empreintes des 4 captures.
 Le rapport régénéré conserve les 60 lignes et 126 blocs de preuves du rapport
 sauvegardé ; les cinq fichiers source sont inchangés. Aucun nouveau scan réel.
 Safari, Firefox, les lecteurs d’écran et la copie native hors du presse-papiers
-instrumenté ne sont pas vérifiés. Ces résultats sont locaux ; le statut CI
-et la fusion dans `main` restent suivis sur la PR de livraison et dans #16/#17.
-Les entrées ci-dessous décrivent les contrôles effectués avant cette livraison.
+instrumenté ne sont pas vérifiés. Ce lot a ensuite été fusionné par #18,
+avec CI réussie ; #16 et #17 sont closes. L’[état publié](#état-publié-et-suite-au-09102026)
+conserve les liens. Les entrées ci-dessous décrivent les contrôles antérieurs.
 
 ## Fonds des grandes sections, 08/10/2026
 

@@ -2,6 +2,53 @@
 
 [Index documentaire](README.md) · [Preuves du triage](finish-ledger.md#triage-t01-t09) · [Plan T01-T09](superpowers/plans/2026-10-05-worktree-triage-v2.md)
 
+## Travail restant au 09/10/2026
+
+L’audit et ses finitions sont fusionnés dans `main`. Les issues #16, #17, #19
+et #21 sont closes ; les issues ouvertes sont #20 et la vision #14.
+La [PR #23](https://github.com/FlorianBruniaux/wt-sweep/pull/23) a livré #19 et
+#21 au commit `bc054af0c75ae3299fa69e094ca9d6d33e813db2` le 08/10 à 22:02 UTC
+(le 09/10 à Paris). Sa CI avant fusion a réussi. La CI de ce commit sur main
+est bloquée avant démarrage par le paiement ou le plafond du compte ; il faut
+corriger le compte puis relancer les contrôles. [Preuves de livraison](progress.md#état-publié-et-suite-au-09102026).
+
+### Prochain lot : terminer l’évaluation native de #20
+
+Le ciblage disque, les totaux de sélection, le partage du budget et la progression
+sont livrés par #22. Le travail restant concerne `getattrlistbulk`, encore absent
+du collecteur produit. L’objectif est de réduire le coût de lecture des métadonnées
+en conservant les mêmes observations et refus. Le lot n’augmente pas la couverture
+Git et ne fournit aucune estimation de l’espace récupérable.
+
+1. **Décodage borné.** Tester réponses tronquées, longueurs invalides, attributs
+   absents et erreurs par entrée. Une entrée illisible doit produire un refus
+   ou une lacune explicite ; aucune taille manquante ne devient zéro.
+2. **Parcours et conservation.** Conserver la descente par descripteur, les
+   identités périphérique/inode, les octets des noms, les ignorés et les plafonds.
+   Tester liens, fichiers spéciaux, montages, firmlinks, dataless et changements
+   concurrents. Garder une voie scalaire contrôlée ou un refus documenté.
+3. **Comparaison complète.** Exécuter les deux collecteurs sur les mêmes fixtures,
+   avec oracle indépendant, plusieurs tailles de dossiers et cas de refus.
+   Vérifier tailles, couverture, déduplication et conservation avant de comparer
+   durées et appels système. La sonde actuelle ne mesure pas ce parcours complet.
+4. **Décision d’intégration.** Intégrer seulement si les garanties sont conservées
+   et si la campagne montre un bénéfice sur le collecteur complet. Sinon garder
+   le collecteur scalaire et clôturer l’essai avec son résultat. Mettre à jour
+   le guide disque, le changelog et les preuves avant de clore #20.
+
+Les critères détaillés restent dans [#20](https://github.com/FlorianBruniaux/wt-sweep/issues/20)
+et la [recette à corpus fixe](../experiments/disk-scope/README.md). Aucun gain chiffré
+n’est promis par ce plan. L’évaluation peut se conclure sans intégration native.
+
+### Usage réel et vision
+
+La [recette du 9 octobre](research/real-family-acceptance-2026-10-09.md) laisse
+59 inscriptions à vérifier après deux reprises ciblées. Poursuivre la revue
+par dossiers prioritaires ; une mesure disque complète ne termine pas leurs
+preuves Git ou locales. Aucun candidat n’a été établi dans cette campagne.
+La vision #14 reste hors du lot : intégrations, provenance, sauvegarde,
+restauration et retrait demandent leurs propres essais et décisions.
+
 ## Jalon d’audit livré le 08/10/2026
 
 [Milestone clos](https://github.com/FlorianBruniaux/wt-sweep/milestone/1) · [Épique #8 close](https://github.com/FlorianBruniaux/wt-sweep/issues/8)
@@ -45,7 +92,7 @@ disque ciblée et le partage de budget au commit
 [CI de main](https://github.com/FlorianBruniaux/wt-sweep/actions/runs/37797546747)
 a réussi. La voie native `getattrlistbulk` reste expérimentale.
 
-Les lots suivants prolongent ces mesures :
+État des lots issus de ces mesures :
 
 1. [#20 : mesure disque ciblée et répartition du budget](https://github.com/FlorianBruniaux/wt-sweep/issues/20).
    Livré par #22 : racines demandées distinctes, partage des plafonds et
@@ -56,7 +103,8 @@ Les lots suivants prolongent ces mesures :
    Le [corpus fixe](research/history-batch-benchmark-2026-10-08.md) conserve les
    mêmes preuves : médiane de 21,0 à 12,1 s, avec les limites de mesure documentées.
    La [recette ciblée](progress.md#recette-réelle-ciblée) conserve un worktree
-   et signale les refs modifiées pendant la collecte. Validation locale terminée ; livraison distante suivie dans la PR.
+   et signale les refs modifiées pendant la collecte. Livré par #23 ; les
+   validations locales et distantes sont séparées dans le registre courant.
 3. [#19 : poursuite d'une découverte interrompue](https://github.com/FlorianBruniaux/wt-sweep/issues/19).
    `scan --checkpoint-out` puis `scan --resume` pour des racines explicites. Le [guide](discovery-resume.md) décrit la frontière
    conservée, les contrôles d'identité et les intervalles séparés. La reprise doit
@@ -64,7 +112,8 @@ Les lots suivants prolongent ces mesures :
    attente. Le listing courant tronque avant de trier : le dernier nom trié
    ne constitue donc pas un curseur de reprise fiable. La fixture retrouve trois
    dépôts sans relister les dossiers terminés ; les 24 passages coûtent davantage
-   qu’un scan complet en une passe. Validation locale terminée ; livraison distante suivie dans la PR.
+   qu’un scan complet en une passe. Livré par #23 ; la reprise conserve ses
+   intervalles distincts et ne constitue pas un instantané.
 
 Chaque correctif doit garder les verdicts et la conservation sur fixtures,
 puis fournir une mesure à données constantes avant une nouvelle recette réelle.

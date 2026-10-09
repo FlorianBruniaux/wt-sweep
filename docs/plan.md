@@ -31,6 +31,12 @@ conservent argv, identités des binaires, sorties et limites de preuve. Les
 essais concurrents ne remplacent ni les contrôles Sweep encore attendus
 ni E1/U5-U7.
 
+La PR #18 a livré les finitions HTML, #22 la mesure disque ciblée et le partage
+des plafonds, puis #23 les lectures Git groupées et la découverte reprenable.
+La [suite de #20](roadmap.md#prochain-lot--terminer-lévaluation-native-de-20)
+évalue uniquement le coût du collecteur disque natif. La [recette du 9 octobre](research/real-family-acceptance-2026-10-09.md)
+conserve les limites d’usage observées ; elle ne franchit aucune condition E1/U5-U7.
+
 ## Choisir ce qu'il faut construire
 
 Avant de figer le moteur d'application, comparer agentrinse aux mêmes fixtures :

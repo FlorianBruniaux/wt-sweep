@@ -179,6 +179,7 @@ Depuis la racine du projet, avec les dépendances en cache :
 ```sh
 (
   set -eu
+  python3 -c 'import sys; sys.exit(0 if sys.version_info >= (3, 11) else "Python 3.11+ is required")'
   cargo fmt --all -- --check
   cargo clippy --all-targets --locked --offline -- -D warnings
   cargo test --locked --offline
@@ -188,7 +189,9 @@ Depuis la racine du projet, avec les dépendances en cache :
 )
 ```
 
-Le build debug prépare le binaire utilisé par les tests Python. Le bloc s’arrête
+Le contrôle initial refuse un Python système trop ancien avant les suites.
+Si nécessaire, sélectionner Python 3.11+ pour cette session. Le build debug
+prépare le binaire utilisé par les tests Python. Le bloc s’arrête
 au premier échec. Les tests possèdent leurs fixtures ; ils ne découvrent pas
 votre machine. Lisez les `ignored` et `skipped` séparément des cas réussis.
 Les oracles vérifient les artefacts et comparent aussi des états avant/après.

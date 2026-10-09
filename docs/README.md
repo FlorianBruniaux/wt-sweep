@@ -3,11 +3,13 @@
 [Project overview](../README.md) · [Présentation en français](../README.fr.md) · [Changelog](../CHANGELOG.md) · [Contributing](../CONTRIBUTING.md)
 
 These guides cover the read-only macOS MVP and the T01-T09 triage workflow.
-The [validation ledger](finish-ledger.md#triage-t01-t09) separates final checks
-from historical results. The project overview is available in English and
-French, with a French hands-on tutorial. Other detailed user guides are in
-English; design and validation records retain their original French and the
-dates of their observations.
+The [current delivery record](progress.md#état-publié-et-suite-au-09102026)
+separates merged code, CI and real-world observations. The [roadmap](roadmap.md)
+names the remaining #20 evaluation and the separate #14 vision; the
+[validation ledger](finish-ledger.md#triage-t01-t09) retains historical checks.
+The project overview is available in English and French. The tutorial, assistant
+and disk guides are in French; other user guides are in English. Design and
+validation records retain their original language and observation dates.
 
 ## Use the CLI
 
@@ -29,12 +31,13 @@ dates of their observations.
 | Document | Contents |
 | --- | --- |
 | [Contributing](../CONTRIBUTING.md) | Local checks, fixture ownership and change requirements. |
-| [README illustrations](assets/README.md) | Editable SVG example, previous Gemini workflow, sources and review notes. |
+| [README illustrations](assets/README.md) | Dated native HTML captures, archived SVG/Gemini illustrations and their provenance. |
 | [Architecture](architecture.md) | Module responsibilities, data flow, read boundaries and test strategy. |
 | [Native boundaries](native-boundaries.md) | Three reviewed private unsafe boundaries and their evidence limits. |
 | [AI development harness](harness.md) | Canonical instructions, generated host files and separate checks for native activation. |
 | [Collection measurements](collection-performance.md) | Discovery throughput, reproducible Rust benchmark, budget profiles, phase metrics and observed coverage. |
 | [Collection benchmark, 07/10](research/collection-benchmark-2026-10-07.md) | Before/after release samples at 50 and 100 worktrees, first provisional fact, comparable evidence and rejected measurements. |
+| [Recette réelle, 09/10](research/real-family-acceptance-2026-10-09.md) | 71 inscriptions, revues ciblées, tailles complètes et limites ; chemins privés conservés localement. |
 | [Lectures Git groupées, 08/10](research/history-batch-benchmark-2026-10-08.md) | Processus, durées et preuves sur corpus fixe ; coût mesuré de la reprise de découverte. |
 | [Review benchmark runner](../scripts/benchmark-review.py) | Frozen binaries, synthetic Git families, first observed fact, pipe/PTY output and conservation checks. Results need their binary hashes and evidence coverage. |
 | [Implementation results](progress.md) | Current checkpoint links followed by the dated U1-U4 validation record. |

@@ -1,6 +1,18 @@
-# Collecte des gros dépôts, 06/10/2026
+# Collecte des gros dépôts et mesures de performance
 
 [Index documentaire](README.md) · [Limites CLI](cli.md#resource-limits) · [Collecte ciblée](targets-and-filters.md#complete-the-evidence-for-one-worktree)
+
+## Dernier état publié
+
+Les lectures Git groupées et la reprise de découverte sont livrées par #23.
+Le [registre de validation](progress.md#état-publié-et-suite-au-09102026) porte
+les SHA et la CI. La [recette réelle du 9 octobre](research/real-family-acceptance-2026-10-09.md)
+consigne des durées sur une famille active ; ses scopes et budgets différents
+ne permettent pas de déduire une accélération entre ces passages.
+
+Le prochain travail de performance est l’[évaluation disque native de #20](roadmap.md#prochain-lot--terminer-lévaluation-native-de-20).
+Le ciblage et le partage de budget sont déjà dans le produit. Le résultat de
+la sonde de métadonnées ne constitue pas un benchmark du collecteur récursif.
 
 ## Lectures Git groupées et reprise de découverte
 

@@ -78,8 +78,8 @@ needs confirmation. These are synthetic results, not a scan of your machine.
 
 The report groups worktrees by Git family. Search, verdict filters, size sorting
 and expandable evidence help narrow the review. Light/dark themes, sizes in
-Ko/Mo/Go and **Copy path** buttons are available in this checkout; their delivery
-is tracked in [#16](https://github.com/FlorianBruniaux/wt-sweep/issues/16).
+Ko/Mo/Go, **Copy path** buttons, navigation help and collapsible report sections
+are merged in `main` through [PR #18](https://github.com/FlorianBruniaux/wt-sweep/pull/18).
 The report and expandable evidence work offline and without JavaScript.
 Search, sorting and path copying require JavaScript.
 
@@ -319,34 +319,40 @@ Allocated bytes do not estimate recoverable APFS space. [Measure disk usage](doc
 | [Architecture](docs/architecture.md) | Module responsibilities, read boundaries and test strategy |
 | [Documentation index](docs/README.md) | All guides, design decisions and validation records |
 
-This overview and the hands-on tutorial are available in French. Other detailed
-user guides are in English. The original design, experiment and implementation
-records are retained in French.
+This overview is available in English and French. The hands-on tutorial,
+assistant and disk guides are in French; other user guides are in English.
+Design, experiment and implementation records retain their original language.
 
 ---
 
 ## Roadmap and validation
 
-The read-only audit milestone [#8](https://github.com/FlorianBruniaux/wt-sweep/issues/8)
-was completed by [PR #15](https://github.com/FlorianBruniaux/wt-sweep/pull/15),
-merged on 2026-10-08 as `0c3e1a59e380175991fb2ab7d539d1e87e04f67e`.
-It delivers HTML reports, disk measurements, progressive facts, collection
-benchmarks and the fixture-based tool comparison.
+The read-only audit milestone is delivered. Subsequent merges added the BoldGuy
+HTML refinements ([#18](https://github.com/FlorianBruniaux/wt-sweep/pull/18)),
+targeted disk collection and budget sharing ([#22](https://github.com/FlorianBruniaux/wt-sweep/pull/22)),
+then grouped Git reads and resumable discovery
+([#23](https://github.com/FlorianBruniaux/wt-sweep/pull/23)).
 
-The [integrated acceptance run](https://github.com/FlorianBruniaux/wt-sweep/issues/13#issuecomment-6052388331)
-found all 63 known registrations across two selected roots: 12 `keep`,
-51 `verify`, no candidate. All 63 local summaries remained partial; 58 of
-65 disk measurements were partial. The directory walk also hit its limit.
-This is a bounded observation, not an exhaustive machine inventory.
+The [9 October acceptance record](docs/research/real-family-acceptance-2026-10-09.md)
+covers one real family with 71 registered worktrees. The initial review returned
+10 `keep`, 61 `verify` and no candidate. Two focused reviews changed those rows
+to `keep`; combining the latest recorded verdict per path gives 12 / 59 / 0.
+These separate observations are not a new CLI verdict or an atomic snapshot.
+Five prioritized worktrees received complete disk measurements. The family-wide
+53.64 Go allocation remains partial and does not estimate recoverable APFS space.
 
-Next: deliver the local HTML refinements in
-[#16](https://github.com/FlorianBruniaux/wt-sweep/issues/16) and restore remote CI
-in [#17](https://github.com/FlorianBruniaux/wt-sweep/issues/17).
-GitHub refused to start the latest main job because of account payment or
-spending limits. Local test results do not establish a remote CI pass.
-Management options remain in the separate
-[vision #14](https://github.com/FlorianBruniaux/wt-sweep/issues/14);
-backup, restore and removal remain unavailable.
+Next is [#20](https://github.com/FlorianBruniaux/wt-sweep/issues/20): evaluate a
+native macOS disk collector against the current implementation. Its targeted
+collection and budget-sharing requirements are already delivered; native bulk
+collection still needs correctness, conservation and full-collector benchmarks.
+Management options remain in [vision #14](https://github.com/FlorianBruniaux/wt-sweep/issues/14).
+Backup, restore and removal remain unavailable.
+
+As checked on 9 October, #23's pre-merge CI passed. The
+[main run for `bc054af`](https://github.com/FlorianBruniaux/wt-sweep/actions/runs/37850898399)
+did not start its job because of the account payment or spending limit.
+The earlier CI issue #17 is closed; this later failure still needs an account
+fix and a rerun. [Delivery and validation record](docs/progress.md#état-publié-et-suite-au-09102026).
 
 <details>
 <summary>Implementation stages and recorded validation</summary>
@@ -363,11 +369,11 @@ backup, restore and removal remain unavailable.
 The [acceptance plan](docs/plan.md) defines the gates. The
 [apply decision](docs/decisions/apply-readiness.md) records why they remain closed.
 
-The source tree merged by #15 passed 365 Rust tests (3 ignored) and 292 Python
-cases (6 skipped) locally; [#9](https://github.com/FlorianBruniaux/wt-sweep/issues/9)
-records the checked commit and skipped cases. Subsequent presentation checks
-are recorded separately in [progress](docs/progress.md). Historical checkpoints
-remain in the [validation ledger](docs/finish-ledger.md#triage-t01-t09).
+The source tree merged by #23 passed 404 Rust tests (3 ignored) and 305 Python
+cases (299 passed, 6 skipped) locally. These are recorded checks for that source
+tree, not a new run on each documentation edit. The [validation record](docs/progress.md)
+separates local checks, pre-merge CI and main CI. Historical checkpoints remain
+in the [validation ledger](docs/finish-ledger.md#triage-t01-t09).
 The CI badge links to remote workflow results, separate from local checks.
 Real FileProvider placeholders, actual TCC denials and a machine-wide snapshot
 have not been verified.
