@@ -635,10 +635,9 @@ impl<'a> ControlRun<'a> {
                 // Current positive protections remain useful even if another facet fails.
                 if let Some(t) = final_tree
                     && t.locked.is_some()
+                    && let Some(observed) = &mut state.observed
                 {
-                    if let Some(observed) = &mut state.observed {
-                        observed.locked = t.locked.clone();
-                    }
+                    observed.locked = t.locked.clone();
                 }
                 if self.stopped_families.contains_key(&key) {
                     state.checks = "incomplete".into();

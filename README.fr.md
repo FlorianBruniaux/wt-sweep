@@ -198,6 +198,10 @@ La recherche, le tri et la copie utilisent JavaScript. Le rapport est en anglais
 
 ## Utiliser avec Claude ou Codex
 
+Pour partir de zéro, donnez à votre assistant le [prompt d’installation et
+d’analyse guidée](docs/bootstrap-prompt.fr.md#prompt-à-copier) : récupération
+de l’outil et des skills, compilation, démo jetable puis premier rapport.
+
 Ouvrez votre assistant **dans ce checkout de Sweep**, puis invoquez `/wt-sweep`
 dans Claude Code ou `$wt-sweep` dans Codex. Le skill inclus lit les rapports par
 petits groupes et propose les contrôles suivants. La CLI calcule les verdicts ;
@@ -384,6 +388,9 @@ placeholders FileProvider, refus TCC et instantanés machine restent non vérifi
 </details>
 
 ## Développement et état du projet
+
+La première alpha vise `v0.1.0-alpha.1`. La [préparation de la release](docs/release.md)
+détaille son périmètre, les contrôles d’installation et l’état de publication.
 
 Consultez [CONTRIBUTING.md](CONTRIBUTING.md) pour les contrôles locaux et dépôts
 jetables, puis [CHANGELOG.md](CHANGELOG.md) pour les changements. Le nom du projet

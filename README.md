@@ -193,6 +193,10 @@ Search, sorting and path copying use JavaScript.
 
 ## Use with Claude or Codex
 
+Starting from scratch? Give your assistant the [installation and guided-review
+prompt (French)](docs/bootstrap-prompt.fr.md#prompt-à-copier). It covers cloning
+the tool and bundled skills, building the CLI, a disposable demo and your first report.
+
 Open your assistant **in this Sweep checkout** and invoke `/wt-sweep` in Claude
 Code or `$wt-sweep` in Codex. The included skill reads reports in small batches
 and suggests the next checks. The CLI computes the verdicts; the assistant
@@ -372,6 +376,9 @@ denials and a machine-wide snapshot have not been verified.
 </details>
 
 ## Development and project status
+
+The first alpha targets `v0.1.0-alpha.1`. See the [release preparation](docs/release.md)
+for its scope, installation checks and publication status.
 
 See [CONTRIBUTING.md](CONTRIBUTING.md) for local checks and disposable fixtures,
 and [CHANGELOG.md](CHANGELOG.md) for changes. The project name is provisional;

@@ -1,8 +1,8 @@
 [package]
 name = "wt-sweep"
-version = "0.1.0"
+version = "0.1.0-alpha.1"
 edition = "2024"
-rust-version = "1.85"
+rust-version = "1.95"
 description = "Git worktree discovery and evidence-based review"
 license-file = "LICENSE.md"
 publish = false

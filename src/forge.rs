@@ -478,10 +478,10 @@ fn verify_receipt(
         {
             gaps.push("page number or count mismatch".into());
         }
-        if let Some(cursor) = &page.cursor {
-            if cursor.is_empty() || !cursors.insert(cursor) {
-                gaps.push("repeated or empty page cursor".into());
-            }
+        if let Some(cursor) = &page.cursor
+            && (cursor.is_empty() || !cursors.insert(cursor))
+        {
+            gaps.push("repeated or empty page cursor".into());
         }
         if let Some(next) = &page.next_cursor {
             if receipt.pages.get(index + 1).and_then(|p| p.cursor.as_ref()) != Some(next) {
@@ -498,10 +498,11 @@ fn verify_receipt(
         {
             gaps.push("raw page still has a next page".into());
         }
-        if let Some(raw_cursor) = parsed.get(index).and_then(|p| p.cursor.as_ref()) {
-            if index + 1 < parsed.len() && page.next_cursor.as_ref() != Some(raw_cursor) {
-                gaps.push("raw cursor contradicts receipt".into());
-            }
+        if let Some(raw_cursor) = parsed.get(index).and_then(|p| p.cursor.as_ref())
+            && index + 1 < parsed.len()
+            && page.next_cursor.as_ref() != Some(raw_cursor)
+        {
+            gaps.push("raw cursor contradicts receipt".into());
         }
     }
 }

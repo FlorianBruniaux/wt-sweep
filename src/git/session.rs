@@ -321,9 +321,12 @@ impl CommitSession {
         self.timeout = self
             .timeout
             .min(self.started.elapsed().saturating_add(remaining_time));
-        self.input
-            .shutdown(std::net::Shutdown::Write)
-            .map_err(|e| self.error("input_io", e.to_string()))?;
+        if let Err(error) = self.input.shutdown(std::net::Shutdown::Write)
+            && error.kind() != io::ErrorKind::NotConnected
+        {
+            return Err(self.error("input_io", error.to_string()));
+        }
+        // A peer that already closed still requires exit and output validation below.
         loop {
             self.deadline()?;
             let (out_done, err_done) = self.drain()?;
@@ -394,6 +397,32 @@ mod tests {
             session.finish(Duration::from_secs(2)).unwrap_err().code,
             "git_exit"
         );
+    }
+    #[test]
+    fn already_exited_child_keeps_its_exit_verdict() {
+        for (exit_code, expected) in [(0, None), (7, Some("git_exit"))] {
+            let mut session = scripted(
+                &format!(
+                    "read command oid; printf '%s commit 4\\n' \"$oid\"; read command oid; printf '%s commit 4\\ndata\\n' \"$oid\"; exit {exit_code}"
+                ),
+                Duration::from_secs(2),
+                1024,
+            );
+            assert_eq!(
+                session.read(OID, 1024, Duration::from_secs(2)).unwrap(),
+                b"data"
+            );
+            // Force the peer-close ordering instead of relying on scheduler timing.
+            while session.child.child.try_wait().unwrap().is_none() {
+                session.deadline().unwrap();
+                std::thread::sleep(Duration::from_millis(1));
+            }
+            let result = session.finish(Duration::from_secs(2));
+            assert_eq!(
+                result.as_ref().err().map(|error| error.code.as_str()),
+                expected
+            );
+        }
     }
     #[test]
     fn expired_read_cannot_be_redeemed_by_a_successful_exit() {

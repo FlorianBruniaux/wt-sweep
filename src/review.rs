@@ -402,10 +402,10 @@ fn remotes(git: &ControlledGit, common: &Path) -> Result<BTreeSet<(String, Strin
         let Some(split) = field.iter().position(|b| *b == b'\n') else {
             return Err(error("malformed remote identity output"));
         };
-        if let Ok(url) = std::str::from_utf8(&field[split + 1..]) {
-            if let Some(identity) = remote_identity(url) {
-                identities.insert(identity);
-            }
+        if let Ok(url) = std::str::from_utf8(&field[split + 1..])
+            && let Some(identity) = remote_identity(url)
+        {
+            identities.insert(identity);
         }
     }
     Ok(identities)
@@ -1552,10 +1552,10 @@ fn collect_with_options(
                 continue;
             }
             history.attach(&mut item);
-            if let Some(export) = forge {
-                if let Some(Ok(remotes)) = &remote_identities {
-                    item.requests = matching_requests(export, remotes, worktree);
-                }
+            if let Some(export) = forge
+                && let Some(Ok(remotes)) = &remote_identities
+            {
+                item.requests = matching_requests(export, remotes, worktree);
             }
             if inventory
                 .local_inventories
@@ -1777,10 +1777,9 @@ fn collect_with_options(
             .worktree_state
             .as_ref()
             .is_some_and(|state| state.checks == "change_observed")
+            && let Some(summary) = &mut item.local_summary
         {
-            if let Some(summary) = &mut item.local_summary {
-                invalidate_local_summary(summary, true)?;
-            }
+            invalidate_local_summary(summary, true)?;
         }
     }
     history.finish(&evidence_inventory, &mut items, &controls.final_families)?;

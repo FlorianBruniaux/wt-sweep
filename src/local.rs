@@ -772,13 +772,13 @@ fn capture_admin_file(
         }
         Ok(_) => {}
     }
-    if context.check(path) {
-        if let Some((entry, _)) = context.read_entry(parent, name, path, category.into()) {
-            if entry.kind != "file" {
-                context.gap(path, "administration entry is not a regular file");
-            }
-            context.push(entry, true);
+    if context.check(path)
+        && let Some((entry, _)) = context.read_entry(parent, name, path, category.into())
+    {
+        if entry.kind != "file" {
+            context.gap(path, "administration entry is not a regular file");
         }
+        context.push(entry, true);
     }
 }
 
@@ -998,13 +998,12 @@ pub fn collect_with(
                             name,
                             &absolute,
                             "index_revalidation".into(),
-                        ) {
-                            if entry.content_sha256 != hash || entry.identity != entry_identity {
-                                context.gap(
-                                    &absolute,
-                                    "raw index bytes or identity changed during collection",
-                                );
-                            }
+                        ) && (entry.content_sha256 != hash || entry.identity != entry_identity)
+                        {
+                            context.gap(
+                                &absolute,
+                                "raw index bytes or identity changed during collection",
+                            );
                         }
                     }
                     Err(error) => context.gap(

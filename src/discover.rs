@@ -1194,12 +1194,13 @@ fn scan_scope_with_progress_state(
             queue.push_back((entry.clone(), depth + 1, Some(metadata.dev())));
         }
         seen_directories.insert(directory_id);
-        if let Some(state) = resume.as_deref_mut() {
-            if listing.complete && listing.errors.is_empty() {
-                state
-                    .completed
-                    .push(resume::DirectoryGuard::observed(&path, &metadata));
-            }
+        if let Some(state) = resume.as_deref_mut()
+            && listing.complete
+            && listing.errors.is_empty()
+        {
+            state
+                .completed
+                .push(resume::DirectoryGuard::observed(&path, &metadata));
         }
         current = None;
         current_entry = None;

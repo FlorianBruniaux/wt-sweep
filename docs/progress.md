@@ -7,6 +7,47 @@ réelle. Le [lot de collecte](#sessions-git-et-reprise-de-découverte-08102026)
 conserve les tests du code livré ; les sections plus anciennes sont des observations
 datées, pas une description des tâches encore ouvertes.
 
+## Préparation de la première alpha, 09/10/2026
+
+La version préparée est `0.1.0-alpha.1` ; le [guide de publication](release.md)
+décrit le périmètre et les conditions avant le tag. Cette section ne déclare
+ni release publiée, ni dépôt public. Le choix de licence reste à confirmer :
+la FSL conservée à ce stade ne permet pas une annonce open source immédiate.
+
+La course signalée plus bas est reproduite par un test qui attend la sortie du
+processus avant de finaliser la session. Avant correction, une sortie réussie
+produit à tort `input_io`. Le correctif laisse la validation du statut de sortie
+et du protocole décider lorsque le canal est déjà fermé : succès pour une sortie
+0, `git_exit` pour une sortie 7. Les sept tests de session ont passé vingt
+répétitions ; la suite finale ci-dessous inclut aussi ce correctif.
+
+| Contrôle local | Résultat observé |
+| --- | --- |
+| Rust 1.95.0, formatage et Clippy sur toutes les cibles | Réussis, aucune tolérance de lint ajoutée |
+| Tests Rust | 405 réussis, 3 ignorés |
+| Python 3.12.14, tests produit | 299 réussis, 6 ignorés sur 305 cas |
+| Expériences d’exclusion et harness de comparaison | Réussis |
+| Build debug et release verrouillés, hors ligne | Réussis |
+| Projections Claude/Codex | 22 fichiers synchronisés ; activation native non vérifiée |
+
+Les empreintes de tous les fichiers source sont restées identiques pendant la
+passe finale. L’alignement du minimum Rust sur la version testée active des
+suggestions Clippy supplémentaires ; leurs transformations de conditions et de
+tests de parité sont incluses dans cette validation complète.
+
+Le contrôle Gitleaks 8.30.1 a couvert l’ascendance de main, les 13 têtes distantes
+observées, les fichiers suivis avec les nouveaux documents, et les corps et
+commentaires des issues/PR accessibles. Son seul signal est un faux positif
+examiné : deux références Git synthétiques dans `tests/test_scale.py`. Aucun
+autre secret n’a été détecté dans ce périmètre. Ce contrôle par motifs ne couvre
+pas les anciens logs Actions ou les artefacts expirés.
+
+La [CI de main sur `117f9b5`](https://github.com/FlorianBruniaux/wt-sweep/actions/runs/37917280210)
+n’a démarré aucune étape : GitHub signale le paiement ou le plafond de dépense
+du compte. Les résultats locaux ne remplacent pas une CI sur le commit à taguer.
+La facturation n’a pas été modifiée. La recette d’une archive issue d’un clone
+neuf reste à consigner avant publication.
+
 ## État publié et suite au 09/10/2026
 
 | Livraison | Commit sur main | État distant observé |
