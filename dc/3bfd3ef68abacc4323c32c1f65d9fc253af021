@@ -1,0 +1,53 @@
+CHANGELOG.md
+  s_160b3107588443::t_abb8cb4ee57dfd 12-15,274-281
+CONTRIBUTING.md
+  s_160b3107588443::t_29c6dea1ad97b7 25-35,38-41
+README.fr.md
+  s_160b3107588443::t_74e949021ca6b0 83-85,339-341,347-373,391-396
+README.md
+  s_160b3107588443::t_e6ba38ac772063 81-82,322-324,330-355,372-376
+docs/README.md
+  s_160b3107588443::t_99f290c042fa87 6-12,34,40
+docs/assets/README.md
+  s_312dceb5d1c7f5::t_cc83fc3df3b19f 10-13
+docs/collection-performance.md
+  s_160b3107588443::t_aade2ef03c5c4c 1,5-16
+docs/disk-usage.md
+  s_312dceb5d1c7f5::t_75722fa9380cdc 34-37,150-163
+docs/implementation.md
+  s_312dceb5d1c7f5::t_d82b0857241848 11-25
+docs/plan.md
+  s_312dceb5d1c7f5::t_d02e88bbe260f6 34-39
+docs/progress.md
+  s_312dceb5d1c7f5::t_9fc29887b4bc07 5-73,138-139,197-198,221-223
+docs/research/real-family-acceptance-2026-10-09.md
+  s_312dceb5d1c7f5::t_cdd52ade6f3e0f 1-107
+docs/roadmap.md
+  s_312dceb5d1c7f5::t_925442277da738 5-51,95,106-107,115-116
+docs/tutorial.fr.md
+  s_160b3107588443::t_c8c52e54f85810 182,192-194
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "dc3bfd3ef68abacc4323c32c1f65d9fc253af021",
+  "prompts": {},
+  "sessions": {
+    "s_160b3107588443": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a106f2-069b-7be2-aa09-88b1bbf2331e",
+        "model": "gpt-6-astra"
+      },
+      "human_author": "Florian BRUNIAUX <florian@bruniaux.com>"
+    },
+    "s_312dceb5d1c7f5": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a10705-778c-7a00-bd10-95a2f8d1b51e",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "Florian BRUNIAUX <florian@bruniaux.com>"
+    }
+  }
+}
