@@ -20,7 +20,9 @@ the Cargo package version is a development version.
 - Prepare version `0.1.0-alpha.1` with a publication checklist and a scoped
   Apple Silicon archive plan. Align the declared Rust minimum with the tested
   1.95 toolchain and apply its Clippy suggestions to equivalent conditionals
-  and parity checks. No release is implied by the package version.
+  and parity checks. Qualify an Apple Silicon archive from a clean clone with
+  dependency notices, file hashes and the documented disposable demo. No release
+  is implied by the package version.
 
 - Copyable assistant bootstrap prompt for macOS: acquire the CLI and bundled
   Claude/Codex skills, build, run the disposable demo and read a real report in

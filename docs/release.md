@@ -25,8 +25,8 @@ restent séparées de cette publication.
 
 ## Conditions de publication
 
-1. Fixer la licence avec le mainteneur. La FSL actuelle est une licence Fair
-   Source ; une sortie open source immédiate demande un autre choix.
+1. Fixer la licence avec le mainteneur. La FSL actuelle est une [licence Fair
+   Source](https://fair.io/licenses/) ; une sortie open source immédiate demande un autre choix.
 2. Vérifier le contenu suivi et son historique avant de rendre le dépôt public.
    Un détecteur de secrets ne remplace pas l’examen des résultats qu’il signale.
 3. Publier le correctif de session Git, le prompt d’installation et les notes
@@ -43,7 +43,7 @@ restent séparées de cette publication.
 La compilation utilise Rust 1.95, également déclaré comme minimum du paquet.
 Les versions antérieures ne sont pas qualifiées pour cette alpha.
 
-Le premier paquet visé est
+Le premier paquet testé localement est
 `wt-sweep-v0.1.0-alpha.1-aarch64-apple-darwin.tar.gz`, pour Apple Silicon.
 Il contient le binaire, sa licence, les notices des dépendances, le commit
 source et une notice d’utilisation. `SHA256SUMS` accompagne le téléchargement.
@@ -77,5 +77,7 @@ doit produire `git_exit`. Avant correction, le nouveau test échoue avec
 des refus de preuve.
 
 Les [résultats de validation locale](progress.md#préparation-de-la-première-alpha-09102026)
-sont consignés séparément de la CI. La recette de l’archive et la réussite
-distante sur le commit à taguer doivent aussi être établies avant publication.
+et la [recette de l’archive](progress.md#recette-de-larchive-apple-silicon)
+sont consignés séparément de la CI. Le manifeste identifie le commit du paquet
+candidat. Après le choix de licence et une CI réussie, reconstruire et vérifier
+le paquet depuis le commit exact à taguer avant de publier.

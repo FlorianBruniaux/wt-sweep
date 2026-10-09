@@ -45,8 +45,35 @@ pas les anciens logs Actions ou les artefacts expirés.
 La [CI de main sur `117f9b5`](https://github.com/FlorianBruniaux/wt-sweep/actions/runs/37917280210)
 n’a démarré aucune étape : GitHub signale le paiement ou le plafond de dépense
 du compte. Les résultats locaux ne remplacent pas une CI sur le commit à taguer.
-La facturation n’a pas été modifiée. La recette d’une archive issue d’un clone
-neuf reste à consigner avant publication.
+La facturation n’a pas été modifiée.
+
+### Recette de l’archive Apple Silicon
+
+Une compilation `cargo build --release --locked --offline` depuis un clone
+local neuf et propre du commit `6446ee6bc06581a840fcc8108fe6582699448074`
+produit le binaire `wt-sweep 0.1.0-alpha.1`. La recette est exécutée sur macOS
+26.5.1, arm64 ; elle ne qualifie pas une version minimale de macOS.
+
+L’archive locale `wt-sweep-v0.1.0-alpha.1-aarch64-apple-darwin.tar.gz` fait
+1 619 016 octets. Son SHA-256 est :
+
+```text
+b0712ea3ce18ef8580586406c591d5b48daf87026026f9c2fb16069d3d7b9c03
+```
+
+Elle contient le binaire, la licence FSL conservée, les notices des 30 dépendances
+verrouillées, les licences Rust et un manifeste du commit et des fichiers.
+Après extraction dans un autre dossier, les 79 fichiers du manifeste sont
+vérifiés, puis `--version`, `--help` et `review --help` réussissent. La démo de
+[getting-started.md](getting-started.md#disposable-demo), avec seulement le chemin
+du binaire remplacé, donne **2 `keep`, 1 `cleanup_candidate`, 0 `verify`**.
+Les quatre artefacts produits correspondent au reçu, y compris le HTML.
+
+Ce paquet est un candidat local, pas un téléchargement publié. L’installation
+de Rust sur une machine vierge, Gatekeeper après téléchargement, la notarisation,
+Intel/Linux, le rendu navigateur et la reconnaissance native du skill ne sont
+pas vérifiés par cette recette. Avant publication, reconstruire et vérifier
+l’archive depuis le commit exact à taguer, avec la licence finalement retenue.
 
 ## État publié et suite au 09/10/2026
 
@@ -94,10 +121,10 @@ les contrats ou projections du harness. La première suite Rust a échoué sur
 passent sans correction : 404 tests réussis, trois ignorés. L’échec initial
 reste enregistré ; ces relances ne démontrent pas sa stabilisation.
 
-Le code refuse les preuves dans les deux cas observés. La fermeture du canal
-peut précéder la lecture du statut de sortie ; cette course est une hypothèse
-issue de la lecture du code, pas une cause reproduite indépendamment.
-Le diagnostic reste à reprendre si ce test échoue à nouveau.
+Le code refuse les preuves dans les deux cas observés. Lors de cette vérification, la fermeture du canal avant
+la lecture du statut de sortie restait une hypothèse issue du code. Le test
+forcé et le correctif décrits dans la préparation de l’alpha ci-dessus
+reproduisent et traitent désormais cet ordre de fermeture.
 
 La première suite Python a utilisé par erreur Python 3.9.6, inférieur au
 prérequis 3.11 : `hashlib.file_digest` et `tomllib` y manquent. Ce passage ne
