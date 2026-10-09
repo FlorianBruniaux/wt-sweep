@@ -31,7 +31,7 @@ validation records retain their original language and observation dates.
 | Document | Contents |
 | --- | --- |
 | [Contributing](../CONTRIBUTING.md) | Local checks, fixture ownership and change requirements. |
-| [README illustrations](assets/README.md) | Dated native HTML captures, archived SVG/Gemini illustrations and their provenance. |
+| [README illustrations](assets/README.md) | Current Gemini overview, dated native HTML captures, archived illustrations and their provenance. |
 | [Architecture](architecture.md) | Module responsibilities, data flow, read boundaries and test strategy. |
 | [Native boundaries](native-boundaries.md) | Three reviewed private unsafe boundaries and their evidence limits. |
 | [AI development harness](harness.md) | Canonical instructions, generated host files and separate checks for native activation. |

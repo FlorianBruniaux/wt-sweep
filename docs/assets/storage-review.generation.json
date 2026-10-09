@@ -1,0 +1,97 @@
+{
+  "schema": "wt-sweep.illustration-generation/1",
+  "visual": "storage-review",
+  "generated_at": "2026-10-09T09:28:28.111112+00:00",
+  "model": "gemini-3-pro-image",
+  "cli_sha256": "8f9e76dccdd753d0bd14facc6cc7bd7c32934e88913f2a303ff6560b12a24524",
+  "request": {
+    "aspect_ratio": "16:9",
+    "image_size": "provider default",
+    "input": "text brief only"
+  },
+  "budget": {
+    "automatic_image_attempt_ceiling": 2,
+    "image_requests_observed": 1,
+    "remaining_image_attempts": 1,
+    "no_additional_call_planned": true
+  },
+  "launches": [
+    {
+      "launch": 1,
+      "exit_code": 127,
+      "outcome": "Node executable not found before CLI could start",
+      "provider_request": false
+    },
+    {
+      "launch": 2,
+      "exit_code": 0,
+      "outcome": "accepted native JPEG",
+      "provider_request": true,
+      "elapsed_s": 21.768
+    }
+  ],
+  "prompt": {
+    "path": "storage-review.prompt.md",
+    "sha256": "8ba399c19378bafaa235fa89d29642aba32d684918bdfd0db25657d398cf3cef"
+  },
+  "native": {
+    "mime": "image/jpeg",
+    "width": 1376,
+    "height": 768,
+    "bytes": 522433,
+    "sha256": "aaebb47c831f88209f926976c3037067dbf0db4f8e6ce45d5c88f6a8c297a036"
+  },
+  "delivered": {
+    "path": "storage-review.jpg",
+    "mime": "image/jpeg",
+    "width": 1376,
+    "height": 768,
+    "sha256": "aaebb47c831f88209f926976c3037067dbf0db4f8e6ce45d5c88f6a8c297a036",
+    "normalization": "Extension matches observed JPEG; bytes unchanged. No crop, retouching or upscaling."
+  },
+  "qa": {
+    "status": "accepted",
+    "reviewer": "assistant visual review",
+    "views": [
+      "native 1376 x 768",
+      "960px-wide readability preview"
+    ],
+    "observed": [
+      "18 requested strings present once",
+      "Three arrows point right between adjacent stages",
+      "All labels inside canvas",
+      "No fake metrics or removal claim",
+      "Verdicts and footer readable"
+    ],
+    "cosmetic_deviations": [
+      "Footer statements placed side by side rather than stacked",
+      "Charcoal background lighter than the requested near-black"
+    ],
+    "not_verified": [
+      "Independent design review",
+      "Live GitHub browser rendering",
+      "Product runtime from this illustration"
+    ]
+  },
+  "integration": [
+    "../../README.md",
+    "../../README.fr.md"
+  ],
+  "pricing": {
+    "source": "https://ai.google.dev/gemini-api/docs/pricing",
+    "checked_on": "2026-10-09",
+    "tier": "standard 1K/2K image output",
+    "usd_per_image": 0.134,
+    "incremental_image_output_estimate_usd": 0.134,
+    "this_visual_cumulative_estimate_usd": 0.134,
+    "historical_three_image_estimate_usd": 0.402,
+    "combined_recorded_image_output_estimate_usd": 0.536,
+    "excluded": [
+      "input",
+      "text and thinking",
+      "grounding",
+      "taxes"
+    ],
+    "provider_billed_usage": "UNKNOWN; CLI does not expose provider usage metadata"
+  }
+}

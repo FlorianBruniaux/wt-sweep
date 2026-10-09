@@ -2,9 +2,45 @@
 
 [Documentation index](../README.md) · [Project overview](../../README.md)
 
+## Current README infographic
+
+![Find worktrees, measure their size, check Git and local files, then read the review.](storage-review.jpg)
+
+The English and French READMEs open with this Gemini illustration, generated on
+2026-10-09. It follows the dark technical graphics in the locally inspected
+yt-insights and Paper Insights READMEs. Agent Router informed the short product
+promise, command examples and separation between workflow and evidence.
+Only the text brief was sent to Gemini, without private repository data.
+
+The four stages describe the user journey: find, measure, check and review.
+They do not represent collection timings. The three current verdicts are
+`keep`, `verify` and `cleanup_candidate`; usage remains to confirm for candidates.
+The footer distinguishes measured size from recoverable space. The
+[disk contract](../disk-usage.md) and [triage policy](../contracts.md#triage-policy)
+remain the source of those claims. This is an illustration, not a screenshot.
+
+- [Generation prompt](storage-review.prompt.md): 18 visible strings, four stages
+  and three directed arrows.
+- [Generation and QA record](storage-review.generation.json): model, hashes,
+  native dimensions, accepted deviations and cost estimate.
+- [Delivered JPEG](storage-review.jpg): 1376 × 768 pixels, 522,433 bytes,
+  byte-identical to the native response. No crop, retouching or upscaling.
+
+One image request succeeded. An earlier local launch could not find Node and
+made no provider request. Text and arrows were inspected at native size and at
+960px width. The footer is side by side rather than stacked, and the background
+is lighter charcoal; both are accepted layout variations. Live GitHub rendering
+and independent review have not been checked. The old images below are retained.
+
+The incremental and cumulative image-output estimate for this visual is $0.134,
+using the [official standard 1K/2K rate](https://ai.google.dev/gemini-api/docs/pricing)
+checked on 2026-10-09. Including the three historical responses below gives an
+estimated $0.536 for recorded image output. Input, text/thinking, grounding and
+taxes are excluded. Actual billed usage is unknown.
+
 ## Current HTML report
 
-The English and French READMEs use captures of the native HTML report in
+The English and French READMEs retain expandable captures of the native HTML report in
 [light](report-light.png) and [dark](report-dark.png) BoldGuy themes.
 They show a disposable synthetic Git family, not private worktrees.
 The report was captured on 2026-10-08. The presentation changes were merged by
@@ -122,7 +158,7 @@ are retained. A smaller copy was used only for the readability check.
 
 Attempt 1 was renamed from .png to .jpg to match its actual MIME; its bytes were
 unchanged. Both original briefs and all three native responses are preserved.
-No paid attempt remains authorized.
+No further attempt for this historical visual is planned.
 
 Google lists standard image output at $0.134 for 1K/2K on the
 [official pricing page](https://ai.google.dev/gemini-api/docs/pricing), checked on

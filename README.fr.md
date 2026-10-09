@@ -2,7 +2,7 @@
 
 [English](README.md) · **Français**
 
-**Disque plein : identifiez les worktrees à examiner et le travail à conserver.**
+**Disque plein : retrouvez les worktrees qui prennent de la place et le travail à conserver.**
 
 <table>
   <tr>
@@ -16,85 +16,40 @@
   </tr>
 </table>
 
----
-
 [![Vérifications du MVP en lecture seule](https://github.com/FlorianBruniaux/wt-sweep/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/FlorianBruniaux/wt-sweep/actions/workflows/ci.yml)
 [![Version de Rust : 1.95.0](https://img.shields.io/badge/Rust-1.95.0-dc7336?logo=rust)](rust-toolchain.toml)
 [![Système : macOS](https://img.shields.io/badge/Runtime-macOS-597ee5)](docs/getting-started.md#prerequisites)
 [![Licence : FSL-1.1-ALv2](https://img.shields.io/badge/License-FSL--1.1--ALv2-597ee5)](LICENSE.md)
 
-[Démarrage rapide](#démarrage-rapide) · [Rapport HTML](#rapport-html) · [Fonctionnalités](#fonctionnalités) · [Fonctionnement](#fonctionnement) · [Documentation](#documentation)
+![Worktree Sweep : retrouver les dépôts et worktrees, mesurer leur taille, vérifier l’histoire Git et les fichiers locaux, puis lire le rapport HTML, texte ou JSON. Trois verdicts : keep, verify et cleanup_candidate. La taille mesurée ne prédit pas l’espace récupérable.](docs/assets/storage-review.jpg)
 
-[Tutoriel et tests](docs/tutorial.fr.md) · [Prompt à copier](docs/tutorial.fr.md#prompt-à-donner-à-un-assistant) · [Feuille de route](docs/roadmap.md) · [Changelog](CHANGELOG.md) · [Contribuer](CONTRIBUTING.md)
+Une CLI locale pour macOS qui réunit **chemins, branches, tailles disque et
+preuves Git** dans un rapport. Aucun modèle d’IA, service ou compte de forge requis.
+
+> [!NOTE]
+> **Lecture seule.** Sweep prépare le bilan de nettoyage. Sauvegarde, restauration
+> et suppression sont indisponibles ; `apply` refuse toute invocation.
+
+[Démarrage rapide](#démarrage-rapide) · [Lire le résultat](#lire-le-résultat) · [Rapport HTML](#rapport-html) · [Skill assistant](#utiliser-avec-claude-ou-codex) · [Documentation](#documentation) · [Feuille de route](#feuille-de-route-et-validation)
 
 ---
 
 ## Pourquoi cet outil
 
-J’ai créé Worktree Sweep parce que je n’avais plus de place sur mon disque.
-Avant de faire le ménage, je voulais retrouver mes worktrees Git, mesurer leur
-taille et savoir lesquels contenaient encore du travail à garder.
+J’ai créé Sweep parce que je n’avais plus de place sur mon disque. Mes worktrees
+étaient dispersés entre les dossiers des projets et ceux des agents. Avant de
+supprimer quoi que ce soit, je voulais savoir où partait l’espace et quels
+dossiers contenaient encore du travail local.
 
-Les worktrees peuvent se retrouver dans les dossiers des projets et ceux des
-agents de code. Une branche fusionnée peut encore contenir des modifications
-non commitées, des fichiers ignorés ou des notes locales. Les vérifier dossier
-par dossier oblige à répéter les commandes Git et à recouper leurs résultats.
+| Ce que vous voulez savoir | Ce que le rapport montre |
+| --- | --- |
+| **Où sont mes worktrees ?** | Chemins et branches, regroupés par famille Git dans les racines choisies. |
+| **Lesquels prennent de la place ?** | Tailles logiques et allouées, stockage Git partagé et mesures incomplètes. |
+| **Lesquels examiner pour faire le ménage ?** | Preuves d’intégration, modifications locales, histoire privée et raison de chaque verdict. |
 
-Worktree Sweep (`wt-sweep`) réunit ce bilan dans un rapport : chemins, branches,
-tailles disque et raisons de conserver un worktree ou de l’examiner davantage.
-Il fonctionne localement sur macOS, sans modèle d’IA, service ni compte de forge.
-
-## Partir de votre problème
-
-| Votre problème | Ce que Sweep vous apporte | Par où commencer |
-| --- | --- | --- |
-| **Plus de place sur le disque** | Les tailles mesurées des worktrees et du stockage Git partagé, avec les mesures absentes ou partielles signalées. Le tri par taille dans le HTML aide à choisir les dossiers à examiner d’abord. | [Analyser avec les tailles disque](#examiner-un-dépôt-et-ses-worktrees) |
-| **Des worktrees dispersés dans plusieurs dossiers** | Un inventaire regroupé par famille Git, avec chemins et branches. La découverte couvre les racines choisies et conserve les lacunes d’accès. | [Choisir les dépôts ou racines](docs/cli.md) |
-| **Je ne sais pas quels worktrees nettoyer** | Des vérifications d’intégration Git, de modifications locales et d’histoire privée. Le rapport distingue le travail à conserver, les contrôles manquants et les candidats au nettoyage. | [Lire les verdicts](#lire-le-résultat) |
-
-La taille aide à choisir par où commencer ; elle ne prouve pas qu’un worktree
-peut être supprimé. Sur APFS, l’espace alloué mesuré n’est pas une estimation du
-gain après suppression. Même pour un candidat, il reste à confirmer qu’aucun
-agent ou terminal ne l’utilise.
-
-> [!NOTE]
-> **MVP en lecture seule pour macOS.** Sweep prépare le bilan de nettoyage ;
-> il ne libère pas lui-même d’espace disque. Sauvegarde, restauration et
-> suppression sont indisponibles ; `apply` refuse toute invocation.
-> Le nom du projet est provisoire et aucune version n’a été publiée.
-
----
-
-## Rapport HTML
-
-<picture>
-  <source media="(prefers-color-scheme: dark)" srcset="docs/assets/report-dark.png" />
-  <img src="docs/assets/report-light.png" alt="Rapport HTML Worktree Sweep sur une famille Git de démonstration : quatre worktrees, trois à conserver et un candidat, avec totaux source, recherche et filtres de verdict." />
-</picture>
-
-Capture du vrai rapport de la CLI sur un dépôt jetable, avec le thème BoldGuy
-de ce checkout. La démo compte quatre worktrees : trois à conserver et un
-candidat dont l’usage reste à confirmer. Ces résultats sont synthétiques ;
-ils ne proviennent pas d’un scan de votre machine.
-[Provenance des captures et anciennes illustrations](docs/assets/README.md).
-
-Le rapport regroupe les worktrees par famille Git. Recherche, filtres de verdict,
-tri par taille et preuves repliables permettent de cibler la revue. Le thème
-clair/sombre, les tailles en Ko/Mo/Go, les boutons **Copy path**, l’aide de
-navigation et les grandes sections repliables sont fusionnés dans `main` par la
-[PR #18](https://github.com/FlorianBruniaux/wt-sweep/pull/18).
-Le rapport et ses preuves repliables fonctionnent hors ligne et sans JavaScript.
-La recherche, le tri et la copie demandent JavaScript. Le rapport est en anglais.
-
-<details>
-<summary>Voir les lignes, tailles disque et boutons de copie</summary>
-
-<picture>
-  <source media="(prefers-color-scheme: dark)" srcset="docs/assets/report-details-dark.png" />
-  <img src="docs/assets/report-details-light.png" alt="Quatre worktrees avec branches, raisons de conservation, un candidat, tailles en Ko et boutons Copy path." />
-</picture>
-
-</details>
+La taille aide à choisir par où commencer. Elle ne prouve pas qu’un worktree
+peut être supprimé et ne prédit pas le gain sur APFS. Une branche fusionnée peut
+encore contenir des fichiers ignorés, des modifications non commitées ou des notes.
 
 ---
 
@@ -102,8 +57,7 @@ La recherche, le tri et la copie demandent JavaScript. Le rapport est en anglais
 
 ### Compiler depuis les sources
 
-Sur macOS, avec Rust installé, clonez le dépôt puis compilez l’outil.
-Le dépôt est actuellement privé : il faut y avoir accès sur GitHub pour le cloner.
+Utilisez macOS et Rust. Le dépôt est privé : son clonage demande un accès GitHub.
 
 ```sh
 git clone https://github.com/FlorianBruniaux/wt-sweep.git
@@ -114,23 +68,20 @@ cargo build --release --locked --offline
 ```
 
 <details>
-<summary>Prérequis de compilation et dépendances hors ligne</summary>
+<summary>Prérequis et compilation hors ligne</summary>
 
-Si vous disposez déjà d’une copie du dépôt, lancez les commandes de compilation
-depuis sa racine. La version Rust 1.95.0 est fixée dans
-[rust-toolchain.toml](rust-toolchain.toml). Le téléchargement des dépendances
-nécessite un accès réseau ; passez cette étape si elles sont déjà en cache.
-L’outil utilise `/usr/bin/git` pour lire les données Git. Aucune installation via
-un gestionnaire de paquets ni configuration globale n’est nécessaire.
-Consultez le [guide de démarrage et de dépannage](docs/getting-started.md).
+Le dépôt fixe Rust 1.95.0 dans [rust-toolchain.toml](rust-toolchain.toml).
+Passez `cargo fetch` si les dépendances sont déjà en cache. Git est lu via
+`/usr/bin/git`. Aucune installation par gestionnaire de paquets ni configuration
+globale n’est requise. [Installation et dépannage](docs/getting-started.md).
 
 </details>
 
 ### Examiner un dépôt et ses worktrees
 
-Depuis la racine de `wt-sweep`, après compilation, saisissez le chemin du clone
-et la référence d’intégration que vous avez confirmée. Le bloc s’arrête si cette
-référence manque localement.
+Depuis le checkout de Sweep, saisissez le chemin du clone et la référence
+d’intégration confirmée, par exemple `refs/heads/main` ou `refs/heads/develop`.
+Le bloc s’arrête si cette référence manque localement.
 
 ```sh
 (
@@ -150,63 +101,130 @@ référence manque localement.
 )
 ```
 
-Gardez `XXXXXX` tel quel : `mktemp` le remplace par un suffixe unique. Le dossier
-des rapports doit se trouver hors du dépôt, de ses worktrees enregistrés et de
-ses administrations Git. `review` découvre la famille puis collecte les preuves
-courantes. Son nouveau dossier contient l’inventaire original `inventory.json`,
-la revue `review.json`, le détail `report.txt`, le bilan hors ligne `report.html`
-et le reçu `run.json`. Le HTML regroupe les worktrees par famille Git, avec
-recherche, tri et preuves repliables. Les totaux source, sélectionnés et visibles
-restent distincts. Un bouton copie le chemin de chaque ligne ; si le navigateur
-refuse le presse-papiers, un champ sélectionné permet la copie manuelle. Consultez
-le [guide du rapport HTML](docs/html-report-plan.md).
+Gardez `XXXXXX` tel quel : `mktemp` le remplace par un suffixe unique. Les rapports
+doivent être hors des dépôts inspectés et de leurs administrations Git.
+Pour essayer d’abord sur des worktrees synthétiques, suivez la
+[démo sur dépôt jetable](docs/tutorial.fr.md#3-essayer-les-trois-verdicts-sur-un-dépôt-jetable).
 
-Pour les empreintes détaillées des fichiers ou une revue séparée de l’inventaire,
-suivez le [parcours avancé scan puis plan](docs/tutorial.fr.md#parcours-avancé-scan-puis-plan).
-Un manifeste enregistre des observations, pas le contenu des fichiers.
+<details>
+<summary>Fichiers produits et analyse de plusieurs projets</summary>
+
+Chaque nouveau dossier `run-*` contient `inventory.json`, `review.json`,
+`report.txt`, le `report.html` demandé et le reçu de publication `run.json`.
+Le reçu consigne tailles et empreintes des artefacts. Un manifeste enregistre
+des observations, pas des copies de vos fichiers.
+
+Pour plusieurs dossiers de projets, commencez par des [racines explicites](docs/getting-started.md#inspect-selected-roots),
+puis [choisissez les cibles d’intégration par famille](docs/targets-and-filters.md).
+La CLI propose aussi `--all` ; les chemins inaccessibles et limites restent
+des lacunes de couverture. Un parcours terminé ne prouve pas un instantané de
+toute la machine.
+
+Pour un inventaire sauvegardé ou des manifestes détaillés, suivez le
+[parcours scan puis plan](docs/tutorial.fr.md#parcours-avancé-scan-puis-plan).
+La découverte de racines explicites peut reprendre depuis un [checkpoint](docs/discovery-resume.md).
+
+</details>
 
 ### Lire le résultat
 
-Chaque ligne indique le worktree, sa branche, son HEAD complet, son état local,
-son histoire et son verdict. `--summary` affiche un bilan court : verdicts,
-espace disque et contrôles manquants. Les couleurs et icônes sont automatiques
-dans le terminal ; la progression tient sur une ligne. Ajoutez `--verbose` pour
-les logs et durées détaillés, ou `--color never` pour une sortie sobre.
-`report.txt` conserve les raisons, chemins et preuves. Le JSON et les fichiers
-enregistrés restent sans codes de couleur.
+`--summary` affiche verdicts, tailles et contrôles manquants. Ouvrez `report.html`
+pour la vue regroupée ou `report.txt` pour toutes les raisons.
 
-| Verdict | Signification |
-| --- | --- |
-| `keep` | Travail à préserver, checkout principal, protection, opération ou autre raison positive de conserver. |
-| `cleanup_candidate` | Les contrôles actuels, l’intégration Git, l’état local propre et la conservation de l’histoire satisfont les cinq conditions. |
-| `verify` | Des preuves nécessaires manquent ou se contredisent. Le rapport indique les conditions à vérifier. |
+| Verdict | Signification | Suite utile |
+| --- | --- | --- |
+| `keep` | Du travail, une protection, une opération ou une autre raison de conserver a été observée. | Lire ce qui doit être préservé. |
+| `verify` | Des preuves nécessaires manquent ou se contredisent. | Examiner la lacune et choisir un contrôle ciblé. |
+| `cleanup_candidate` | Les cinq conditions actuelles C1–C5 sont satisfaites. | Confirmer l’usage ; ce verdict n’autorise pas la suppression. |
 
-L’usage d’un candidat reste à confirmer avant tout retrait. Le rapport n’autorise
-aucune suppression et ne constitue pas une sauvegarde complète. Un HEAD mergé ne
-suffit pas s’il reste des modifications locales ou une histoire propre au reflog.
-Consultez le [contrat de décision](docs/contracts.md#triage-policy) et le
-[tutoriel](docs/tutorial.fr.md).
+<details>
+<summary>Pourquoi un résultat peut être partiel ou UNKNOWN</summary>
+
+La collecte a des limites d’entrées, de volume et de temps. Un dossier non lu,
+un refus d’accès ou un délai dépassé reste visible ; il ne devient jamais un
+résultat vide. Les comptes partiels sont des bornes minimales. `UNKNOWN` signifie
+que la preuve n’a pas été établie.
+
+Commencez avec le budget `standard`. Pour une ligne non résolue, lisez les lacunes
+puis envisagez [`--worktree PATH --budget thorough`](docs/targets-and-filters.md#complete-the-evidence-for-one-worktree).
+Le disque possède son propre périmètre et budget : associez `--disk-usage` à
+`--disk-root CHEMIN_ABSOLU` pour mesurer une racine enregistrée précise. Des
+plafonds plus grands ne garantissent pas la complétude. [Mesure et reprises](docs/disk-usage.md).
+
+Les couleurs et icônes du terminal sont automatiques. Ajoutez `--verbose` pour
+les logs et durées par phase, ou `--color never` pour une sortie sobre. Les
+fichiers enregistrés et le JSON ne contiennent pas de décoration terminal.
+
+</details>
+
+---
+
+## Rapport HTML
+
+Recherchez un chemin ou une branche, filtrez les verdicts, triez par taille et
+copiez les chemins. Les worktrees sont regroupés par famille Git : thèmes clair
+et sombre, tailles en Ko/Mo/Go, sections dépliables. Les totaux source, les lignes
+sélectionnées et celles filtrées dans le navigateur restent distincts.
+
+<details>
+<summary>Voir le rapport en thème clair ou sombre</summary>
+
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="docs/assets/report-dark.png" />
+  <img src="docs/assets/report-light.png" alt="Rapport HTML Worktree Sweep sur une famille Git de démonstration : quatre worktrees, trois à conserver et un candidat, avec totaux source, recherche et filtres de verdict." />
+</picture>
+
+Capture native d’une démo jetable : quatre worktrees, trois `keep` et un
+`cleanup_candidate`. Réalisée le 8 octobre 2026, sans scan de votre machine.
+[Provenance des captures](docs/assets/README.md#current-html-report).
+
+</details>
+
+<details>
+<summary>Voir les branches, tailles disque et boutons de copie</summary>
+
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="docs/assets/report-details-dark.png" />
+  <img src="docs/assets/report-details-light.png" alt="Quatre worktrees avec branches, raisons de conservation, un candidat, tailles en Ko et boutons Copy path." />
+</picture>
+
+</details>
+
+Le rapport et ses preuves dépliables fonctionnent hors ligne, sans JavaScript.
+La recherche, le tri et la copie utilisent JavaScript. Le rapport est en anglais.
+[Guide HTML](docs/html-report-plan.md) · [Provenance des illustrations et captures](docs/assets/README.md)
 
 ---
 
 ## Utiliser avec Claude ou Codex
 
-Le dépôt inclut le skill `wt-sweep` pour lire les rapports par petits groupes et
-proposer les actions de conservation ou de vérification utiles. Ouvrez Claude
-Code ou Codex dans ce checkout, invoquez `/wt-sweep` ou `$wt-sweep`, puis donnez
-le chemin du dépôt et la référence d’intégration confirmée. Le skill conserve
-les verdicts de la CLI et leurs limites. La suppression reste indisponible. Le guide décrit aussi le choix du modèle,
-du raisonnement et le recours limité à des sous-agents.
+Ouvrez votre assistant **dans ce checkout de Sweep**, puis invoquez `/wt-sweep`
+dans Claude Code ou `$wt-sweep` dans Codex. Le skill inclus lit les rapports par
+petits groupes et propose les contrôles suivants. La CLI calcule les verdicts ;
+l’assistant les explique. La découverte native du skill dépend du client et de
+la confiance accordée au projet.
 
-Le [guide de l’assistant et ses prompts](docs/assistant-skill.md) couvre une
-nouvelle revue, la reprise d’un rapport et un test local sur des dépôts jetables.
+<details>
+<summary>Copier un prompt d’exemple</summary>
 
-Commencez avec le profil `standard`, puis inspectez les faits sauvegardés. Pour
-une ligne arrêtée par ces plafonds, la [collecte ciblée](docs/tutorial.fr.md#approfondir-un-worktree-après-une-analyse-partielle)
-combine `--worktree` et `--budget thorough`. Lisez ce nouveau résultat avant une
-revue thorough de toute la famille. Les autres lignes et leurs preuves manquantes
-restent visibles. Ces plafonds plus grands incluent les fichiers ignorés ; ils ne
-garantissent pas une collecte complète.
+Remplacez le chemin et confirmez la cible avant utilisation.
+Dans Claude Code, remplacez `$wt-sweep` par `/wt-sweep`.
+
+```text
+$wt-sweep Analyse les worktrees du dépôt /chemin/absolu/du/depot.
+La cible d’intégration confirmée est refs/heads/develop.
+Mesure l’espace disque et génère un rapport HTML hors ligne.
+Donne d’abord le bilan, puis lis cinq worktrees à la fois.
+Conserve les verdicts de la CLI et explique les preuves manquantes. Propose
+les contrôles suivants par priorité. Ne supprime rien et ne présente pas
+les octets alloués comme un gain d’espace récupérable.
+```
+
+Le [guide assistant](docs/assistant-skill.md) couvre un rapport existant, les
+reprises ciblées, le choix du modèle et du raisonnement, et la délégation bornée.
+Sweep n’installe aucun skill global ni hook.
+
+</details>
 
 ---
 
@@ -238,13 +256,14 @@ Commencez par un dépôt ou des racines choisies.
 
 </details>
 
----
-
 ## Fonctionnement
 
-`review` combine découverte et revue. Les commandes séparées `scan` et `plan`
-restent disponibles pour les manifestes détaillés et les inventaires sauvegardés.
-La cible d’intégration est explicite ; aucune branche par défaut n’est devinée.
+La collecte lit le périmètre choisi ; le code déterministe classe les preuves
+enregistrées. Une information manquante le reste. L’âge, un patch-id, une PR
+fermée ou une suggestion de modèle ne prouvent pas l’intégration.
+
+<details>
+<summary>Du périmètre au rapport (Mermaid)</summary>
 
 ```mermaid
 flowchart LR
@@ -256,11 +275,12 @@ flowchart LR
     Plan --> Report["HTML · texte · JSON<br/>Verdicts, tailles et lacunes"]
 ```
 
-La revue sépare les relations du graphe de la vérification approfondie des objets.
-Le détail distingue index, fichiers, conflits, contenu non suivi et ignoré,
-histoire privée et stashes partagés. Les compteurs partiels restent des bornes
-minimales ou `UNKNOWN`. Les sujets de commit et changelogs donnent du contexte ;
-ils ne prouvent pas l’intégration.
+`review` combine découverte et collecte de preuves courantes. `scan` et `plan`
+restent disponibles séparément. Les références sont explicites ; aucune branche
+par défaut n’est devinée. Les exports de forge capturés sont facultatifs.
+[Architecture](docs/architecture.md) · [Contrats de preuve](docs/contracts.md).
+
+</details>
 
 <details>
 <summary>Règles de classification d’un worktree</summary>
@@ -288,141 +308,92 @@ comment interpréter ces résultats.
 
 </details>
 
-La collecte limite le volume lu et la durée des opérations. Elle vérifie les
-octets des objets Git contre leurs identifiants complets (OID). Le code de revue
-classe ensuite ces observations sans autre entrée-sortie. L’âge, un patch-id,
-une MR fermée ou la suggestion d’un modèle ne permettent pas d’établir
-l’intégration.
-
-Sur macOS, le processus désactive la matérialisation des fichiers non résidents
-(*dataless*) et vérifie cette politique avant les lectures protégées, y compris
-pour ses processus Git enfants. Si cette politique ne peut pas être établie,
-l’opération est refusée. Les échecs d’accès et les dépassements de délai restent
-visibles. Un parcours terminé reste un ensemble d’observations sur un intervalle
-de temps, pas un instantané atomique du système de fichiers.
-
-L’[architecture](docs/architecture.md) et les [contrats de preuve](docs/contracts.md)
-précisent les limites de lecture et de publication des rapports.
-
----
-
-**Espace disque :** ajouter `--disk-usage` à `scan` ou `review` pour mesurer chaque
-worktree et son dossier Git partagé, avec un total dédupliqué. La CLI écrit les
-chiffres dans le récapitulatif console, le texte, le JSON et le HTML demandé.
-`--disk-root CHEMIN_ABSOLU` limite la mesure aux racines enregistrées choisies ;
-les autres restent listées comme non demandées. Le budget restant est réparti
-entre les racines encore à visiter. `plan` conserve les mesures capturées.
-Les fichiers ignorés sont inclus et les mesures partielles
-signalées. Le HTML utilise les unités décimales Ko/Mo/Go et conserve les octets
-exacts dans les détails. Les octets alloués n’estiment pas l’espace récupérable
-sur APFS. [Mesurer l’espace disque](docs/disk-usage.md).
-
-## Documentation
-
-Les rapports affichent le temps de découverte et le débit d’entrées listées.
-Les bilans de revue indiquent la phase de collecte la plus longue. Le
-[guide de performance et benchmark Rust](docs/collection-performance.md#benchmark-rust-reproductible)
-permet de comparer les workers sur un corpus constant, avec contrôle de couverture.
-
-| Guide | Contenu |
-| --- | --- |
-| [Tutoriel en français](docs/tutorial.fr.md) | Essai sur un dépôt jetable, tests automatiques, premier dépôt réel et prompt pour un assistant |
-| [Démarrage](docs/getting-started.md) | Installation, démo sur un dépôt jetable, lecture des rapports et dépannage |
-| [Rapport HTML](docs/html-report-plan.md) | Génération, navigation, thèmes, copie des chemins et preuves enregistrées |
-| [Référence CLI](docs/cli.md) | Commandes, valeurs par défaut, modes de sortie, limites et codes de retour |
-| [Cibles et filtres](docs/targets-and-filters.md) | Cibles par dépôt, sélection des lignes et rapports regroupés (anglais) |
-| [Imports de forge hors ligne](docs/forge.md) | Exports, reçus d’exécution et limites d’association |
-| [Preuves et JSON](docs/contracts.md) | Champs des schémas, octets des chemins, empreintes et reçus d’exécution |
-| [Architecture](docs/architecture.md) | Rôle des modules, limites de lecture et stratégie de test |
-| [Index documentaire](docs/README.md) | Ensemble des guides, décisions de conception et relevés de validation |
-
-Le tutoriel et les guides assistant et disque sont en français ; les autres
-guides d’utilisation sont en anglais. Les documents de conception, d’expérimentation
-et d’implémentation conservent leur langue d’origine.
-
----
-
-## Feuille de route et validation
-
-Le jalon d’audit en lecture seule est livré. Les fusions suivantes ont ajouté
-les finitions HTML BoldGuy ([#18](https://github.com/FlorianBruniaux/wt-sweep/pull/18)),
-le disque ciblé et le partage de budget ([#22](https://github.com/FlorianBruniaux/wt-sweep/pull/22)),
-puis les lectures Git groupées et la découverte reprenable
-([#23](https://github.com/FlorianBruniaux/wt-sweep/pull/23)).
-
-La [recette du 9 octobre](docs/research/real-family-acceptance-2026-10-09.md)
-porte sur une famille réelle de 71 worktrees enregistrés. La revue initiale donne
-10 `keep`, 61 `verify`, aucun candidat. Deux revues ciblées passent ces lignes
-en `keep` ; la synthèse du dernier verdict par chemin donne 12 / 59 / 0.
-Ces observations séparées ne sont ni un nouveau verdict CLI ni un instantané.
-Cinq worktrees prioritaires ont une mesure disque complète. Les 53,64 Go alloués
-observés sur la famille restent partiels, sans estimation du gain possible sur APFS.
-
-La prochaine étape est [#20](https://github.com/FlorianBruniaux/wt-sweep/issues/20) :
-évaluer un collecteur disque natif macOS face à l’implémentation actuelle.
-Le ciblage et le partage de budget sont déjà livrés ; la collecte native groupée
-doit encore passer les contrôles de justesse, de conservation et les mesures
-du collecteur complet. Les options de gestion restent dans la
-[vision #14](https://github.com/FlorianBruniaux/wt-sweep/issues/14).
-Sauvegarde, restauration et suppression restent indisponibles.
-
-Au contrôle du 9 octobre, la CI de #23 avant fusion a réussi. Le
-[run de main sur `bc054af`](https://github.com/FlorianBruniaux/wt-sweep/actions/runs/37850898399)
-n’a pas démarré son job à cause du paiement ou du plafond de dépense du compte.
-L’ancienne issue CI #17 est close ; ce nouvel échec demande une correction côté
-compte puis une relance. [État publié et validations](docs/progress.md#état-publié-et-suite-au-09102026).
-
 <details>
-<summary>Étapes d’implémentation et validations consignées</summary>
+<summary>Mesure disque, lectures Git et limites de collecte</summary>
 
-| Étape | État actuel |
-| --- | --- |
-| U1–U4 : découverte et revue | Implémentées et testées localement sur macOS ; les limites des preuves restent explicites. |
-| T01-T09 : triage des worktrees | Fusionné ; revue en une commande, verdicts C1-C5, état local, histoire privée, cibles, filtres et rapports. |
-| Couverture des gros dépôts | Lectures groupées et passage ciblé disponibles ; l’essai du gros dépôt reste partiel. |
-| E1 : exclure les écritures concurrentes | **Non démontré.** Les expériences existantes mettent en défaut les approches proposées par verrouillage et renommage. |
-| U5 : sauvegarde durable et restauration indépendante | Bloquée par E1 et par l’absence d’un contrat de préservation complet. |
-| U6–U7 : suppression | Indisponible, dans l’attente de validations sur des dépôts jetables, d’une revue indépendante et d’une approbation humaine portant sur les actions exactes. |
+Les mesures disque incluent les fichiers ignorés et distinguent taille logique,
+taille allouée et totaux dédupliqués par inode. Le stockage Git partagé est
+mesuré séparément. Le HTML utilise les unités décimales Ko/Mo/Go et conserve les
+octets exacts dans les détails. Les clones APFS empêchent d’en déduire le gain
+après suppression.
 
-Le [plan d’acceptation](docs/plan.md) définit les conditions à remplir. La
-[décision concernant `apply`](docs/decisions/apply-readiness.md) consigne
-pourquoi elles ne sont pas remplies.
+Les octets des objets Git sont vérifiés contre leurs identifiants complets. Les
+contrôles locaux distinguent index, fichiers modifiés, conflits, fichiers non
+suivis et ignorés. L’histoire privée et les stashes partagés restent dans les
+preuves. Les sujets de commits et changelogs apportent du contexte, pas une
+preuve d’intégration.
 
-L’arbre source fusionné par #23 a passé localement 404 tests Rust (3 ignorés)
-et 305 cas Python (299 réussis, 6 ignorés). Ces résultats portent sur cet arbre
-source ; ils ne décrivent pas une nouvelle exécution à chaque retouche documentaire.
-Le [registre courant](docs/progress.md) sépare tests locaux, CI avant fusion et
-CI de main. Le [registre historique](docs/finish-ledger.md#triage-t01-t09)
-conserve les anciens checkpoints. Le badge CI renvoie aux résultats distants.
-Les vrais placeholders FileProvider, refus TCC et instantanés machine restent
-non vérifiés.
+Sur macOS, Sweep vérifie que la matérialisation des fichiers non résidents
+(dataless) est désactivée avant les lectures protégées, processus Git compris,
+ou refuse l’opération. Erreurs et délais dépassés restent dans le rapport. Les
+observations couvrent un intervalle, pas un instantané atomique.
+
+[Guide disque](docs/disk-usage.md) · [Performances de collecte](docs/collection-performance.md)
+· [Limites des lectures natives](docs/native-boundaries.md).
 
 </details>
 
 ---
 
+## Documentation
+
+| Guide | Utilité |
+| --- | --- |
+| [Tutoriel en français](docs/tutorial.fr.md) | Dépôt jetable, tests locaux et premier dépôt réel |
+| [Démarrage](docs/getting-started.md) | Installation et dépannage |
+| [Référence CLI](docs/cli.md) | Commandes, valeurs par défaut, limites et codes de sortie |
+| [Espace disque](docs/disk-usage.md) | Tailles, résultats partiels et mesures ciblées |
+| [Skill assistant](docs/assistant-skill.md) | Prompts d’exemple et lecture progressive |
+| [Index documentaire](docs/README.md) | Guides, contrats, architecture et validations |
+
+La présentation existe en français et en anglais. Le tutoriel et les guides
+assistant et disque sont en français ; les autres guides gardent leur langue d’origine.
+
+---
+
+## Feuille de route et validation
+
+L’audit en lecture seule est livré : HTML, disque ciblé, lectures Git groupées et
+découverte reprenable. La suite porte sur l’évaluation du collecteur disque natif
+macOS dans [#20](https://github.com/FlorianBruniaux/wt-sweep/issues/20).
+La gestion des worktrees reste une [vision séparée dans #14](https://github.com/FlorianBruniaux/wt-sweep/issues/14).
+
+<details>
+<summary>Ce qui a été validé et ce qui reste ouvert</summary>
+
+La [recette du 9 octobre](docs/research/real-family-acceptance-2026-10-09.md)
+couvre une famille réelle de 71 worktrees enregistrés. La revue initiale donne
+10 `keep`, 61 `verify`, aucun candidat. Les observations ciblées ultérieures ne
+transforment pas cette revue partielle en instantané complet. Cinq worktrees
+prioritaires ont une mesure disque complète ; le total familial reste partiel.
+
+L’arbre source fusionné par [#23](https://github.com/FlorianBruniaux/wt-sweep/pull/23)
+a passé localement 404 tests Rust (3 ignorés) et 305 cas Python (299 réussis,
+6 ignorés). Ces contrôles datés portent sur cet arbre source ; ce ne sont pas
+de nouveaux résultats liés à cette retouche du README. Le [registre](docs/progress.md)
+conserve l’échec intermittent d’un test Rust et ses relances réussies, et sépare
+tests locaux et CI distante. Le job de main consigné n’a pas démarré à cause du
+paiement ou du plafond du compte. Le badge CI renvoie au dernier état du workflow.
+
+L’exclusion des écritures concurrentes, la sauvegarde durable et la restauration
+indépendante restent non démontrées. La suppression est indisponible. Les vrais
+placeholders FileProvider, refus TCC et instantanés machine restent non vérifiés.
+[Plan d’acceptation](docs/plan.md) · [Pourquoi apply est indisponible](docs/decisions/apply-readiness.md)
+· [Travail restant](docs/roadmap.md).
+
+</details>
+
 ## Développement et état du projet
 
-Consultez [CONTRIBUTING.md](CONTRIBUTING.md) pour la compilation, les commandes
-de test, les dépôts jetables et les conventions documentaires. Le
-[changelog](CHANGELOG.md) suit les changements non publiés. La
-[comparaison exécutée](docs/research/worktree-runtime-comparison-2026-10-07.md)
-couvre 48 audits natifs de Sweep, Holt et AgentRinse sur dépôts jetables ;
-elle ne valide ni restauration ni suppression.
-
-Le projet se distribue actuellement par ses sources. La publication Cargo est
-désactivée ; aucun paquet n’a été publié.
+Consultez [CONTRIBUTING.md](CONTRIBUTING.md) pour les contrôles locaux et dépôts
+jetables, puis [CHANGELOG.md](CHANGELOG.md) pour les changements. Le nom du projet
+est provisoire ; il se distribue par ses sources. Aucun paquet n’a été publié et
+la publication Cargo est désactivée.
 
 ---
 
 ## Licence
 
 [Functional Source License 1.1, avec future licence Apache 2.0](LICENSE.md)
-(`FSL-1.1-ALv2`), copyright 2026 Florian Bruniaux. Agent Router utilise la même
-licence.
-
-La FSL restreint les usages commerciaux concurrents. Chaque version bénéficie
-d’une licence Apache 2.0 supplémentaire deux ans après sa mise à disposition.
-Consultez les [conditions complètes](LICENSE.md) et
-l’[explication de la FSL](https://fsl.software/). Les dépendances tierces
-conservent leurs propres licences.
+(`FSL-1.1-ALv2`), copyright 2026 Florian Bruniaux.
+Les dépendances tierces conservent leurs propres licences.

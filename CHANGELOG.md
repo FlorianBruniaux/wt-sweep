@@ -9,6 +9,10 @@ the Cargo package version is a development version.
 
 ### Added
 
+- Gemini overview at the top of both READMEs: discovery, disk measurement, Git
+  checks and reports, with current verdicts and the recoverable-space boundary.
+  Preserve the generation prompt, original image bytes and QA/cost provenance.
+
 - Sanitized 9 October acceptance record: 71 registered worktrees in one real
   family, two focused reviews, five complete priority disk measurements and
   explicit limits on the cross-run summary, APFS sizes and cache diagnosis.
@@ -270,6 +274,11 @@ the Cargo package version is a development version.
   the AgentSec presentation block.
 
 ### Changed
+
+- Reorganize the English and French READMEs around disk pressure, first review
+  and verdicts. Keep the quick start visible; put report captures, assistant
+  prompts, Mermaid diagrams, evidence limits and validation details in eleven
+  expandable sections per language.
 
 - Check Python 3.11+ before the documented test sequence, so an older system
   interpreter stops before running suites that need `file_digest` and `tomllib`.
