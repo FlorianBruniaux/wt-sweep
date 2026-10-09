@@ -11,6 +11,14 @@ Le skill est livré avec le dépôt. Il n’installe aucun service et ne demande
 aucune clé d’API propre à wt-sweep. L’assistant utilise votre session habituelle ;
 l’outil reste utilisable seul, sans modèle.
 
+## Installer depuis une nouvelle session
+
+Le [prompt de démarrage](bootstrap-prompt.fr.md#prompt-à-copier) guide un assistant
+disposant du terminal pour récupérer le dépôt et ses skills, compiler la CLI,
+qualifier le parcours sur un dépôt jetable puis lire les résultats par étapes.
+Il distingue la lecture explicite du skill de sa reconnaissance native par le
+client. Le clonage ne copie rien dans les skills globaux.
+
 ## Démarrer
 
 Ouvrez une session Claude Code ou Codex **dans le checkout de wt-sweep contenant

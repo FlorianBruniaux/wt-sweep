@@ -59,7 +59,7 @@ impl Html {
     fn path(&mut self, path: &BytePath) -> fmt::Result {
         // Decode directly into bounded output; never allocate a decoded path/display.
         let hex = path.hex.as_bytes();
-        if hex.len() % 2 != 0
+        if !hex.len().is_multiple_of(2)
             || !hex
                 .iter()
                 .all(|b| b.is_ascii_digit() || (b'a'..=b'f').contains(b))

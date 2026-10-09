@@ -12,6 +12,14 @@ La [PR #23](https://github.com/FlorianBruniaux/wt-sweep/pull/23) a livré #19 et
 est bloquée avant démarrage par le paiement ou le plafond du compte ; il faut
 corriger le compte puis relancer les contrôles. [Preuves de livraison](progress.md#état-publié-et-suite-au-09102026).
 
+### Première alpha
+
+La [préparation de `v0.1.0-alpha.1`](release.md) porte sur l’installation,
+la documentation, le correctif de fermeture des sessions Git et la validation
+d’un paquet Apple Silicon. La licence, la visibilité et la CI du commit final
+restent des conditions de publication. L’évaluation native ci-dessous peut
+suivre cette alpha ; elle ne change pas le périmètre de lecture seule.
+
 ### Prochain lot : terminer l’évaluation native de #20
 
 Le ciblage disque, les totaux de sélection, le partage du budget et la progression

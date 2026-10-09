@@ -11,11 +11,15 @@ The project overview is available in English and French. The tutorial, assistant
 and disk guides are in French; other user guides are in English. Design and
 validation records retain their original language and observation dates.
 
+La [préparation de la première alpha](release.md) décrit le périmètre,
+les conditions de publication et le paquet macOS prévu.
+
 ## Use the CLI
 
 | Document | Contents |
 | --- | --- |
 | [Tutoriel en français](tutorial.fr.md) | One-command review, disposable trial, tests, advanced replay and a copyable assistant prompt. |
+| [Installation guidée (French)](bootstrap-prompt.fr.md) | Copyable assistant prompt: acquire the CLI and bundled skills, build, try a disposable repository and guide a real review. |
 | [Assistant skill (French)](assistant-skill.md) | Claude/Codex invocation, progressive report reading, cleanup suggestions and local verification. |
 | [Getting started](getting-started.md) | macOS setup, disposable demo, report interpretation and troubleshooting. |
 | [Espace disque](disk-usage.md) | Taille par worktree, Git partagé, total dédupliqué et limites de la mesure. |

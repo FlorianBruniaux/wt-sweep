@@ -7,7 +7,27 @@ the Cargo package version is a development version.
 
 ## [Unreleased]
 
+### Fixed
+
+- Preserve the Git child's exit verdict when it has already closed its input
+  before a commit session finishes. On macOS, this ordering previously returned
+  `input_io` before checking the exit status. Failed exits, malformed output and
+  expired reads still refuse provisional evidence. A regression test forces both
+  successful and failed child exits before finalization.
+
 ### Added
+
+- Prepare version `0.1.0-alpha.1` with a publication checklist and a scoped
+  Apple Silicon archive plan. Align the declared Rust minimum with the tested
+  1.95 toolchain and apply its Clippy suggestions to equivalent conditionals
+  and parity checks. Qualify an Apple Silicon archive from a clean clone with
+  dependency notices, file hashes and the documented disposable demo. No release
+  is implied by the package version.
+
+- Copyable assistant bootstrap prompt for macOS: acquire the CLI and bundled
+  Claude/Codex skills, build, run the disposable demo and read a real report in
+  batches. Document repository access, existing-checkout preservation and the
+  distinction between explicitly reading a skill and native client discovery.
 
 - Gemini overview at the top of both READMEs: discovery, disk measurement, Git
   checks and reports, with current verdicts and the recoverable-space boundary.

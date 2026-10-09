@@ -63,14 +63,14 @@ fn bounded_output(mut command: Command, timeout: Duration) -> io::Result<Output>
                     Err(error) => return Err(error),
                 }
             }
-            if let Some(status) = child.try_wait()? {
-                if eof {
-                    return Ok(Output {
-                        status,
-                        stdout: bytes,
-                        stderr: Vec::new(),
-                    });
-                }
+            if let Some(status) = child.try_wait()?
+                && eof
+            {
+                return Ok(Output {
+                    status,
+                    stdout: bytes,
+                    stderr: Vec::new(),
+                });
             }
             if started.elapsed() >= timeout {
                 return Err(io::Error::new(

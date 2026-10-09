@@ -1079,16 +1079,15 @@ impl<'a> PrivateHistoryRun<'a> {
                     continue;
                 }
                 // Absence of a requested ref does not weaken enumeration of existing retained refs.
-                if let Some(value) = refs.get(&name) {
-                    if let Ok(oid) = resolve_ref(value, &refs, self.limits.depth, true) {
-                        if self.anchors < self.limits.anchors {
-                            anchors.push(RetainedAnchor {
-                                reference: target.clone(),
-                                oid,
-                            });
-                            self.anchors += 1;
-                        }
-                    }
+                if let Some(value) = refs.get(&name)
+                    && let Ok(oid) = resolve_ref(value, &refs, self.limits.depth, true)
+                    && self.anchors < self.limits.anchors
+                {
+                    anchors.push(RetainedAnchor {
+                        reference: target.clone(),
+                        oid,
+                    });
+                    self.anchors += 1;
                 }
             }
         } else {
@@ -1517,15 +1516,15 @@ impl<'a> PrivateHistoryRun<'a> {
                         }
                         let mut seen = BTreeSet::new();
                         for (_, new) in entries.into_iter().rev() {
-                            if let Some(oid) = new {
-                                if seen.insert(oid.clone()) {
-                                    if members.len() >= self.limits.stash_entries {
-                                        result.enumeration_complete = false;
-                                        result.gaps.push("stash entry budget reached".into());
-                                        break;
-                                    }
-                                    members.push(oid);
+                            if let Some(oid) = new
+                                && seen.insert(oid.clone())
+                            {
+                                if members.len() >= self.limits.stash_entries {
+                                    result.enumeration_complete = false;
+                                    result.gaps.push("stash entry budget reached".into());
+                                    break;
                                 }
+                                members.push(oid);
                             }
                         }
                     }
@@ -1546,10 +1545,11 @@ impl<'a> PrivateHistoryRun<'a> {
                 result.gaps.push(
                     "shared stash ref and reflog membership disagree or reflog is absent".into(),
                 );
-                if let Some(oid) = current {
-                    if !members.contains(&oid) && members.len() < self.limits.stash_entries {
-                        members.insert(0, oid);
-                    }
+                if let Some(oid) = current
+                    && !members.contains(&oid)
+                    && members.len() < self.limits.stash_entries
+                {
+                    members.insert(0, oid);
                 }
             }
             let mut details_left = self.limits.output_bytes;
@@ -1612,12 +1612,12 @@ impl<'a> PrivateHistoryRun<'a> {
             }
         };
         entry.base_oid = commit.parents.first().cloned();
-        if let Ok((message, _)) = subject(&raw) {
-            if let Ok(bytes) = message.bytes() {
-                entry.message = Some(BytePath::from_bytes(
-                    &bytes[..bytes.len().min(self.limits.message_bytes)],
-                ));
-            }
+        if let Ok((message, _)) = subject(&raw)
+            && let Ok(bytes) = message.bytes()
+        {
+            entry.message = Some(BytePath::from_bytes(
+                &bytes[..bytes.len().min(self.limits.message_bytes)],
+            ));
         }
         let separator = raw.windows(2).position(|w| w == b"\n\n");
         if let Some(offset) = separator {

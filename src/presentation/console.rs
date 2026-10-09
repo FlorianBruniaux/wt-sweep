@@ -379,15 +379,15 @@ pub fn write_collection_performance(review: &Review, output: &mut impl Write) {
         "  Recorded phases: {:.1}s (excludes discovery, disk size measurement and publication)",
         total as f64 / 1000.0
     );
-    if total > 0 {
-        if let Some(slowest) = metrics.phases.iter().max_by_key(|phase| phase.elapsed_ms) {
-            let _ = writeln!(
-                output,
-                "  Slowest phase: {} ({:.1}% of recorded collection time)",
-                phase_title(&slowest.name),
-                slowest.elapsed_ms as f64 * 100.0 / total as f64
-            );
-        }
+    if total > 0
+        && let Some(slowest) = metrics.phases.iter().max_by_key(|phase| phase.elapsed_ms)
+    {
+        let _ = writeln!(
+            output,
+            "  Slowest phase: {} ({:.1}% of recorded collection time)",
+            phase_title(&slowest.name),
+            slowest.elapsed_ms as f64 * 100.0 / total as f64
+        );
     }
 }
 

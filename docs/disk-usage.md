@@ -45,10 +45,16 @@ Pour un dépôt et sa cible d’intégration, depuis le checkout de Worktree Swe
 (
   set -eu
   cargo build --release --locked --offline
+  printf 'Chemin absolu du clone : '
+  IFS= read -r repo_path
+  printf 'Référence cible confirmée (refs/heads/... ou refs/remotes/...) : '
+  IFS= read -r target_ref
+  /usr/bin/git --no-optional-locks -c core.fsmonitor=false -C "$repo_path" \
+    show-ref --verify --quiet "$target_ref"
   report_dir="$(mktemp -d /private/tmp/wt-sweep-review.XXXXXX)"
   ./target/release/wt-sweep review \
-    --repo "$HOME/Sites/MethodeAristote/app" \
-    --target refs/heads/develop \
+    --repo "$repo_path" \
+    --target "$target_ref" \
     --disk-usage \
     --disk-budget thorough \
     --group-by directory \
@@ -94,7 +100,8 @@ remplacer la valeur de `worktree_path` par son chemin enregistré.
 ```sh
 (
   set -eu
-  repo_path="$HOME/Sites/MethodeAristote/app"
+  printf 'Chemin absolu du clone : '
+  IFS= read -r repo_path
   worktree_path="$repo_path"
   report_dir="$(mktemp -d /private/tmp/wt-sweep-disk.XXXXXX)"
   ./target/release/wt-sweep scan \

@@ -33,7 +33,7 @@ impl BytePath {
             path: None,
             message: "path must be canonical lowercase hexadecimal without NUL".into(),
         };
-        if self.hex.len() % 2 != 0
+        if !self.hex.len().is_multiple_of(2)
             || !self
                 .hex
                 .bytes()

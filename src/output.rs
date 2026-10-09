@@ -864,23 +864,27 @@ pub fn revalidate_boundaries(inventory: &Inventory) -> Result<Inventory, SweepEr
         return Err(error(Path::new(""), "saved inventory omitted historical family or worktree boundaries; rescan before filesystem publication".into()));
     }
     let mut boundaries = inventory.clone();
-    if inventory.families.is_empty() {
-        if let ScanScope::Repo { path } = &inventory.scope {
-            let path = path.to_path()?;
-            if inventory
-                .coverage
-                .remaining
-                .as_ref()
-                .is_some_and(|r| r.reason == crate::model::DiscoveryStop::Interrupted)
-            {
-                return Err(error(&path, "interrupted repository inventory has no verified family boundaries; rescan before filesystem publication".into()));
-            }
-            let current = crate::git::scan_family(&path).map_err(|e| error(&path, format!("cannot revalidate requested repository boundaries: {e}; rescan before publication")))?;
-            if current.families.is_empty() {
-                return Err(error(&path, "requested repository has no verified family boundaries; rescan before publication".into()));
-            }
-            boundaries.families.extend(current.families);
+    if inventory.families.is_empty()
+        && let ScanScope::Repo { path } = &inventory.scope
+    {
+        let path = path.to_path()?;
+        if inventory
+            .coverage
+            .remaining
+            .as_ref()
+            .is_some_and(|r| r.reason == crate::model::DiscoveryStop::Interrupted)
+        {
+            return Err(error(&path, "interrupted repository inventory has no verified family boundaries; rescan before filesystem publication".into()));
         }
+        let current = crate::git::scan_family(&path).map_err(|e| error(&path, format!("cannot revalidate requested repository boundaries: {e}; rescan before publication")))?;
+        if current.families.is_empty() {
+            return Err(error(
+                &path,
+                "requested repository has no verified family boundaries; rescan before publication"
+                    .into(),
+            ));
+        }
+        boundaries.families.extend(current.families);
     }
     for family in &inventory.families {
         let common = family.common_dir.to_path()?;
