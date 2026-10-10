@@ -27,7 +27,7 @@ par projet. Cette organisation diffère de notre famille Git physique.
 
 Le statut simplifié n'est pas un oracle de propreté. Dans
 [src-tauri/src/git_ops.rs:217](https://github.com/guoyongchang/worktree-manager/blob/c7eeb3e08e97c957ffa1d618a40c39dd86325971/src-tauri/src/git_ops.rs#L217), les compteurs commencent à zéro et restent ainsi
-si l'ouverture du dépôt ou `repo.statuses` échoue (`:229`, `:244`). Les ignorés
+si l'ouverture du repo ou `repo.statuses` échoue (`:229`, `:244`). Les ignorés
 ne sont pas demandés par `StatusOptions` à cet endroit. Le composant de badges
 rend « clean » en l'absence de badge (`WorktreeDetail.tsx:76`). Ce chemin de code
 est une raison de conserver des états incomplets explicites dans Sweep ; il
@@ -84,7 +84,7 @@ protège un chemin possédé par une ligne vivante. Aucun de ces tests n'a été
 La capture `apps/docs/public/images/workspaces-table.png` montre un tableau
 repliable par projet avec recherche et filtres projet/appareil. La version
 courante du composant lu groupe par statut. Pour Sweep, les deux modes peuvent
-utiliser la même vue filtrée, avec regroupement initial par dépôt demandé par
+utiliser la même vue filtrée, avec regroupement initial par repo demandé par
 Florian. Aucun rendu courant de Superset n'a été lancé ou évalué visuellement.
 
 ## Choix proposés

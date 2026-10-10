@@ -9,7 +9,7 @@ restent lisibles sans JavaScript.
 
 ## Générer et ouvrir
 
-Depuis le checkout compilé, renseignez le dépôt et sa cible confirmée :
+Depuis le checkout compilé, renseignez le repo et sa cible confirmée :
 
 ```sh
 (
@@ -165,7 +165,7 @@ contenant au moins un worktree et un dossier de captures qui n’existe pas enco
 node tests/html-theme.cjs /chemin/vers/report.html /chemin/vers/nouvelles-captures
 ```
 
-Si Playwright n’est pas accessible depuis le dépôt, `PLAYWRIGHT_MODULE` peut
+Si Playwright n’est pas accessible depuis le repo, `PLAYWRIGHT_MODULE` peut
 pointer vers son installation existante. Le script n’installe rien. Il vérifie
 douze rendus : 2560, 1440 et 390 px, clair et sombre, avec et sans JavaScript.
 Il vérifie que le rapport utilise toute la largeur à droite du menu, puis teste la recherche, les filtres, le clavier, la préférence de thème après

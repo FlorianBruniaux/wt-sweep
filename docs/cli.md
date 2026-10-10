@@ -129,7 +129,7 @@ overwritten or removed.
 | `--group-by GROUP` | Group selected rows by `repo` or parent `directory`, ordered by path bytes. |
 | `--forge FILE` | Optional normalized `wt-sweep.forge/1` export. Its raw source and receipt, when supplied, must still be readable and match. |
 | `--changelog-path RELATIVE` | Read this tracked path at each recorded HEAD; repeat to replace the default changelog paths. Paths are relative to the repository root. |
-| `--no-context` | Skip optional commit samples and changelog reads. Cannot combine with `--changelog-path`. Decisions and their required checks remain the same. |
+| `--no-context` | Skip optional commit samples, changelog reads and remote-link metadata. Cannot combine with `--changelog-path`. Decisions and their required checks remain the same. |
 | `--summary` | Print a short recap of verdicts, disk sizes and coverage; incompatible with `--format json`. |
 | `--verbose` | Show detailed progress, disk paths and recap metrics. Also accepted by `scan`. |
 | `--color auto\|always\|never` | Control terminal colors and icons; default `auto`. Also accepted by `scan`. |
@@ -431,7 +431,7 @@ Existing version-2 reports without `collection_metrics` remain readable by the
 current reader; missing metrics mean no recorded telemetry. Older strict readers
 may need an update to accept the new optional field.
 
-The console's `Resolved verdicts` counts `keep` plus `cleanup_candidate`, with
+The detailed recap (`--verbose`) counts `keep` plus `cleanup_candidate`, with
 `verify` listed separately. A positive retention reason can resolve `keep` even
 when other candidate conditions remain unknown. `CHECKS STILL NEEDED` lists
 conditions for unresolved rows; `COLLECTION TIME` shows recorded phase timings,

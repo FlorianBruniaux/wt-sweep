@@ -1,0 +1,8 @@
+---
+import type {Locale} from '../data/content';
+import {getLandingView} from '../data/landing';
+interface Props {locale:Locale}
+const {locale}=Astro.props;
+const {l,t}=getLandingView(locale);
+---
+<section id="safety" class="section-tinted"><div class="container split"><div class="section-heading"><p class="kicker">06 / {t('EVIDENCE BOUNDARIES','LIMITES DES PREUVES')}</p><h2>{t('What the report does not establish.','Ce que le rapport ne permet pas de conclure.')}</h2><p>{t('A completed walk is not a machine-wide snapshot. A successful command can still contain partial evidence.','Un parcours terminé ne prouve pas que toute la machine a été inventoriée. La commande peut réussir avec des preuves incomplètes.')}</p><a class="text-link" href={l.evidence}>{t('Read coverage and limits','Lire la couverture et les limites')} →</a></div><div class="safety"><h3>{t('Measured is not recoverable.','Mesuré ne veut pas dire récupérable.')}</h3><p>{t('Disk totals include shared storage and report incomplete measurements. APFS allocation is not an estimate of bytes freed by deletion.','Les totaux incluent le stockage partagé et signalent les mesures incomplètes. L’espace alloué sur APFS ne permet pas de prévoir ce qu’une suppression libérerait.')}</p><p>{t('Writer exclusion, durable backup and independent restore still need their own proof. Until then, apply refuses.','Il reste à démontrer le blocage des écritures concurrentes, la durabilité des sauvegardes et leur restauration indépendante. Tant que ces contrôles ne sont pas validés, apply refuse toute demande.')}</p></div></div></section>

@@ -6,8 +6,8 @@ Statut : proposition du 05/10/2026. Les fonctions décrites ci-dessous restent �
 implémenter. Base inspectée : `a551ae33d749c6ee947911a10926bb6decb46d26`.
 
 **Objectif :** trouver les worktrees accessibles sur le Mac, les regrouper par
-dépôt ou répertoire et expliquer, pour chacun, ce qui permet ou empêche son
-nettoyage. Le premier jalon est un rapport utile sur un dépôt de plusieurs
+repo ou répertoire et expliquer, pour chacun, ce qui permet ou empêche son
+nettoyage. Le premier jalon est un rapport utile sur un repo de plusieurs
 dizaines de worktrees, avant d'étendre la recette à la machine.
 
 **Architecture :** conserver le CLI Rust, son exécuteur Git contrôlé, la
@@ -23,11 +23,11 @@ lot 1 doivent rendre explicite toute différence de sens.
 
 Pour l'exécution ultérieure, utiliser `superpowers:executing-plans` ; si une
 délégation est autorisée, `superpowers:subagent-driven-development`. Ce document
-n'active ni agents ni opérations sur les dépôts utilisateur.
+n'active ni agents ni opérations sur les repos utilisateur.
 
 ## Point de départ
 
-La découverte par dépôt, racines ou volumes existe déjà. Le dernier essai réel
+La découverte par repo, racines ou volumes existe déjà. Le dernier essai réel
 a trouvé 46 worktrees, mais les 46 sont restés à trier. Il a produit 21 manifestes
 locaux incomplets ; 25 worktrees n'ont pas été collectés après épuisement du
 budget commun. Aucune observation d'intégration n'a été produite. Ce constat
@@ -48,26 +48,26 @@ progressif, mesurable et reprenable.
 
 ## Résultat attendu
 
-Trois entrées de parcours : analyser un dépôt et tous ses worktrees enregistrés,
+Trois entrées de parcours : analyser un repo et tous ses worktrees enregistrés,
 chercher dans plusieurs racines, ou chercher sur les volumes montés accessibles.
-Le mode dépôt retrouve aussi les worktrees situés hors du dossier principal.
+Le mode repo retrouve aussi les worktrees situés hors du dossier principal.
 Un filtre d'affichage par chemin ne modifie pas le périmètre déjà analysé.
 
-La table récapitulative groupe les résultats par dépôt ou répertoire. Chaque
+La table récapitulative groupe les résultats par repo ou répertoire. Chaque
 ligne donne le chemin, la branche ou le HEAD détaché, l'état local, l'intégration,
 le verdict et sa raison. Le détail contient les informations suivantes :
 
 | Dimension | Informations à rendre |
 | --- | --- |
-| Identité | Dépôt commun, chemin complet, principal/lié, branche ou HEAD détaché, OID complet, présence et verrou Git avec sa raison |
+| Identité | Repo commun, chemin complet, principal/lié, branche ou HEAD détaché, OID complet, présence et verrou Git avec sa raison |
 | Travail local | Fichiers modifiés, indexés, non suivis, ignorés, conflits, opération Git en cours ; compteurs exacts ou explicitement partiels |
-| Travail sauvegardé dans Git | Stashes du dépôt, commits du HEAD non atteignables depuis les cibles, refs et reflogs propres au worktree à conserver |
+| Travail sauvegardé dans Git | Stashes du repo, commits du HEAD non atteignables depuis les cibles, refs et reflogs propres au worktree à conserver |
 | Intégration | Cible choisie et OID observé, identité/ascendance, éventuelle égalité de contenu, différences et limites de lecture |
 | Contexte | Derniers commits, fichiers concernés, PR/MR associée, extraits pertinents du changelog avec leur source |
 | Usage et couverture | Signaux d'usage observés, données non collectées, erreurs, limites atteintes et date de l'observation |
 | Décision | Candidat au nettoyage, à conserver ou à vérifier ; raisons, conditions restantes et prochaine action |
 
-Les stashes sont présentés une fois par dépôt, avec des renvois depuis ses
+Les stashes sont présentés une fois par repo, avec des renvois depuis ses
 worktrees. Git stocke les stashes dans `refs/stash` et son reflog ; cette ref est
 partagée entre les worktrees. Une mention de branche aide à chercher, sans
 identifier à elle seule le dossier d'origine. Sources :
@@ -89,26 +89,26 @@ accumulation d'indices en preuve. Une absence de résultat n'est jamais un zéro
 
 1. **À conserver** si une raison positive suffit : checkout principal, verrou,
    travail local à préserver, opération Git en cours, usage actif observé ou
-   histoire propre au worktree non préservée. Afficher aussi les éventuelles
+   historique propre au worktree non préservé. Afficher aussi les éventuelles
    inconnues ; elles n'effacent pas la raison de conserver.
-2. **Candidat au nettoyage** si l'histoire concernée est couverte par une cible
+2. **Candidat au nettoyage** si l'historique concerné est couvert par une cible
    explicite, l'état local utile est entièrement connu et ne contient rien à
    préserver, aucune protection ni activité n'est observée et les identités sont
    cohérentes pendant la collecte. C'est un candidat à une revue finale, pas une
    autorisation de suppression. L'absence de signal d'usage ne prouve pas que
-   tous les écrivains sont arrêtés.
+   tous les processus d’écriture sont arrêtés.
 3. **À vérifier** dans les autres cas : données manquantes, dérive, cible ambiguë,
    squash seulement suggéré, HEAD détaché non couvert, stockage inaccessible,
    ou état non pris en charge. Donner la vérification précise qui manque.
 
 Un stash partagé, lisible et indépendant de l'administration du worktree ne
-bloque pas tous les worktrees du dépôt. Il reste visible et n'est jamais supprimé,
+bloque pas tous les worktrees du repo. Il reste visible et n'est jamais supprimé,
 appliqué ou assimilé à une sauvegarde complète. Un reflog propre contenant du
 travail non préservé impose au contraire une action de conservation.
 
-L'ascendance prouve une relation d'histoire, pas le maintien fonctionnel de chaque
+L'ascendance prouve une relation d'historique, pas le maintien fonctionnel de chaque
 modification après un revert. Une égalité d'arbres ne conserve pas à elle seule
-l'histoire d'un HEAD détaché. Patch-id, titre de PR et mention de changelog restent
+l'historique d'un HEAD détaché. Patch-id, titre de PR et mention de changelog restent
 des indices. La documentation de
 [git-merge-base](https://git-scm.com/docs/git-merge-base#_operation_modes) décrit
 le test d'ascendance et distingue résultat négatif et erreur.
@@ -121,15 +121,15 @@ le test d'ascendance et distingue résultat négatif et erreur.
 - Garder les identités physiques, les octets des chemins et les OID complets.
   Échapper les valeurs affichées sans les réutiliser comme identités.
 - Ne pas exécuter de configuration Git, matérialiser de fichiers cloud, récupérer
-  implicitement des objets, ni modifier les index ou les dépôts inspectés.
-- Choisir la cible par dépôt. La configuration explicite prime ; en son absence,
+  implicitement des objets, ni modifier les index ou les repos inspectés.
+- Choisir la cible par repo. La configuration explicite prime ; en son absence,
   proposer les branches observées sans choisir silencieusement `main`. Distinguer
   branche locale et ref distante connue localement, avec leur fraîcheur inconnue
   si aucun relevé distant n'est disponible. Aucun fetch automatique.
 - Ne pas confondre découverte complète d'un périmètre accessible avec instantané
   de toute la machine. Dates, interruptions, erreurs et exclusions restent dans
   les résultats, y compris après filtrage.
-- Tester avec des dépôts jetables et des volumes injectés. Aucun scan global réel
+- Tester avec des repos de test temporaires et des volumes injectés. Aucun scan global réel
   ni nettoyage réel n'est une étape de développement de ce plan.
 
 ## Lots d'implémentation
@@ -147,14 +147,14 @@ Fichiers : `src/model.rs`, `docs/contracts.md`, `tests/model.rs`,
 - [ ] Construire une fixture synthétique contenant 46 worktrees, plus de 128
   références et plus de 20 000 entrées suivies/générées. Mélanger cas intégrés,
   divergents, sales et inconnus ; placer un gros worktree en premier et un
-  candidat simple en dernier. Ne copier aucune donnée du dépôt utilisateur.
+  candidat simple en dernier. Ne copier aucune donnée du repo utilisateur.
 - [ ] Enregistrer lectures d'objets, octets lus, sous-processus et causes d'arrêt.
   Le test doit échouer si les derniers candidats restent inconnus uniquement
   parce que le premier a consommé tout le budget.
 - [ ] Définir les schémas proposés `wt-sweep.inventory/2` et `wt-sweep.review/2` :
-  identités, couverture par dimension, cibles par dépôt, observations typées,
+  identités, couverture par dimension, cibles par repo, observations typées,
   décision à trois états, motifs, actions attendues et état d'avancement.
-- [ ] Séparer preuve d'histoire et vérification de contenu. Une observation v1
+- [ ] Séparer preuve d'historique et vérification de contenu. Une observation v1
   ne change pas de sens ; un import v1 ne remplit pas des champs v2 manquants avec
   des valeurs favorables. Les anciennes preuves conservent leur périmètre.
 - [ ] Tester sérialisation, refus des schémas inconnus, chemins arbitraires et
@@ -202,19 +202,19 @@ Fichiers : `src/local.rs`, `src/git.rs`, `src/review.rs`, `src/model.rs`,
 - [ ] Séparer inventaire rapide de l'état Git et manifeste détaillé des contenus.
   Un dossier ignoré peut être signalé immédiatement sans prétendre avoir compté
   ou vérifié tous ses fichiers. Son approfondissement reste requis avant une
-  conclusion qui dépend de son contenu ; aucun dossier n'est déclaré jetable
+  conclusion qui dépend de son contenu ; aucun dossier n'est déclaré supprimable
   à partir de son nom.
 - [ ] Comparer HEAD, index et fichiers pour distinguer staged/unstaged, suppressions,
   ajouts, conflits, non-suivis et ignorés. Ne pas déduire « propre » de stat seul.
   Traiter les index v4/split/sparse dans des tests dédiés avant de les reconnaître ;
   à défaut, conserver une cause explicite au lieu d'un message « malformé » générique.
-- [ ] Lire les stashes une fois par dépôt : OID, date, message, base et fichiers
+- [ ] Lire les stashes une fois par repo : OID, date, message, base et fichiers
   concernés si lisibles. Afficher les rapprochements de branche comme indices,
   sans attribution certaine à un worktree. Ne pas exposer le contenu des secrets.
 - [ ] Examiner les refs/reflogs propres au worktree et les opérations Git en
   cours. Distinguer HEAD détaché préservé et commits connus seulement par ces
   métadonnées. Une analyse bornée des refs reste partielle si la borne est atteinte.
-- [ ] Détecter sous-modules, dépôts imbriqués, types spéciaux et fichiers non
+- [ ] Détecter sous-modules, repos imbriqués, types spéciaux et fichiers non
   résidents ; ne pas les absorber dans un compteur « propre ». Ils gardent leur
   état ou un motif de vérification distinct.
 - [ ] Tester un fichier différent dans HEAD/index/disque, un ignoré sensible,
@@ -231,16 +231,16 @@ Fichiers : `src/discover.rs`, `src/mounts.rs`, `src/main.rs`,
 `src/presentation.rs`, `src/output.rs`, `src/run.rs`, `tests/discover.rs`,
 `tests/mounts.rs`, `tests/cli.rs`, `tests/test_inventory.py`.
 
-- [ ] Éprouver les modes existants dépôt/racines/volumes avec worktrees cachés,
-  temporaires, imbriqués et répartis sur plusieurs volumes. Inclure dépôts bare,
+- [ ] Éprouver les modes existants repo/racines/volumes avec worktrees cachés,
+  temporaires, imbriqués et répartis sur plusieurs volumes. Inclure repos bare,
   administrations séparées, entrées absentes et liens cassés sans les réparer.
 - [ ] Dédupliquer par identité physique et famille Git, pas par nom de dossier.
   Définir le traitement des alias/liens et des montages changeants ; signaler
   toute limite de parcours au lieu de faire disparaître le sous-arbre.
 - [ ] Ajouter une reprise de découverte par racines/sous-arbres terminés. Un
   arrêt restitue résultats et périmètre restant ; la reprise ne revendique pas
-  un instantané atomique. Stocker les checkpoints hors des dépôts inspectés.
-- [ ] Ajouter regroupement par dépôt/répertoire et filtres par dépôt, préfixe de
+  un instantané atomique. Stocker les checkpoints hors des repos inspectés.
+- [ ] Ajouter regroupement par repo/répertoire et filtres par repo, préfixe de
   chemin, branche, état local et verdict. Afficher nombre total, nombre visible
   et couverture non filtrée. Éviter les faux préfixes comme `/app` et `/app-old`.
 - [ ] Ajouter un parcours CLI unique pour enchaîner découverte, analyse et rapport,
@@ -253,7 +253,7 @@ Fichiers : `src/discover.rs`, `src/mounts.rs`, `src/main.rs`,
 
 Fin observable : tous les worktrees attendus dans le périmètre de fixture sont
 retrouvés exactement une fois. Les zones non couvertes et le travail restant sont
-consultables. Le filtre dépôt fonctionne quelle que soit la position des chemins.
+consultables. Le filtre repo fonctionne quelle que soit la position des chemins.
 
 ### 5. Expliquer le travail et rendre le verdict actionnable
 
@@ -295,7 +295,7 @@ Fichiers : `tests/test_scale.py`, `tests/cli.rs`, `README.md`, `README.fr.md`,
 - [ ] Vérifier l'invariance des décisions avec l'ordre de découverte et le nombre
   de workers, à couverture équivalente. Tester interruption, checkpoint altéré,
   cache périmé, changement de cible et modification concurrente.
-- [ ] Exécuter les vérifications du dépôt depuis sa racine :
+- [ ] Exécuter les vérifications du repo depuis sa racine :
 
   ```sh
   cargo fmt --all -- --check
@@ -305,12 +305,12 @@ Fichiers : `tests/test_scale.py`, `tests/cli.rs`, `README.md`, `README.fr.md`,
   python3 -B scripts/sync-ai.py --check
   ```
 
-  En développement, passer par `rtk` ou `rtk proxy` selon les instructions du dépôt.
+  En développement, passer par `rtk` ou `rtk proxy` selon les instructions du repo.
 
-- [ ] Refaire ensuite un essai en lecture seule sur le dépôt choisi par
+- [ ] Refaire ensuite un essai en lecture seule sur le repo choisi par
   l'utilisateur, avec la cible d'intégration réellement retenue. Recompter les
   worktrees au moment de l'essai : 46 est un ancien relevé, pas une constante.
-  Conserver le rapport hors du dépôt, sans intégrer de données privées aux tests.
+  Conserver le rapport hors du repo, sans intégrer de données privées aux tests.
 - [ ] Faire le test machine lorsque ce périmètre est explicitement lancé :
   racines/volumes affichés, rapprochement des familles découvertes avec Git,
   erreurs macOS conservées. L'exactitude globale est démontrée sur fixtures ;
@@ -322,11 +322,11 @@ Fichiers : `tests/test_scale.py`, `tests/cli.rs`, `README.md`, `README.fr.md`,
 Fin observable : le rapport réel est exploitable sans diagnostic du programme
 par l'utilisateur. Aucun échec de collecte n'apparaît comme « 0 modification » ;
 chaque verdict a des raisons vérifiables. Aucun nombre minimal de candidats n'est
-imposé au vrai dépôt, dont tous les worktrees peuvent légitimement être à garder.
+imposé au vrai repo, dont tous les worktrees peuvent légitimement être à garder.
 
 ## Ordre de livraison et revue
 
-Exécuter 1 → 2 → 3 pour corriger d'abord le parcours par dépôt. Livrer ensuite 4
+Exécuter 1 → 2 → 3 pour corriger d'abord le parcours par repo. Livrer ensuite 4
 et 5, puis la recette 6. Le contrat de décision du lot 1 s'applique dès le premier
 rapport intermédiaire. Mettre à jour le changelog avec chaque comportement livré.
 
@@ -349,7 +349,7 @@ Ils ne lèvent pas le blocage actuel de `apply`. Le rapport montre les candidats
 et les données à préserver, sans bouton ni script de suppression prêt à exécuter.
 
 Le [contrat E1/U5/U6](../../decisions/apply-readiness.md) exige encore une exclusion
-des écrivains démontrée, une sauvegarde durable et une restauration indépendante
+des processus d’écriture démontrée, une sauvegarde durable et une restauration indépendante
 avant tout retrait. Le prochain travail sur `apply` doit commencer par une
 preuve de cette frontière sur fixture, pas par une commande de retrait autour
 d'un verdict. Branches et stashes ne sont jamais supprimés avec le worktree.

@@ -1,0 +1,158 @@
+[
+  {
+    "slug": "index",
+    "source": "docs/getting-started.md",
+    "sourceHash": "b27db7a63231fea286736666f764ef820e76dd85f7d3aff3f1250df09819d817",
+    "title": {
+      "en": "Start with wt-sweep",
+      "fr": "Démarrer avec wt-sweep"
+    },
+    "description": {
+      "en": "Build wt-sweep, try a test repo and learn how to read its verdicts.",
+      "fr": "Compiler wt-sweep, essayer sur un repo de test et lire les verdicts."
+    }
+  },
+  {
+    "slug": "installation",
+    "source": "docs/getting-started.md",
+    "sourceHash": "b27db7a63231fea286736666f764ef820e76dd85f7d3aff3f1250df09819d817",
+    "title": {
+      "en": "Installation from source",
+      "fr": "Installer depuis les sources"
+    },
+    "description": {
+      "en": "Build the macOS CLI from source and check the prerequisites before your first scan.",
+      "fr": "Compiler la CLI sur macOS et vérifier les prérequis avant le premier scan."
+    }
+  },
+  {
+    "slug": "demo",
+    "source": "docs/getting-started.md",
+    "sourceHash": "b27db7a63231fea286736666f764ef820e76dd85f7d3aff3f1250df09819d817",
+    "title": {
+      "en": "Demo with a test repo",
+      "fr": "Démo sur un repo de test"
+    },
+    "description": {
+      "en": "Create a temporary Git repo to see how local work changes a worktree verdict.",
+      "fr": "Créer un repo Git temporaire pour voir comment le travail local change un verdict."
+    }
+  },
+  {
+    "slug": "cli",
+    "source": "docs/cli.md",
+    "sourceHash": "d45b3a1faef162a7bf7b2335365db2f9e30700af364ba98c4f0562e864200929",
+    "title": {
+      "en": "CLI workflow",
+      "fr": "Parcours CLI"
+    },
+    "description": {
+      "en": "Commands, collection scopes, report files and exit codes for wt-sweep.",
+      "fr": "Commandes, périmètres de collecte, fichiers des rapports et codes de sortie de wt-sweep."
+    }
+  },
+  {
+    "slug": "disk",
+    "source": "docs/disk-usage.md",
+    "sourceHash": "1a8d49355b1815afe4b0696d3ad81e8d5652d6cf53135aecdb6c955e6d381ee2",
+    "title": {
+      "en": "Read disk measurements",
+      "fr": "Comprendre les mesures disque"
+    },
+    "description": {
+      "en": "Read logical and allocated sizes, partial measurements and shared Git storage.",
+      "fr": "Comprendre les tailles logiques et allouées, les mesures partielles et le dossier Git partagé."
+    }
+  },
+  {
+    "slug": "report",
+    "source": "docs/html-report-plan.md",
+    "sourceHash": "476b70f5ad0b2f0016315c29eeb8877c1234319b63a002efca178a38c741cc63",
+    "title": {
+      "en": "Read the HTML report",
+      "fr": "Lire le rapport HTML"
+    },
+    "description": {
+      "en": "Navigate the offline HTML report and check the evidence behind each verdict.",
+      "fr": "Parcourir le rapport HTML hors ligne et vérifier les preuves de chaque verdict."
+    }
+  },
+  {
+    "slug": "targets",
+    "source": "docs/targets-and-filters.md",
+    "sourceHash": "7c972e389a41edc6d0c7165de6a45020c7ae963e63f67bdf049c8c109a7c2f2b",
+    "title": {
+      "en": "Targets and focused reviews",
+      "fr": "Cibles et analyses ciblées"
+    },
+    "description": {
+      "en": "Choose integration refs and target Git or disk collection without confusing display filters.",
+      "fr": "Choisir les refs d’intégration et cibler la collecte Git ou disque, indépendamment des filtres d’affichage."
+    }
+  },
+  {
+    "slug": "assistant",
+    "source": "docs/assistant-skill.md",
+    "sourceHash": "ed8e731da15cafabb9641499c288e001278d4bd2e9a82c096f9bb721ef61bcd2",
+    "title": {
+      "en": "Claude Code and Codex",
+      "fr": "Claude Code et Codex"
+    },
+    "description": {
+      "en": "Use the bundled Claude Code or Codex skill to read a saved report.",
+      "fr": "Utiliser le skill Claude Code ou Codex du repo pour lire un rapport enregistré."
+    }
+  },
+  {
+    "slug": "evidence",
+    "source": "docs/contracts.md",
+    "sourceHash": "149542c8468bb6c5eb46d45be3bef25f5c011b3cbc651f9135ca390f8d041f03",
+    "title": {
+      "en": "Evidence and limits",
+      "fr": "Preuves et limites"
+    },
+    "description": {
+      "en": "Read the C1–C5 decision conditions, missing evidence and read-only limits.",
+      "fr": "Lire les conditions C1–C5, les preuves manquantes et les limites de la lecture seule."
+    }
+  },
+  {
+    "slug": "resume",
+    "source": "docs/discovery-resume.md",
+    "sourceHash": "006894abc61992ee83c02d727c0c80ed203ea585436d96cb59e4bddec7656708",
+    "title": {
+      "en": "Resume discovery",
+      "fr": "Reprendre une découverte"
+    },
+    "description": {
+      "en": "Save a checkpoint and resume directory discovery within an explicit scope.",
+      "fr": "Enregistrer un checkpoint et reprendre la recherche de repos dans les dossiers choisis."
+    }
+  },
+  {
+    "slug": "changelog",
+    "source": "CHANGELOG.md",
+    "sourceHash": "9581e02ab81a72039b9e65acc610a94b71c14488257926abb5aa4cb1065f46fe",
+    "title": {
+      "en": "Changelog",
+      "fr": "Historique des changements"
+    },
+    "description": {
+      "en": "Source changes and dated validation records; Unreleased does not announce a release.",
+      "fr": "Changements des sources et validations datées ; Unreleased n’annonce pas une release."
+    }
+  },
+  {
+    "slug": "license",
+    "source": "LICENSE.md",
+    "sourceHash": "b6c31886f74eff732a37bd1d8e54be4b1e5fa803f658516f055e792898552617",
+    "title": {
+      "en": "License: FSL-1.1-ALv2",
+      "fr": "Licence : FSL-1.1-ALv2"
+    },
+    "description": {
+      "en": "Read the canonical FSL-1.1-ALv2 license.",
+      "fr": "Lire le texte original de la licence FSL-1.1-ALv2."
+    }
+  }
+]

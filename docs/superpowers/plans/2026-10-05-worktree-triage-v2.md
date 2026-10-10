@@ -11,7 +11,7 @@ les limites de l’essai réel. Les [contraintes initiales](../../plan.md) et la
 Fusionné dans `main` le 06/10/2026 par la
 [PR #1](https://github.com/FlorianBruniaux/wt-sweep/pull/1). La
 [feuille de route](../../roadmap.md) distingue ce périmètre livré du diagnostic
-restant sur les gros dépôts et du futur moteur de retrait.
+restant sur les gros repos et du futur moteur de retrait.
 
 ## Ce qui change
 
@@ -27,13 +27,13 @@ restant sur les gros dépôts et du futur moteur de retrait.
 
 ## Résultat utilisateur et périmètre
 
-Lister les worktrees par dépôt ou répertoire, filtrer sur un dépôt ou un chemin,
+Lister les worktrees par repo ou répertoire, filtrer sur un repo ou un chemin,
 puis lire pour chaque ligne : chemin complet, branche/HEAD, modifications locales,
-stashes du dépôt, intégration observée, verdict, raisons et prochaine action.
+stashes du repo, intégration observée, verdict, raisons et prochaine action.
 Le détail donne les commits, PR/MR et changelog disponibles. Les noms et textes
 sont affichés de façon échappée ; l'identité conserve les octets d'origine.
 
-Le premier jalon est un dépôt ciblé. Le plan complet couvre ensuite les racines
+Le premier jalon est un repo ciblé. Le plan complet couvre ensuite les racines
 et volumes accessibles du Mac. Tous les répertoires, y compris cachés, ignorés
 et imbriqués, restent dans le périmètre demandé. Toute zone non visitée est une
 lacune explicite. Aucun résultat ne prétend être un instantané de toute la machine.
@@ -47,13 +47,13 @@ proposés, à tester et documenter dans le lot qui les introduit.
 
 Les domaines suivants portent chacun un état connu/inconnu, les faits positifs,
 leurs sources, leur intervalle de collecte et les causes d'incomplétude :
-identité/protection, histoire Git, contenu Git vérifié, travail local,
-histoire propre au worktree, usage observé et contexte documentaire.
+identité/protection, historique Git, contenu Git vérifié, travail local,
+historique propre au worktree, usage observé et contexte documentaire.
 Une valeur inconnue n'est jamais encodée comme zéro.
 
 | Verdict proposé | Condition exacte | Affichage obligatoire |
 | --- | --- | --- |
-| À conserver | Au moins un fait positif : checkout principal, verrou Git, opération Git en cours, usage observé, PR/MR ouverte associée au HEAD et au bon projet, modifications staged/unstaged/conflits, contenu non suivi ou ignoré présent, HEAD non intégré ou histoire propre non préservée | Raisons et actions pour préserver/examiner ce travail, même si d'autres domaines sont incomplets |
+| À conserver | Au moins un fait positif : checkout principal, verrou Git, opération Git en cours, usage observé, PR/MR ouverte associée au HEAD et au bon projet, modifications staged/unstaged/conflits, contenu non suivi ou ignoré présent, HEAD non intégré ou historique propre non préservé | Raisons et actions pour préserver/examiner ce travail, même si d'autres domaines sont incomplets |
 | Candidat au nettoyage | Toutes les conditions C1 à C5 ci-dessous, aucune raison positive de conserver | Preuves et intervalle, puis « usage à confirmer avant retrait ; aucune suppression autorisée par ce rapport » |
 | À vérifier | Ni raison positive de conserver, ni ensemble complet C1 à C5 | Chaque condition manquante et la prochaine collecte ou décision nécessaire |
 
@@ -64,7 +64,7 @@ une dérive observée ; il ne garantit pas l'absence de toute modification entre
 C2. HEAD identique à, ou ancêtre d'au moins une cible explicitement acceptée
 pour cette famille, aux OID observés. La relation doit avoir franchi le niveau
 de vérification d'objets requis par la politique existante. Une simple relation
-rapide d'histoire, une égalité d'arbre, un squash suggéré ou une MR fusionnée ne
+rapide d'historique, une égalité d'arbre, un squash suggéré ou une MR fusionnée ne
 satisfait pas C2. Le rapport indique quelles cibles sont couvertes et celles
 qui ne le sont pas. L'ascendance ne prouve pas l'absence de revert fonctionnel.
 
@@ -76,7 +76,7 @@ fichier non résident ou lecture refusée empêche C3. Pas d'exception par nom d
 dossier. Si un contenu existe déjà, le verdict « à conserver » n'attend pas son
 compte exact ni le hachage de tous ses descendants.
 
-C4. Les racines d'histoire propres au worktree, dont HEAD, refs propres et
+C4. Les racines d'historique propres au worktree, dont HEAD, refs propres et
 reflog HEAD, sont énumérées complètement. Chacune est atteignable depuis une
 ref commune nommée qui sera conservée ou depuis une cible retenue, avec parcours
 vérifié. Une racine dont l'atteignabilité est inconnue bloque C4. Une racine connue
@@ -144,7 +144,7 @@ borné en amont. Un détail omis devient une lacune, jamais un résultat vide.
 
 - [x] Relever branche, HEAD et chemins modifiés ; préserver les modifications
   présentes. Lire les contrats actuels et les cas de conservation existants.
-- [x] Préparer le test T01 sur un dépôt synthétique de quelques fichiers.
+- [x] Préparer le test T01 sur un repo synthétique de quelques fichiers.
 - [x] Confirmer que les scénarios C1 à C5 ont des résultats attendus écrits avant
   de raccorder le verdict, et que l'oracle ne réutilise pas le jugement produit.
 
@@ -159,13 +159,13 @@ qui ne reproduit pas le défaut.
 | --- | --- | --- | --- |
 | T01 | Les cibles demandées sont examinées avant les refs intermédiaires | Aucune | Une cible classée après plus de 128 refs produit sa preuve attendue, sans modifier les exigences de preuve |
 | T02 | État local compact et lisible dans le rapport | T01 | Deux états distincts dans index/disque sont distingués ; contenu ignoré présent ne devient jamais zéro après interruption |
-| T03 | Résultat d'histoire Git pour chaque ligne, progression et budgets équitables | T02 | Le dernier cas simple de la fixture reçoit son résultat malgré un premier cas coûteux ; preuve rapide et preuve approfondie restent distinctes |
-| T04 | Stashes partagés et histoire propre à préserver | T02 | Deux worktrees partagent une seule liste de stashes ; le reflog exclusif d'un troisième reste une raison de conserver |
+| T03 | Résultat d'historique Git pour chaque ligne, progression et budgets équitables | T02 | Le dernier cas simple de la fixture reçoit son résultat malgré un premier cas coûteux ; preuve rapide et preuve approfondie restent distinctes |
+| T04 | Stashes partagés et historique propre à préserver | T02 | Deux worktrees partagent une seule liste de stashes ; le reflog exclusif d'un troisième reste une raison de conserver |
 | T05 | Trois verdicts motivés de bout en bout | T03, T04 | Sur fixture connue : candidat, conservation et vérification tous présents ; un blob manquant interdit le candidat malgré l'ascendance |
-| T06 | Cibles par dépôt, regroupements et filtres | T03 | Deux familles aux conventions différentes utilisent leurs propres cibles ; un filtre conserve les totaux et lacunes du scan |
+| T06 | Cibles par repo, regroupements et filtres | T03 | Deux familles aux conventions différentes utilisent leurs propres cibles ; un filtre conserve les totaux et lacunes du scan |
 | T07 | Commits, PR/MR et changelog dans le détail | T03 | Ajouter ou enlever un changelog ne transforme jamais une décision défavorable en candidat |
 | T08 | Recherche machine observable et publication bornée | T06 | Ensemble attendu exact sur volumes injectés ; arrêt, refus d'accès et publication impossible ont des états distincts |
-| T09 | Parcours complet, recette réelle et tutoriel | T05, T06, T07, T08 | La commande documentée produit le rapport attendu sur fixture ; le vrai dépôt reçoit des raisons vérifiables sans quota artificiel de candidats |
+| T09 | Parcours complet, recette réelle et tutoriel | T05, T06, T07, T08 | La commande documentée produit le rapport attendu sur fixture ; le vrai repo reçoit des raisons vérifiables sans quota artificiel de candidats |
 
 **Frontière initiale : T01.** Le chemin de dépendances de la décision est
 T01 → T02 → T03/T04 → T05 → T09. Les branches consultation/contexte/découverte
@@ -216,7 +216,7 @@ Fichiers livrés : `src/local.rs`, `src/local/summary.rs`, `src/model.rs`,
 - [x] Couvrir staged, unstaged, suppressions, conflits, non suivis et ignorés.
   Un fait positif de travail suffit à expliquer la conservation avant la fin
   de la collecte. Un zéro exige la collecte complète de son domaine. Les
-  répertoires structurels ne sont pas du contenu non suivi : un dépôt propre
+  répertoires structurels ne sont pas du contenu non suivi : un repo propre
   avec `src/main.rs` suivi doit rester propre ; un fichier ignoré ajouté dans
   `src` doit rester signalé même après interruption de son hachage.
 - [x] Limiter d'abord l'interprétation aux formats ordinaires déjà supportés.
@@ -238,7 +238,7 @@ l'échelle de nombreux objets distincts ni de nombreux worktrees ; c'est T03.
 La revue indépendante a fait corriger la perte de positifs après interruption,
 la confusion entre erreur de lecture et changement observé, la taille des
 résumés de repli et la copie des manifestes. Un timeout Git nécessaire à
-l'histoire arrête les lectures dépendantes de cette famille pour l'exécution ;
+l'historique arrête les lectures dépendantes de cette famille pour l'exécution ;
 les autres familles continuent. Une erreur physique ou un timeout des règles
 d'exclusion ne supprime pas les preuves Git indépendantes.
 
@@ -250,7 +250,7 @@ du harnais passent ; 274 liens documentaires locaux vérifiés. Aucun scan réel
 commit, push ou résultat de CI distante n'est revendiqué. Le jugement reste
 `local-evidence/1` ; les verdicts de triage arrivent en T05.
 
-### T03 : histoire Git et équité
+### T03 : historique Git et équité
 
 Fichiers : `src/review.rs`, `src/git.rs`, `src/model.rs`, `src/presentation.rs`,
 `tests/review.rs`, `tests/test_review.py`, nouveau `tests/test_scale.py`.
@@ -267,14 +267,14 @@ Fichiers : `src/review.rs`, `src/git.rs`, `src/model.rs`, `src/presentation.rs`,
   et parcours incomplet. Tester un HEAD divergent face à toutes les cibles,
   une cible inaccessible et une seconde cible qui couvre effectivement ce HEAD.
   L'absence de preuve positive ne devient jamais une preuve de non-intégration.
-- [x] Les observations d'histoire sans vérification de contenu ne remplissent
+- [x] Les observations d'historique sans vérification de contenu ne remplissent
   jamais le champ des preuves approfondies. Ne pas appeler le résultat « sûr ».
 
 Repli : résultat déjà observé conservé avec intervalle ; reste inconnu et relance
 possible sur une famille ou un worktree choisi. Pas de cache disque dans ce lot.
 
 Validation T03 observée le 05/10/2026 : les fixtures de 46 puis 100 worktrees
-aux HEAD distincts reçoivent leurs résultats d'histoire, y compris avec ordre
+aux HEAD distincts reçoivent leurs résultats d'historique, y compris avec ordre
 inversé et premier cas coûteux. Graphe seul, preuve approfondie et inconnues
 restent séparés. Les timeouts d'une famille arrêtent ses lectures dépendantes
 dans toutes les phases, y compris les revalidations finales ; les autres familles
@@ -290,12 +290,12 @@ du harnais passent. Le binaire figé porte le SHA-256
 `c6ac6e6d1f471b3077a892fe8ef3d406f89b699adb45bd7de7245b0370a8b841`.
 Aucun scan réel, commit, push ou résultat de CI distante n'est revendiqué.
 
-### T04 : stashes et histoire propre
+### T04 : stashes et historique propre
 
 Fichiers : `src/git.rs`, `src/local.rs`, `src/model.rs`, `src/presentation.rs`,
 `tests/local.rs`, `tests/test_enriched.py`.
 
-- [x] Lire les stashes une fois par identité de dépôt commun, avec OID, base,
+- [x] Lire les stashes une fois par identité de repo commun, avec OID, base,
   date, message borné et liste de fichiers bornée. La branche du message est un
   indice, pas l'attribution d'un stash à un dossier. Un même remote ne fusionne
   pas deux clones distincts en une famille.
@@ -305,7 +305,7 @@ Fichiers : `src/git.rs`, `src/local.rs`, `src/model.rs`, `src/presentation.rs`,
 - [x] Tester reflog seul, HEAD détaché couvert/non couvert, stash partagé entre
   deux worktrees, deux clones du même remote et métadonnées devenues illisibles.
 
-Repli : les stashes illisibles restent du contexte inconnu ; une histoire propre
+Repli : les stashes illisibles restent du contexte inconnu ; un historique propre
 non examinée bloque C4. Aucune application ou suppression de stash.
 
 ### T05 : décision et vérification approfondie
@@ -326,19 +326,19 @@ Fichiers : `src/review.rs`, `src/model.rs`, `src/presentation.rs`,
 Repli : aucun candidat émis si ses préconditions manquent ; les raisons précises
 restent disponibles. Pas de commande destructive générée dans le rapport.
 
-### T06 : plusieurs dépôts et filtres
+### T06 : plusieurs repos et filtres
 
 Fichiers : `src/main.rs`, `src/model.rs`, `src/review.rs`, `src/presentation.rs`,
 `tests/cli.rs`, `tests/model.rs`.
 
 - [x] Conserver la cible explicite simple pour une seule famille. Pour plusieurs
-  familles, proposer un fichier fourni explicitement associant identité du dépôt
+  familles, proposer un fichier fourni explicitement associant identité du repo
   commun, chemin en octets et refs complètes. Vérifier l'identité au chargement ;
   absence ou doublon contradictoire ne sélectionne pas une cible par défaut.
 - [x] Tester deux familles dont une vise `develop` et l'autre `main`, y compris
   lorsque les deux noms existent dans les deux familles. Afficher les OID retenus
   et distinguer ref locale et ref distante connue localement. Aucun fetch.
-- [x] Appliquer les filtres après jugement : dépôt, préfixe par composants de
+- [x] Appliquer les filtres après jugement : repo, préfixe par composants de
   chemin, branche, état local et verdict. Garder totaux et couverture de la source.
   Définir le tri sur les identités réversibles, pas sur le texte échappé.
 
@@ -354,7 +354,7 @@ Fichiers : `src/git.rs`, `src/forge.rs`, `src/presentation.rs`,
   imports forge actuels, avec hôte/projet/HEAD/date. Ne pas appeler une PR ouverte
   « processus actif ». Mentionner les limites des squash, cherry-picks et reverts.
 - [x] Lire les changelogs suivis à une révision explicite, depuis des chemins
-  reconnus à la racine ou fournis explicitement dans le dépôt. Ne pas suivre de
+  reconnus à la racine ou fournis explicitement dans le repo. Ne pas suivre de
   lien vers un fichier extérieur. Borner extraits et résultats ; citer leur source.
 - [x] Tester texte trompeur, absence de changelog, source trop grande, caractères
   de contrôle et redirection extérieure. Aucun de ces textes n'entre dans C2.
@@ -367,7 +367,7 @@ lisibles. Aucun appel réseau ou envoi de fichiers ajouté implicitement.
 Fichiers : `src/discover.rs`, `src/mounts.rs`, `src/main.rs`, `src/output.rs`,
 `src/run.rs`, `tests/discover.rs`, `tests/mounts.rs`, `tests/output.rs`, `tests/cli.rs`.
 
-- [x] Réutiliser les modes dépôt/racines/volumes. La famille inclut ses worktrees
+- [x] Réutiliser les modes repo/racines/volumes. La famille inclut ses worktrees
   enregistrés hors racine ; leur identité et la portée des lectures sont affichées.
   Tester `.git` fichier/dossier, bare, administration séparée, chemins cachés,
   alias, volumes absents et accès refusés avec des racines injectées.
@@ -378,7 +378,7 @@ Fichiers : `src/discover.rs`, `src/mounts.rs`, `src/main.rs`, `src/output.rs`,
   marge pour les métadonnées et erreurs ; supprimer d'abord le détail facultatif
   en le signalant. Si les lignes compactes dépassent encore la limite, publier un
   résultat partiel avec le périmètre non publié explicite, jamais tronquer du JSON.
-- [x] Garder les vérifications de destination hors dépôts et sans liens. Si une
+- [x] Garder les vérifications de destination hors repos et sans liens. Si une
   famille déplacée/illisible empêche cette preuve, refuser l'écriture et expliquer
   le motif sur stderr. Ne pas prétendre qu'un rapport durable existe.
 - [x] Tester disque plein, interruption et échec entre fichiers et reçu final.
@@ -395,21 +395,21 @@ Fichiers : `src/main.rs`, `tests/cli.rs`, `tests/test_scale.py`, `README.md`,
 
 - [x] Enchaîner collecte et revue dans un parcours unique qui réutilise leurs
   fonctions, ajoute l'aide par commande et conserve les deux commandes existantes.
-- [x] Vérifier la matrice ci-dessous et les checks du dépôt. Le nouvel exécutable
+- [x] Vérifier la matrice ci-dessous et les checks du repo. Le nouvel exécutable
   sait expliquer les archives v1 comme anciennes ; il ne leur attribue pas C5.
-- [x] Refaire ensuite l'essai du dépôt choisi avec sa cible confirmée, en lecture
+- [x] Refaire ensuite l'essai du repo choisi avec sa cible confirmée, en lecture
   seule. Recompter les worktrees : 46 est le résultat historique, pas un attendu
-  permanent. Produire le rapport hors du dépôt et des fixtures publiques.
+  permanent. Produire le rapport hors du repo et des fixtures publiques.
 - [x] Garder le scan réel de la machine comme exécution distincte, sur périmètre
   explicitement lancé. Les tests injectent racines et volumes ; aucun scan global
   réel n’a été exécuté dans cette recette. Accès refusés et volumes non visités
   restent des lacunes, sans promesse de couverture machine.
-- [x] Documenter commandes prêtes à copier, filtres, cibles par dépôt, diagnostic
+- [x] Documenter commandes prêtes à copier, filtres, cibles par repo, diagnostic
   d'arrêt, relance ciblée et prompt de revue. Actualiser le changelog à chaque lot.
 
-Recette finale : 48 worktrees dans le dépôt choisi, 3 `keep`, 45 `verify`,
-aucun candidat. Les budgets locaux et d’histoire empêchent encore une analyse
-complète de ce gros dépôt. Les fixtures positives de candidats passent ; ce
+Recette finale : 48 worktrees dans le repo choisi, 3 `keep`, 45 `verify`,
+aucun candidat. Les budgets locaux et d’historique empêchent encore une analyse
+complète de ce gros repo. Les fixtures positives de candidats passent ; ce
 résultat ne se transpose pas aux worktrees réels incomplets. Voir le
 [registre de validation](../../finish-ledger.md#triage-t01-t09).
 
@@ -424,7 +424,7 @@ réalisées. Les tests courants restent petits ; la combinaison lourde est sépa
 | Équité | 46 puis 100 worktrees petits, un cas coûteux en tête | Dernier cas simple traité ; décisions identiques à couverture équivalente et ordre différent |
 | Index | Un worktree avec 25 001 entrées ordinaires | État local interprété dans le budget de résumé, sans dépendre du plafond du manifeste détaillé |
 | Ignorés | Un gros dossier ignoré, fichier sentinelle et descendants cachés | Contenu présent signalé ; compte incomplet explicite ; aucun candidat issu d'une exclusion |
-| Histoire | Plus de 512 commits dans une fixture dédiée | Parcours abouti ou limite explicite ; aucun faux négatif présenté comme preuve complète |
+| Historique | Plus de 512 commits dans une fixture dédiée | Parcours abouti ou limite explicite ; aucun faux négatif présenté comme preuve complète |
 | Décision | Principal, intégré propre, dirty, inconnu, détaché, reflog exclusif | Les trois verdicts apparaissent aux lignes prévues par l'oracle |
 | Sortie | Données juste sous puis au-dessus du budget de publication | JSON valide et lisible, détail omis déclaré ou refus explicite ; jamais succès silencieux sans rapport |
 | Lecture seule | Témoins hooks/filtres, index/shared-index, fichiers et sentinelle extérieure | Aucun témoin exécuté ni changement attribuable au produit dans le manifeste indépendant |
@@ -433,9 +433,9 @@ réalisées. Les tests courants restent petits ; la combinaison lourde est sépa
 Mesurer par phase lectures d'objets, octets, sous-processus et durée observée.
 Les tests d'équité utilisent des budgets injectés, sans seuil fragile dépendant
 de la vitesse de la machine. Aucun « nombre minimal de candidats » n'est imposé
-au vrai dépôt. En revanche, la fixture positive doit produire un candidat.
+au vrai repo. En revanche, la fixture positive doit produire un candidat.
 
-À chaque lot, checks pertinents puis checks requis du dépôt avant livraison :
+À chaque lot, checks pertinents puis checks requis du repo avant livraison :
 
 ```sh
 cargo fmt --all -- --check
@@ -452,7 +452,7 @@ ne valide pas un scan réel ni une suppression.
 
 | Unité | Déclencheur mesurable | Dépendances | Contrat et validation |
 | --- | --- | --- | --- |
-| X01, reprise persistante | Après T08, une racine demandée ne peut pas être achevée dans le budget choisi ; une relance ciblée recommence du travail déjà mesuré | T08 | Résultats immuables datés, version de politique, identité du périmètre, unités restantes et reçu de publication. Un sous-arbre terminé reste une observation passée. Revoir en direct C1 à C5 pour tout candidat ; invalider après remplacement, altération ou schéma inconnu. Tester apparition d'un dépôt dans une zone déjà visitée et interruption à chaque transition. |
+| X01, reprise persistante | Après T08, une racine demandée ne peut pas être achevée dans le budget choisi ; une relance ciblée recommence du travail déjà mesuré | T08 | Résultats immuables datés, version de politique, identité du périmètre, unités restantes et reçu de publication. Un sous-arbre terminé reste une observation passée. Revoir en direct C1 à C5 pour tout candidat ; invalider après remplacement, altération ou schéma inconnu. Tester apparition d'un repo dans une zone déjà visitée et interruption à chaque transition. |
 | X02, lectures Git groupées | Sur la fixture 100 worktrees de T03, le budget temps est atteint alors que les budgets objets/octets restent disponibles et que les sous-processus représentent plus de la moitié du temps mesuré | T03 | Protocole borné, réponses liées à chaque demande, arrêt/récolte des enfants, mêmes vérifications d'OID. Comparer résultat et nombre de processus à l'exécuteur actuel. |
 | X03, autre format d'index | T02 ou l'essai réel révèle un index valide non supporté qui empêche le tri d'un worktree du périmètre | T02 | Une unité par format ; oracle indépendant avant/après, staged/unstaged corrects et absence de mutation. Si le chemin Git écrit, conserver le refus jusqu'à une lecture sûre démontrée. |
 
@@ -473,7 +473,7 @@ Un commit par comportement livrable. Pour revenir en arrière : arrêter les
 exécutions de cette version, revenir sur le commit concerné dans le checkout de
 développement après contrôle des changements concurrents, puis reconstruire.
 Ne pas écraser un fichier modifié depuis ce commit ; résoudre le conflit avant
-de poursuivre. Les anciens rapports restent archivés hors des dépôts inspectés.
+de poursuivre. Les anciens rapports restent archivés hors des repos inspectés.
 La preuve du retour est le passage du scénario témoin sur la version restaurée
 et l'absence de modification des fixtures inspectées. Un ancien binaire refuse
 un nouveau format qu'il ne comprend pas ; aucune migration inverse de données
@@ -485,7 +485,7 @@ utilisateur n'est nécessaire.
   par un scénario requis ; chaque unité est livrée avec tests verts.
 - [x] Chaque worktree découvert a chemin, branche/HEAD, faits locaux, intégration,
   verdict et raisons ; une information inaccessible reste explicitement inconnue.
-- [x] Le scan par dépôt et la découverte multi-racines retrouvent l'ensemble
+- [x] Le scan par repo et la découverte multi-racines retrouvent l'ensemble
   exact attendu sur fixtures. Les filtres n'altèrent ni preuve ni couverture.
 - [x] Le rapport réel permet de distinguer travail à préserver, candidats
   conditionnels et vérifications manquantes. Les limites de couverture réelles

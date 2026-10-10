@@ -27,7 +27,7 @@ restent séparées de cette publication.
 
 1. Fixer la licence avec le mainteneur. La FSL actuelle est une [licence Fair
    Source](https://fair.io/licenses/) ; une sortie open source immédiate demande un autre choix.
-2. Vérifier le contenu suivi et son historique avant de rendre le dépôt public.
+2. Vérifier le contenu suivi et son historique avant de rendre le repo public.
    Un détecteur de secrets ne remplace pas l’examen des résultats qu’il signale.
 3. Publier le correctif de session Git, le prompt d’installation et les notes
    de version. Aligner Cargo, le changelog et le tag.
@@ -35,7 +35,7 @@ restent séparées de cette publication.
    une CI réussie sur le commit exact à taguer. Un job qui ne démarre pas ne
    valide aucun test.
 5. Construire depuis un clone neuf, empaqueter le binaire et ses licences,
-   vérifier l’archive extraite sur le dépôt jetable, puis publier les sommes
+   vérifier l’archive extraite sur le repo de test temporaire, puis publier les sommes
    SHA-256 avec l’archive. Ne proposer que l’architecture effectivement testée.
 
 ## Archive macOS
@@ -47,7 +47,7 @@ Le premier paquet testé localement est
 `wt-sweep-v0.1.0-alpha.1-aarch64-apple-darwin.tar.gz`, pour Apple Silicon.
 Il contient le binaire, sa licence, les notices des dépendances, le commit
 source et une notice d’utilisation. `SHA256SUMS` accompagne le téléchargement.
-Les skills restent disponibles dans le dépôt source.
+Les skills restent disponibles dans le repo source.
 
 Une archive locale testée ne prouve ni le téléchargement public ni son passage
 dans Gatekeeper. La notarisation Apple et le support Intel/Linux ne sont pas

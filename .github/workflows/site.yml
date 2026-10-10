@@ -1,0 +1,76 @@
+name: Publish website
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: github-pages
+  cancel-in-progress: false
+
+jobs:
+  build:
+    if: github.ref == 'refs/heads/main' && github.actor == 'FlorianBruniaux'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: read
+      pages: read
+    defaults:
+      run:
+        working-directory: site
+    env:
+      SITE_URL: https://wt-sweep.bruniaux.com
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 9.15.9
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: pnpm
+          cache-dependency-path: site/pnpm-lock.yaml
+      - uses: actions/configure-pages@v5
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm verify:translations
+      - run: pnpm check
+      - run: pnpm build
+      - name: Verify public metadata
+        run: |
+          node --input-type=module <<'JS'
+          import assert from 'node:assert/strict';
+          import {readFile} from 'node:fs/promises';
+          const origin = process.env.SITE_URL;
+          for (const path of ['index.html', 'fr/index.html', 'docs/installation/index.html', 'fr/docs/installation/index.html']) {
+            const html = await readFile(`dist/${path}`, 'utf8');
+            assert.ok(html.includes(`rel="canonical" href="${origin}/`), path);
+            assert.ok(!html.includes('noindex, nofollow'), path);
+            assert.ok(!html.includes('http://localhost') && !html.includes('/Users/'), path);
+          }
+          assert.equal(await readFile('dist/robots.txt', 'utf8'), `User-agent: *\nAllow: /\nSitemap: ${origin}/sitemap-index.xml\n`);
+          const sitemap = await readFile('dist/sitemap-0.xml', 'utf8');
+          assert.ok(sitemap.includes(`<loc>${origin}/fr/docs/demo/</loc>`));
+          assert.ok(!sitemap.includes('/demo/report.html') && !sitemap.includes('/404'));
+          JS
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: site/dist
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4

@@ -11,7 +11,7 @@ skills globaux n’est nécessaire. L’invocation native `/wt-sweep` ou `$wt-sw
 dépend du client et de sa confiance dans le projet ; une lecture explicite du
 fichier permet de poursuivre sans prétendre avoir activé cette intégration.
 
-Si le dépôt est encore privé lors de l’installation, l’assistant doit utiliser
+Si le repo est encore privé lors de l’installation, l’assistant doit utiliser
 un accès GitHub déjà configuré, ou vous guider pour l’établir, sans demander de
 secret dans le chat.
 Les téléchargements concernent l’outil et ses dépendances. L’analyse de vos
@@ -22,21 +22,21 @@ projets reste en lecture seule et ne rafraîchit pas leurs références distante
 ```text
 Installe Worktree Sweep et accompagne-moi pour examiner mes worktrees Git :
 où ils sont, l’espace qu’ils occupent et le travail à préserver avant nettoyage.
-Dépôt officiel : https://github.com/FlorianBruniaux/wt-sweep
+Repo officiel : https://github.com/FlorianBruniaux/wt-sweep
 
 Je t’autorise à cloner cet outil et à télécharger ses dépendances Rust.
 Ne supprime aucun worktree, fichier ou branche. Ne modifie pas ma configuration
-globale, mes hooks ou mes dépôts à analyser.
+globale, mes hooks ou mes repos à analyser.
 
 1. Vérifie macOS, /usr/bin/git, Cargo et Rustup. Si un prérequis manque,
    explique le nécessaire et demande mon accord avant son installation.
    Réutilise le checkout de wt-sweep déjà indiqué dans notre conversation ;
-   sinon clone le dépôt dans ~/.local/share/wt-sweep si ce chemin est libre.
+   sinon clone le repo dans ~/.local/share/wt-sweep si ce chemin est libre.
    Si le dossier existe, vérifie son origine et son état avant de le réutiliser.
    Préserve tout changement local et n’écrase jamais un dossier existant.
    Si l’accès GitHub manque, guide-moi sans demander de jeton dans le chat.
 
-2. Lis les instructions du dépôt et README.fr.md. Charge explicitement le
+2. Lis les instructions du repo et README.fr.md. Charge explicitement le
    skill .agents/skills/wt-sweep/SKILL.md pour Codex, ou
    .claude/skills/wt-sweep/SKILL.md pour Claude Code. Pour un autre client,
    lis harness/skills/wt-sweep/SKILL.md. Lis aussi ses références commands.md,
@@ -50,7 +50,7 @@ globale, mes hooks ou mes dépôts à analyser.
    Conserve le chemin absolu du binaire, le commit source et l’état du checkout.
    Vérifie --version, --help et review --help. Ne contourne pas un échec.
 
-4. Exécute la démo jetable de docs/getting-started.md pour vérifier le parcours.
+4. Exécute la démo sur un repo de test de docs/getting-started.md pour vérifier le parcours.
    Sur une collecte complète, elle doit donner 2 keep, 1 cleanup_candidate et
    0 verify. Si le résultat diffère, explique pourquoi avant d’enchaîner.
    Puis réutilise les chemins et cibles déjà confirmés dans notre conversation.
@@ -59,7 +59,7 @@ globale, mes hooks ou mes dépôts à analyser.
 
 5. Lance review sur le périmètre confirmé avec --budget standard, --summary,
    --disk-usage et --html. Crée avec mktemp un dossier de rapports unique hors
-   des dépôts inspectés et passe-le à --run-dir. Utilise les recettes du skill,
+   des repos inspectés et passe-le à --run-dir. Utilise les recettes du skill,
    vérifie le code de sortie puis les artefacts et leur reçu. Ouvre report.html.
    Pour plusieurs projets, conserve les cibles propres à chaque famille Git.
 
@@ -88,7 +88,7 @@ indisponible. L’installation ne t’autorise pas à fetch/prune/gc ces projets
 | Acquisition | Checkout identifié, commit source et changements locaux signalés |
 | Skill | Chemin du fichier effectivement lu ; reconnaissance native vérifiée séparément |
 | Compilation | Code de sortie réussi et chemin du binaire compilé |
-| Démo | Résultat observé sur le dépôt jetable, avec ses éventuelles limites |
+| Démo | Résultat observé sur le repo de test temporaire, avec ses éventuelles limites |
 | Analyse réelle | Périmètre et cibles confirmés, rapports et reçu vérifiés |
 | Lecture | Verdicts conservés, lignes lues et restantes, prochaines vérifications |
 

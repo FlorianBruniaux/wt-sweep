@@ -7,7 +7,40 @@ the Cargo package version is a development version.
 
 ## [Unreleased]
 
+<!-- unreleased-updated: 2026-10-10 -->
+
+### Changed
+
+- Display the CLI package version in the website updates banner.
+
+- Point the website author and Portfolio footer links to
+  `https://florian.bruniaux.com/`.
+
+- Separate the four workflow steps in the French and English landing headings
+  with arrows.
+
+- Revise French and English website copy and French documentation terminology.
+  Use repo, worktree and commit consistently, explain temporary test repos and
+  writing processes in plain language, and localize the documentation sidebar.
+  Preserve commands, recorded measurements and decision conditions.
+
+- Prepare manual GitHub Pages publication at `wt-sweep.bruniaux.com`, with
+  locked site dependencies, reviewed-source and public-metadata checks. Update
+  installation guidance for the now-public repository. Publication still requires
+  a manual run on `main`; repository visibility does not change the FSL license.
+
+- Align the website header and hero with the Search Console 90rem envelope,
+  and add a bilingual source-updates banner linked to the updates page. Its date
+  comes from this changelog; the banner labels the changes as unreleased.
+
+- Adopt the Compact website header: hero-aligned navigation, accessible GitHub
+  and language icons, frameless theme control and a final orange Install action.
+  Mobile actions use full-width Docs and Install rows with keyboard focus trapping.
+
 ### Fixed
+
+- Align website browser assertions with the package version now displayed in
+  the updates banner; retain layout, date and navigation checks.
 
 - Remove redundant question-mark buttons from the HTML sidebar. Section labels
   retain explanations on hover, keyboard focus and click, with native hover
@@ -39,6 +72,13 @@ the Cargo package version is a development version.
   limits. Offer a safely quoted focused command using the running executable
   and that row's recorded targets. Missing sizes, provisional history and
   omitted targets remain explicit; no collection limits or verdicts change.
+
+- Local bilingual wt-sweep website with Astro and Starlight: product landing,
+  twelve reviewed documentation guides in English and French, HTML sitemap,
+  source-status updates, accessible navigation and theme controls. Publish only
+  the explicit documentation allowlist, refuse stale reviewed source hashes
+  and retain synthetic native report provenance. Public metadata requires an
+  explicit HTTPS origin; no site publication or release is implied.
 
 - Prepare version `0.1.0-alpha.1` with a publication checklist and a scoped
   Apple Silicon archive plan. Align the declared Rust minimum with the tested

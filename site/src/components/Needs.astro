@@ -1,0 +1,8 @@
+---
+import type {Locale} from '../data/content';
+import {getLandingView} from '../data/landing';
+interface Props {locale:Locale}
+const {locale}=Astro.props;
+const {t,needs}=getLandingView(locale);
+---
+<section id="needs"><div class="container"><div class="section-heading"><p class="kicker">01 / {t('START WITH A QUESTION','PARTIR D’UNE QUESTION')}</p><h2>{t('Find worktrees and the work they contain.','Retrouvez les worktrees et le travail qu’ils contiennent.')}</h2><p>{t('Agent sessions leave checkouts behind. Examine them for local changes and work that needs to be kept.','Les sessions d’agents laissent des checkouts qu’il faut examiner pour retrouver les modifications locales et le travail à conserver.')}</p></div><div class="triple">{needs.map((x,i)=><article class="need"><span class="number">0{i+1}</span><h3>{x.title}</h3><p>{x.text}</p><a class="text-link" href={x.link}>{x.label} <span aria-hidden="true"> →</span></a></article>)}</div></div></section>

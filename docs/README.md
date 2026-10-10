@@ -23,11 +23,11 @@ les conditions de publication et le paquet macOS prévu.
 | [Assistant skill (French)](assistant-skill.md) | Claude/Codex invocation, progressive report reading, cleanup suggestions and local verification. |
 | [Getting started](getting-started.md) | macOS setup, disposable demo, report interpretation and troubleshooting. |
 | [Espace disque](disk-usage.md) | Taille par worktree, Git partagé, total dédupliqué et limites de la mesure. |
-| [Rapport HTML par projet](html-report-plan.md) | HTML hors ligne, lecture par famille, thème BoldGuy, unités lisibles, copie des chemins et reçus. |
+| [Rapport HTML par projet](html-report-plan.md) | HTML hors ligne, ouverture sur macOS, lecture par famille, liens GitHub/GitLab, copie des chemins et reçus. |
 | [Resume discovery](discovery-resume.md) | Save an explicit-root traversal, continue it and interpret separate observation intervals. |
 | [CLI reference](cli.md) | Implemented commands, output rules, exit codes and collection limits. |
 | [Targets and filters](targets-and-filters.md) | Select refs per repository and inspect a subset while retaining source evidence. |
-| [Offline forge imports](forge.md) | Supported exports, capture receipts and limits of MR/PR association. |
+| [Forge links and offline imports](forge.md) | Repository, branch and commit links, captured PR/MR states, import receipts and association limits. |
 | [Evidence and JSON contracts](contracts.md) | Artifact fields, classifications, path encoding, digests and receipts. |
 
 ## Develop and verify
@@ -47,6 +47,15 @@ les conditions de publication et le paquet macOS prévu.
 | [Implementation results](progress.md) | Current checkpoint links followed by the dated U1-U4 validation record. |
 | [Recette réelle multi-projets, 07/10](research/multi-project-acceptance-2026-10-07.md) | 69 registered worktrees, matching text/JSON/HTML, partial disk and local coverage, and delivery limits. |
 | [Finishing ledger](finish-ledger.md) | Historical RETEX checkpoint, current triage checks, repository trial and remaining gates. |
+
+## Website
+
+| Document | Contents |
+| --- | --- |
+| [Site implementation](../site/README.md) | Local preview, EN/FR portal, reviewed sources, tests and public-origin configuration. |
+| [Website validation](../site/VERIFICATION.md) | Observed checks, reference component status, independent review and remaining evidence limits. |
+| [Website design](superpowers/specs/2026-10-09-wt-sweep-site-design.md) | Validated structure, BoldGuy design and product boundaries. |
+| [Website plan](superpowers/plans/2026-10-09-wt-sweep-site.md) | Implementation sequence and observed checks. |
 
 ## Design and decisions
 

@@ -21,10 +21,11 @@
 [![Système : macOS](https://img.shields.io/badge/Runtime-macOS-597ee5)](docs/getting-started.md#prerequisites)
 [![Licence : FSL-1.1-ALv2](https://img.shields.io/badge/License-FSL--1.1--ALv2-597ee5)](LICENSE.md)
 
-![Worktree Sweep : retrouver les dépôts et worktrees, mesurer leur taille, vérifier l’histoire Git et les fichiers locaux, puis lire le rapport HTML, texte ou JSON. Trois verdicts : keep, verify et cleanup_candidate. La taille mesurée ne prédit pas l’espace récupérable.](docs/assets/storage-review.jpg)
+![Worktree Sweep : retrouver les repos et worktrees, mesurer leur taille, vérifier l’historique Git et les fichiers locaux, puis lire le rapport HTML, texte ou JSON. Trois verdicts : keep, verify et cleanup_candidate. La taille mesurée ne prédit pas l’espace récupérable.](docs/assets/storage-review.jpg)
 
 Une CLI locale pour macOS qui réunit **chemins, branches, tailles disque et
-preuves Git** dans un rapport. Aucun modèle d’IA, service ou compte de forge requis.
+preuves Git** dans un rapport. Elle fonctionne sans modèle d’IA, service permanent
+ni compte GitHub ou GitLab.
 
 > [!NOTE]
 > **Lecture seule.** Sweep prépare le bilan de nettoyage. Sauvegarde, restauration
@@ -45,7 +46,7 @@ dossiers contenaient encore du travail local.
 | --- | --- |
 | **Où sont mes worktrees ?** | Chemins et branches, regroupés par famille Git dans les racines choisies. |
 | **Lesquels prennent de la place ?** | Tailles logiques et allouées, stockage Git partagé et mesures incomplètes. |
-| **Lesquels examiner pour faire le ménage ?** | Preuves d’intégration, modifications locales, histoire privée et raison de chaque verdict. |
+| **Lesquels examiner pour faire le ménage ?** | Preuves d’intégration, modifications locales, historique privé et raison de chaque verdict. |
 
 La taille aide à choisir par où commencer. Elle ne prouve pas qu’un worktree
 peut être supprimé et ne prédit pas le gain sur APFS. Une branche fusionnée peut
@@ -57,7 +58,7 @@ encore contenir des fichiers ignorés, des modifications non commitées ou des n
 
 ### Compiler depuis les sources
 
-Utilisez macOS et Rust. Le dépôt est privé : son clonage demande un accès GitHub.
+Utilisez macOS et Rust. Le repo est public et peut être cloné en HTTPS.
 
 ```sh
 git clone https://github.com/FlorianBruniaux/wt-sweep.git
@@ -70,14 +71,14 @@ cargo build --release --locked --offline
 <details>
 <summary>Prérequis et compilation hors ligne</summary>
 
-Le dépôt fixe Rust 1.95.0 dans [rust-toolchain.toml](rust-toolchain.toml).
+Le repo fixe Rust 1.95.0 dans [rust-toolchain.toml](rust-toolchain.toml).
 Passez `cargo fetch` si les dépendances sont déjà en cache. Git est lu via
 `/usr/bin/git`. Aucune installation par gestionnaire de paquets ni configuration
 globale n’est requise. [Installation et dépannage](docs/getting-started.md).
 
 </details>
 
-### Examiner un dépôt et ses worktrees
+### Examiner un repo et ses worktrees
 
 Depuis le checkout de Sweep, saisissez le chemin du clone et la référence
 d’intégration confirmée, par exemple `refs/heads/main` ou `refs/heads/develop`.
@@ -103,14 +104,14 @@ puis demande à macOS d’ouvrir le HTML. Utilisez `--html` pour enregistrer san
 ouvrir, ou ajoutez `--run-dir "/chemin/vers/rapports"` pour choisir un dossier
 existant. La sortie doit rester hors du périmètre inspecté et des dossiers Git.
 Pour essayer d’abord sur des worktrees synthétiques, suivez la
-[démo sur dépôt jetable](docs/tutorial.fr.md#3-essayer-les-trois-verdicts-sur-un-dépôt-jetable).
+[démo sur repo de test temporaire](docs/tutorial.fr.md#3-essayer-les-trois-verdicts-sur-un-repo-de-test-temporaire).
 
 <details>
 <summary>Fichiers produits et analyse de plusieurs projets</summary>
 
 Chaque nouveau dossier `run-*` contient `inventory.json`, `review.json`,
 `report.txt`, le `report.html` demandé et le reçu de publication `run.json`.
-Le reçu consigne tailles et empreintes des artefacts. Un manifeste enregistre
+Le reçu de publication (`run.json`) consigne les tailles et les empreintes des fichiers produits. Un manifeste enregistre
 des observations, pas des copies de vos fichiers.
 
 Pour plusieurs dossiers de projets, commencez par des [racines explicites](docs/getting-started.md#inspect-selected-roots),
@@ -142,7 +143,7 @@ Le bilan nomme les limites atteintes ; `--verbose` ajoute les durées techniques
 | --- | --- | --- |
 | `keep` | Du travail, une protection, une opération ou une autre raison de conserver a été observée. | Lire ce qui doit être préservé. |
 | `verify` | Des preuves nécessaires manquent ou se contredisent. | Examiner la lacune et choisir un contrôle ciblé. |
-| `cleanup_candidate` | Les cinq conditions actuelles C1–C5 sont satisfaites. | Confirmer l’usage ; ce verdict n’autorise pas la suppression. |
+| `cleanup_candidate` | Les cinq conditions actuelles C1–C5 sont satisfaites. | Vérifier si le worktree est encore utilisé ; ce verdict n’autorise pas la suppression. |
 
 <details>
 <summary>Pourquoi un résultat peut être partiel ou UNKNOWN</summary>
@@ -181,7 +182,7 @@ sélectionnées et celles filtrées dans le navigateur restent distincts.
   <img src="docs/assets/report-light.png" alt="Rapport HTML Worktree Sweep sur une famille Git de démonstration : quatre worktrees, trois à conserver et un candidat, avec totaux source, recherche et filtres de verdict." />
 </picture>
 
-Capture native d’une démo jetable : quatre worktrees, trois `keep` et un
+Capture du rapport généré sur un repo de test : quatre worktrees, trois `keep` et un
 `cleanup_candidate`. Réalisée le 8 octobre 2026, sans scan de votre machine.
 [Provenance des captures](docs/assets/README.md#current-html-report).
 
@@ -197,7 +198,8 @@ Capture native d’une démo jetable : quatre worktrees, trois `keep` et un
 
 </details>
 
-Le rapport et ses preuves dépliables fonctionnent hors ligne, sans JavaScript.
+Le rapport fonctionne hors ligne ; ses sections de détail restent accessibles
+sans JavaScript.
 La recherche, le tri et la copie utilisent JavaScript. Les revues proposent
 les liens GitHub/GitLab du dépôt, de la branche et du commit depuis les remotes
 locaux. `--forge FILE` ajoute les PR/MR associées et leur état capturé.
@@ -211,7 +213,7 @@ Ces liens ne prouvent pas qu’un push a eu lieu ; la CLI ne contacte pas le ser
 
 Pour partir de zéro, donnez à votre assistant le [prompt d’installation et
 d’analyse guidée](docs/bootstrap-prompt.fr.md#prompt-à-copier) : récupération
-de l’outil et des skills, compilation, démo jetable puis premier rapport.
+de l’outil et des skills, compilation, démo sur un repo de test puis premier rapport.
 
 Ouvrez votre assistant **dans ce checkout de Sweep**, puis invoquez `/wt-sweep`
 dans Claude Code ou `$wt-sweep` dans Codex. Le skill inclus lit les rapports par
@@ -226,7 +228,7 @@ Remplacez le chemin et confirmez la cible avant utilisation.
 Dans Claude Code, remplacez `$wt-sweep` par `/wt-sweep`.
 
 ```text
-$wt-sweep Analyse les worktrees du dépôt /chemin/absolu/du/depot.
+$wt-sweep Analyse les worktrees du repo /chemin/absolu/du/depot.
 La cible d’intégration confirmée est refs/heads/develop.
 Mesure l’espace disque et génère un rapport HTML hors ligne.
 Donne d’abord le bilan, puis lis cinq worktrees à la fois.
@@ -250,7 +252,7 @@ Sweep n’installe aucun skill global ni hook.
 
 | Fonctionnalité | Utilité | Commande ou option |
 | --- | --- | --- |
-| Familles de dépôts | Repérer le worktree principal, les worktrees liés et ceux à HEAD détaché, ainsi que les worktrees enregistrés mais absents. | `scan --repo PATH` |
+| Familles de repos | Repérer le worktree principal, les worktrees liés et ceux à HEAD détaché, ainsi que les worktrees enregistrés mais absents. | `scan --repo PATH` |
 | Découverte ciblée | Parcourir les racines choisies, y compris les dossiers cachés, ignorés et imbriqués, en conservant les lacunes de couverture. | `scan --root PATH` |
 | Découverte reprenable | Poursuivre le parcours de racines explicites, relire les familles Git et conserver les intervalles séparés. | [Commandes de reprise](docs/discovery-resume.md) |
 | Revue en une commande | Découvrir le périmètre et collecter les preuves courantes du triage. | `review --repo PATH` |
@@ -267,7 +269,7 @@ Sweep n’installe aucun skill global ni hook.
 La découverte globale est également disponible via `scan --all` ou `review --all`. Elle utilise
 les volumes montés visibles et signale les lacunes d’accès. Elle a été testée
 avec des volumes injectés, sans scanner la machine de développement.
-Commencez par un dépôt ou des racines choisies.
+Commencez par un repo ou des racines choisies.
 
 </details>
 
@@ -301,8 +303,8 @@ par défaut n’est devinée. Les exports de forge capturés sont facultatifs.
 <summary>Règles de classification d’un worktree</summary>
 
 Les raisons de conserver sont prioritaires. Seul un worktree lié avec des
-contrôles actuels complets, une intégration vérifiée, un état local propre et une
-histoire couverte peut devenir candidat. L’absence d’export de forge ne suffit
+contrôles actuels complets, une intégration vérifiée, un état local propre et un
+historique couvert peut devenir candidat. L’absence d’export de forge ne suffit
 pas à invalider ces preuves.
 
 ```mermaid
@@ -334,7 +336,7 @@ après suppression.
 
 Les octets des objets Git sont vérifiés contre leurs identifiants complets. Les
 contrôles locaux distinguent index, fichiers modifiés, conflits, fichiers non
-suivis et ignorés. L’histoire privée et les stashes partagés restent dans les
+suivis et ignorés. L’historique privé et les stashes partagés restent dans les
 preuves. Les sujets de commits et changelogs apportent du contexte, pas une
 preuve d’intégration.
 
@@ -354,7 +356,7 @@ observations couvrent un intervalle, pas un instantané atomique.
 
 | Guide | Utilité |
 | --- | --- |
-| [Tutoriel en français](docs/tutorial.fr.md) | Dépôt jetable, tests locaux et premier dépôt réel |
+| [Tutoriel en français](docs/tutorial.fr.md) | Repo de test temporaire, tests locaux et premier repo réel |
 | [Démarrage](docs/getting-started.md) | Installation et dépannage |
 | [Référence CLI](docs/cli.md) | Commandes, valeurs par défaut, limites et codes de sortie |
 | [Espace disque](docs/disk-usage.md) | Tailles, résultats partiels et mesures ciblées |
@@ -403,8 +405,8 @@ placeholders FileProvider, refus TCC et instantanés machine restent non vérifi
 La première alpha vise `v0.1.0-alpha.1`. La [préparation de la release](docs/release.md)
 détaille son périmètre, les contrôles d’installation et l’état de publication.
 
-Consultez [CONTRIBUTING.md](CONTRIBUTING.md) pour les contrôles locaux et dépôts
-jetables, puis [CHANGELOG.md](CHANGELOG.md) pour les changements. Le nom du projet
+Consultez [CONTRIBUTING.md](CONTRIBUTING.md) pour les contrôles locaux et repos
+de test temporaires, puis [CHANGELOG.md](CHANGELOG.md) pour les changements. Le nom du projet
 est provisoire ; il se distribue par ses sources. Aucun paquet n’a été publié et
 la publication Cargo est désactivée.
 

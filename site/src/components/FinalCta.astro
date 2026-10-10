@@ -1,0 +1,8 @@
+---
+import type {Locale} from '../data/content';
+import {getLandingView} from '../data/landing';
+interface Props {locale:Locale}
+const {locale}=Astro.props;
+const {l,t}=getLandingView(locale);
+---
+<section class="final"><div class="container"><p class="kicker">wt-sweep</p><h2>{t('Review your worktrees before your next cleanup.','Examinez vos worktrees avant de faire le ménage.')}</h2><p>{t('Start with the demo. Then choose your roots and targets.','Essayez la démo avant de choisir les dossiers et les refs d’intégration pour vos propres worktrees.')}</p><div class="actions"><a class="button button-primary" href={l.demo}>{t('Try the demo','Essayer la démo')} →</a><a class="button" href={l.docs}>{t('Read the documentation','Lire la documentation')}</a></div></div></section>

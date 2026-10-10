@@ -56,7 +56,7 @@ files, uncommitted changes or local notes.
 
 ### Build from source
 
-Use macOS and Rust. The repository is private; cloning requires GitHub access.
+Use macOS and Rust. The repository is public; clone it over HTTPS.
 
 ```sh
 git clone https://github.com/FlorianBruniaux/wt-sweep.git

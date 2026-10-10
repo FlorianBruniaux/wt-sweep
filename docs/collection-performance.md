@@ -1,4 +1,4 @@
-# Collecte des gros dépôts et mesures de performance
+# Collecte des gros repos et mesures de performance
 
 [Index documentaire](README.md) · [Limites CLI](cli.md#resource-limits) · [Collecte ciblée](targets-and-filters.md#complete-the-evidence-for-one-worktree)
 
@@ -16,7 +16,7 @@ la sonde de métadonnées ne constitue pas un benchmark du collecteur récursif.
 
 ## Lectures Git groupées et reprise de découverte
 
-Les parcours d'histoire et d'histoire privée lisent les commits demandés dans
+Les parcours d'historique et d'historique privé lisent les commits demandés dans
 une session `cat-file --batch-command`. L'ordre des parents, les plafonds de phase
 et la vérification de chaque OID sont conservés. Un lot ne devient une preuve
 qu'après sa clôture réussie. Les annulations retirent seulement les ajouts du lot,
@@ -92,7 +92,7 @@ cargo test --release --locked --offline --test discover benchmark_discovery -- -
 ```
 
 Le test crée une arborescence privée sous `/private/tmp`, avec deux familles Git,
-quatre worktrees, un dépôt caché et 2 048 fichiers synthétiques répartis dans
+quatre worktrees, un repo caché et 2 048 fichiers synthétiques répartis dans
 64 dossiers. Il compare 1 et 4 workers avec un échauffement chacun, puis trois
 mesures par configuration en alternant leur ordre. Il affiche minimum, médiane,
 maximum, débit et ratio des durées médianes. Il vérifie à chaque passage les
@@ -128,7 +128,7 @@ complète et manifeste de conservation inchangé pour les huit passages.
 Le ratio des durées médianes est de 1,11 pour 4 contre 1 worker. Les plages se
 chevauchent : ce passage ne démontre aucun gain du parallélisme. Ce corpus local
 ne mesure ni une machine entière, ni les performances de l’analyse des fichiers
-locaux d’un gros dépôt. Le cache système et les autres applications ne sont pas
+locaux d’un gros repo. Le cache système et les autres applications ne sont pas
 contrôlés ; trois échantillons ne suffisent pas à établir une distribution de
 latence générale.
 
@@ -217,7 +217,7 @@ Un témoin de racine directement couverte conserve un coût identique avec une o
 33 refs nommées : un objet, zéro étape de graphe et 16 processus Git. Le plafond
 initial de quatre processus était une assertion d’oracle incorrecte, corrigée
 après lecture du coût des contrôles et revalidations. Ce témoin ne prouve pas
-qu’une histoire privée arbitraire se résout en une lecture.
+qu’un historique privé arbitraire se résout en une lecture.
 
 Le binaire de cette capsule synthétique porte le SHA-256
 `defd5e17c94dd8e330b3e76eafe8e239bf020b1d647152ab7e83f17266826a1c`.
@@ -235,12 +235,12 @@ donc ne prouvent pas un worktree propre. C2, C3 et C5 restent manquantes.
 
 | Phase de ce passage | Temps enregistré | Compteurs observés |
 | --- | --- | --- |
-| Histoire du graphe | 9 938 ms | 376 lectures, 376 étapes, 377 processus Git |
+| Historique du graphe | 9 938 ms | 376 lectures, 376 étapes, 377 processus Git |
 | État local | 120 028 ms | 15 471 lectures, 138 702 567 octets, 260 processus Git, 26 712 réutilisations en cache, aucun chemin disque examiné |
-| Histoire privée | 240 473 ms | 5 124 lectures, 5 091 étapes, 5 139 processus Git, deux racines énumérées |
+| Historique privé | 240 473 ms | 5 124 lectures, 5 091 étapes, 5 139 processus Git, deux racines énumérées |
 
 Les tailles et empreintes des artefacts ont été vérifiées contre le reçu
-`partial`. Le run établit des preuves positives d’histoire, puis un arrêt local
+`partial`. Le run établit des preuves positives d’historique, puis un arrêt local
 explicite ; il n’établit pas une collecte réelle complète. Les intervalles, le
 contexte et les preuves non sélectionnées restent distincts.
 
@@ -256,9 +256,9 @@ restent établies ; C2, C3 et C5 restent manquantes.
 
 | Phase de ce passage | Temps enregistré | Compteurs observés |
 | --- | --- | --- |
-| Histoire du graphe | 11 659 ms | 376 lectures, 376 étapes, 377 processus Git |
+| Historique du graphe | 11 659 ms | 376 lectures, 376 étapes, 377 processus Git |
 | État local | 108 840 ms | 15 471 lectures, 138 702 567 octets d’objets, 3 882 processus Git, 36 680 réutilisations en cache, 52 213 chemins examinés |
-| Histoire privée | 5 063 ms | 234 lectures, 194 étapes, 249 processus Git, deux racines couvertes |
+| Historique privé | 5 063 ms | 234 lectures, 194 étapes, 249 processus Git, deux racines couvertes |
 
 Le résumé local atteint le plafond cumulé de 512 MiB. Les octets d’objets du
 compteur ne décrivent pas tout ce budget local, qui comprend les autres lectures
@@ -267,9 +267,9 @@ une expiration des 120 secondes : la phase enregistrée dure 108 840 ms. Les
 revalidations locales restent incomplètes et le détail est tronqué. Les
 compteurs locaux incomplets sont des bornes minimales, pas des totaux exhaustifs.
 
-L’histoire privée avait enregistré 240 473 ms et 5 124 lectures au premier
+L’historique privé avait enregistré 240 473 ms et 5 124 lectures au premier
 passage, contre 5 063 ms et 234 lectures dans ce second run. Ces observations
-portent sur un dépôt mutable ; elles ne sont pas un benchmark avant/après à
+portent sur un repo mutable ; elles ne sont pas un benchmark avant/après à
 données constantes et n’isolent pas l’effet d’une seule correction.
 Le binaire de ce second passage porte le SHA-256
 `e6f3b15d7de9ac2c68ca697d5e645615cc54cef258deb192997b52a4883019a9`.
@@ -286,7 +286,7 @@ Le transport remplace la pause fixe après une rafale par une attente bornée de
 descripteurs prêts. Sur la même sonde synthétique optimisée, 16 enfants Git
 retournent 64 MiB : 46 540 ms avec les pauses, 500 ms avec l’attente de disponibilité.
 Cette sonde conserve les requêtes, l’exécutable Git, l’environnement et les octets
-attendus. Elle mesure ce transport ; elle ne mesure pas la collecte du dépôt
+attendus. Elle mesure ce transport ; elle ne mesure pas la collecte du repo
 réel. La sonde de 10 000 fichiers ignorés vides ne montre pas de gain
 d’énumération : 967 ms avant, 1 587 ms après.
 
@@ -315,21 +315,21 @@ exhaustives. Les comptes locaux partiels restent des bornes minimales.
 
 | Phase de la famille | Temps enregistré | Compteurs agrégés |
 | --- | --- | --- |
-| Histoire du graphe | 119 375 ms | 4 954 lectures, 4 917 étapes, 4 955 processus Git |
+| Historique du graphe | 119 375 ms | 4 954 lectures, 4 917 étapes, 4 955 processus Git |
 | État local | 900 022 ms | 749 352 lectures, 6 543 436 425 octets d’objets, 21 330 processus Git, 1 046 267 chemins examinés |
-| Histoire privée | 300 206 ms | 13 309 lectures, 13 290 étapes, 13 812 processus Git, 1 175 racines énumérées |
+| Historique privé | 300 206 ms | 13 309 lectures, 13 290 étapes, 13 812 processus Git, 1 175 racines énumérées |
 
 Les compteurs locaux agrègent plusieurs worktrees ; le plafond d’objets et
 d’octets du profil s’applique à chaque worktree. Les phases locale et privée
-atteignent leurs budgets de 900 et 300 secondes. L’histoire privée garde
+atteignent leurs budgets de 900 et 300 secondes. L’historique privé garde
 aussi ses omissions et revalidations incomplètes. Le contexte activé est
 chronométré séparément ; découverte et publication restent hors des temps de
-phase. Le run n’est pas un instantané atomique du dépôt vivant, ni un benchmark
+phase. Le run n’est pas un instantané atomique du repo vivant, ni un benchmark
 contrôlé à données constantes.
 
 L’unique `verify` a une ascendance observée, mais son index contient une entrée
 `intent-to-add` dont les sémantiques ne sont pas prises en charge. Son résumé
-local reste incomplet ; l’histoire privée conserve un plafond de sortie atteint
+local reste incomplet ; l’historique privé conserve un plafond de sortie atteint
 et l’arrêt de phase. C2, C3, C4 et C5 restent manquantes. Ses cinq zéros locaux
 incomplets ne prouvent pas qu’il est propre. Cette ligne demande une vérification
 explicite de l’index et des preuves privées, sans retrait automatique.
@@ -339,7 +339,7 @@ Le SHA-256 du binaire figé a été relu sur ses octets :
 Le correctif final des diagnostics d’annulation et de plafond d’octets a été
 relu sans constat ouvert. Les suites finales passent : 324 tests Rust réussis,
 deux ignorés ; 271 tests Python réussis, six ignorés. Le
-[registre de validation](finish-ledger.md#complétion-des-gros-dépôts-a1-a6)
+[registre de validation](finish-ledger.md#complétion-des-gros-repos-a1-a6)
 identifie aussi le binaire release construit après ces derniers correctifs.
 Ces comptes ne remplacent ni les preuves du run ni les limites de conservation.
 
@@ -351,13 +351,13 @@ collecte précédent. Ils ne valident pas les nouveaux plafonds thorough.
 ## Défauts reproduits
 
 Le rapport fourni de 50 worktrees avait quatre résumés locaux partiels et 46
-non collectés. Chaque premier résumé consommait environ 30 secondes. L’histoire
+non collectés. Chaque premier résumé consommait environ 30 secondes. L’historique
 comptait 23 980 étapes pour 556 lectures d’objets ; 46 comparaisons restaient
 incomplètes. La découverte avait terminé sans lacune, ce qui ne suffisait pas
 à établir les conditions C1-C5.
 
 Les tests de volume antérieurs réutilisaient le même blob sur 25 001 chemins.
-Deux nouvelles fixtures jetables ont reproduit le coût des contenus distincts :
+Deux nouvelles fixtures temporaires ont reproduit le coût des contenus distincts :
 
 | Fixture | Avant | Après |
 | --- | --- | --- |
@@ -398,8 +398,8 @@ reproduit ces erreurs, puis sont passées après correction. La relecture du
 correctif n’a signalé aucun autre défaut actionnable. Elle n’a exécuté aucun
 test indépendamment.
 
-Une seconde revue statique a examiné les délais raccourcis d’histoire et
-d’histoire privée. Les tests Git/FIFO ont reproduit leur classification erronée
+Une seconde revue statique a examiné les délais raccourcis d’historique et
+d’historique privé. Les tests Git/FIFO ont reproduit leur classification erronée
 en panne du backend. Après correction, une échéance de phase préserve les preuves
 indépendantes ; un vrai timeout Git conserve la quarantaine. Une revalidation
 privée manquante invalide aussi la complétude d’énumération, donc C4 et C5 restent
@@ -410,11 +410,11 @@ inconnues. La revue de ce delta n’a signalé aucun défaut actionnable.
 Le premier essai après regroupement des lectures a découvert 49 worktrees :
 6 `keep`, aucun candidat, 43 `verify`. Les 49 résumés locaux ont été tentés,
 mais tous restent partiels sous leur part du budget global. Le nombre d’expansions
-d’histoire est passé à 512, avec 555 lectures d’objets ; cela atteint encore le
-plafond du graphe. Ce résultat ne démontre pas une analyse complète du dépôt.
+d’historique est passé à 512, avec 555 lectures d’objets ; cela atteint encore le
+plafond du graphe. Ce résultat ne démontre pas une analyse complète du repo.
 
-Cet essai a révélé la fausse quarantaine liée à l’échéance d’histoire privée,
-corrigée ensuite. Le dépôt avait changé depuis le rapport fourni de 50 worktrees.
+Cet essai a révélé la fausse quarantaine liée à l’échéance d’historique privé,
+corrigée ensuite. Le repo avait changé depuis le rapport fourni de 50 worktrees.
 Les durées et les nombres de verdicts ne constituent donc pas un benchmark
 avant/après à données constantes. Les plafonds restent inchangés et `apply`
 indisponible.
@@ -424,16 +424,16 @@ indisponible.
 Un passage sur un worktree lié conserve les 49 lignes de l’inventaire, avec
 48 omissions de collecte explicitement demandées. Il vérifie l’ascendance du
 HEAD vers la cible `develop` : 358 expansions, 358 lectures de commits et une
-comparaison d’histoire complète. Le résumé local observe au moins 4 969 fichiers
+comparaison d’historique complète. Le résumé local observe au moins 4 969 fichiers
 ignorés. La décision est `keep` pour cette raison positive, même si C2-C5 restent
 incomplètes.
 
 Le contrôle local atteint le plafond de 4 096 objets et tronque ses diagnostics ;
-il ne constitue pas un inventaire exhaustif des fichiers. L’histoire privée
+il ne constitue pas un inventaire exhaustif des fichiers. L’historique privé
 atteint encore son budget. La preuve d’ascendance survit à cette échéance, sans
 être confondue avec la vérification approfondie des arbres et blobs nécessaire à
 C2. Ce passage montre l’utilité d’une collecte ciblée, pas la complétude d’un gros
-dépôt ni l’inactivité du worktree.
+repo ni l’inactivité du worktree.
 
 Le processus termine avec le code 0. Les tailles et SHA-256 des trois artefacts
 correspondent au reçu. Les rapports détaillés restent dans le dossier temporaire
@@ -441,7 +441,7 @@ privé de la session ; aucun chemin personnel ni contenu local n’est copié ic
 Binaire essayé : SHA-256
 `24aeefc93556fb2a83cf41c8c46d4cdf22b903dcc5ba0d522f69f82b61274721`.
 
-### Nouveau passage du dépôt complet
+### Nouveau passage du repo complet
 
 Après correction des échéances, la revue de la même famille découvre encore
 49 worktrees : 4 `keep`, aucun candidat, 45 `verify`. Les 49 résumés locaux sont
@@ -452,9 +452,9 @@ pour timeout du backend.
 
 Cinq lignes n’établissent pas C1. Les 49 lignes restent incomplètes sur C2-C5 :
 le graphe seul ne remplace pas les vérifications approfondies, les résumés locaux
-atteignent leur délai et l’histoire privée son budget. Le passage ciblé reste
+atteignent leur délai et l’historique privé son budget. Le passage ciblé reste
 nécessaire pour obtenir les observations locales utiles à un worktree précis.
-L’état du dépôt évolue entre passages ; ni les comptes de rétention ni les durées
+L’état du repo évolue entre passages ; ni les comptes de rétention ni les durées
 ne mesurent un gain à données constantes. Des tests de fixtures tournaient aussi
 sur la machine pendant ces essais.
 

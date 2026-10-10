@@ -47,7 +47,7 @@ complet le total de la famille.
 
 Les temps proviennent des journaux du lanceur sur une machine active. Les scopes,
 budgets et travaux diffèrent ; il ne s’agit pas d’un benchmark avant/après.
-La revue familiale atteint notamment ses limites d’histoire et de collecte
+La revue familiale atteint notamment ses limites d’historique et de collecte
 locale. Les reprises ciblées ne suppriment pas les plafonds de fichiers et d’octets.
 
 ## Tailles et verdicts des priorités
@@ -99,7 +99,7 @@ découverte reprise à un parcours neuf : familles, HEAD et identités identique
 avec deux intervalles conservés pour la reprise. Ses douze artefacts ont aussi
 été vérifiés. Ce résultat porte sur ces racines, pas sur toute la machine.
 
-L’usage par les agents ou terminaux, l’exclusion des écrivains, une sauvegarde
+L’usage par les agents ou terminaux, l’exclusion des processus d’écriture, une sauvegarde
 durable et une restauration indépendante ne sont pas établis. Les stashes
 restent une propriété de la famille ; un contexte vide ne prouve pas leur absence.
 Les 59 inscriptions à vérifier appellent des revues ciblées, sans changement des

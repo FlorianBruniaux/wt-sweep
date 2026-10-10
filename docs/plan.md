@@ -18,14 +18,14 @@ Les conditions E1 et U5-U7 restent ouvertes ; le triage ne les remplace pas.
 Le [rapport HTML](html-report-plan.md) est livré par la PR #15,
 sans nouvelle règle de décision. Ses critères portent sur la fidélité au
 JSON, l’échappement, les vues filtrées, la limite de 32 MiB, les erreurs de
-publication et le reçu. La progression expose des faits d’histoire et
+publication et le reçu. La progression expose des faits d’historique et
 d’état local provisoires ; seuls le rapport final et ses preuves portent
 la décision complète. Le résumé local doit conserver intent-to-add comme
 travail non indexé, pour les index SHA-1 et SHA-256.
 
 Les preuves locales sont dans le [registre](progress.md) ; le SHA livré,
 sa CI et la recette intégrée sont suivis dans
-[#13](https://github.com/FlorianBruniaux/wt-sweep/issues/13). Le [benchmark sur familles jetables](../scripts/benchmark-review.py)
+[#13](https://github.com/FlorianBruniaux/wt-sweep/issues/13). Le [benchmark sur familles Git de test](../scripts/benchmark-review.py)
 et la [comparaison runtime](research/worktree-runtime-comparison-2026-10-07.md)
 conservent argv, identités des binaires, sorties et limites de preuve. Les
 essais concurrents ne remplacent ni les contrôles Sweep encore attendus
@@ -41,7 +41,7 @@ conserve les limites d’usage observées ; elle ne franchit aucune condition E1
 
 Avant de figer le moteur d'application, comparer agentrinse aux mêmes fixtures :
 worktree détaché, fichiers ignorés, index différent du disque, reflog seul,
-écriture concurrente et restauration sans dépôt source. Comparer aussi les
+écriture concurrente et restauration sans repo source. Comparer aussi les
 scanners stalewood, gh-reaper et workroot aux cas de découverte d'U2.
 
 Le résultat doit identifier chaque critère satisfait, refusé, manquant ou non
@@ -57,9 +57,9 @@ différent ne suffisent pas à accepter ou rejeter un candidat.
 | U2 | Découverte globale ou par racines, avec couverture observable | U1 |
 | U3 | Rapport local explicable, forge inconnue autorisée | U1 |
 | U4 | Ingestion d'exports forge et rapport combiné, fin du MVP | U2 et U3 |
-| E1 | Démonstration d'exclusion des écrivains et contrat de métadonnées | Indépendante |
+| E1 | Démonstration d'exclusion des processus d’écriture et contrat de métadonnées | Indépendante |
 | U5 | Sauvegarde durable, restauration indépendante | U3 et E1 concluante |
-| U6 | Plan exécutable et application sur fixtures jetables | U5 |
+| U6 | Plan exécutable et application sur fixtures temporaires | U5 |
 | U7 | Application réelle bornée, sélection exacte approuvée | U6 et revue indépendante |
 
 Le chemin utile initial est U1 puis U3. La découverte U2 et la préparation des
@@ -70,15 +70,15 @@ laisse `apply` indisponible et ne bloque pas le rapport en lecture seule.
 
 `scan` prend exactement une portée : `--repo`, `--root` répétable ou `--all`.
 Le mode global parcourt le système de fichiers accessible et les volumes montés
-visibles, y compris dossiers cachés, ignorés, caches et dépôts imbriqués. Il ne
-s'arrête pas après avoir trouvé un premier dépôt. Les entrées `.git` peuvent être
-des dossiers ou des fichiers ; les dépôts nus et administrations déplacées sont
+visibles, y compris dossiers cachés, ignorés, caches et repos imbriqués. Il ne
+s'arrête pas après avoir trouvé un premier repo. Les entrées `.git` peuvent être
+des dossiers ou des fichiers ; les repos bare et administrations déplacées sont
 recherchés par structure puis validés avec Git contrôlé.
 
 Croiser la découverte sur disque et les enregistrements de chaque famille Git.
 Garder une origine pour chaque observation, dédoublonner par identité et exposer
 marqueurs cassés, désaccords, boucles de liens et administrations orphelines.
-Ne pas réparer ni élaguer pendant la collecte. Inventorier sous-modules et dépôts
+Ne pas réparer ni élaguer pendant la collecte. Inventorier sous-modules et repos
 imbriqués ne les rend pas supprimables.
 
 Le rapport garde volumes/racines tentés, exclusions choisies, refus d'accès,
@@ -144,11 +144,11 @@ U6 introduit un schéma distinct `wt-sweep.apply-plan/1`. L'approbation humaine 
 liée au digest complet, pas à un score ou à une empreinte présentée sans accord.
 Sous exclusion E1, revalider, ancrer, sauvegarder, vérifier la durabilité, puis
 retirer et vérifier le résultat. Aucun `--force` ni suppression de branche ;
-le premier périmètre exclut sous-modules et dépôts imbriqués, y compris nus.
+le premier périmètre exclut sous-modules et repos imbriqués, y compris nus.
 Un cas positif doit réellement retirer une fixture, laisser une sentinelle
 inchangée et restaurer tout le contrat ailleurs. Injecter interruptions et
-écrivains ; une implémentation qui refuse toujours échoue.
+processus d’écriture ; une implémentation qui refuse toujours échoue.
 
 U7 exige une revue indépendante et une sélection approuvée. L'autorisation de
-tests jetables n'autorise aucune suppression réelle. Le harness de développement
+tests sur des fixtures temporaires n'autorise aucune suppression réelle. Le harness de développement
 ne peut jamais franchir ces barrières à la place du produit ou de l'utilisateur.

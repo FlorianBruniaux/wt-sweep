@@ -1,0 +1,36 @@
+{
+  "artifacts": [
+    {
+      "bytes": 6993,
+      "name": "inventory.json",
+      "sha256": "405dfc22f66aa92803b3eab546962db6a5eb3ca82527bdd6bb2bef7fcaed4dfb"
+    },
+    {
+      "bytes": 108623,
+      "name": "review.json",
+      "sha256": "d8745ab10b012b48351dbd776d32a920a125ea2d337320329d13e6202df25c4b"
+    },
+    {
+      "bytes": 18234,
+      "name": "report.txt",
+      "sha256": "6e4343fda8ec547417529ed73186891d5ade8d3d9df0a995577db869f2fabf31"
+    },
+    {
+      "bytes": 176748,
+      "name": "report.html",
+      "sha256": "f9bc66656fe21aafb0e0332aa46c4db130c5fdf53630d0fcc72041638e5d61be"
+    }
+  ],
+  "command": "review",
+  "finished_unix_ms": 1791572762375,
+  "publication": {
+    "completion": "requires_successful_publisher_return",
+    "durability": "unknown_from_receipt_alone",
+    "meaning": "artifacts_synced_before_receipt"
+  },
+  "run_id": "run-1791572762344-99257-0",
+  "schema": "wt-sweep.run/1",
+  "started_unix_ms": 1791572762344,
+  "status": "partial",
+  "temporal_consistency": "not_guaranteed"
+}

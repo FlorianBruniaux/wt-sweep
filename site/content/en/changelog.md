@@ -1,0 +1,550 @@
+The canonical history below retains its source language and observation dates. **Unreleased is not a published release.**
+
+
+No release has been published. `Unreleased` covers the current source checkout;
+the Cargo package version is a development version.
+
+[Project overview](README.md) · [Documentation](docs/README.md) · [Contributing](CONTRIBUTING.md)
+
+## [Unreleased]
+
+<!-- unreleased-updated: 2026-10-10 -->
+
+### Changed
+
+- Display the CLI package version in the website updates banner.
+
+- Point the website author and Portfolio footer links to
+  `https://florian.bruniaux.com/`.
+
+- Separate the four workflow steps in the French and English landing headings
+  with arrows.
+
+- Revise French and English website copy and French documentation terminology.
+  Use repo, worktree and commit consistently, explain temporary test repos and
+  writing processes in plain language, and localize the documentation sidebar.
+  Preserve commands, recorded measurements and decision conditions.
+
+- Prepare manual GitHub Pages publication at `wt-sweep.bruniaux.com`, with
+  locked site dependencies, reviewed-source and public-metadata checks. Update
+  installation guidance for the now-public repository. Publication still requires
+  a manual run on `main`; repository visibility does not change the FSL license.
+
+- Align the website header and hero with the Search Console 90rem envelope,
+  and add a bilingual source-updates banner linked to the updates page. Its date
+  comes from this changelog; the banner labels the changes as unreleased.
+
+- Adopt the Compact website header: hero-aligned navigation, accessible GitHub
+  and language icons, frameless theme control and a final orange Install action.
+  Mobile actions use full-width Docs and Install rows with keyboard focus trapping.
+
+### Fixed
+
+- Align website browser assertions with the package version now displayed in
+  the updates banner; retain layout, date and navigation checks.
+
+- Remove redundant question-mark buttons from the HTML sidebar. Section labels
+  retain explanations on hover, keyboard focus and click, with native hover
+  help when JavaScript is disabled. Links still navigate to their sections.
+
+- Preserve the Git child's exit verdict when it has already closed its input
+  before a commit session finishes. On macOS, this ordering previously returned
+  `input_io` before checking the exit status. Failed exits, malformed output and
+  expired reads still refuse provisional evidence. A regression test forces both
+  successful and failed child exits before finalization.
+
+### Added
+
+- GitHub/GitLab repository, branch and commit links in review HTML and text,
+  with local upstream observations and capture intervals. Display associated
+  imported PR/MR links, titles, states and provenance. No fetch or server query:
+  page availability and publication remain unverified. `--no-context` skips
+  remote collection; imported PR/MR associations retain their existing rules.
+
+- Save HTML runs to `~/Desktop/Worktree Sweep/` on macOS when `--run-dir` is
+  omitted. Add `--open` to generate HTML and request opening after successful
+  publication; print a quoted reopen command in human output. Explicit output
+  directories, plain JSON defaults and publication protections remain intact.
+  A failed opener leaves the saved report available and emits a warning.
+
+- English console recap led by observed disk allocation in decimal KB/MB/GB.
+  Separate per-worktree commit ancestry from cleanup verdicts, rank up to five
+  selected worktrees by measured size, explain blockers and name collection
+  limits. Offer a safely quoted focused command using the running executable
+  and that row's recorded targets. Missing sizes, provisional history and
+  omitted targets remain explicit; no collection limits or verdicts change.
+
+- Local bilingual wt-sweep website with Astro and Starlight: product landing,
+  twelve reviewed documentation guides in English and French, HTML sitemap,
+  source-status updates, accessible navigation and theme controls. Publish only
+  the explicit documentation allowlist, refuse stale reviewed source hashes
+  and retain synthetic native report provenance. Public metadata requires an
+  explicit HTTPS origin; no site publication or release is implied.
+
+- Prepare version `0.1.0-alpha.1` with a publication checklist and a scoped
+  Apple Silicon archive plan. Align the declared Rust minimum with the tested
+  1.95 toolchain and apply its Clippy suggestions to equivalent conditionals
+  and parity checks. Qualify an Apple Silicon archive from a clean clone with
+  dependency notices, file hashes and the documented disposable demo. No release
+  is implied by the package version.
+
+- Copyable assistant bootstrap prompt for macOS: acquire the CLI and bundled
+  Claude/Codex skills, build, run the disposable demo and read a real report in
+  batches. Document repository access, existing-checkout preservation and the
+  distinction between explicitly reading a skill and native client discovery.
+
+- Gemini overview at the top of both READMEs: discovery, disk measurement, Git
+  checks and reports, with current verdicts and the recoverable-space boundary.
+  Preserve the generation prompt, original image bytes and QA/cost provenance.
+
+- Sanitized 9 October acceptance record: 71 registered worktrees in one real
+  family, two focused reviews, five complete priority disk measurements and
+  explicit limits on the cross-run summary, APFS sizes and cache diagnosis.
+
+- Explicit-root discovery checkpoints: `scan --checkpoint-out NEW_FILE`, then
+  `scan --resume FILE --checkpoint-out NEW_FILE`. Revalidate saved identities,
+  replay interrupted directories, reread Git families and retain each interval
+  in JSON, text and HTML. Discovery allowances are selectable within finite caps.
+
+- Adaptive commit sessions for history and private-history traversal. Read and
+  hash each requested object in traversal order, then accept the staged evidence
+  only after a successful child exit. Object and phase byte caps remain; each
+  session has an aggregate transport allowance and a separate 64 KiB stderr cap.
+  A fixed-corpus runner records processes, bytes, durations and conservation for
+  two frozen binaries; the documented measurements separate gains from limits.
+
+- `scan` and `review --disk-usage` accept repeatable `--disk-root` selections
+  of exact registered worktree or shared Git paths. Reports retain all roots,
+  distinguish requested from unrequested rows, and keep subset totals explicit.
+  Unused entry/time allowances pass to later roots; each remaining requested
+  root receives a share before a large early directory can consume the budget.
+  Count-only disk progress is emitted every five seconds on stderr, including
+  redirected output, subject to filesystem calls returning. A fixed-corpus
+  comparison recipe checks byte counts and fixture conservation between binaries.
+
+- Collapsible HTML sections for the disk recap, overview, Git families, disk
+  measurements and coverage. Native controls work without JavaScript. Bulk
+  expand/collapse controls preserve nested evidence state, and navigation opens
+  the targeted section when JavaScript is available. Print styles retain the
+  section contents even after folding them.
+
+- Put disk measurements at the top of the HTML report: source-wide deduplicated
+  allocation, measurement coverage, cleanup candidate count and the three
+  largest observed worktree sizes with copyable paths. Recoverable space remains
+  unestablished; missing sizes are not zero, and overlapping row sizes are not
+  added together. Filtering keeps this source-wide scope.
+
+- Explain each HTML navigation section with hover/focus help and a separate
+  touch-friendly help button. Native popovers support click and Escape without
+  JavaScript; section links keep their navigation behavior.
+
+- Copy-path buttons in HTML worktree rows, Git families, disk observations and
+  coverage details. UTF-8 paths are copied from their exact bytes, with visible
+  confirmation and a selected-text fallback when clipboard access is refused.
+  Non-UTF-8 paths and control characters are reported without substitution.
+
+- Sanitized two-project acceptance record: 69 registered worktrees, matching
+  text/JSON/HTML reports, browser checks and explicit collection limits.
+  Records local evidence separately from remote delivery.
+
+- Release review benchmark runner for constant 50/100-worktree fixtures, pipe
+  and live PTY output, first collected fact, phase costs and independent source
+  conservation. The runner checks exact report identities and executable
+  hashes, excludes pending statuses and partial fact prefixes, and records
+  bounded timestamped output chunks for offline timing verification. It
+  terminates its owned process groups on capture errors. Recorded 50/100-worktree samples distinguish
+  comparable evidence from budget-driven refusals and retain ignored-file costs.
+
+- Controlled runtime comparison of Sweep, Holt and AgentRinse on synthetic
+  repositories, with native outputs and an independent conservation oracle.
+  Decisions remain specific to the audit contracts; recovery was not tested.
+
+- Add offline HTML reports for scan, review and plan with `--html --run-dir`,
+  grouped by Git family with source/view totals, bounded escaped evidence,
+  browser filters and receipted bytes.
+- Show provisional history and local-file observations during review, keeping
+  final cleanup verdicts behind all decision checks.
+- Interpret intent-to-add index entries without rejecting the entire local
+  summary; preserve staged/unstaged distinctions and incomplete evidence.
+
+- GitHub milestone for the read-only audit roadmap, with a tracking epic and
+  five acceptance-driven tasks. A separate vision epic records optional
+  integrations and future worktree management; it does not enable removal.
+  The [roadmap](docs/roadmap.md) links to the issues and their dependencies.
+
+- Source-level comparison of 12 cloned worktree tools, with specialist backend,
+  Rust, system and interface analyses, pinned commits and implementation references.
+  Separates existing Sweep behavior from proposed HTML, CLI and provenance work,
+  and records recovery and read-only boundaries. That source inspection did not
+  execute or integrate competitor code; the runtime comparison listed above is separate.
+
+- Worktree ecosystem comparison using Agentic Ecosystem Map, Perplexity and
+  primary sources. Records overlap with Holt, AgentRinse and lifecycle managers,
+  reuse options and the disposable comparisons required before expanding scope.
+  This research pass preceded the disposable runtime comparison.
+
+- Compact terminal progress and a shorter `--summary` recap. Colors and icons
+  follow each terminal stream; `--color auto|always|never`, `NO_COLOR` and
+  `TERM=dumb` control decoration. `--verbose` exposes detailed progress and
+  metrics. Saved reports and JSON remain plain and complete; partial disk
+  measurements and missing evidence remain visible.
+
+- Opt-in `scan --disk-usage` and `review --disk-usage`: allocated and logical sizes per worktree and
+  shared Git directory, inode-deduplicated totals, bounded metadata-only walks
+  and explicit partial measurements. Includes ignored files, hardlink and
+  nested-root accounting, tests and a [disk usage guide](docs/disk-usage.md).
+  `review` publishes sizes in its console recap, `report.txt` and `review.json`;
+  `plan` carries captured sizes and their original interval from the inventory.
+  Filters retain source totals. Missing measurements are explicit, and disk
+  accounting never changes cleanup verdicts.
+
+- Discovery performance in progress, text reports and optional
+  `coverage.discovery_metrics`: monotonic elapsed time, directory-read attempts,
+  listed entries and worker count. Console rates stay separate from coverage.
+- Review recaps show measured local paths per second, per-phase Git process
+  counts when available, and the slowest recorded collection phase.
+- An opt-in Rust discovery benchmark compares one and four metadata workers on
+  the same disposable Git corpus, checking exact results and source conservation.
+
+- `review` and `plan --budget standard|thorough` select finite collection
+  allowances. Standard preserves the previous defaults; thorough permits larger
+  local inventories, commit graphs and private-history checks. Applied limits
+  and phase counters are recorded in optional `collection_metrics`.
+- Large end-to-end Git fixtures cover a complete candidate with 4,200 distinct
+  blobs and 600 commits, private roots, missing/corrupt objects and a family of
+  50 worktrees. Their independent oracle checks source conservation.
+- Console recaps separate resolved verdicts from incomplete candidate evidence,
+  show collection time by phase and count missing checks on unresolved rows.
+  The assistant skill documents focused retries and their evidence limits.
+
+- `review` and `plan --worktree ABSOLUTE_PATH` focus history, local, private
+  history and context collection on one recorded worktree. Other rows and the
+  original inventory remain in the report with explicit missing evidence.
+
+
+- Task-based model and reasoning profiles for the `wt-sweep` skill, with
+  host-capability checks, inherited-setting fallbacks and at most two read-only
+  subagents for independent report reading or verification.
+
+- Repository `wt-sweep` skill for Claude Code and Codex: scoped CLI review,
+  saved-report interpretation in pages, and evidence-based conservation and
+  verification suggestions before cleanup. Includes French usage documentation
+  and English/French routing scenarios.
+- Shared skill generation from `harness/skills`, with resource/link checks and
+  preservation of changed generated files and unrelated project skills.
+
+- Structured `--summary` console recap with verdicts, source coverage, local
+  checks completed or missing, remaining decision checks and grouped collection
+  limits. Saved runs print the full report path in a separate block.
+- Readable discovery and review progress on stderr. JSON output and decision
+  rules are unchanged; full reports retain technical evidence and digests.
+
+- Add `review` to discover and judge worktrees in one command, preserving the input
+  inventory beside the review and report in a single run with artifact hashes.
+- Add command-specific help and an explicit diagnostic for historical review/1
+  archives passed where an inventory is required.
+
+- Discovery progress, distinct stop reasons and a conservative remaining-scope
+  cover. Ctrl-C retains partial observations when possible and exits `130`;
+  destination verification can still refuse publication.
+- Exact JSON/text publication limits. Oversized inventories declare omitted
+  detail or rows; oversized reviews refuse without changing their source data.
+- Publication fault tests using real files, short writes, full-disk and interrupted
+  writes, and failures at each synchronization stage. Run receipts distinguish
+  artifact hashes from successful publisher completion.
+
+- Optional commit and changelog context at recorded Git OIDs, with separate
+  observation intervals, bounded excerpts and explicit incomplete results.
+  Commit counts compare HEAD against the union of selected target histories.
+  `--changelog-path` selects tracked paths; `--no-context` skips these reads.
+  Neither option changes the triage decision rules.
+- Forge provenance in detailed reports: host/project, recorded HEAD, update
+  time, capture interval, raw-source hash and receipt verification.
+
+- Per-repository integration targets via an identity-bound `--target-map`. A plain
+  `--target` now requires one physical repository family; missing mappings never
+  select a default branch. Target lists now use canonical byte order in every
+  phase rather than input order; omitted targets remain unknown.
+- Report filters for repository, path, branch, local state and verdict, with
+  grouping by repository or parent directory. Filtered JSON keeps the complete
+  source review, original coverage and digest, plus a separately digested view.
+
+- Three triage verdicts: `keep`, `cleanup_candidate` and `verify`. Positive
+  retention reasons take priority; candidates require current controls, verified
+  Git integration, complete clean local state and covered private history.
+  Reports name missing conditions and the next checks. Usage remains unknown.
+- Current worktree role, registration protection, administrative locks and Git
+  operation markers, checked before and after collection. Deep object checks
+  are reserved for possible candidates; collected graph facts remain visible.
+
+- Current private-history roots and shared stash context in version-2 reviews.
+  Root coverage uses verified commit ancestry and explicit named anchors, with
+  separate results for uncovered and incomplete history. Earlier observations
+  remain labeled after failed final checks.
+- One stash list per physical repository family, with separate membership,
+  metadata and file-detail completeness. Human reports keep shared stash context
+  separate from each worktree's own history.
+- A bounded commit-history pass across worktrees before local file collection and
+  deep Git checks. Per-target graph results distinguish complete non-ancestry
+  from incomplete reads and remain separate from tree/blob verification.
+- History progress on stderr and counters in `history_metrics`, with in-run
+  caches, work-unit budgets and explicit omitted-target counts. References are
+  revalidated after local and deep work; earlier graph results remain visible
+  when the current result becomes unknown.
+- Family-level timeout containment across history, local collection, deep checks
+  and final Git revalidation, so distinct HEADs do not repeatedly retry a blocked
+  repository while other families wait.
+- Current local summaries in `plan`, under `items[].local_summary` in
+  `wt-sweep.review/2`. Separate counts describe staged and unstaged changes,
+  conflicts, untracked and ignored files, with observation intervals, source
+  hashes, partial counts and explicit gaps. Input inventories remain version 1.
+- Separate limits for compact local collection, including ordinary indexes with
+  more than 20,000 entries. Detailed `scan --local` manifest limits are unchanged.
+- [Worktree triage action plan, v2](docs/superpowers/plans/2026-10-05-worktree-triage-v2.md)
+  and [architecture/plan critique](docs/superpowers/plans/2026-10-05-worktree-triage-review.md),
+  covering decision conditions, large-repository limits, local work and stashes,
+  machine discovery and filtering. The revised plan defines delivery dependencies
+  and acceptance criteria. Delivery status is recorded in the plan.
+- [French hands-on tutorial](docs/tutorial.fr.md) with a disposable three-worktree
+  trial, expected results with and without an integration target, local test
+  commands and a copyable prompt for an assistant reviewing one repository.
+- [French README](README.fr.md) with translated Mermaid diagrams and expandable
+  sections, plus links to switch between the English and French overviews.
+- Dark SVG infographic showing a matching commit alongside an untracked local
+  file, based on the disposable demo. Includes editable text and accessible
+  descriptions; no image-generation service was used for this visual.
+- README Mermaid diagrams for the scan/review flow and classification rules.
+- Read-only macOS inventory and review MVP, covering U1–U4 of the
+  [acceptance plan](docs/plan.md).
+- Discovery from a repository path, selected roots or mounted volumes. Results
+  include repository families, linked and detached worktrees, missing
+  registrations, coverage gaps and observation intervals. Paths retain their
+  original bytes, and object IDs remain full-length.
+- Native macOS mount collection and a verified policy that disables dataless-file
+  materialization for the process, reading threads and Git children. Metadata
+  reads can use 1 to 8 workers.
+- Local Git review that verifies object bytes and checks commit identity,
+  ancestry and tree identity. Integration targets must be explicit; other refs
+  remain intermediate.
+- Offline GitLab/GitHub export imports with capture receipts and raw-source
+  replay. Partial exports retain observed requests and gaps in their provenance
+  or association with a worktree.
+- Detailed reports with bounded commit subjects, branches, full HEADs, MR/PR
+  titles and links, observations, risks and unknowns. `--summary` prints five lines.
+- `scan --local` manifests for tracked, untracked, ignored and hidden resident
+  files, with hashes, metadata, index observations and the worktree's own HEAD
+  reflog. Ordinary index versions 2/3 and conflict stages are parsed; split-index
+  semantics remain unknown to avoid the observed Git metadata side effect.
+- `--run-dir` to save JSON, the full report and an artifact-hash receipt in a
+  unique directory. Concurrent runs do not replace each other's outputs.
+- User documentation on 2026-10-05: [getting started](docs/getting-started.md),
+  [CLI reference](docs/cli.md), [forge imports](docs/forge.md),
+  [JSON contracts](docs/contracts.md), [architecture](docs/architecture.md),
+  [contribution guide](CONTRIBUTING.md) and linked documentation/decision indexes.
+  Includes replayable Git and forge demos, a captured report and annotated JSON.
+- Workflow infographic with descriptive alt text and an
+  [editable source and generation record](docs/assets/README.md).
+- Disposable Git fixtures, independent conservation checks and a macOS CI
+  workflow. Observed results and exclusions are in the
+  [validation ledger](docs/finish-ledger.md#vérifications).
+- Writer-exclusion experiments and the
+  [decision to keep removal unavailable](docs/decisions/apply-readiness.md).
+- Optional [AI development harness](docs/harness.md) with generated Claude/Codex
+  instructions and four roles. The CLI needs no AI model.
+- [FSL-1.1-ALv2 license](LICENSE.md), matching Agent Router, declared in Cargo.
+- README badges for the CI workflow, pinned Rust toolchain, macOS runtime
+  and license; six GitHub area labels documented in the contribution guide.
+- Author portrait, role and profile/blog/project links in the README, matching
+  the AgentSec presentation block.
+
+### Changed
+
+- Reorganize the English and French READMEs around disk pressure, first review
+  and verdicts. Keep the quick start visible; put report captures, assistant
+  prompts, Mermaid diagrams, evidence limits and validation details in eleven
+  expandable sections per language.
+
+- Check Python 3.11+ before the documented test sequence, so an older system
+  interpreter stops before running suites that need `file_digest` and `tomllib`.
+
+- Align both READMEs, roadmap, delivery record and guide index with merged
+  PRs #18, #22 and #23. Record successful pre-merge checks separately from
+  the main job blocked by account billing. Scope the remaining #20 work to
+  native disk collection experiments and keep management in vision #14.
+
+- Lead both READMEs with the original storage problem and three user needs:
+  disk pressure, scattered worktrees and uncertain cleanup decisions. Move the
+  problem and expected outcomes before the report preview; keep removal and
+  recoverable-space limits explicit.
+
+- Refresh both READMEs and the roadmap with the completed audit milestone,
+  explicit CI and HTML-delivery follow-ups, and the bounded 63-worktree acceptance.
+  Replace the historical hero diagram with light/dark captures of a real synthetic
+  CLI report; update Mermaid output labels and keep earlier visuals as archives.
+
+- Display HTML disk sizes in decimal octet units (Ko, Mo, Go and larger), with
+  exact counts in tooltips and expandable totals. Sorting still uses raw bytes.
+
+- Apply the BoldGuy visual theme to offline HTML reports: warm light surfaces,
+  neutral dark surfaces, orange focus and navigation, system fonts and
+  monospace metrics. Theme choice persists when browser storage is available;
+  system preference remains the fallback. Expanded desktop evidence gets more
+  reading space. Add a repeatable browser check for themes and navigation.
+
+- Reuse the measured serialized size of unchanged private-history records
+  within an output-budget pass; modified records are measured again. Finite
+  caps and final evidence checks remain in force.
+- Verify equal verdicts for equal collected evidence in the 100-worktree
+  regression; final private-history deadline gaps retain C4/C5 as unknown.
+
+- Deep candidate checks batch distinct blobs and reuse verified trees within the
+  current physical family and review, under the same object-integrity checks.
+- Private-history checks share one bounded ancestry union. Already useful
+  anchors receive up to 32 priority expansions before the ordinary frontier
+  resumes; complete negatives still require every required route to finish.
+
+- Separate README sections with horizontal rules in both languages, split navigation
+  into two rows, and display the read-only status in a GitHub note.
+
+- Local summaries group tree and blob reads into bounded Git batches, size
+  payloads before reading them and verify each object against its full OID.
+- Commit history shares a verified target traversal across worktrees and alias
+  refs in the same physical family. The per-target step cap counts unique
+  expansions; each ref still receives its own final check.
+- Local collection reserves a share of the remaining time for each remaining
+  worktree. A focused retry gets the normal per-worktree allowance.
+- The console distinguishes local time, object and byte caps and explains a
+  focused retry without implying that per-worktree caps are raised.
+
+- Align the English/French README, acceptance plan and progress entry points with
+  the merged T01-T09 triage. Add a roadmap separating large-repository collection
+  work from the gated backup and removal phases, with dated delivery evidence.
+- Regenerate repository Claude/Codex instructions and all four agent roles from
+  canonical sources with the current triage contracts and validation commands.
+  Model inheritance and permissions are unchanged; native loading remains unverified.
+
+- Fresh scan paths are stored as absolute paths. Filesystem publication refuses
+  ambiguous legacy relative scopes and inventories with omitted family boundaries.
+- Scan and review share final output-boundary revalidation. Parent directories
+  are synchronized after creating a run; visible receipts after a later failure
+  remain available with explicit unknown durability.
+
+- Simple single-family target lists retain unknown report rows when that family
+  disappears after scanning. Explicit target maps still refuse an unreadable or
+  mismatched initial identity; unsafe publication remains refused.
+
+- Replaced the README workflow image with the Git/local-file example. Mermaid
+  diagrams explain the workflow; the earlier Gemini image and generation history
+  remain in the assets documentation.
+- Collapsed README build notes, capability details, classification diagram and
+  validation records into expandable sections. Quick-start commands and current
+  product limits remain visible.
+- Rewrote the README in English with cloning instructions,
+  report examples and links to the existing French engineering records.
+- Replaced the README slogan and repetitive guide prose with concrete
+  descriptions. Commands, captured outputs and product limits are unchanged.
+- Grouped the changelog by change type and retained bootstrap history.
+- Named the private visual reference without linking to an inaccessible page.
+- Replaced stale bootstrap status in canonical repository instructions with a
+  link to implementation evidence and regenerated the affected projections.
+- Kept local handoffs outside tracked source to avoid distributing private paths.
+
+### Fixed
+
+- Use the same surface, border, corners and padding for all five collapsible
+  HTML sections. The disk recap retains its orange top border.
+
+- Use the available report width beside the sidebar on large screens instead
+  of centering the content inside a 1200 px cap. Keep responsive mobile spacing.
+
+- HTML disk and coverage details separate long paths, copy controls and gap
+  reasons. Expanded disk evidence uses the full width; mobile controls sit below
+  the path without interrupting the explanation.
+
+- Keep the redirected progress milestone available until a known history relation
+  or numeric local count is collected. Pending history and all-unknown local
+  events no longer hide a later useful observation.
+
+- Git output collection waits for readable/writable descriptors instead of
+  sleeping after each producer burst. Input/output caps, deadlines, failed
+  exit checks and process-group cleanup remain enforced.
+- Count deep Git processes across all families and auxiliary reads; refuse
+  invalid public local-phase deadlines before collection starts.
+- Restore exhausted object/byte refusals before reading repository identity.
+- Preserve the original local byte-limit reason instead of reporting a later
+  check of an already stopped collector as a timeout.
+- Retain the requested full object IDs when a deep blob batch fails, without
+  attributing a batch timeout to an unverified individual object.
+- Wait for actual SIGINT-handler delivery in the isolated signal test after
+  sending one signal; the production handler is unchanged.
+
+- Separate commit-history and private-history phase deadlines from full Git-call
+  timeouts. Budget exhaustion leaves the affected checks incomplete without
+  quarantining unrelated evidence in the same repository family.
+- Failed final private checks now invalidate enumeration completeness, keeping
+  both private coverage and final consistency unknown.
+
+- Give the expanded macOS CI suite 45 minutes: the 15-minute and intermediate
+  30-minute job limits interrupted runs. Test commands and product time budgets
+  are unchanged.
+
+- Distinguish an exhausted local-summary allowance from a full Git-call timeout.
+  A slow worktree no longer suppresses later worktrees merely because its own
+  shorter time budget expired during a child read.
+
+- Normalize full hexadecimal Git object identities across graph, deep and private
+  history checks. Valid uppercase parent IDs no longer produce a complete
+  non-ancestry result; repeated case aliases do not consume extra graph steps.
+- Refuse malformed commit graph headers as incomplete evidence instead of
+  treating an unread parent as a complete negative relationship.
+
+- Stop repeated dependent reads within a repository family after a Git timeout
+  during current local collection. Preserve observed counts and continue other
+  families; ignore-rule and physical-file errors keep independent Git checks.
+
+- Explicit integration targets are reviewed before intermediate refs. Repositories
+  with many branches can now produce an observation for a requested target before
+  reaching the candidate limit. Object verification and the 128-candidate limit
+  are unchanged; shared review budgets can still leave worktrees unexamined.
+- Python fixture Git commands now close standard input explicitly. Running the
+  suite from a terminal previously made `pack-objects --all` wait for input and
+  time out during the FIFO-pack test setup. A regression keeps the caller's
+  input open while checking that fixture packing completes; timeouts are unchanged.
+- Transport-denial test setup now uses the standard ten-second Git budget.
+  The first GitHub run exceeded its one-second fixture-initialization limit.
+  The assertion requires a protocol refusal rather than accepting any error;
+  production deadlines are unchanged.
+- Main-worktree identification when Git administration uses `--separate-git-dir`.
+- Discovery now retains uncertainty when mounts change during a scan.
+- Output checks now reject locations inside a repository not yet discovered by
+  a partial global scan, or inside a worktree moved after inventory capture.
+- Forge association no longer accepts altered normalized facts or contradictory
+  host/project fields. Missing GraphQL nodes remain coverage gaps.
+- Corrected index v3 reserved-flag handling and inconsistent entry budgets
+  across files, index entries and administrative observations.
+- Redundant relation reads when the source commit is unreadable. The FIFO
+  regression passes within its original timeout; malformed subjects on valid
+  objects still allow Git judgement.
+- Test-process cleanup that depended on a global process-table read. Tests now
+  reap the process they own, including on failure.
+
+### Read and preservation boundaries
+
+- Git runs with controlled arguments and environment, I/O limits and timeouts.
+  The CLI neutralizes executable configuration and denies implicit object downloads.
+- Object reads check commit, tree and blob bytes against SHA-1 or SHA-256 OIDs,
+  with SHA-1 collision detection. Missing or corrupt objects remain unknown.
+- Outputs require new files outside inspected boundaries and descriptor identity
+  checks. Three private unsafe boundaries are documented and reviewed: native
+  mounts, materialization policy and descriptor-selected Git cwd.
+- `apply` remains unavailable. E1 writer exclusion is not demonstrated; durable
+  backup, independent restore and removal are blocked. The
+  [finishing ledger](docs/finish-ledger.md) records local checks and remaining limits.
+
+## Bootstrap history
+
+The initial scaffold pinned Rust and Cargo, exposed help/version and refused
+unimplemented product commands. It introduced the generated development harness,
+CLI/generator tests and acceptance plan before discovery and review existed.
+The implementation and scaffold were first committed together in `a1a768f`.
+There was no separate bootstrap release.

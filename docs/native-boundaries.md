@@ -73,7 +73,7 @@ prouve pas que le fichier n'a jamais été ouvert.
 
 Un véritable placeholder FileProvider et les permissions TCC ne sont pas testés.
 La politique empêche la matérialisation dataless, pas tout accès réseau sur un
-volume déjà monté. Elle ne démontre ni exclusion des écrivains, ni résidence
+volume déjà monté. Elle ne démontre ni exclusion des processus d’écriture, ni résidence
 atomique, ni interruption immédiate d'une opération bloquée dans le noyau.
 
 ## Sources et preuves

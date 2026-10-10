@@ -1,32 +1,32 @@
 # Analyser ses worktrees avec un assistant
 
-[Index documentaire](README.md) · [Tutoriel CLI](tutorial.fr.md) · [Configuration du dépôt](harness.md)
+[Index documentaire](README.md) · [Tutoriel CLI](tutorial.fr.md) · [Configuration du repo](harness.md)
 
 Le skill `wt-sweep` apprend à Claude Code et à Codex à utiliser la CLI, lire ses
 rapports par étapes et proposer les vérifications utiles avant un nettoyage.
 La CLI calcule les verdicts. L’assistant explique les résultats et les limites,
 puis propose les prochaines actions de conservation ou de vérification.
 
-Le skill est livré avec le dépôt. Il n’installe aucun service et ne demande
+Le skill est livré avec le repo. Il n’installe aucun service et ne demande
 aucune clé d’API propre à wt-sweep. L’assistant utilise votre session habituelle ;
 l’outil reste utilisable seul, sans modèle.
 
 ## Installer depuis une nouvelle session
 
 Le [prompt de démarrage](bootstrap-prompt.fr.md#prompt-à-copier) guide un assistant
-disposant du terminal pour récupérer le dépôt et ses skills, compiler la CLI,
-qualifier le parcours sur un dépôt jetable puis lire les résultats par étapes.
+disposant du terminal pour récupérer le repo et ses skills, compiler la CLI,
+qualifier le parcours sur un repo de test temporaire puis lire les résultats par étapes.
 Il distingue la lecture explicite du skill de sa reconnaissance native par le
 client. Le clonage ne copie rien dans les skills globaux.
 
 ## Démarrer
 
 Ouvrez une session Claude Code ou Codex **dans le checkout de wt-sweep contenant
-le skill**. Le dépôt à analyser peut être ailleurs : son chemin est passé à la
-CLI. Une session ouverte seulement dans cet autre dépôt ne dispose pas
+le skill**. Le repo à analyser peut être ailleurs : son chemin est passé à la
+CLI. Une session ouverte seulement dans cet autre repo ne dispose pas
 nécessairement du skill.
 
-| Client | Invocation | Fichier du dépôt |
+| Client | Invocation | Fichier du repo |
 | --- | --- | --- |
 | Claude Code | `/wt-sweep` | [Skill Claude](../.claude/skills/wt-sweep/SKILL.md) |
 | Codex | `$wt-sweep` | [Skill Codex](../.agents/skills/wt-sweep/SKILL.md) |
@@ -44,15 +44,15 @@ les sources avec les dépendances déjà en cache. Un téléchargement manquant 
 signalé. Il ne lance pas d’installation globale ou de scan de toute la machine
 pour se préparer.
 
-## Prompt pour un premier dépôt
+## Prompt pour un premier repo
 
-Remplacez `/chemin/du/clone` par le chemin absolu du dépôt à examiner et confirmez
+Remplacez `/chemin/du/clone` par le chemin absolu du repo à examiner et confirmez
 la référence d’intégration. L’exemple emploie `refs/heads/develop` ; gardez-la
 seulement si c’est bien votre cible. Dans Claude Code, remplacez `$wt-sweep` par
 `/wt-sweep`.
 
 ```text
-$wt-sweep Analyse les worktrees du dépôt /chemin/du/clone.
+$wt-sweep Analyse les worktrees du repo /chemin/du/clone.
 La cible d’intégration confirmée est refs/heads/develop.
 Produis un rapport HTML hors ligne et mesure l’espace disque.
 Regroupe par répertoire. Donne d’abord le bilan global, puis examine les
@@ -133,14 +133,14 @@ Les rapports de plusieurs exécutions conservent leurs dates et leurs périmètr
 
 Pour plusieurs racines, demandez leur inventaire puis confirmez les cibles par
 famille. Le skill peut examiner chaque famille séparément ou employer la table
-de cibles prévue par la CLI. Il ne devine pas une branche commune à tous les dépôts.
+de cibles prévue par la CLI. Il ne devine pas une branche commune à tous les repos.
 
 ## Poursuivre une découverte interrompue
 
 ```text
 $wt-sweep Lis le checkpoint de découverte et le dernier rapport indiqués.
 Vérifie les options dans scan --help. Poursuis uniquement les racines enregistrées
-avec --resume et un nouveau --checkpoint-out hors des dépôts inspectés.
+avec --resume et un nouveau --checkpoint-out hors des repos inspectés.
 Conserve chaque intervalle, explique la couverture et les lacunes du nouveau
 passage. En cas de refus d'identité ou d'empreinte, ne modifie pas le checkpoint.
 ```
@@ -209,7 +209,7 @@ confirmés par le client et les lots restant à lire.
 ## Bilan attendu
 
 Le résumé commence par les nombres à conserver, candidats et à vérifier, puis
-présente un tableau groupé par dépôt ou dossier :
+présente un tableau groupé par repo ou dossier :
 
 | Élément | Information attendue |
 | --- | --- |
@@ -243,12 +243,12 @@ python3 -B -m unittest discover -s tests -p 'test_skill_workflow.py' -v
 Le dernier test crée sa propre famille Git temporaire. Il vérifie les recettes
 de collecte et de lecture par pages, un candidat propre, la conservation d’un
 fichier non suivi et l’absence de changement dans les worktrees inspectés.
-Il ne scanne pas vos dépôts.
+Il ne scanne pas vos repos.
 
 Pour vérifier le chargement natif, ouvrez une nouvelle session dans ce checkout,
 invoquez le skill et demandez : « Lis ton SKILL.md et explique les étapes sans
 lancer d’analyse. » Vérifiez le chemin effectivement chargé. Lancez ensuite le
-prompt sur un dépôt que vous choisissez ou reprenez un rapport déjà produit.
+prompt sur un repo que vous choisissez ou reprenez un rapport déjà produit.
 Cette étape confirme un autre niveau que les tests automatiques : l’invocation
 réelle du skill dans votre client.
 
@@ -258,13 +258,13 @@ Modifiez [la source commune](../harness/skills/wt-sweep/SKILL.md), ses référen
 et ses [scénarios de routage](../harness/skills/wt-sweep/evals/scenarios.json), puis
 régénérez avec `python3 -B scripts/sync-ai.py --write`. Les copies Claude et Codex
 ne s’éditent pas séparément. Le [guide du harnais](harness.md) détaille les
-contrôles et leurs limites. Aucun hook global n’est installé par ce dépôt.
+contrôles et leurs limites. Aucun hook global n’est installé par ce repo.
 
 ## Une collecte ciblée après un budget atteint
 
 Après lecture du rapport, l’assistant peut proposer `--worktree` avec le chemin
 absolu exact d’une ligne à vérifier. Cette option réduit les lectures de fichiers,
-d’histoire et de contexte ; `--path-prefix` seul ne fait que filtrer l’affichage.
+d’historique et de contexte ; `--path-prefix` seul ne fait que filtrer l’affichage.
 Le [tutoriel de collecte ciblée](tutorial.fr.md#approfondir-un-worktree-après-une-analyse-partielle)
 fournit le bloc de commandes. Vérifier la présence de l’option dans l’aide du
 binaire utilisé. Garder les deux rapports et expliquer les contrôles qui restent

@@ -9,7 +9,7 @@ U5 demeure bloquée. E1 ne bloque pas le rapport en lecture seule U1 à U4.
 
 ## Rejouer les témoins
 
-Depuis la racine du dépôt, sans dépendance Python externe :
+Depuis la racine du repo, sans dépendance Python externe :
 
 ```sh
 python3 -B -m unittest discover -s experiments/exclusion -p 'test_*.py' -v
@@ -18,10 +18,10 @@ python3 -B experiments/exclusion/experiment.py
 
 Le programme possède exclusivement un dossier `wt-sweep-e1-*` créé par
 `TemporaryDirectory` sous `/private/tmp`. Il retire seulement cette fixture à la
-fin. Il ne reçoit aucun chemin de dépôt réel. Git utilise un environnement
+fin. Il ne reçoit aucun chemin de repo réel. Git utilise un environnement
 remplacé, un HOME vide et un répertoire de templates/hooks vide ; aucun réseau,
 configuration globale, permission, hook installé, fetch, prune ou gc. Les commits
-créés sont ceux du dépôt jetable. Les enfants sont attendus et arrêtés en cas
+créés sont ceux du repo de test temporaire. Les enfants sont attendus et arrêtés en cas
 d'erreur. Les échanges READY/GO/DONE ordonnent les écritures ; les délais bornent
 les attentes sans produire de course fondée sur `sleep`.
 
@@ -37,13 +37,13 @@ les attentes sans produire de course fondée sur `sleep`.
 Le test initial échouait avec `UNKNOWN != NON_DEMONTREE` avant implémentation.
 La suite finale passe : un test de comportement vérifie les trois témoins réels,
 la vue partielle injectée et les inconnues de conservation. Ce succès valide les
-contre-exemples, pas l'exclusion. Un mécanisme limité aux écrivains coopératifs
+contre-exemples, pas l'exclusion. Un mécanisme limité aux processus d’écriture coopératifs
 doit refuser toute situation où cette coopération n'est pas établie.
 
 Les [retours de session](../retex-sessions.md) ajoutent cinq tests : retrait
 sans force qui efface les ignorés, témoin positif de refus des non-suivis,
 empreinte HEAD/status insensible aux octets, perte de l'index distinct dans un
-patch depuis HEAD et observation native `lsof` d'un écrivain au cwd extérieur.
+patch depuis HEAD et observation native `lsof` d'un processus d’écriture au cwd extérieur.
 Les six tests de cette suite passent localement. L'observation `lsof` porte
 uniquement sur le processus enfant possédé ; aucune visibilité machine complète
 n'est revendiquée. Ces résultats renforcent les refus, sans lever E1.
@@ -54,7 +54,7 @@ Le périmètre à préserver inclut tous les octets suivis, non suivis, ignorés
 masqués, les noms exacts, types et topologie, les index complets et leurs étapes,
 HEAD détaché ou symbolique, refs propres, reflogs, administrations commune et
 propres aux worktrees, ainsi que tous les objets nécessaires. Les alternates,
-sous-modules, dépôts imbriqués, éléments inaccessibles et liens hors périmètre
+sous-modules, repos imbriqués, éléments inaccessibles et liens hors périmètre
 exigent une prise en charge explicite ou un refus. Cette expérience n'en fait pas
 l'inventaire exhaustif et ne fournit aucune sauvegarde admissible pour un retrait.
 

@@ -1,0 +1,32 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import SiteHeader from './SiteHeader.astro';
+import UpdatesBanner from './UpdatesBanner.astro';
+import SiteFooter from './SiteFooter.astro';
+import type {Locale} from '../data/content';
+import {getLandingView} from '../data/landing';
+import Hero from './Hero.astro';
+import Needs from './Needs.astro';
+import Report from './Report.astro';
+import Verdicts from './Verdicts.astro';
+import Workflow from './Workflow.astro';
+import Install from './Install.astro';
+import EvidenceSafety from './EvidenceSafety.astro';
+import Faq from './Faq.astro';
+import FinalCta from './FinalCta.astro';
+interface Props {locale:Locale}
+const {locale}=Astro.props;
+const {title,description,jsonLd}=getLandingView(locale);
+---
+<BaseLayout title={title} description={description} lang={locale} alternatePaths={{en:'/',fr:'/fr/'}} jsonLd={jsonLd}>
+<SiteHeader locale={locale}/><UpdatesBanner locale={locale}/><main id="main-content">
+<Hero locale={locale}/>
+<Needs locale={locale}/>
+<Report locale={locale}/>
+<Verdicts locale={locale}/>
+<Workflow locale={locale}/>
+<Install locale={locale}/>
+<EvidenceSafety locale={locale}/>
+<Faq locale={locale}/>
+<FinalCta locale={locale}/>
+</main><SiteFooter locale={locale}/></BaseLayout>

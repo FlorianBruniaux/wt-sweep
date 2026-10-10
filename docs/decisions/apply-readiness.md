@@ -9,7 +9,7 @@ disponibles ; elle ne démontre pas l'impossibilité d'un mécanisme futur.
 
 Le [plan](../plan.md) exige une exclusion continue depuis le début de la capture
 jusqu'au retrait et aux vérifications finales. Elle couvre les fichiers, les
-administrations Git et les objets, y compris les écrivains non coopératifs,
+administrations Git et les objets, y compris les processus d’écriture non coopératifs,
 descripteurs déjà ouverts et commits concurrents. Une sélection approuvée ne
 remplace pas cette propriété.
 
@@ -25,7 +25,7 @@ Les [témoins E1 existants](exclusion-et-conservation.md) ont déjà démontré 
 coopératif, une mutation à taille/mtime identiques et un commit détaché tardif.
 Ils ne sont pas présentés comme nouvellement exécutés dans cette exploration.
 
-La nouvelle sonde est rejouable depuis la racine du dépôt :
+La nouvelle sonde est rejouable depuis la racine du repo :
 
 ```sh
 python3 -I -S -B experiments/exclusion/probe_native_capabilities.py
@@ -47,7 +47,7 @@ Elles ne valident ni exclusion globale, ni sauvegarde, ni restauration.
 
 | Mécanisme | Confrontation au contrat |
 |---|---|
-| `flock`, `fcntl`/OFD, `O_EXLOCK`, verrou entre instances | Les manuels locaux `flock(2)` et `fcntl(2)` décrivent des verrous coopératifs. Ils ne forcent pas un autre écrivain à les prendre ; le témoin FD a déjà franchi cette frontière. |
+| `flock`, `fcntl`/OFD, `O_EXLOCK`, verrou entre instances | Les manuels locaux `flock(2)` et `fcntl(2)` décrivent des verrous coopératifs. Ils ne forcent pas un autre processus d’écriture à les prendre ; le témoin FD a déjà franchi cette frontière. |
 | Renommage, quarantaine, `lsof`, seconde empreinte | L'observation et le changement de nom n'invalident pas un FD ouvert et n'interdisent pas une écriture suivante. Ils restent utiles pour détecter une dérive, sans fermer l'intervalle de capture/retrait. |
 | Modes, ACL, `UF_IMMUTABLE` | Aucun changement testé. Le propriétaire peut retirer `UF_IMMUTABLE` ; ces contrôles ne constituent pas une autorité distincte face au même UID. `SF_IMMUTABLE` exige le superutilisateur. Voir [Apple chflags(2)](https://developer.apple.com/library/archive/documentation/System/Conceptual/ManPages_iPhoneOS/man2/chflags.2.html) et le manuel local. |
 | `revoke` | Le manuel réserve la révocation aux fichiers spéciaux bloc/caractère. Le refus mesuré sur fichier régulier est conforme à cette limite. Voir [Apple revoke(2)](https://developer.apple.com/library/archive/documentation/System/Conceptual/ManPages_iPhoneOS/man2/revoke.2.html). |
@@ -71,12 +71,12 @@ ignoré dans cette voie. Son contrat exclut explicitement un processus hostile
 du même utilisateur et renvoie ce problème à une isolation OS extérieure.
 Son verrou global sérialise ses propres applications. Ce périmètre déclaré ne
 démontre donc pas notre E1 pour un arbre arbitraire encore accessible aux autres
-écrivains. Ce constat ne prétend pas avoir reproduit un défaut de son programme.
+processus d’écriture. Ce constat ne prétend pas avoir reproduit un défaut de son programme.
 
 [Ward](https://github.com/michaelmillar/ward) décrit une vérification du bundle
 par clonage et une archive complémentaire pour les hooks, configurations et
 non-suivis. Ce contrôle inspire une restauration indépendante ; il ne fournit
-pas, à lui seul, une preuve d'exclusion des écrivains ou de conservation de toutes
+pas, à lui seul, une preuve d'exclusion des processus d’écriture ou de conservation de toutes
 les catégories exigées par U5. L'exclusion des ignorés relevée dans l'audit
 antérieur reste référencée dans `docs/references.md`, sans nouvelle validation
 comportementale ici.
@@ -91,12 +91,12 @@ du catalogue ne sont pas réaudités dans cette passe bornée.
 
 La condition manquante est une autorité d'écriture exclusive, vérifiable et
 maintenue sur le périmètre entier. Elle doit soit empêcher l'accès des autres
-écrivains dès la création du stockage, soit acquérir l'exclusion de manière à
+processus d’écriture dès la création du stockage, soit acquérir l'exclusion de manière à
 traiter aussi leurs références déjà ouvertes. Une affirmation « processus
 arrêtés », une identité de PID ou la connaissance de nos seuls enfants ne prouve
-pas cette condition pour un dépôt utilisateur existant.
+pas cette condition pour un repo utilisateur existant.
 
-Le prochain essai utile porterait sur **un seul dépôt synthétique dans un domaine
+Le prochain essai utile porterait sur **un seul repo synthétique dans un domaine
 de stockage placé sous une autorité OS distincte de l'UID adversaire**. Un
 superviseur doit contrôler tous les accès au stockage avant son exposition. Une
 VM avec dossier hôte partagé ou image modifiable par ce même UID ne remplit pas
@@ -109,7 +109,7 @@ La preuve minimale à apporter à cette frontière est séquentielle :
    concernés, ou refuser avant capture. Prouver le traitement des FD et mappings
    existants, nouveaux opens, alias physiques, administrations et objets Git.
 2. Faire tenter les écritures par des enfants possédés du même UID que les
-   écrivains ordinaires : FD depuis cwd extérieur, mapping, création/renommage,
+   processus d’écriture ordinaires : FD depuis cwd extérieur, mapping, création/renommage,
    mutation à taille/mtime identiques et commit tardif. Synchroniser par messages.
    Vérifier le refus effectif ou l'inclusion exacte de l'état admis par le protocole.
 3. Interrompre le détenteur du garde à chaque transition. Une perte de contrôle
