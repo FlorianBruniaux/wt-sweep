@@ -2,7 +2,7 @@
   {
     "slug": "index",
     "source": "docs/getting-started.md",
-    "sourceHash": "ece2cc869d98fab1d8b7dc0ac8b1fd53cee20984cd948382a152be588ce80d38",
+    "sourceHash": "f79e075b6713cd67305f82bf70a41d04843bdc68f443174143cf4b4fd5aa1882",
     "title": {
       "en": "Start with wt-sweep",
       "fr": "Démarrer avec wt-sweep"
@@ -15,7 +15,7 @@
   {
     "slug": "installation",
     "source": "docs/getting-started.md",
-    "sourceHash": "ece2cc869d98fab1d8b7dc0ac8b1fd53cee20984cd948382a152be588ce80d38",
+    "sourceHash": "f79e075b6713cd67305f82bf70a41d04843bdc68f443174143cf4b4fd5aa1882",
     "title": {
       "en": "Installation from source",
       "fr": "Installer depuis les sources"
@@ -28,7 +28,7 @@
   {
     "slug": "demo",
     "source": "docs/getting-started.md",
-    "sourceHash": "ece2cc869d98fab1d8b7dc0ac8b1fd53cee20984cd948382a152be588ce80d38",
+    "sourceHash": "f79e075b6713cd67305f82bf70a41d04843bdc68f443174143cf4b4fd5aa1882",
     "title": {
       "en": "Disposable demo",
       "fr": "Démo jetable"
@@ -132,7 +132,7 @@
   {
     "slug": "changelog",
     "source": "CHANGELOG.md",
-    "sourceHash": "6607238baae9e21744c168cd4e04704fa8549d6a9d6593a1699336451f50a432",
+    "sourceHash": "68299deb54f26059452bb39e884824f1e44871d688be843fc236b7086f0aec05",
     "title": {
       "en": "Changelog",
       "fr": "Historique des changements"

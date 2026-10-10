@@ -11,6 +11,11 @@ the Cargo package version is a development version.
 
 ### Changed
 
+- Prepare manual GitHub Pages publication at `wt-sweep.bruniaux.com`, with
+  locked site dependencies, reviewed-source and public-metadata checks. Update
+  installation guidance for the now-public repository. Publication still requires
+  a manual run on `main`; repository visibility does not change the FSL license.
+
 - Align the website header and hero with the Search Console 90rem envelope,
   and add a bilingual source-updates banner linked to the updates page. Its date
   comes from this changelog; the banner labels the changes as unreleased.

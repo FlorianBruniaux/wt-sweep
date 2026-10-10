@@ -14,8 +14,7 @@ that require this guard.
 Behavior with actual FileProvider placeholders and TCC denials remains unverified.
 
 Clone the repository, then build with the Rust toolchain pinned in
-[rust-toolchain.toml](../rust-toolchain.toml). GitHub access is required while the
-repository is private. For an existing checkout, skip the first two commands:
+[rust-toolchain.toml](../rust-toolchain.toml). The public repository can be cloned over HTTPS. For an existing checkout, skip the first two commands:
 
 ```sh
 git clone https://github.com/FlorianBruniaux/wt-sweep.git

@@ -2,7 +2,7 @@
 
 Run on macOS with `/usr/bin/git`. Build using the Rust toolchain pinned in `rust-toolchain.toml` (1.95). The current Cargo version is `0.1.0-alpha.1`; that does not establish a published release.
 
-GitHub access is required while the repository is private. From an existing checkout, skip clone and `cd` below.
+The public repository can be cloned over HTTPS. From an existing checkout, skip clone and `cd` below.
 
 ```sh
 git clone https://github.com/FlorianBruniaux/wt-sweep.git
