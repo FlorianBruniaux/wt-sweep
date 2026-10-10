@@ -12,6 +12,9 @@ the Cargo package version is a development version.
 
 ### Changed
 
+- Separate the four workflow steps in the French and English landing headings
+  with arrows.
+
 - Revise French and English website copy and French documentation terminology.
   Use repo, worktree and commit consistently, explain temporary test repos and
   writing processes in plain language, and localize the documentation sidebar.
