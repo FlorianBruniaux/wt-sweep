@@ -39,8 +39,8 @@ La passe Python complète exécute 316 cas : 309 réussis, 6 ignorés et une err
 dans le nouveau test d’upstream. Ce test utilisait un attribut `detached` absent
 de sa fixture. Il crée désormais un vrai worktree détaché, inclus dans le
 manifeste de conservation. Les 5 tests du module passent après cette correction,
-sans modification du binaire. La suite complète n’a pas été rejouée après cette
-correction limitée au test. Aucun autre échec n’est apparu.
+sans modification du binaire. Cette première validation s’est arrêtée au module ciblé après la correction.
+La passe complète de livraison est suivie dans la [PR #26](https://github.com/FlorianBruniaux/wt-sweep/pull/26). Aucun autre échec n’est apparu dans la première passe.
 
 Les 8 cas Chromium passent : clair/sombre, 1440/390 px, avec/sans JavaScript.
 Ils vérifient le repli natif, la destination du lien PR d’un fork, l’absence de
@@ -53,7 +53,12 @@ README anglais/français, aide CLI, contrats, guides forge/HTML/assistant et
 changelog sont mis à jour dans le commit `60f0038`. La livraison intègre aussi
 les derniers changements du site ; ses guides anglais et français reprennent
 les nouvelles options et les liens de forge. Les résultats de CI distante et
-l’état de fusion sont suivis dans la PR de livraison.
+l’état de fusion sont suivis dans la [PR #26](https://github.com/FlorianBruniaux/wt-sweep/pull/26).
+Les contrôles du site intégré passent : 7 tests documentaires, de démo et de
+compilation, 34 tests navigateur, Astro sans erreur ni avertissement. Les
+22 projections Claude/Codex et les 8 tests des harness d’exclusion/comparaison
+passent aussi. Le [registre du site](../site/VERIFICATION.md) détaille le correctif
+d’assertion du bandeau et la portée de ces contrôles.
 
 ## Aides de navigation sur les intitulés, 10/10/2026
 

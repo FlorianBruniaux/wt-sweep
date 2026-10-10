@@ -4,7 +4,9 @@
 
 These guides cover the read-only macOS MVP and the T01-T09 triage workflow.
 The [current delivery record](progress.md#état-publié-et-suite-au-09102026)
-separates merged code, CI and real-world observations. The [roadmap](roadmap.md)
+separates merged code, CI and real-world observations. The [report delivery,
+10 October](https://github.com/FlorianBruniaux/wt-sweep/pull/26) tracks forge links,
+HTML opening, the console recap and their final checks. The [roadmap](roadmap.md)
 names the remaining #20 evaluation and the separate #14 vision; the
 [validation ledger](finish-ledger.md#triage-t01-t09) retains historical checks.
 The project overview is available in English and French. The tutorial, assistant
