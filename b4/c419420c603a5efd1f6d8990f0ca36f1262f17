@@ -1,0 +1,41 @@
+.github/workflows/site.yml
+  s_8c08a1349a79e3::t_cb2dc989efb92b 1-76
+CHANGELOG.md
+  s_8c08a1349a79e3::t_0341dd26820cd4 14-18
+README.md
+  s_8c08a1349a79e3::t_84ce7681e4f01f 59
+docs/getting-started.md
+  s_8c08a1349a79e3::t_aae44a2ec16b6c 17
+site/README.md
+  s_8c08a1349a79e3::t_debf1bc61b21d7 19-21,29
+site/VERIFICATION.md
+  s_8c08a1349a79e3::t_ddacfad0164d45 59-67
+site/content/en/changelog.md
+  s_8c08a1349a79e3::t_8729208d0755d6 15-19
+site/content/en/installation.md
+  s_8c08a1349a79e3::t_b6ef0eb4724b7a 5
+site/content/fr/changelog.md
+  s_8c08a1349a79e3::t_dd47d87ff19bcc 15-19
+site/content/fr/installation.md
+  s_8c08a1349a79e3::t_03303c2e082108 5
+site/published-pages.json
+  s_8c08a1349a79e3::t_9a6315098cfe07 5,18,31,135
+site/src/data/content.ts
+  s_8c08a1349a79e3::t_cdc5fe74dedeb0 7
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "b4c419420c603a5efd1f6d8990f0ca36f1262f17",
+  "prompts": {},
+  "sessions": {
+    "s_8c08a1349a79e3": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a121ae-89ef-72b1-b77b-263389db51a2",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "Florian BRUNIAUX <florian@bruniaux.com>"
+    }
+  }
+}
