@@ -29,7 +29,7 @@ L'absence de candidat équivalent vérifié n'est pas une preuve d'absence du ma
 | [gh-reaper](https://github.com/ai-ecoverse/gh-reaper) | Inventaire et nettoyage de worktrees | Couverture bornée et protocole de conservation différent |
 | [workroot](https://github.com/fridiculous/workroot) | Inventaire transversal | Conservation complète non établie ici |
 | [Worktrunk](https://github.com/max-sixty/worktrunk) | Gestion de worktrees et sous-commandes | Intégration possible, pas une preuve de conservation |
-| [git-wipe](https://github.com/noirbizarre/git-wipe) | Nettoyage de branches et worktrees | Portée dépôt et opérations hors de notre MVP |
+| [git-wipe](https://github.com/noirbizarre/git-wipe) | Nettoyage de branches et worktrees | Portée repo et opérations hors de notre MVP |
 
 Points de code vérifiés : [plan agentrinse](https://github.com/vincentkoc/agentrinse/blob/6d5e047e00ef0193f6b75b952060a80ea310b1a4/src/core/plan-verification.ts),
 [éligibilité agentrinse](https://github.com/vincentkoc/agentrinse/blob/6d5e047e00ef0193f6b75b952060a80ea310b1a4/src/adapters/git/adapter.ts),

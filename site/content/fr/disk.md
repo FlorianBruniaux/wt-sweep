@@ -1,12 +1,12 @@
-La taille disque aide à prioriser une revue. Elle ne participe pas au verdict de nettoyage.
+La taille disque aide à choisir quels worktrees examiner en premier. Elle ne détermine pas le verdict de nettoyage.
 
 ## Périmètre et budgets
 
-Ajoutez `--disk-usage` à `scan` ou `review`. Par défaut, toutes les racines de worktrees inventoriées et les dossiers Git partagés sont demandés. `--worktree` et les filtres de présentation ne réduisent pas cette collecte disque.
+Ajoutez `--disk-usage` à `scan` ou `review`. Par défaut, wt-sweep demande la mesure de toutes les racines de worktrees recensées et des dossiers Git partagés. `--worktree` et les filtres de présentation ne réduisent pas cette collecte disque.
 
 Utilisez `--disk-root CHEMIN_ABSOLU_EXACT`, répété si nécessaire, pour choisir les racines enregistrées. Incluez explicitement le Git partagé pour le mesurer. Un chemin inconnu est refusé.
 
-`--disk-budget standard|thorough` est distinct du `--budget` Git/local. Commencez par standard ; des plafonds finis plus élevés peuvent encore laisser des lacunes. `plan --inventory` reprend les tailles capturées et leurs dates, sans les recompter.
+`--disk-budget standard|thorough` est distinct du `--budget` des vérifications Git et locales. Commencez par standard ; des limites plus élevées ne garantissent pas une collecte complète. `plan --inventory` reprend les tailles capturées et leurs dates, sans les recompter.
 
 ## Lire les valeurs
 
@@ -14,11 +14,11 @@ Utilisez `--disk-root CHEMIN_ABSOLU_EXACT`, répété si nécessaire, pour chois
 | --- | --- |
 | Logique | Longueur des fichiers réguliers et liens. Un fichier creux peut dépasser largement son allocation. |
 | Alloué | Blocs déclarés par le système de fichiers multipliés par 512, répertoires compris. |
-| Git partagé | Administration Git commune, mesurée séparément. |
+| Git partagé | Dossier d’administration Git commun au repo et à ses worktrees, mesuré séparément. |
 | Total dédupliqué | Chaque couple périphérique/inode observé compté une fois. Les lignes peuvent se recouvrir. |
-| Complete | Cette racine est terminée sans lacune détectée. Ce n’est pas un instantané atomique. |
+| Complete | La mesure de cette racine est terminée sans omission détectée. Les fichiers n’ont pas tous été lus au même instant. |
 | Partial | Seul le cumul des observations est disponible. |
-| Not requested | Racine enregistrée hors de la sélection disque explicite. |
+| Not requested | Racine recensée mais non sélectionnée pour la mesure disque. |
 | Not measured | Aucune taille disponible, pas zéro. |
 
 Fichiers cachés et ignorés restent inclus. Les cibles des liens symboliques ne sont pas suivies. Les racines enregistrées imbriquées ont leurs propres lignes.
@@ -27,6 +27,6 @@ Fichiers cachés et ignorés restent inclus. Les cibles des liens symboliques ne
 
 La taille allouée n’est pas l’espace récupérable. Clones APFS, snapshots et extents partagés peuvent changer le volume libéré. Alternates et dépendances externes aux racines mesurées ne sont pas comptés.
 
-Le collecteur actuel utilise les lectures scalaires de métadonnées. L’évaluation native `getattrlistbulk` n’est pas intégrée. Aucune ventilation par catégorie de cache ni suppression automatique de caches.
+Le collecteur actuel lit les métadonnées entrée par entrée. L’évaluation native `getattrlistbulk` n’est pas intégrée. Aucune ventilation par catégorie de cache ni suppression automatique de caches.
 
-[Choisissez une revue ciblée](/fr/docs/targets/) et conservez périmètres et dates de chaque exécution.
+[Choisissez une analyse ciblée](/fr/docs/targets/) et conservez le périmètre et les dates de chaque exécution.

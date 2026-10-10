@@ -40,8 +40,8 @@ All three HEADs match `refs/heads/main`. The local note still needs preserving. 
 
 ## Browse an already generated example
 
-[Open the interactive native report](/demo/report.html). That separate website fixture contains four worktrees: three `keep`, one `cleanup_candidate`. Its report comes from a disposable repository, with [generation provenance](/demo/provenance.json).
+[Open the interactive native report](/demo/report.html). That separate website fixture contains four worktrees: three `keep`, one `cleanup_candidate`. Its report comes from a temporary test repo, with [generation provenance](/demo/provenance.json).
 
-The landing screenshots were captured on 8 October 2026 from another four-worktree fixture. Their [capture record](/assets/report-captures.json) is separate from the freshly generated example.
+The landing screenshots were captured on 8 October 2026 from another four-worktree fixture. Their [capture record](/assets/report-captures.json) is separate from the interactive example.
 
 No cleanup runs in either demo. A receipt binds artifact bytes; it is not a backup.

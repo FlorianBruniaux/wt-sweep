@@ -1,6 +1,6 @@
 # Sweep, Holt et AgentRinse : comparaison contrôlée
 
-Comparaison du 07/10/2026, sur des dépôts Git synthétiques jetables exclusivement. Conserver Sweep pour l'audit fondé sur une cible choisie. Holt et AgentRinse apportent des vues et des protocoles de récupération intéressants, mais les verdicts observés ne satisfont pas le contrat de preuve de Sweep. Aucun retrait, déplacement, restauration, hook, configuration globale ou dépôt personnel n'a été exécuté.
+Comparaison du 07/10/2026, sur des repos Git temporaires avec des données synthétiques exclusivement. Conserver Sweep pour l'audit fondé sur une cible choisie. Holt et AgentRinse apportent des vues et des protocoles de récupération intéressants, mais les verdicts observés ne satisfont pas le contrat de preuve de Sweep. Aucun retrait, déplacement, restauration, hook, configuration globale ou repo personnel n'a été exécuté.
 
 Les trois lecteurs ont été exécutés : 48 audits retenus, avec un positif intégré non vide et les mêmes OID source/cible par scénario. Sweep distingue le reflog privé, l’objet manquant et la cible choisie dans les cas où les verdicts externes diffèrent. Le stash partagé reste une nuance : Sweep inventorie le stash dans le stockage commun, sans protéger automatiquement le worktree lié propre.
 
@@ -45,7 +45,7 @@ Onze scénarios donnent douze audits par mode : le changement de cible comprend 
 
 L'oracle indépendant des produits parcourt les octets et modes de tous les fichiers de la fixture, y compris l'index, HEAD, refs, reflogs et objets Git. Il préserve les liens, répertoires, types spéciaux et erreurs de lecture. Il compare avant/après et liste les ajouts, suppressions et modifications. Il contrôle séparément le HOME du lecteur. Il ne passe pas par Git, les statuts des produits ou leurs fingerprints.
 
-L'oracle n'est pas une sauvegarde : il ne vérifie pas ACL, xattrs, durabilité, FileProvider, TCC, exclusion des écrivains, restauration ni tous les montages. Le contenu du dossier `denied` est volontairement inaccessible ; son erreur `EACCES` est conservée avant et après. Son absence de delta ne prouve pas la conservation d'octets qu'il n'a pas lus. Les permissions sont rétablies seulement après les observations sur cette fixture exclusivement, pour laisser le run inspectable.
+L'oracle n'est pas une sauvegarde : il ne vérifie pas ACL, xattrs, durabilité, FileProvider, TCC, exclusion des processus d’écriture, restauration ni tous les montages. Le contenu du dossier `denied` est volontairement inaccessible ; son erreur `EACCES` est conservée avant et après. Son absence de delta ne prouve pas la conservation d'octets qu'il n'a pas lus. Les permissions sont rétablies seulement après les observations sur cette fixture exclusivement, pour laisser le run inspectable.
 
 ## Faits observés
 
@@ -69,7 +69,7 @@ Ces observations réfutent l'équivalence des verdicts sur ce corpus. Elles ne p
 
 ## Effets d'écriture et temps
 
-Sur les 48 audits retenus, aucune modification ou suppression de fichier préexistant, index, ref ou reflog n'a été détectée dans les périmètres lisibles. Sweep, Holt strict et AgentRinse `--no-state` n’ont ajouté aucun objet ni fichier de HOME. Les résultats de l'audit sont écrits par le runner dans un dossier extérieur aux dépôts.
+Sur les 48 audits retenus, aucune modification ou suppression de fichier préexistant, index, ref ou reflog n'a été détectée dans les périmètres lisibles. Sweep, Holt strict et AgentRinse `--no-state` n’ont ajouté aucun objet ni fichier de HOME. Les résultats de l'audit sont écrits par le runner dans un dossier extérieur aux repos.
 
 Holt normal a ajouté un objet loose `commit 204` dans le scénario de cible modifiée (`613a4ef43e1f7710b13ef3fe4b68d10a156baef7`), puis un arbre et un blob dans la fixture de conflit. Les manifests distinguent ces ajouts des modifications d'état conservé. Le mode normal n'est donc pas sans écriture Git. Aucun cache utilisateur écrit n'a été observé dans les HOME isolés.
 
@@ -79,7 +79,7 @@ Les temps sont ceux d'un seul passage exploratoire sous charge concurrente, avec
 
 | Réf. | Capacité | Décision | Motif et suite bornée |
 | --- | --- | --- | --- |
-| CAP-1 | Audit et verdict fondé sur une cible choisie, local et histoire privée | Conserver et développer Sweep | Sweep confirme ses verdicts sur le positif et les cas de cible, d’objet absent et de reflog. Ne pas traduire automatiquement `safe`/`eligible` en candidat Sweep. |
+| CAP-1 | Audit et verdict fondé sur une cible choisie, local et historique privé | Conserver et développer Sweep | Sweep confirme ses verdicts sur le positif et les cas de cible, d’objet absent et de reflog. Ne pas traduire automatiquement `safe`/`eligible` en candidat Sweep. |
 | CAP-2 | Détail de stash et relation de contenu entre worktrees | Adapter une vue de faits, si besoin confirmé | Holt détecte le stash à risque séparément. Un import doit garder outil, SHA, argv, date et statut, sans changer C1-C5. Pas de nouveau moteur d'audit concurrent dans le produit. |
 | CAP-3 | Rapport lisible, graphes et sorties progressives | Retenir les idées de présentation | L'essai porte sur JSON natif, pas sur le rendu HTML ni l'accessibilité. Développer la projection Sweep à partir de ses propres contrats. Aucun code Holt copié. |
 | CAP-4 | Gestion quotidienne des environnements et ADE | Arrêter de dupliquer cette capacité dans Sweep | Hors périmètre de l'audit. Worktrunk et Superset restent des références à éprouver séparément ; aucune adoption runtime démontrée ici. |
@@ -104,4 +104,4 @@ Les deux tests comportementaux ont été observés rouges avant implémentation 
 
 Les logs complets restent sous `/private/tmp/wt-sweep-comparison-1ffk8k26/logs`. Les runs retenus : `wbhvn7o9`, `njhhnnpv`, `wse7vvwo`, `lp1vfpwd`, `sd0jsopk`, `3nm5yitb`, tous préfixés `/private/tmp/wt-sweep-comparison-run-`. Sweep : `0cd6l6b5` (release `a622edf5`), `kernd3db` (release précédente). Les premiers diagnostics depuis un cwd Git et le premier témoin reflog détaché sont exclus des 36 audits concurrents retenus ; ils ne servent pas à décider les verdicts finaux. Le contrôle statique confirme 48 observations, OID équivalents entre outils, zéro modification ou suppression lisible préexistante, cinq liens locaux valides et des empreintes sources distinctes des copies normalisées.
 
-Les [analyses statiques](../worktree-source-analysis-2026-10-07.md) et [l'annexe backend](worktree-source-2026-10-07/backend.md) expliquent les contrats lus. Les preuves ci-dessus ne valident pas les licences, le comportement des versions futures, un serveur distant, la production, la restauration ou l'absence d'écrivains.
+Les [analyses statiques](../worktree-source-analysis-2026-10-07.md) et [l'annexe backend](worktree-source-2026-10-07/backend.md) expliquent les contrats lus. Les preuves ci-dessus ne valident pas les licences, le comportement des versions futures, un serveur distant, la production, la restauration ou l'absence d'processus d’écriture.

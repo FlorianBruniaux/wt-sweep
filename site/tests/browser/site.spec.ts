@@ -144,7 +144,7 @@ for (const lang of ['en', 'fr']) for (const width of [390, 1440, 2048]) {
   const update = banner.getByRole('link');
   await expect(update).toHaveAttribute('href', `${prefix}/updates/`);
   await expect(banner.locator('time')).toHaveAttribute('datetime', sourceUpdateDate!);
-  await expect(banner).toContainText(lang === 'fr' ? 'Non publié' : 'Unreleased');
+  await expect(banner).toContainText(lang === 'fr' ? 'Version de développement' : 'Development version');
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
   await update.focus(); await page.keyboard.press('Enter');
   await expect(page).toHaveURL(new RegExp(`${prefix}/updates/$`));

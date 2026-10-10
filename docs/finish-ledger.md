@@ -10,7 +10,7 @@ socle U1-U4 et des ajouts RETEX. Leurs chiffres, digest de binaire, absence de
 remote et licence non renseignée sont l’état de cette passe, pas l’état courant.
 
 Mandat historique du 04/10/2026 : terminer les lots issus du RETEX, éprouver les conditions
-du nettoyage et préparer la livraison. Au démarrage, le dépôt n'avait ni premier
+du nettoyage et préparer la livraison. Au démarrage, le repo n'avait ni premier
 commit ni remote. La destination et la licence de publication ont été demandées
 pendant le travail et restent sans réponse à cette clôture locale du 05/10.
 
@@ -34,7 +34,7 @@ L'intégrateur possède Cargo, lib/model/main/review/forge/output, le rapport et
 la publication des exécutions. A possède local.rs, ses tests et les nouveaux
 lecteurs Git. B écrit les oracles CLI indépendants dans test_enriched.py. C
 examine E1 puis relit les changements finaux. Les modèles restent GPT-6.1 Sol
-high pour A/B et GPT-6 Astra high pour C. Aucun dépôt réel n'est nettoyé.
+high pour A/B et GPT-6 Astra high pour C. Aucun repo réel n'est nettoyé.
 
 ## Décisions
 
@@ -170,9 +170,9 @@ d’un worktree du délai maximal du moteur Git : le premier garde les observati
 de la même famille disponibles ; le second arrête encore ses lectures dépendantes.
 Le test échoue avec l’ancien comportement et passe après correction.
 
-### Essai par dépôt
+### Essai par repo
 
-Le parcours final a examiné en lecture seule un dépôt choisi et ses worktrees
+Le parcours final a examiné en lecture seule un repo choisi et ses worktrees
 enregistrés, avec une référence locale confirmée avant exécution. Il a terminé
 avec le code 0 en **197,276 secondes** :
 
@@ -183,14 +183,14 @@ avec le code 0 en **197,276 secondes** :
 | Conditions C1 | 45 worktrees passent les contrôles structurels ; ce résultat ne suffit pas au statut de candidat. |
 | Relations Git | 1 commit identique, 3 relations d’ancêtre, 44 inconnues. |
 | Résumés locaux | 4 worktrees examinés partiellement ; 44 non collectés après épuisement du budget global de revue locale. Aucun résumé n’est complet sur ses trois volets HEAD/index/disque. |
-| Histoire privée | 112 racines couvertes, 209 inconnues. |
+| Historique privé | 112 racines couvertes, 209 inconnues. |
 | Artefacts | Hashes et tailles des trois fichiers vérifiés contre le reçu ; liaison canonique entre inventaire et revue vérifiée. |
 | Contrôles après exécution | Référence cible et liste des worktrees enregistrés inchangées. |
 
-Les 48 worktrees gardent des inconnues. Le gros dépôt dépasse les budgets locaux
+Les 48 worktrees gardent des inconnues. Le gros repo dépasse les budgets locaux
 et d’historique ; cette version ne permet donc pas encore d’y désigner un candidat
 au nettoyage. Un parcours de découverte terminé ne signifie pas que chaque
-worktree a été entièrement analysé. Les métriques d’histoire ne mesurent pas le
+worktree a été entièrement analysé. Les métriques d’historique ne mesurent pas le
 temps de collecte locale ni celui de la vérification approfondie.
 
 Les lectures Git groupées X02 restent une piste pour ce coût observé. Leur
@@ -203,7 +203,7 @@ Les commandes exactes, références, identifiants et rapports réels restent dan
 les preuves privées, hors des exemples publics. Les guides utilisent des fixtures
 synthétiques ou un chemin fourni par le lecteur. Aucun scan global réel ni
 nettoyage n’a été exécuté. Cet essai ne prouve ni instantané machine, ni exclusion
-d’écrivains, ni conservation exhaustive des fichiers de ce dépôt réel.
+d’processus d’écriture, ni conservation exhaustive des fichiers de ce repo réel.
 
 ## Livraison GitHub du 06/10/2026
 
@@ -226,12 +226,12 @@ remplace pas le statut courant du workflow. Aucun paquet ni binaire n'a été
 publié. Les limites de l'essai réel et les conditions E1/U5-U7 restent ouvertes.
 
 
-## Complétion des gros dépôts A1-A6
+## Complétion des gros repos A1-A6
 
 Le développement utilise le checkout isolé `codex/large-repo-completion`.
 L’intégrateur possède les contrats, le CLI, la collecte approfondie et la
 livraison. Un agent écrit les oracles CLI indépendants, un autre la collecte
-locale et le transport, un troisième l’histoire privée. La documentation et
+locale et le transport, un troisième l’historique privé. La documentation et
 le skill ont leur propriétaire distinct. Les relectures ne sont pas faites par
 l’auteur de l’implémentation concernée.
 
@@ -243,7 +243,7 @@ restent séparés des réglages de cette session de développement.
 
 Les positifs couvrent le candidat à 4 200 blobs distincts et 600 commits, puis
 la famille de 50 worktrees. Les témoins négatifs couvrent objets absents ou
-corrompus, travail non commité et histoire privée exclusive. La revue a trouvé
+corrompus, travail non commité et historique privé exclusif. La revue a trouvé
 un sous-comptage des processus approfondis et un délai public non validé ; les
 deux régressions ont échoué puis passé après correction. Les essais réels ont
 ensuite conduit à corriger la temporisation des flux Git et à prioriser les
@@ -270,7 +270,7 @@ Validation finale observée sur le code livré :
 
 Les six cas Python ignorés demandent soit des archives privées historiques,
 soit des noms de fichiers non UTF-8 refusés par ce système. Les deux cas Rust
-ignorés sont une reprise historique privée et un point d’entrée de sous-processus
+ignorés sont une reprise historique privé et un point d’entrée de sous-processus
 exercé par son test parent. Les suites ne valident pas ces archives absentes.
 
 Le binaire release final porte le SHA-256

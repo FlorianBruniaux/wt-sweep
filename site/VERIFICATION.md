@@ -13,12 +13,12 @@ Dans wt-sweep, les entrées suivent les questions sur l’espace disque, la cons
 - Astro : 38 fichiers contrôlés, aucune erreur, aucun avertissement ; 31 pages construites.
 - Site : 6 tests du générateur, du HTML et de l’origine HTTPS de test ; 24 tests navigateur réussis. EN/FR, clair/sombre, 390/768/1024/1440 px, Axe, clavier, copie, navigation sans JavaScript, recherche documentaire EN/FR et filtres du rapport.
 - Produit : formatage Rust, Clippy et tests Cargo réussis en mode verrouillé et hors ligne. Python 3.14 : 305 tests réussis, 6 ignorés par le harnais. Expériences d’exclusion : 6 tests réussis. Synchronisation du harnais : 22 fichiers conformes.
-- Démo : vrais dépôts Git jetables uniquement, 3 verdicts keep et 1 cleanup_candidate ; conservation de la fixture et empreintes des artefacts vérifiées.
+- Démo : vrais repos Git temporaires de test uniquement, 3 verdicts keep et 1 cleanup_candidate ; conservation de la fixture et empreintes des artefacts vérifiées.
 - Revue indépendante : liens relatifs historiques et navigation mobile sans JavaScript corrigés après reproduction. Les libellés mobiles restent sur une ligne. Tests de régression et lecture des captures corrigées réussis.
 
 ## Limites conservées
 
-La prévisualisation locale interdit l’indexation. Une compilation avec une origine HTTPS réservée vérifie les métadonnées et le sitemap sans publier. Domaine public, disponibilité distante du dépôt, release publiée et activation native des skills ne sont pas validés. Les captures datées gardent leur provenance distincte. La taille mesurée ne représente pas un espace récupérable garanti. `apply` reste indisponible.
+La prévisualisation locale interdit l’indexation. Une compilation avec une origine HTTPS réservée vérifie les métadonnées et le sitemap sans publier. Domaine public, disponibilité distante du repo, release publiée et activation native des skills ne sont pas validés. Les captures datées gardent leur provenance distincte. La taille mesurée ne représente pas un espace récupérable garanti. `apply` reste indisponible.
 
 
 ## Variante Compact, 10/10/2026
@@ -31,7 +31,7 @@ Le seuil mobile de wt-sweep reste 1024 px ; les libellés plus courts permettent
 
 Preuves : test Compact observé en échec avant modification, puis 4 cas Compact EN/FR et clair/sombre réussis ; suite complète de 28 tests navigateur réussie, dont Axe et navigation sans JavaScript. Les 6 tests documentaires, de démo et de compilation à origine HTTPS réservée sont réussis. Astro : 38 fichiers, aucune erreur ni avertissement ; 31 pages construites. Six captures FR contrôlées : ordinateur, mobile et menu mobile dans les deux thèmes. Aucun débordement ; les transitions sont désactivées en mouvement réduit.
 
-Fichiers modifiés : `src/components/SiteHeader.astro`, `src/styles/global.css`, `src/scripts/interactions.ts`, `src/data/content.ts`, `tests/browser/site.spec.ts`, les deux pages de changelog et leur manifeste ; changelog du dépôt et présent registre. Les contrôles Rust/Python du 09/10 ci-dessus restent historiques et n’ont pas été rejoués pour cette modification d’interface. Aucun commit, push ou déploiement.
+Fichiers modifiés : `src/components/SiteHeader.astro`, `src/styles/global.css`, `src/scripts/interactions.ts`, `src/data/content.ts`, `tests/browser/site.spec.ts`, les deux pages de changelog et leur manifeste ; changelog du repo et présent registre. Les contrôles Rust/Python du 09/10 ci-dessus restent historiques et n’ont pas été rejoués pour cette modification d’interface. Aucun commit, push ou déploiement.
 
 
 ## Largeur de référence et bandeau Nouveautés, 10/10/2026
@@ -42,11 +42,11 @@ Le menu, le bandeau et le hero wt-sweep reprennent maintenant l’enveloppe de 9
 
 Le nouveau bandeau FR/EN renvoie aux nouveautés. Sa date vient du marqueur canonique `unreleased-updated` dans le changelog relu, jamais de l’heure de compilation. Le statut reste « Non publié » / « Unreleased ». Les dates manquantes ou impossibles font échouer la compilation. Aucune release n’est annoncée.
 
-Preuves : échec initial du contrôle de largeur avec un écart de 48px à 1440px, puis 34 tests navigateur réussis ; les 6 nouveaux cas ont été rejoués après avoir lié leur date attendue à la source. Les 7 tests du site passent, incluant source documentaire, date du bandeau, conservation d’une démo Git jetable, liens construits et origine HTTPS réservée. Astro : 41 fichiers, aucune erreur ni avertissement ; compilation finale sans avertissement, 31 pages. Le cache documentaire a été reconstruit pour retirer les anciens IDs après régénération.
+Preuves : échec initial du contrôle de largeur avec un écart de 48px à 1440px, puis 34 tests navigateur réussis ; les 6 nouveaux cas ont été rejoués après avoir lié leur date attendue à la source. Les 7 tests du site passent, incluant source documentaire, date du bandeau, conservation d’une démo sur un repo Git de test, liens construits et origine HTTPS réservée. Astro : 41 fichiers, aucune erreur ni avertissement ; compilation finale sans avertissement, 31 pages. Le cache documentaire a été reconstruit pour retirer les anciens IDs après régénération.
 
 Six captures FR contrôlées à 390/1440/2048px dans les deux thèmes, plus les deux menus mobiles et la référence Search Console à 1440px. Aucun débordement horizontal, alignements vérifiés, mouvement réduit à 0s. Axe, clavier, changement de langue, recherche documentaire et navigation sans JavaScript passent dans la suite navigateur. Les captures et mesures restent dans `/private/tmp/wt-updates-visuals`.
 
-Fichiers modifiés pour cette adaptation : `src/components/LandingPage.astro`, nouveau `src/components/UpdatesBanner.astro`, `src/styles/global.css`, nouveau `src/data/updates.mjs`, `tests/browser/site.spec.ts`, nouveau `tests/updates.test.mjs`, `package.json`, `content/en/changelog.md`, `content/fr/changelog.md`, `published-pages.json`, `README.md`, ce registre et `CHANGELOG.md` du dépôt. Les vérifications Rust/Python produit déjà consignées restent historiques ; elles ne sont pas rejouées pour cette adaptation d’interface. Aucun commit, push ni déploiement.
+Fichiers modifiés pour cette adaptation : `src/components/LandingPage.astro`, nouveau `src/components/UpdatesBanner.astro`, `src/styles/global.css`, nouveau `src/data/updates.mjs`, `tests/browser/site.spec.ts`, nouveau `tests/updates.test.mjs`, `package.json`, `content/en/changelog.md`, `content/fr/changelog.md`, `published-pages.json`, `README.md`, ce registre et `CHANGELOG.md` du repo. Les vérifications Rust/Python produit déjà consignées restent historiques ; elles ne sont pas rejouées pour cette adaptation d’interface. Aucun commit, push ni déploiement.
 
 
 ## Préparation du premier commit et push, 10/10/2026
@@ -60,8 +60,17 @@ Le lancement de `pnpm verify` a signalé `ERR_PNPM_IGNORED_BUILDS` pour les scri
 
 ## Domaine public et préparation GitHub Pages, 10/10/2026
 
-Le dépôt a été rendu public par l’utilisateur. DNS relu : `wt-sweep.bruniaux.com` pointe vers `florianbruniaux.github.io`. GitHub Pages est configuré avec source `workflow` et ce domaine ; le certificat est dans l’état `new` à cette observation. Aucun site n’a encore été déployé et HTTPS n’est pas encore imposé pour le domaine. La licence FSL-1.1-ALv2 est conservée.
+Le repo a été rendu public par l’utilisateur. DNS relu : `wt-sweep.bruniaux.com` pointe vers `florianbruniaux.github.io`. GitHub Pages est configuré avec source `workflow` et ce domaine ; le certificat est dans l’état `new` à cette observation. Aucun site n’a encore été déployé et HTTPS n’est pas encore imposé pour le domaine. La licence FSL-1.1-ALv2 est conservée.
 
 Le nouveau workflow `Publish website` accepte uniquement une demande manuelle du propriétaire sur `main`. Il utilise un runner standard Ubuntu, Node 22, pnpm 9.15.9 et le lockfile ; il vérifie les sources relues, les diagnostics Astro et les métadonnées de publication avant envoi de `site/dist` à Pages. La politique distante Actions 7082 est active, avec le compte FlorianBruniaux et l’événement `workflow_dispatch` uniquement. Les automatismes intégrés GitHub restent exemptés de cette politique.
 
 Validation observée : actionlint et contrôle du diff réussis ; 7 tests documentaires/démo/HTML/origine HTTPS, 34 tests navigateur et contrôle Astro de 41 fichiers réussis, sans erreur ni avertissement. Une première tentative a utilisé le Python système trop ancien ; la suite complète a ensuite réussi avec `WT_SITE_PYTHON=/opt/homebrew/bin/python3`. Une compilation séparée de 31 pages utilise le domaine réel : adresses canoniques EN/FR, robots et sitemap contrôlés avec le même validateur que le workflow. L’installation sur un runner Ubuntu neuf et le déploiement distant restent non vérifiés. Les contrôles Rust/Python produit historiques ne sont pas déduits de cette validation du site.
+
+
+## Révision éditoriale FR/EN, 10/10/2026
+
+La relecture suit `~/.claude/ANTI_AI.md` : phrases complètes, termes usuels des développeurs et conservation du sens technique. Le site et ses guides français emploient repo, worktree, commit et skill. Les fixtures sont décrites comme des repos de test temporaires ; les processus qui écrivent dans un repo ne sont plus appelés « écrivains ». Les textes de présentation anglais et français, descriptions des pages, prompts et titres du menu documentaire ont été revus. La licence et le changelog canonique restent en anglais.
+
+Contrôles observés : 7 tests documentaires, de démo et de HTML réussis ; 34 tests navigateur réussis en français et anglais, avec thèmes clair/sombre, navigation au clavier, Axe, recherche et affichage mobile. Astro contrôle 41 fichiers sans erreur ni avertissement et construit 31 pages. Les captures françaises à 390 et 1440 px, ainsi que le menu documentaire, ont été relues. Les liens internes et leurs ancres résolvent dans le site construit.
+
+Une comparaison avec le commit précédent confirme que les blocs de code littéraux, chiffres et identifiants complets des observations dans la documentation n’ont pas changé. Seuls les prompts en texte libre sont révisés. Formatage Rust, Clippy et suite Cargo passent ; les 22 fichiers du harnais restent synchronisés. Ces contrôles locaux ne constituent pas une validation du déploiement distant.

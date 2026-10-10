@@ -33,7 +33,7 @@ GPT-6 Astra `high`. Les compilations, suites lourdes et mesures sont sérialisé
 Ces réglages décrivent les lancements observés, sans classement de modèles.
 
 Les sessions de commits regroupent les lectures demandées par le parcours, sans
-précharger une autre histoire. Les preuves restent provisoires jusqu'à la sortie
+précharger un autre historique. Les preuves restent provisoires jusqu'à la sortie
 réussie du processus. La reprise ne conserve aucune preuve Git : elle garde la
 frontière de découverte et les dates, puis relit les candidats dans un nouvel
 intervalle. Les contrôles et la publication sont consignés dans [progress.md](progress.md).
@@ -41,7 +41,7 @@ intervalle. Les contrôles et la publication sont consignés dans [progress.md](
 ## Incréments du 07/10, livrés le 08/10/2026
 
 La PR #15 livre le [rapport HTML natif](html-report-plan.md) dans les runs
-`scan`, `review` et `plan`, et les premiers faits provisoires d’histoire et
+`scan`, `review` et `plan`, et les premiers faits provisoires d’historique et
 d’état local dans la progression. Le résumé local interprète aussi
 intent-to-add dans les index SHA-1 et SHA-256. Le [registre](progress.md) et
 les issues du [jalon](roadmap.md) distinguent validation locale, SHA livré,
@@ -59,8 +59,8 @@ ni gestion d’environnements ni retrait.
 | Responsabilité | Agent et paramètres de lancement | Périmètre |
 | --- | --- | --- |
 | Rendu HTML | Rust, GPT-6.1 Sol `high` | Projection pure, styles, interactions et tests de rendu. |
-| Collecte et mesures | Implémentation Sweep, GPT-6.1 Sol `xhigh` | Index, histoire privée, observations progressives et corpus constants. |
-| Comparaison des outils | Architecture backend, GPT-6.1 Sol `high` | Copies jetables, CLI natives et oracle de conservation. |
+| Collecte et mesures | Implémentation Sweep, GPT-6.1 Sol `xhigh` | Index, historique privé, observations progressives et corpus constants. |
+| Comparaison des outils | Architecture backend, GPT-6.1 Sol `high` | Copies temporaires de test, CLI natives et oracle de conservation. |
 | Documentation et prompt | Rédaction technique, GPT-6.1 Sol `medium` | Guides, liens, aide et lecture d’un rapport synthétique. |
 | Revue indépendante | GPT-6 Astra `high` | Contrats, limites, correctifs de revue et protocole de mesure. |
 | Intégration | Coordinateur | CLI, types communs, publication, projections, suites et livraison. |
@@ -80,7 +80,7 @@ tutoriel et skill sur le passage standard, la lecture des faits sauvegardés pui
 la reprise ciblée thorough. Une augmentation de budget n’est pas une preuve de
 complétude ni une autorisation de retrait.
 
-Le skill reste limité au dépôt. La source canonique est
+Le skill reste limité au repo. La source canonique est
 `harness/skills/wt-sweep/SKILL.md` avec ses références ; l’intégrateur génère les
 projections Claude et Codex et vérifie leur routage. Les mesures et contrôles
 observés restent dans le [registre de collecte](collection-performance.md),
@@ -92,11 +92,11 @@ Ces lots sont fusionnés dans `main` depuis le 06/10/2026. Le lot suivant corrig
 les lectures unitaires d’objets locaux et les parcours répétés des cibles Git.
 Les lectures restent bornées ; les preuves sont dans le
 [registre de collecte](collection-performance.md), avec les critères de sortie
-dans la [feuille de route](roadmap.md#collecte-des-gros-dépôts--a1-a6).
+dans la [feuille de route](roadmap.md#collecte-des-gros-repos--a1-a6).
 
 La reprise de triage s’appuie sur le [plan v2](superpowers/plans/2026-10-05-worktree-triage-v2.md).
-Elle ajoute cibles par famille, histoire du graphe, résumé local courant, histoire
-privée, décisions C1-C5, contexte descriptif, vues et collecte bornée. T09 raccorde
+Elle ajoute cibles par famille, historique du graphe, résumé local courant, historique
+privé, décisions C1-C5, contexte descriptif, vues et collecte bornée. T09 raccorde
 `review`, l’aide par commande et la publication de l’inventaire original avec la
 revue. Le [checkpoint courant](finish-ledger.md#triage-t01-t09) porte les preuves
 finales ; les lots et chiffres du socle ci-dessous restent historiques.

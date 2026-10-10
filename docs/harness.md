@@ -1,4 +1,4 @@
-# Configuration IA du dépôt
+# Configuration IA du repo
 
 [Index documentaire](README.md) · [Contribution](../CONTRIBUTING.md)
 
@@ -12,7 +12,7 @@ Aucun fichier global ni secret n'entre dans les projections.
 |---|---|
 | sweep-explorer | Lecture, recherche, carte des contrats |
 | sweep-implementer | Fichiers produit explicitement attribués et tests |
-| sweep-test-engineer | Fixtures jetables, oracle indépendant et cas adversariaux |
+| sweep-test-engineer | Fixtures temporaires, oracle indépendant et cas adversariaux |
 | sweep-reviewer | Revue en lecture seule des preuves et chemins de perte |
 
 Les modèles héritent de la session. Claude restreint les outils déclarés des
@@ -53,7 +53,7 @@ modification voulue dans la source, puis réconcilier la préimage avant génér
 Un renommage de rôle exige une réconciliation explicite des anciennes sorties.
 
 Les écritures sont coopératives, sans transaction multi-fichier ni garantie de
-résistance à une coupure. Exclure les autres écrivains pendant une génération.
+résistance à une coupure. Exclure les autres processus d’écriture pendant une génération.
 Après une interruption, conserver les fichiers présents et examiner la dérive ;
 ne pas forcer l'écrasement. Utiliser le diff et la révision Git de base pour
 reconstituer les préimages, après contrôle des modifications concurrentes.
@@ -62,7 +62,7 @@ Ce mécanisme ne doit pas être réutilisé comme protocole de sauvegarde de wor
 Vérification du 06/10/2026 après mise à jour du triage : les 12 fichiers sont
 synchronisés et les 7 tests de génération passent avec Python 3.14. Ces tests
 vérifient les projections, la répétition sans changement et les refus de dérive
-ou de chemin invalide dans des dossiers jetables. Le chargement natif reste
+ou de chemin invalide dans des dossiers temporaires de test. Le chargement natif reste
 `UNKNOWN`.
 
 ## Chargement natif
@@ -106,7 +106,7 @@ Les skills sans rapport avec le manifeste sont préservés.
 Le corpus `evals/scenarios.json` contient des demandes positives et négatives
 en français et en anglais. Il sert au routeur BM25 local lorsqu’il est installé ;
 les deux clients peuvent aussi invoquer le skill explicitement sans ce routeur.
-Le dépôt n’installe pas de hook pour l’activer.
+Le repo n’installe pas de hook pour l’activer.
 
 Les contrôles de routage sont distincts de la CI portable. Pour les rejouer sur
 une machine équipée du routeur ai-agents, depuis ce checkout :

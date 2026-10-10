@@ -22,6 +22,6 @@ Presentation filters do not save collection work. Even an empty selection retain
 
 ## A focused retry
 
-Read the saved gaps first. If standard collection caps are the cause, choose a new output and retry the same exact worktree with `--budget thorough`. It raises finite caps; it does not fix access denial, missing objects or changed identities. Disk has its independent `--disk-budget`.
+Read the saved gaps first. If standard collection caps are the cause, choose a new output and retry the same exact worktree with `--budget thorough`. Collection remains bounded by higher limits; they do not fix access denial, missing objects or changed identities. Disk has its independent `--disk-budget`.
 
 Read the focused result before widening the scope. Each run keeps its own dates and evidence. Usage by agents and terminals remains a separate check.

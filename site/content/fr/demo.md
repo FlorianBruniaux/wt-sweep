@@ -1,6 +1,6 @@
-Cet essai crée une nouvelle famille Git dans un répertoire temporaire possédé par la démo. Il touche uniquement cette fixture et sauvegarde ses rapports hors du dépôt. Exécutez-le depuis le checkout wt-sweep compilé, sur macOS.
+Cette démo crée un repo et ses worktrees dans un dossier temporaire réservé à l’essai. Elle analyse uniquement ces fichiers et enregistre les rapports en dehors du repo. Lancez-la depuis le checkout wt-sweep compilé, sur macOS.
 
-## Créer et analyser la fixture
+## Créer et analyser le repo de test
 
 ```sh
 (
@@ -30,18 +30,18 @@ La commande affiche le dossier temporaire et les chemins des rapports. Ouvrez le
 
 ## Résultat attendu
 
-| Fixture | Verdict | Motif |
+| Dossier de test | Verdict | Motif |
 | --- | --- | --- |
-| `repo` | `keep` | Checkout principal, point d’entrée du dépôt. |
+| `repo` | `keep` | Checkout principal, point d’entrée du repo. |
 | `worktree` | `keep` | `notes.txt` est une note locale non suivie. |
 | `clean-worktree` | `cleanup_candidate` | Conditions C1–C5 actuelles établies sur une collecte complète. |
 
-Les trois HEAD correspondent à `refs/heads/main`. La note locale reste à préserver. L’usage du candidat n’a pas été vérifié. Si la collecte est partielle, conservez les lacunes et suivez les conditions indiquées plutôt que de forcer ce résultat attendu.
+Les trois HEAD correspondent à `refs/heads/main`. La note locale reste à préserver. L’utilisation du worktree candidat n’a pas été vérifiée. Si la collecte est partielle, gardez les limites signalées et suivez les conditions indiquées plutôt que de chercher à obtenir ce verdict à tout prix.
 
 ## Parcourir un exemple déjà généré
 
-[Ouvrir le rapport natif interactif](/demo/report.html). Cette autre fixture du site contient quatre worktrees : trois `keep`, un `cleanup_candidate`. Le rapport provient d’un dépôt jetable, avec son [relevé de génération](/demo/provenance.json).
+[Ouvrir le rapport interactif](/demo/report.html). Cet autre repo de test contient quatre worktrees : trois `keep`, un `cleanup_candidate`. Son [relevé de génération](/demo/provenance.json) décrit l’origine du rapport.
 
-Les captures de la landing datent du 8 octobre 2026 et proviennent d’une autre fixture de quatre worktrees. Leur [relevé des captures](/assets/report-captures.json) est distinct de l’exemple fraîchement généré.
+Les captures de la page d’accueil datent du 8 octobre 2026 et proviennent d’un autre repo de test de quatre worktrees. Leur [relevé des captures](/assets/report-captures.json) est distinct de celui de la démo interactive.
 
-Aucun nettoyage dans les deux démos. Un reçu lie les octets des artefacts ; ce n’est pas une sauvegarde.
+Aucune des deux démos ne supprime de worktree. Le reçu de publication décrit les octets des fichiers produits ; il ne contient pas de sauvegarde.

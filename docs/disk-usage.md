@@ -3,7 +3,7 @@
 [Index documentaire](README.md) · [Référence CLI](cli.md)
 
 `scan --disk-usage` et `review --disk-usage` mesurent les dossiers des worktrees
-découverts et le dossier Git commun de chaque dépôt. Le rapport classe les mesures
+découverts et le dossier Git commun de chaque repo. Le rapport classe les mesures
 par taille allouée décroissante. Le collecteur Rust calcule les tailles et le
 rendu les inscrit dans les rapports à partir des données capturées, sans LLM.
 Ces chiffres ne participent pas à la décision de nettoyage.
@@ -29,7 +29,7 @@ Depuis le checkout de Worktree Sweep, sur macOS :
 ```
 
 Les `XXXXXX` sont remplacés automatiquement par `mktemp`, pour créer un dossier
-neuf. Pour cibler un dépôt, remplacer les deux `--root` par `--repo` suivi de son
+neuf. Pour cibler un repo, remplacer les deux `--root` par `--repo` suivi de son
 chemin absolu. Pour les volumes montés visibles, les remplacer par `--all`.
 La découverte utilise par défaut une limite de 60 secondes : `--all` ne garantit
 pas que chaque worktree de la machine sera trouvé. Pour continuer une découverte
@@ -39,7 +39,7 @@ ajouter des worktrees situés hors des racines parcourues.
 
 ## Mesurer et analyser dans la même commande
 
-Pour un dépôt et sa cible d’intégration, depuis le checkout de Worktree Sweep :
+Pour un repo et sa cible d’intégration, depuis le checkout de Worktree Sweep :
 
 ```sh
 (
@@ -147,7 +147,7 @@ Un autre worktree enregistré imbriqué dans un dossier est mesuré dans sa prop
 ligne. Les liens physiques sont dédupliqués dans une ligne et dans le total.
 Les lignes peuvent toutefois partager des inodes entre elles : leur somme peut
 être supérieure au total. Les cibles des liens symboliques ne sont pas suivies.
-Un dépôt nu apparaît seulement dans les administrations Git.
+Un repo bare apparaît seulement dans les administrations Git.
 
 **La taille allouée n’est pas une promesse d’espace récupérable.** Des clones APFS,
 instantanés ou extents partagés peuvent changer ce qu’une suppression libérerait.
@@ -210,7 +210,7 @@ Un petit worktree peut contenir un travail unique ; un gros worktree peut encore
 revue ; son intervalle reste affiché séparément et les fichiers peuvent évoluer
 entre les deux.
 
-Tests du collecteur sur des dépôts temporaires :
+Tests du collecteur sur des repos temporaires :
 
 ```sh
 cargo test --locked --offline --test disk_usage
@@ -219,7 +219,7 @@ cargo test --locked --offline --test disk_usage
 ## Comparer deux versions sur un corpus fixe
 
 La [recette de comparaison](../experiments/disk-scope/README.md) mesure deux
-binaires release sur les mêmes dépôts jetables, avec trois tailles de dossiers.
+binaires release sur les mêmes repos de test temporaires, avec trois tailles de dossiers.
 Un parcours `lstat` indépendant vérifie les octets logiques, alloués et dédupliqués ;
 les contenus et métadonnées des fixtures doivent rester inchangés. Exécuter la
 recette après les autres suites pour éviter leur charge concurrente.

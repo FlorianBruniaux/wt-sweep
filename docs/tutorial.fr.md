@@ -1,4 +1,4 @@
-# Tester Worktree Sweep, puis examiner un dépôt
+# Tester Worktree Sweep, puis examiner un repo
 
 [README français](../README.fr.md) · [Index documentaire](README.md) · [Référence CLI](cli.md)
 
@@ -22,12 +22,12 @@ cargo build --release --locked --offline
 ```
 
 `cargo fetch` télécharge les dépendances ; omettez-le si elles sont en cache.
-Rustup peut aussi télécharger la version fixée par le dépôt. Pour obtenir les
+Rustup peut aussi télécharger la version fixée par le repo. Pour obtenir les
 sources, suivez les [instructions de clonage](../README.fr.md#compiler-depuis-les-sources).
 L’aide, y compris `scan --help`, `plan --help` et `forge --help`, ne lance aucune
 collecte. Sans argument, l’outil affiche l’aide.
 
-## 2. Examiner votre dépôt en une commande
+## 2. Examiner votre repo en une commande
 
 Copiez le bloc depuis la racine de `wt-sweep` après compilation. Il demande un
 chemin absolu et une référence complète que vous avez confirmée. Il s’arrête si
@@ -101,14 +101,14 @@ revue puis filtre l’affichage ; elle conserve totaux et lacunes du périmètre
 source. Pour relire les preuves déjà sauvées, ouvrez le `report.txt` de ce run.
 
 Lisez `decision.keep_reasons`, `decision.missing_conditions`, le résumé
-`local_summary` et l’histoire privée. `0` est exact pour un compteur complet,
+`local_summary` et l’historique privé. `0` est exact pour un compteur complet,
 `>=N` est une borne minimale et `UNKNOWN` désigne un zéro incomplet.
 Les stashes appartiennent à la famille, pas au seul worktree où ils sont affichés.
 Sujets de commits, changelog et PR/MR donnent du contexte sans établir
 l’intégration. Une ascendance du graphe seule, une identité d’arbre ou une MR
 fermée ne satisfait pas les [conditions C1-C5](contracts.md#triage-policy).
 
-## 3. Essayer les trois verdicts sur un dépôt jetable
+## 3. Essayer les trois verdicts sur un repo de test temporaire
 
 Ce bloc crée une fixture sous `/private/tmp`, avec deux worktrees liés. La
 configuration Git est isolée. Il conserve la fixture et ses rapports pour lecture.
@@ -159,7 +159,7 @@ La section `RESULTS` doit afficher `Keep: 2`, `Cleanup candidates: 1` et
 `Needs verification: 0`. Sans cible, elle affiche respectivement 2, 0 et 1.
 `COVERAGE` distingue les contrôles locaux complets, partiels et non collectés.
 Une découverte complète ne signifie pas que l’analyse des fichiers ou de
-l’historique est complète. `CHECKS STILL NEEDED` indique les conditions manquantes ;
+l’historique est complet. `CHECKS STILL NEEDED` indique les conditions manquantes ;
 `COLLECTION LIMITS` regroupe les limites de collecte observées. `Resolved
 verdicts` compte les `keep` et candidats ; un `keep` peut conserver des contrôles
 incomplets sans redevenir `verify`. `CHECKS STILL NEEDED` décrit les lignes
@@ -170,7 +170,7 @@ L’absence d’export forge reste inconnue ; le reçu peut être `partial` malg
 `review` collecte le résumé local courant sans manifeste détaillé. La note est
 comptée comme non suivie dans `items[].local_summary`. Pour ses empreintes et
 métadonnées, utilisez `scan --local` dans le parcours avancé. Le bloc vérifie la
-note et les HEAD ; il ne démontre pas la conservation exhaustive du dépôt.
+note et les HEAD ; il ne démontre pas la conservation exhaustive du repo.
 
 ## 4. Lancer les tests automatiques
 
@@ -260,11 +260,11 @@ Un dossier incomplet sans reçu final n’établit pas un run sauvegardé. Si la
 synchronisation finale échoue après apparition du reçu, la durabilité reste
 inconnue. `review` refuse une source complète dépassant la limite de publication
 et demande un périmètre plus étroit. Les omissions observées ne comptent pas les
-dépôts jamais découverts. Consultez les [limites et codes de sortie](cli.md).
+repos jamais découverts. Consultez les [limites et codes de sortie](cli.md).
 
 ## Prompt à donner à un assistant
 
-Claude Code et Codex peuvent utiliser directement le [skill du dépôt](assistant-skill.md).
+Claude Code et Codex peuvent utiliser directement le [skill du repo](assistant-skill.md).
 Il fournit le parcours progressif et des prompts plus courts. Le prompt ci-dessous
 reste utilisable par un assistant qui ne charge pas les skills du projet.
 
@@ -272,7 +272,7 @@ Remplacez les trois valeurs avant de copier ce prompt dans un assistant qui
 dispose d’un terminal sur votre Mac. Worktree Sweep n’utilise aucun modèle.
 
 ```text
-Examine les worktrees de ce dépôt avec Worktree Sweep, en lecture seule.
+Examine les worktrees de ce repo avec Worktree Sweep, en lecture seule.
 
 Sources de wt-sweep : <CHEMIN_ABSOLU_WT_SWEEP>
 Clone à examiner : <CHEMIN_ABSOLU_DU_CLONE>
@@ -284,11 +284,11 @@ Exécute review sur le clone et ses worktrees enregistrés avec cette cible expl
 
 Reste dans ce périmètre. Ne lance ni découverte globale, ni fetch, prune, gc, suppression de branche ou de worktree, ni apply. N’ajoute aucun réseau ou export forge implicite. Sans export fourni, conserve l’état de la forge inconnu.
 
-Donne les commandes réellement exécutées, leurs codes de sortie, les chemins d’artefacts et leur reçu. Pour chaque worktree, présente chemin, branche, HEAD complet, verdict, raisons et conditions manquantes. Distingue faits observés, relations du graphe et preuves approfondies d’intégration. Décris fichiers locaux, histoire privée, stashes partagés et contexte de commits/changelog lorsqu’ils ont été observés, avec leurs limites.
+Donne les commandes réellement exécutées, leurs codes de sortie, les chemins d’artefacts et leur reçu. Pour chaque worktree, présente chemin, branche, HEAD complet, verdict, raisons et conditions manquantes. Distingue faits observés, relations du graphe et preuves approfondies d’intégration. Décris fichiers locaux, historique privé, stashes partagés et contexte de commits/changelog lorsqu’ils ont été observés, avec leurs limites.
 
 Explique les compteurs complets, bornes minimales et inconnus. Pour une vue filtrée, conserve totaux et lacunes source. Après interruption ou limite, donne la raison, la portée restante et une commande de relance ciblée vers une nouvelle sortie. Une progression seule n’est pas un rapport sauvegardé. Commence avec le profil standard. Si les plafonds causent les preuves manquantes, inspecte les faits sauvés puis propose un nouveau passage ciblé --worktree avec --budget thorough. Examine ce résultat avant une collecte thorough de la famille complète. Distingue plafonds autorisés, temps par phase et lectures réellement observées ; un plafond accru ne garantit pas la complétude.
 
-Ne transforme ni cleanup_candidate en autorisation de suppression, ni un manifeste en sauvegarde. L’usage des candidats reste à confirmer. Les archives review/1 sont historiques et ne satisfont pas les contrôles courants C5. Termine par les vérifications humaines requises et les limites réellement observées. Ne déduis pas une couverture machine de cet essai par dépôt.
+Ne transforme ni cleanup_candidate en autorisation de suppression, ni un manifeste en sauvegarde. L’usage des candidats reste à confirmer. Les archives review/1 sont historiques et ne satisfont pas les contrôles courants C5. Termine par les vérifications humaines requises et les limites réellement observées. Ne déduis pas une couverture machine de cet essai par repo.
 ```
 
 Si l’assistant ne peut pas exécuter les commandes, lancez le parcours vous-même
@@ -334,7 +334,7 @@ standard explique les preuves manquantes, le bloc suivant réserve les lectures
 )
 ```
 
-Ce passage réserve les lectures de fichiers et d’histoire au chemin choisi.
+Ce passage réserve les lectures de fichiers et d’historique au chemin choisi.
 L’inventaire complet et les contrôles d’identité restent présents ; les autres
 lignes portent leurs preuves manquantes. Les plafonds par worktree continuent
 à s’appliquer. Le nouveau rapport ne complète pas rétroactivement l’ancien.

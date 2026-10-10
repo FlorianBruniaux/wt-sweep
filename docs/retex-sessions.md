@@ -7,7 +7,7 @@ les cinq scripts et les sept TSV conservés sous `scripts/session-msds/` dans le
 dossier de ménage, ainsi que le texte Aristote fourni dans cette conversation.
 Ce dernier contient des passages tronqués : ils ne sont pas reconstruits.
 Les inventaires partagés signalés comme écrasés ne sont pas utilisés. Aucun
-dépôt réel, sauvegarde contenant des secrets ou état distant n'a été inspecté.
+repo réel, sauvegarde contenant des secrets ou état distant n'a été inspecté.
 
 Le retour msds rapporte 134 suppressions sur 166, sans perte constatée. Les trois
 plans exécutés contiennent bien 46, 38 et 50 lignes, soit 134 chemins distincts.
@@ -19,7 +19,7 @@ de perte restent des résultats rapportés par leurs sessions respectives.
 ## Hypothèses éprouvées localement
 
 Les nouveaux témoins sont dans `experiments/exclusion/test_retex.py`. Ils créent
-leurs dépôts sous `/private/tmp`, sans argument permettant de viser un dépôt
+leurs repos sous `/private/tmp`, sans argument permettant de viser un repo
 réel. Git est isolé des configurations et hooks utilisateur, les processus
 enfants et commandes sont bornés. La fixture et une sentinelle extérieure sont
 contrôlées. Aucun `--force`, déverrouillage ni suppression de branche n'est utilisé.
@@ -30,7 +30,7 @@ Résultats avec Git 2.56.0, puis les cinq nouveaux tests rejoués avec
 | Hypothèse ou recette | Observation | Conséquence |
 |---|---|---|
 | H1 : retrait sans force et fichiers ignorés | Un worktree propre contenant des octets ignorés est retiré sans `--force` ; ces octets disparaissent. Sa branche et la sentinelle restent. Un fichier non suivi ordinaire provoque au contraire un refus et reste présent. | Le succès de Git ne prouve pas la conservation des fichiers ignorés. |
-| H4 : absence de cwd dans la cible | Sur le seul enfant possédé par le test, `lsof` montre un cwd extérieur et un descripteur ouvert dans la cible. L'écriture via ce descripteur réussit. | Un filtre cwd ne couvre pas les écrivains. Une vue native refusée serait UNKNOWN, jamais une absence. |
+| H4 : absence de cwd dans la cible | Sur le seul enfant possédé par le test, `lsof` montre un cwd extérieur et un descripteur ouvert dans la cible. L'écriture via ce descripteur réussit. | Un filtre cwd ne couvre pas les processus d’écriture. Une vue native refusée serait UNKNOWN, jamais une absence. |
 | Empreinte HEAD + status | Modifier successivement les octets d'un fichier déjà modifié, d'un non-suivi et d'un ignoré laisse identiques les octets HEAD/status et leur SHA-1 tronqué. Les SHA-256 des contenus changent. | L'empreinte des scripts ne détecte pas « tout changement ». Utiliser un hash plus long sur les mêmes entrées ne corrigerait pas ce défaut. |
 | Patch `git diff HEAD --binary` | Le patch restaure les octets sur disque dans un worktree neuf. Une version différente qui était dans l'index disparaît : l'index restauré reste celui de HEAD. | Patch et archive de fichiers ne suffisent pas à restituer l'état de travail complet. |
 

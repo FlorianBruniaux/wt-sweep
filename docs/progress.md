@@ -11,7 +11,7 @@ datées, pas une description des tâches encore ouvertes.
 
 La version préparée est `0.1.0-alpha.1` ; le [guide de publication](release.md)
 décrit le périmètre et les conditions avant le tag. Cette section ne déclare
-ni release publiée, ni dépôt public. Le choix de licence reste à confirmer :
+ni release publiée, ni repo public. Le choix de licence reste à confirmer :
 la FSL conservée à ce stade ne permet pas une annonce open source immédiate.
 
 La course signalée plus bas est reproduite par un test qui attend la sortie du
@@ -152,13 +152,13 @@ les intervalles séparés empêchent de présenter la reprise comme un instantan
 
 La [campagne sur corpus fixe](research/history-batch-benchmark-2026-10-08.md)
 conserve les mêmes preuves sur huit passages. Pour 145 commits, les processus
-passent de 146 à 39 en histoire et de 180 à 45 en histoire privée. La médiane
+passent de 146 à 39 en historique et de 180 à 45 en historique privé. La médiane
 complète passe de 21 032 à 12 146 ms. La charge de l'hôte et les trois paires
 mesurées limitent la portée de ces temps. Les plafonds des phases sont inchangés ;
 le transport des sessions utilise désormais un plafond agrégé documenté,
 avec 8 Mio maximum par commit et 10 secondes par processus.
 
-La fixture de reprise retrouve trois dépôts en 24 passages : 48 listings et
+La fixture de reprise retrouve trois repos en 24 passages : 48 listings et
 122 entrées, identiques au scan neuf. Les préflights Git répétés s’accompagnent d’un
 coût supérieur sur ce petit corpus : 36 174 ms cumulées contre 1 475 ms en une
 passe. Ce résultat mesure une capacité de continuation sans relister les dossiers
@@ -176,10 +176,10 @@ du reçu `partial`. Le rapport et les chemins privés restent locaux.
 | Phase | Temps enregistré | Travail |
 | --- | ---: | --- |
 | Contrôles d'identité | 3 939 ms | Contrôles de la famille conservés |
-| Histoire | 62 679 ms | 5 004 objets, 1 261 processus, 9 162 640 octets |
+| Historique | 62 679 ms | 5 004 objets, 1 261 processus, 9 162 640 octets |
 | Fichiers locaux | 60 473 ms | 20 500 chemins ; plafond cumulé d'octets atteint |
-| Histoire privée | 97 279 ms | 25 518 objets, 1 056 processus, 21 688 747 octets |
-| Revalidations | 4 369 ms | Histoire et racines privées recontrôlées |
+| Historique privé | 97 279 ms | 25 518 objets, 1 056 processus, 21 688 747 octets |
+| Revalidations | 4 369 ms | Historique et racines privées recontrôlées |
 
 La cible a changé pendant l'analyse : la relation observée `not_ancestor` est
 rendue `unknown` avec le motif de changement. Une ref privée a aussi changé ;
@@ -187,7 +187,7 @@ rendue `unknown` avec le motif de changement. Une ref privée a aussi changé ;
 des ancres incomplète. C2, C3, C4 et C5 restent manquantes. Le `keep` repose sur
 une raison positive de conservation et ne certifie pas une revue exhaustive.
 
-Ce dépôt est actif. Une partie de la suite Rust s'exécutait aussi pendant la fin
+Ce repo est actif. Une partie de la suite Rust s'exécutait aussi pendant la fin
 de la recette ; ces durées réelles ne sont pas comparées causalement aux anciens
 runs. La comparaison de performance ci-dessus a été exécutée séparément sur son
 corpus fixe. Aucun changement des règles de verdict ni activation de `apply`.
@@ -418,7 +418,7 @@ délai borné, sans abaisser le seuil. Les huit rendus du test final passent.
 Un nouvel aperçu utilise les données sauvegardées du rapport à 60 worktrees :
 les attributs des 60 lignes et les 126 blocs de preuves sont identiques. Les
 cinq fichiers du rapport source sont inchangés. Aucune nouvelle collecte ni
-mesure disque n’a été lancée sur les dépôts personnels. Les suites générales
+mesure disque n’a été lancée sur les repos personnels. Les suites générales
 Git, Safari et Firefox n’ont pas été rejoués pour ce correctif de présentation.
 Changements locaux, sans commit ni push.
 
@@ -450,7 +450,7 @@ synthétiques : trois `keep`, un `cleanup_candidate`. Les captures clair/sombre
 montrent le bilan, puis les lignes dans un repli. Les fichiers des fixtures sont
 inchangés après la revue, les quatre verdicts HTML concordent avec le JSON et les
 reçus sont vérifiés. Le manifeste de capture est dans
-[les sources visuelles](assets/report-captures.json). Aucun dépôt personnel n’a
+[les sources visuelles](assets/report-captures.json). Aucun repo personnel n’a
 été scanné ; aucun appel de génération d’image n’a été effectué.
 
 Les quatre captures ont été relues. Chromium ne signale ni erreur, requête
@@ -561,7 +561,7 @@ décoration. La collecte et les règles de jugement ne sont pas modifiées.
 Les changements portent sur `src/main.rs`, `src/terminal.rs` et le rendu dans
 `src/presentation/`. Les README anglais et français, la référence CLI, le tutoriel,
 le guide disque et le changelog documentent les options. Les tests utilisent des
-dépôts jetables ; aucun scan de la machine ou des dépôts personnels n’a été relancé.
+repos de test temporaires ; aucun scan de la machine ou des repos personnels n’a été relancé.
 
 Les six scénarios initiaux d’affichage échouent avant implémentation puis passent :
 progression compacte, récapitulatif court, mode détaillé, codes de couleur absents des
@@ -597,7 +597,7 @@ changements restent locaux, sans commit ni publication GitHub pour ce lot.
 U1-U4 et T01-T09 sont livrés en lecture seule. Le triage a rejoint `main` par
 la [PR #1](https://github.com/FlorianBruniaux/wt-sweep/pull/1), commit `ddda77d`.
 `review` regroupe découverte et revue ; le rapport distingue `keep`,
-`cleanup_candidate` et `verify`, avec cibles, faits locaux, histoire et conditions
+`cleanup_candidate` et `verify`, avec cibles, faits locaux, historique et conditions
 manquantes. Le [checkpoint T01-T09](finish-ledger.md#triage-t01-t09) contient les
 vérifications finales et l'essai réel : 48 worktrees, 3 `keep`, 45 `verify`, aucun
 candidat. Ce résultat historique précède les profils de collecte décrits ci-dessous.
@@ -618,12 +618,12 @@ Le collecteur mesure les métadonnées par descripteur, sans lire le contenu des
 fichiers. Les tailles allouées et logiques sont publiées par dossier de travail
 et administration Git, avec total dédupliqué par périphérique/inode. Les autres
 racines enregistrées imbriquées sont comptées séparément. Le tri du rapport par
-taille conserve branche, chemin et dépôt ; les lacunes restent explicites.
+taille conserve branche, chemin et repo ; les lacunes restent explicites.
 Le [guide disque](disk-usage.md) précise les plafonds et la limite APFS.
 
 Les sept scénarios initiaux du collecteur passent : fichiers ignorés et creux, liens symboliques,
 liens physiques locaux et partagés, racines imbriquées, budgets, racine absente ou
-remplacée, noms avec caractères de contrôle et dépôt nu. Les neuf tests CLI
+remplacée, noms avec caractères de contrôle et repo bare. Les neuf tests CLI
 passent, y compris le refus d’un profil invalide et l’acceptation de `thorough`.
 Une première fixture utilisait un nom non UTF-8 refusé par APFS ; elle utilise
 maintenant tabulation et saut de ligne. Ce contrôle ne prouve pas la gestion
@@ -646,7 +646,7 @@ est `3bd01ef53f49d386edbbba999f7c5ceab8d8654c1dedf935a0896e32705d61db`.
 Les README, aide CLI, contrats, changelog, index et roadmap sont alignés. Les
 22 projections d’instructions restent synchronisées. Les 179 liens locaux et
 sept blocs shell contrôlés sont valides. La publication GitHub reste à faire.
-Les mesures personnelles restent hors du dépôt.
+Les mesures personnelles restent hors du repo.
 
 ### Raccordement au rapport final
 
@@ -662,7 +662,7 @@ libellés de temps ont ensuite été revérifiés par 26 tests ciblés du rendu,
 jugement et de la mesure. Les 32 scénarios Python de revue et de publication
 passent également. Formatage, Clippy et build release
 passent. Un essai release sur deux dossiers de travail et une administration Git
-jetables retrouve les octets alloués de l’oracle `stat` et publie les mêmes données
+de test retrouve les octets alloués de l’oracle `stat` et publie les mêmes données
 dans `inventory.json` et `review.json`. Le binaire de ce raccordement a pour SHA-256
 `dec98c6dea3accf9fe74b009eeb9b25fc5ff731b431a5cfb09659985182d2826`.
 Ces contrôles n’effacent pas l’échec d’ordre à 100 worktrees décrit plus haut.
@@ -697,7 +697,7 @@ et l’absence de reprise restent des limites distinctes.
 
 Le lot ajoute les profils finis `standard|thorough`, les plafonds appliqués et
 les métriques par phase. Les vérifications approfondies groupent les blobs ;
-l’histoire privée partage son parcours et donne 32 expansions prioritaires aux
+l’historique privé partage son parcours et donne 32 expansions prioritaires aux
 ancres déjà utiles. Le transport Git attend les descripteurs disponibles au
 lieu de temporiser entre chaque petite rafale de sortie. C1-C5 restent inchangées.
 
@@ -712,7 +712,7 @@ privées et classe le worktree `keep` : une modification non commitée et au moi
 33 741 fichiers ignorés sont observés. Les 52 213 chemins examinés ne constituent
 pas un inventaire complet ; le plafond local d’octets laisse C2, C3 et C5
 incomplètes. La phase privée dure 5 063 ms sur ce passage, contre 240 473 ms sur
-le diagnostic précédent. Le dépôt évolue entre les deux observations.
+le diagnostic précédent. Le repo évolue entre les deux observations.
 
 Les README, contrats, tutoriel, aide CLI, roadmap et skill expliquent le passage
 ciblé et les limites restantes. Les projections Claude/Codex sont synchronisées ;
@@ -721,12 +721,12 @@ session native reste non vérifié. Le [registre de collecte](collection-perform
 conserve les observations distinctes et leurs identités de binaire.
 
 Le passage familial thorough conserve les 50 lignes : 49 `keep`, un `verify`,
-aucun candidat. L’histoire des commits est collectée pour les 50 ; dix résumés
+aucun candidat. L’historique des commits est collecté pour les 50 ; dix résumés
 locaux sont complets et quarante restent partiels. Les phases locale et privée
 atteignent leurs plafonds. Les 49 rétentions ont des motifs observés, dont des
 fichiers ignorés ; elles ne signifient pas 49 analyses exhaustives. Le dernier
-`verify` garde notamment un index intent-to-add non pris en charge et une
-histoire privée incomplète. Les artefacts du run sont vérifiés contre leur reçu.
+`verify` garde notamment un index intent-to-add non pris en charge et un
+historique privé incomplet. Les artefacts du run sont vérifiés contre leur reçu.
 
 La revue indépendante est statique : elle couvre C1-C5, les budgets, les témoins
 privés, l’attente des flux Git et la conservation des causes d’arrêt. Aucun
@@ -734,10 +734,10 @@ constat de cette revue ne reste ouvert. Formatage et Clippy passent. La suite
 Rust finale compte 324 réussites et deux cas ignorés ; la suite Python compte
 271 réussites et six cas ignorés. Les 6 expériences d’exclusion passent,
 sans démontrer E1. Le binaire release est reconstruit ; le
-[registre de validation](finish-ledger.md#complétion-des-gros-dépôts-a1-a6)
+[registre de validation](finish-ledger.md#complétion-des-gros-repos-a1-a6)
 conserve son empreinte et les limites des contrôles.
 
-## Collecte des gros dépôts, 06/10/2026
+## Collecte des gros repos, 06/10/2026
 
 Les lectures locales d’arbres et de blobs sont groupées et dimensionnées avant
 exécution. Le graphe d’une cible vérifiée est partagé entre worktrees de la même
@@ -748,14 +748,14 @@ l’aide CLI et les instructions Claude/Codex générées décrivent ce comporte
 
 Les fixtures distinctes passent avec 23 processus Git pour 1 024 blobs et au plus
 40 lectures d’objets pour 1 024 dossiers. Un graphe partagé de 12 commits demande
-12 expansions. Les délais de phase d’histoire et d’histoire privée n’effacent
+12 expansions. Les délais de phase d’historique et d’historique privé n’effacent
 plus les preuves indépendantes comme le ferait un vrai timeout du backend.
 Les revalidations manquantes restent inconnues.
 
 Le dernier passage complet compte 49 worktrees : 4 `keep`, 45 `verify`, aucun
 candidat. Il conserve trois ascendances vérifiées, sans fausse quarantaine ;
 les 49 résumés locaux restent partiels. Le passage ciblé vérifie une ascendance
-et observe au moins 4 969 fichiers ignorés, donc classe ce worktree `keep`. Les plafonds d’objets et d’histoire privée
+et observe au moins 4 969 fichiers ignorés, donc classe ce worktree `keep`. Les plafonds d’objets et d’historique privé
 laissent encore des contrôles incomplets. Le [registre de collecte](collection-performance.md)
 détaille les fixtures, la revue indépendante et les limites des mesures réelles.
 
@@ -773,7 +773,7 @@ contrôles locaux complets, partiels ou absents et les conditions encore manquan
 Les budgets d’historique, budgets locaux et timeouts Git sont regroupés. Les
 messages de progression sont lisibles ; le JSON et les règles de décision restent
 inchangés. Ce changement d’affichage ne résout pas les limites de performance
-observées sur le gros dépôt.
+observées sur le gros repo.
 
 Vérifications locales : 280 tests Rust réussis, 2 ignorés ; formatage, Clippy,
 synchronisation des 12 fichiers d’instructions et 6 tests RETEX réussis.
@@ -783,11 +783,11 @@ messages au singulier, les 9 tests du module concerné passent. La suite Python
 complète n’a pas été rejouée après ces derniers changements.
 Le rendu du rapport existant de 50 worktrees donne 3 à conserver, 0 candidat et
 47 à vérifier, avec 0 contrôle local complet, 4 partiels et 46 non collectés.
-Aucune nouvelle analyse du dépôt réel n’a été lancée pour cette vérification.
+Aucune nouvelle analyse du repo réel n’a été lancée pour cette vérification.
 
 ## Skill wt-sweep, 06/10/2026
 
-Le [skill utilisateur](assistant-skill.md) est intégré au harnais du dépôt.
+Le [skill utilisateur](assistant-skill.md) est intégré au harnais du repo.
 Il vérifie l’aide CLI, choisit le périmètre et les cibles explicites, lit les
 rapports par pages et propose des actions de conservation ou de vérification.
 Les README anglais/français, le tutoriel et la feuille de route le référencent.
@@ -798,12 +798,12 @@ natifs Claude et Codex. Les 20 fichiers générés sont synchronisés. Les tests
 générateur couvrent aussi les ressources absentes, liens sortants, préimages
 modifiées et skills voisins à préserver.
 
-Essai comportemental sur une famille Git jetable : le principal est `keep` et
+Essai comportemental sur une famille Git de test : le principal est `keep` et
 le lié propre `cleanup_candidate`. L’ajout d’un fichier non suivi fait passer le
 lié à `keep`. La lecture paginée conserve les deux identités ; une vue filtrée
 à un candidat garde le total source de deux. Les longueurs et SHA-256 des artefacts
 correspondent au reçu. Les manifestes de fichiers et métadonnées avant/après
-restent identiques, hors atime exclu par l’oracle. Aucun dépôt réel n’a été scanné.
+restent identiques, hors atime exclu par l’oracle. Aucun repo réel n’a été scanné.
 
 Routage BM25 local vérifié pour les deux clients : 12 scénarios positifs et
 6 négatifs, skill éligible, seuil de qualité global satisfait. F1 de calibration
@@ -863,7 +863,7 @@ Les sections suivantes conservent les résultats, l'état Git et les limites de
 leurs dates d'observation. Leurs chiffres ne décrivent pas le triage courant.
 
 Le 04/10/2026, le MVP macOS U1 à U4 est implémenté et vérifié sur des familles
-Git jetables : inventaire, découverte, rapport local et import forge. La table
+Git temporaires de test : inventaire, découverte, rapport local et import forge. La table
 native des montages et la politique de refus de matérialisation sont raccordées.
 La finition des 04 et 05/10 ajoute rapport descriptif, manifeste local explicite et dossiers
 d'exécution ; ses preuves sont regroupées dans [finish-ledger.md](finish-ledger.md).
@@ -872,7 +872,7 @@ machine n'a été exécuté. E1 reste `NON_DEMONTREE` et `apply` refuse l'exécu
 
 Autorité d'acceptation : [plan consolidé](plan.md). Répartition :
 [implementation.md](implementation.md). Les observations locales ne valident
-ni une CI distante, ni un scan de la machine, ni un retrait de dépôt.
+ni une CI distante, ni un scan de la machine, ni un retrait de repo.
 
 ## État initial et autorisation
 
@@ -929,7 +929,7 @@ Les positifs principal séparé, linked et bare passent, y compris le rapport lo
 
 `scan --root` répétable et `scan --all` utilisent un parcours borné.
 Les 14 tests de découverte couvrent `.git` fichier/dossier, bare à nom arbitraire,
-administrations séparées, cachés, ignorés, dépôts imbriqués et sous-modules.
+administrations séparées, cachés, ignorés, repos imbriqués et sous-modules.
 Ils comparent un ensemble exact non vide et un manifeste indépendant.
 
 Alias, cycles, marqueurs cassés, accès refusés, limites et annulation sont
@@ -986,7 +986,7 @@ canonique. Un worktree déplacé depuis l'inventaire reste protégé contre une
 sortie intérieure. Ce cas et un faux objet intermédiaire ont échoué avant correction.
 Pour un périmètre global partiel, les ancêtres de sortie sont également inspectés
 pour leurs marqueurs Git : une famille non encore découverte n'autorise pas
-l'écriture dans son dossier. Le cas positif hors dépôt reste accepté.
+l'écriture dans son dossier. Le cas positif hors repo reste accepté.
 
 Une MR ouverte précisément associée prime sur l'intégration, même dans un export
 partiel. La tête source d'une MR fermée ou fusionnée n'est pas une cible.
@@ -1017,7 +1017,7 @@ les preuves originales avant association. L'état actuel du serveur reste inconn
 
 Un import historique autorisé, en lecture seule, a conservé 430 demandes issues
 de cinq pages de tailles 100/100/100/100/30. Son test est ignoré par défaut et exige
-un chemin explicite ; seules les fixtures synthétiques entrent dans le dépôt.
+un chemin explicite ; seules les fixtures synthétiques entrent dans le repo.
 
 Quatre replays Python supplémentaires vérifient cet ensemble et les cas !91,
 !92 de stats-api, puis la MR !383 associée au worktree `lead-app-mr43`. Le suffixe
@@ -1026,7 +1026,7 @@ du worktree n'est pas l'IID de sa MR. Les 104 entrées des deux pages stats et l
 `null`, sans inventer de preuve depuis l'état de la MR ou sa tête source.
 Le manifeste indépendant confirme la conservation des sources, hors atime.
 Sans reçu d'exécuteur, la provenance reste partielle ; la disponibilité actuelle
-des objets et l'intégration historique restent `UNKNOWN`. Aucun dépôt réel n'a
+des objets et l'intégration historique restent `UNKNOWN`. Aucun repo réel n'a
 été consulté pour compléter ces absences. Ces replays exigent un chemin autorisé
 via `WT_SWEEP_HISTORICAL_FORGE_DIR` et sont sautés par défaut.
 
@@ -1035,7 +1035,7 @@ via `WT_SWEEP_HISTORICAL_FORGE_DIR` et sont sautés par défaut.
 La reprise des [retours msds et Aristote](retex-sessions.md) ajoute cinq tests
 aux témoins E1 : ignorés supprimés sans force, non-suivis refusés, empreinte de
 statut insensible au contenu, index distinct perdu par un patch depuis HEAD et
-observation native d'un écrivain au cwd extérieur. Les six tests passent ;
+observation native d'un processus d’écriture au cwd extérieur. Les six tests passent ;
 aucune fonctionnalité de retrait n'est ajoutée. Les huit pistes sont évaluées
 et trois lots de lecture seule sont raccordés pendant la finition.
 
@@ -1104,7 +1104,7 @@ locale autorisant le protocole ne réactive pas son exécuteur. Référence prim
 
 Le lot courant implémente `--html` sur `scan`, `review` et `plan`, le rendu
 hors ligne par famille et le reçu de publication du HTML. Les étapes de
-progression affichent des observations provisoires d’histoire et d’état local.
+progression affichent des observations provisoires d’historique et d’état local.
 Le correctif d’index `intent-to-add` conserve la distinction index/disque.
 Ce paragraphe décrit le checkout en cours ; le SHA livré et la validation
 complète sont consignés à la fin du lot, séparément des passages ciblés.
@@ -1126,7 +1126,7 @@ et relue. Les mesures de performance et la recette réelle ont leurs preuves
 séparées ; ces tests n’établissent pas un inventaire actuel de la machine.
 
 
-Le skill reste de portée dépôt : source `harness/skills/wt-sweep`, projections
+Le skill reste de portée repo : source `harness/skills/wt-sweep`, projections
 `.claude/skills/wt-sweep` et `.agents/skills/wt-sweep`. `sync-ai.py --check`
 valide 22 fichiers. Les caches BM25 de ce checkout ont été reconstruits pour
 Claude et Codex, sans changement des hooks ni des réglages globaux. Chaque client
@@ -1155,7 +1155,7 @@ Python complète compte 291 cas, 285 succès et 6 ignorés : quatre imports
 historiques non demandés et deux créations de chemins refusées par le système
 de fichiers (EILSEQ). Les cas d’identités en octets restent testés séparément.
 Les six témoins d’exclusion passent ; ils démontrent les contre-exemples, pas
-l’exclusion des écrivains.
+l’exclusion des processus d’écriture.
 
 Le SHA-256 du binaire debug est resté
 `14183414de93e18921550ef01ed1e990ebb1438e828dba76f395122b41bb3a59`
@@ -1199,7 +1199,7 @@ fait collecté lisible. Les anciennes mesures conservaient parfois un statut
 délai. Le [registre de mesure](research/collection-benchmark-2026-10-07.md)
 conserve ces essais et la campagne complémentaire avec ses propres binaires.
 
-La sortie redirigée réserve désormais son jalon d’histoire à une relation connue
+La sortie redirigée réserve désormais son jalon d’historique à une relation connue
 complète, et son jalon local à un compte exact ou une borne positive. Un événement
 entièrement inconnu ne consomme plus ce jalon. Le terminal interactif et le mode
 détaillé gardent les états provisoires. Le libellé d’un parcours commencé devient

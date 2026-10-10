@@ -2,7 +2,7 @@
 
 [Index documentaire](README.md) · [Recherche de projets](worktree-ecosystem-2026-10-07.md) · [Feuille de route](roadmap.md)
 
-Analyse du code du 07/10/2026. Les 12 dépôts du comparatif précédent ont été
+Analyse du code du 07/10/2026. Les 12 repos du comparatif précédent ont été
 clonés sous `~/Sites/divers-tests/wt-sweep-comparison-20261007/`, dans des clones
 neufs à profondeur 1, sans sous-modules ni installation. Les clones préexistants
 de `~/Sites/divers-tests` sont restés intacts.
@@ -48,10 +48,10 @@ l'intégrateur, pas une approbation indépendante d'une implémentation livrée.
 | --- | --- | --- | --- |
 | **Holt** | Analyse inter-worktrees, preuves de conservation, récupération et rendu SVG/HTML autonome avec filtres et détail. | Un graphe ciblé peut expliquer quel worktree ou quelle référence conserve du travail ; bons exemples de lecture progressive des preuves. | FSL hors `src/team`, licence commerciale dans `src/team` : vérifier le périmètre avant toute reprise de code. La récupération locale ne démontre pas notre sauvegarde autonome ni E1. |
 | **AgentRinse** | Adaptateurs, plan lié à l'état, machine à états de récupération et renommage de quarantaine sans écrasement. | Journal d'étapes et résultats partiels explicites pour un futur protocole de récupération. | Une référence distante locale couvrant HEAD n'est pas la preuve d'intégration dans une cible choisie. Quarantaine et sauvegarde ont des objectifs différents. |
-| **Stalewood** | Inventaire Go, base déduite avec provenance, classification, taille et JSON par dépôt. | Afficher l'origine d'une cible suggérée et les motifs de triage, sans la choisir à la place de l'utilisateur. | Le chemin d'erreur de lecture locale peut produire un état propre ; le retrait s'appuie sur un verdict précédemment collecté. Ne pas reprendre cette politique. |
+| **Stalewood** | Inventaire Go, base déduite avec provenance, classification, taille et JSON par repo. | Afficher l'origine d'une cible suggérée et les motifs de triage, sans la choisir à la place de l'utilisateur. | Le chemin d'erreur de lecture locale peut produire un état propre ; le retrait s'appuie sur un verdict précédemment collecté. Ne pas reprendre cette politique. |
 | **gh-reaper** | Script shell de découverte, état Git, taille, processus et retrait. | Présentation synthétique des raisons et coût disque avant action. | Exclusions du parcours et des changements locaux, puis possibilité de force : son périmètre de propreté diffère du nôtre. |
 | **Worktrunk** | CLI Rust extensible, collecte concurrente, présentation progressive, hooks et cycle de vie. | Tester l'exécutable externe `wt-sweep` invoqué par `wt sweep` ; mesurer et améliorer le premier résultat utile. | Les critères tree/merge-tree/patch-id ne remplacent pas C2. Les caches persistants ne doivent pas certifier l'état courant. |
-| **kwt** | Registre, générations de worktrees, daemon et sessions ; opérations coordonnées. | Importer une génération et une provenance comme contexte ; distinguer nouveau worktree et chemin réutilisé. | Lister peut écrire une génération dans le dossier Git. Verrou coopératif et session connue ne prouvent pas l'absence d'autres écrivains. |
+| **kwt** | Registre, générations de worktrees, daemon et sessions ; opérations coordonnées. | Importer une génération et une provenance comme contexte ; distinguer nouveau worktree et chemin réutilisé. | Lister peut écrire une génération dans le dossier Git. Verrou coopératif et session connue ne prouvent pas l'absence d'autres processus d’écriture. |
 | **gwq** | CLI Go, découverte dans une arborescence de base, sélection interactive, statuts et sessions tmux. | Sélection et sorties structurées ; raccourcis pour choisir un worktree déjà inventorié. | « Global » porte sur ses conventions de rangement. Ce n'est pas une couverture de tous les volumes. |
 | **Workroot** | CLI Rust orientée cibles, découverte, statut, exécution et prune interactif. | Provenance des cibles et noms pratiques à traduire en chemins exacts pour la CLI. | PR fusionnée et patch-id servent à sa politique de nettoyage, pas aux preuves de Sweep. |
 | **Git Worktree Runner** | Modules Bash de création, copies/préparation, éditeur/agent et nettoyage PR/MR. | Déléguer la préparation d'un environnement à un gestionnaire existant si elle devient un besoin. | Son `clean --dry-run` n'est pas sans mutation : prune et fetch sont possibles dans les chemins lus. |
@@ -76,7 +76,7 @@ au run et à la famille, la progression console et les mesures disque. Ces
 | D2 | **Progression par résultat utile** et mesure du premier fait affiché, distincte du temps total. | Worktrunk. | Scope moyen. Mesurer séparément PTY et stdout pipé, sur la même fixture ; aucun verdict définitif avant ses vérifications finales, JSON inchangé, ordre stable à données fixes. Un squelette de tableau ne compte pas comme un résultat analysé. |
 | D3 | **Entrée facultative `wt sweep`** avec Worktrunk, CLI indépendante conservée. | Dispatch d'exécutable externe Worktrunk. | Petit spike. Vérifier arguments, cwd, exit code, stdout/stderr et collisions de noms sur fixture. Aucun hook installé et aucune écriture Git supplémentaire. Ce n'est pas une intégration déjà testée. |
 | D4 | **Provenance importée passivement** : carte `.worktree.json`, génération, session déclarée et dates de capture. | kwt et registre Aristote. | Scope moyen. Carte absente, périmée, malformée ou contradictoire sans changement de C1-C5 ; changement de génération/provenance détecté lorsqu’il est documenté ; réattribution non démontrable conservée inconnue. Ne pas invoquer une commande externe supposée « list » sans vérifier ses effets. |
-| D5 | **Comparer les récupérations avant de construire la nôtre**. | Holt, AgentRinse, Superset pour le suivi d'interruption. | Scope élevé et conditionnel. Fixtures avec ignorés, index distinct, stash/reflog, écrivain concurrent et arrêt à chaque étape ; oracle indépendant, puis restauration sans dépôt source. E1/U5-U7 restent requis. |
+| D5 | **Comparer les récupérations avant de construire la nôtre**. | Holt, AgentRinse, Superset pour le suivi d'interruption. | Scope élevé et conditionnel. Fixtures avec ignorés, index distinct, stash/reflog, processus d’écriture concurrent et arrêt à chaque étape ; oracle indépendant, puis restauration sans repo source. E1/U5-U7 restent requis. |
 | D6 | **Séparer la création APFS des mesures de conservation**. | claude-cow-worktree. | Expérience bornée, hors collecte courante. Vérifier clone effectif ou copie classique, isolation des écritures, volumes source/staging/destination, ignorés, filtres/index et conservation de la source. Ne promettre aucun gain disque à partir de `st_blocks` seul. |
 
 D1 répond directement au besoin de lire les résultats. D3 peut être vérifié
@@ -116,14 +116,14 @@ sourcées sont disponibles ; il n'est pas requis pour comprendre le tableau.
 2. Mesurer premier fait utile, durée complète et couverture sur 50 puis 100
    worktrees synthétiques constants. Séparer lecture seule et fonctionnalités
    qui écrivent leur propre registre/cache ; consigner environnement et cache OS.
-3. Essayer `wt sweep` sur un dépôt jetable et importer des métadonnées déjà
+3. Essayer `wt sweep` sur un repo de test temporaire et importer des métadonnées déjà
    capturées. Vérifier que les deux chemins conservent les artefacts et refus de
    Sweep. Ne pas installer les hooks des concurrents pour cet essai.
 4. Exécuter les scénarios de récupération indépendamment du développement HTML,
    avec exclusions des écritures externes traitées comme un sujet non résolu.
 
 Ces essais ne sont pas exécutés dans cette analyse. Aucun concurrent n'a été
-branché à un dépôt personnel, aucun worktree n'a été retiré, et aucun code de
+branché à un repo personnel, aucun worktree n'a été retiré, et aucun code de
 concurrent n'a été intégré à Sweep. La lecture de licences dans les fichiers
 sources n'est pas une validation juridique de compatibilité.
 
@@ -143,7 +143,7 @@ le [manifeste de clonage](research/worktree-source-2026-10-07/clones.json).
 La profondeur 1 suffit à la lecture de ces versions, pas à un audit de leur
 historique. Les licences ci-dessous viennent des fichiers des clones.
 
-| Dépôt | Commit examiné | Licence du périmètre lu |
+| Repo | Commit examiné | Licence du périmètre lu |
 | --- | --- | --- |
 | [Raed2180416/holt](https://github.com/Raed2180416/holt) | [`b99e098e214f4e84388ffa9d6fa6b675f951732a`](https://github.com/Raed2180416/holt/tree/b99e098e214f4e84388ffa9d6fa6b675f951732a) | [FSL-1.1-MIT hors src/team ; licence commerciale pour src/team](https://github.com/Raed2180416/holt/blob/b99e098e214f4e84388ffa9d6fa6b675f951732a/LICENSE-NOTICE.md) |
 | [vincentkoc/agentrinse](https://github.com/vincentkoc/agentrinse) | [`6d5e047e00ef0193f6b75b952060a80ea310b1a4`](https://github.com/vincentkoc/agentrinse/tree/6d5e047e00ef0193f6b75b952060a80ea310b1a4) | [MIT](https://github.com/vincentkoc/agentrinse/blob/6d5e047e00ef0193f6b75b952060a80ea310b1a4/LICENSE) |

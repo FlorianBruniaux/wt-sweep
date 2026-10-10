@@ -19,8 +19,8 @@ Sizes use decimal units and are rounded for display; exact bytes stay in tooltip
 
 ## Navigation and sharing
 
-Use native collapsible sections and evidence at the keyboard. The theme follows your system, with an optional local saved choice. Copy path uses the recorded path identity and offers a manual fallback if the clipboard is refused. Non-UTF-8 or control-containing paths retain reversible byte evidence instead of a lossy text copy.
+You can open and close the detail sections using the keyboard. The theme follows your system, with an optional local saved choice. Copy path uses the recorded path identity and offers a manual fallback if the clipboard is refused. Non-UTF-8 or control-containing paths retain reversible byte evidence instead of a lossy text copy.
 
-Keep `run.json`, JSON and text with HTML. Verify artifact sizes and SHA-256 against the receipt before sharing a saved result. A receipt is neither a backup nor proof of successful final disk synchronization. Historical reports are not a fresh current-state review.
+Keep `run.json`, JSON and text with HTML. Verify artifact sizes and SHA-256 against the receipt before sharing a saved result. A receipt is neither a backup nor proof of successful final disk synchronization. An older report may no longer describe the current worktree state.
 
 The [dated landing captures](/assets/report-captures.json) and [new interactive demo provenance](/demo/provenance.json) are separate records.

@@ -12,6 +12,11 @@ the Cargo package version is a development version.
 
 ### Changed
 
+- Revise French and English website copy and French documentation terminology.
+  Use repo, worktree and commit consistently, explain temporary test repos and
+  writing processes in plain language, and localize the documentation sidebar.
+  Preserve commands, recorded measurements and decision conditions.
+
 - Prepare manual GitHub Pages publication at `wt-sweep.bruniaux.com`, with
   locked site dependencies, reviewed-source and public-metadata checks. Update
   installation guidance for the now-public repository. Publication still requires

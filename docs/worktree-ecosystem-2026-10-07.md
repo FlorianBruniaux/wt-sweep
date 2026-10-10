@@ -22,7 +22,7 @@ Conserver le moteur actuel et ses fixtures pendant cette comparaison. Le
 rapport HTML reste utile comme vue des résultats de Sweep, mais son existence
 ne suffira pas à différencier le projet. La valeur à vérifier est la combinaison
 de la couverture déclarée, des preuves de conservation, des mesures disque et
-de la restitution entre dépôts. Elle n'est pas démontrée comme exclusive.
+de la restitution entre repos. Elle n'est pas démontrée comme exclusive.
 
 ## Concurrents directs
 
@@ -32,9 +32,9 @@ comportement sur nos fixtures `UNKNOWN` pour chaque candidat.
 
 | Projet et source primaire | Fonction qui recouvre Sweep | Limite ou différence à tester |
 | --- | --- | --- |
-| [Holt](https://github.com/Raed2180416/holt) | Travail unique entre worktrees, preuves de conservation, quarantaine/restauration, intégrations d'agents et graphe hors ligne. | Le périmètre free/core publié est mono-dépôt. Le code de `main` peut dépasser la release. La [matrice de preuves](https://github.com/Raed2180416/holt/blob/main/docs/FEATURE-PROOF-MATRIX.md) référence l'export HTML et ses tests, que nous n'avons pas rejoués. |
+| [Holt](https://github.com/Raed2180416/holt) | Travail unique entre worktrees, preuves de conservation, quarantaine/restauration, intégrations d'agents et graphe hors ligne. | Le périmètre free/core publié est mono-repo. Le code de `main` peut dépasser la release. La [matrice de preuves](https://github.com/Raed2180416/holt/blob/main/docs/FEATURE-PROOF-MATRIX.md) référence l'export HTML et ses tests, que nous n'avons pas rejoués. |
 | [AgentRinse](https://github.com/vincentkoc/agentrinse) | Inventaire de résidus d'agents, liens avec Codex/Claude, plan adressé par contenu, revalidation et actions de nettoyage. | La [récupération](https://github.com/vincentkoc/agentrinse/blob/main/docs/recovery.md) utilise une quarantaine et des refs de récupération. Elle refuse notamment les états ignorés/non suivis dans son contrôle de restauration. Ce n'est pas une preuve de sauvegarde autonome de tout état. |
-| [Stalewood](https://github.com/retif/stalewood) | Parcours de répertoires, inscriptions Git et worktrees abandonnés ; taille, JSON groupé par dépôt, mode lint et retrait. | Intégration fondée sur l'accessibilité des commits ; une autre branche peut contenir le travail. Comparer la cible choisie et les dépendances entre candidats. Pas de restauration complète établie ici. |
+| [Stalewood](https://github.com/retif/stalewood) | Parcours de répertoires, inscriptions Git et worktrees abandonnés ; taille, JSON groupé par repo, mode lint et retrait. | Intégration fondée sur l'accessibilité des commits ; une autre branche peut contenir le travail. Comparer la cible choisie et les dépendances entre candidats. Pas de restauration complète établie ici. |
 | [gh-reaper](https://github.com/ai-ecoverse/gh-reaper) | Découverte transversale, âge, taille, état Git, JSON et nettoyage explicite. | Exclusions de parcours documentées ; changements de lockfiles ignorés par défaut, option de PR fusionnée distincte de l'ascendance. Ces règles diffèrent du contrat de Sweep. |
 
 La [matrice de Holt](https://github.com/Raed2180416/holt/blob/main/docs/FEATURE-PROOF-MATRIX.md)
@@ -48,7 +48,7 @@ AgentRinse documente un déplacement atomique de quarantaine sur le même systè
 de fichiers. La quarantaine conserve l'occupation disque ; la purge est une
 action séparée. C'est une piste à comparer au coût des archives contenant des
 copies de dépendances. Elle ne démontre ni un gain APFS ni une restauration
-indépendante après disparition du dépôt source.
+indépendante après disparition du repo source.
 
 ## Gestion courante, registre et sessions
 
@@ -74,7 +74,7 @@ automatique n'est proposé par cette recherche.
 ## Projets adjacents et faux positifs
 
 - [Worktree Manager](https://github.com/guoyongchang/worktree-manager) couvre
-  les workspaces multi-dépôts, terminaux et MCP. Son archivage masque un
+  les workspaces multi-repos, terminaux et MCP. Son archivage masque un
   worktree en conservant ses fichiers ; cela ne libère pas son espace disque.
 - [Superset](https://github.com/superset-sh/superset) est un environnement
   d'orchestration d'agents. Il recouvre une éventuelle application de pilotage,
@@ -95,10 +95,10 @@ dans le fichier de tri `cimetiere.csv` du corpus n'est pas une preuve d'abandon.
 
 `pushed_at` est une observation GitHub du 07/10, pas une date de release, une
 preuve de maintenance future ou une validation du code. La catégorie de
-collecte décrit la requête ayant trouvé le dépôt dans Ecosystem Map. `UNKNOWN`
+collecte décrit la requête ayant trouvé le repo dans Ecosystem Map. `UNKNOWN`
 signifie qu'aucune catégorie canonique complète n'a été retenue par le helper.
 
-| Dépôt | Catégorie collecte / canonique | Dernier push UTC observé | Licence déclarée |
+| Repo | Catégorie collecte / canonique | Dernier push UTC observé | Licence déclarée |
 | --- | --- | --- | --- |
 | Raed2180416/holt | absent du corpus | 2026-10-06 | FSL-1.1-MIT hors `src/team`, licence commerciale dans `src/team` |
 | vincentkoc/agentrinse | harness / UNKNOWN | 2026-10-05 | MIT |
@@ -126,11 +126,11 @@ publiée le 08/09/2026. Son artefact n'a pas été comparé au code lu.
 
 ## Vérifications à lancer avant de choisir
 
-| Essai sur dépôts jetables | Observation attendue | Décision permise |
+| Essai sur repos de test temporaires | Observation attendue | Décision permise |
 | --- | --- | --- |
 | Même corpus pour Sweep, Holt et AgentRinse | Cas propre intégré positif ; modifications suivies, index distinct du disque, fichiers non suivis/ignorés, stash et reflog seuls. Comparer les raisons, lacunes et octets conservés. | Remplacer une fonction seulement si son besoin et son contrat sont couverts. Un refus systématique ne suffit pas. |
-| Découverte Sweep / Stalewood / Workroot | Dépôts imbriqués, worktrees inscrits hors racine, alias, chemins inaccessibles et métadonnées orphelines. | Choisir une découverte existante si sa couverture et ses exclusions conviennent. |
-| Quarantaine/restauration Holt / AgentRinse | Interruption, changement après validation, écrivain avec descripteur déjà ouvert ; oracle indépendant HEAD/index/fichiers/modes. Essai séparé sans dépôt source pour une sauvegarde autonome. | Distinguer récupération locale et U5 ; aucune levée d'E1 par simple présence d'un verrou. |
+| Découverte Sweep / Stalewood / Workroot | Repos imbriqués, worktrees inscrits hors racine, alias, chemins inaccessibles et métadonnées orphelines. | Choisir une découverte existante si sa couverture et ses exclusions conviennent. |
+| Quarantaine/restauration Holt / AgentRinse | Interruption, changement après validation, processus d’écriture avec descripteur déjà ouvert ; oracle indépendant HEAD/index/fichiers/modes. Essai séparé sans repo source pour une sauvegarde autonome. | Distinguer récupération locale et U5 ; aucune levée d'E1 par simple présence d'un verrou. |
 | Rapport et performances | Même fixture de 50 puis 100 worktrees ; résultats complets/partiels, temps médian, mémoire, coût des ignorés, lisibilité du rapport. | Choisir entre adopter l'interface existante et rendre nos propres artefacts. |
 | Gestion Worktrunk / kwt | Création et inscription explicites, import JSON, remplacement au même chemin, session terminée, conservation des configs étrangères. | Ajouter un adaptateur borné plutôt qu'un second registre propriétaire si cela répond au besoin. |
 
@@ -171,4 +171,4 @@ biaisent la collecte, les README sont inégalement indexés et les métadonnées
 locales peuvent dater. Les produits commerciaux fermés sont moins représentés.
 Les audits automatiques ne sont pas une validation humaine. Aucune enquête
 d'adoption, installation des concurrents, comparaison runtime ou qualification
-de leur nettoyage sur les dépôts personnels n'a été menée.
+de leur nettoyage sur les repos personnels n'a été menée.

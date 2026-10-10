@@ -4,7 +4,7 @@ Spécification : [design validé](../specs/2026-10-09-wt-sweep-site-design.md). 
 
 1. Générateur documentaire explicite : corpus EN/FR, hash des sources, refus des traductions périmées, liens internes et version Cargo. Test sur répertoire temporaire avant implémentation.
 2. Landing bilingue : composants Astro, navigation partagée, thème, copie locale, captures synthétiques, pages nouveautés et plan du site. Réutiliser les contrats accessibles du site Search Console et les tokens BoldGuy.
-3. Démo HTML native : fixture Git jetable uniquement, rapport et provenance, aucun parcours de la machine. Documentation des commandes, limites et installation depuis les sources.
+3. Démo HTML native : fixture Git temporaire uniquement, rapport et provenance, aucun parcours de la machine. Documentation des commandes, limites et installation depuis les sources.
 4. Vérifications : tests générateur, Astro check/build, liens de toutes les pages, navigateur EN/FR, thèmes, menus/clavier/copie, Axe et largeur 390/768/1024/1440, lecture visuelle des captures. Contrôles Rust/Python/harness requis. Revue finale indépendante de l’ensemble.
 
 ## Interfaces

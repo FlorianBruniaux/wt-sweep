@@ -9,7 +9,7 @@ restent lisibles sans JavaScript.
 
 ## Générer et ouvrir
 
-Depuis le checkout compilé, renseignez le dépôt et sa cible confirmée :
+Depuis le checkout compilé, renseignez le repo et sa cible confirmée :
 
 ```sh
 (
@@ -25,7 +25,7 @@ Depuis le checkout compilé, renseignez le dépôt et sa cible confirmée :
 )
 ```
 
-Le dossier de sortie doit être extérieur aux dépôts inspectés. `--html` exige
+Le dossier de sortie doit être extérieur aux repos inspectés. `--html` exige
 `--run-dir` ; il ne modifie ni le JSON émis sur stdout ni les verdicts.
 `plan --inventory` accepte la même option, avec une cible ou une carte par famille.
 `scan --html` fournit un inventaire marqué **not reviewed**, sans verdict inventé.
@@ -156,7 +156,7 @@ contenant au moins un worktree et un dossier de captures qui n’existe pas enco
 node tests/html-theme.cjs /chemin/vers/report.html /chemin/vers/nouvelles-captures
 ```
 
-Si Playwright n’est pas accessible depuis le dépôt, `PLAYWRIGHT_MODULE` peut
+Si Playwright n’est pas accessible depuis le repo, `PLAYWRIGHT_MODULE` peut
 pointer vers son installation existante. Le script n’installe rien. Il vérifie
 douze rendus : 2560, 1440 et 390 px, clair et sombre, avec et sans JavaScript.
 Il vérifie que le rapport utilise toute la largeur à droite du menu, puis teste la recherche, les filtres, le clavier, la préférence de thème après

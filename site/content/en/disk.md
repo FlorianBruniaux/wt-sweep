@@ -6,7 +6,7 @@ Add `--disk-usage` to `scan` or `review`. By default, all inventoried worktree r
 
 Use repeated `--disk-root EXACT_ABSOLUTE_PATH` to choose recorded roots. Include the shared Git directory explicitly if you want it measured. Unknown paths are refused.
 
-`--disk-budget standard|thorough` is separate from the Git/local `--budget`. Start with standard; a larger finite allowance may still leave gaps. `plan --inventory` retains captured sizes and observation dates without recounting them.
+`--disk-budget standard|thorough` is separate from the Git/local `--budget`. Start with standard; higher limits can still leave gaps. `plan --inventory` retains captured sizes and observation dates without recounting them.
 
 ## Read the values
 
@@ -27,6 +27,6 @@ Hidden and ignored files remain in scope. Symlink targets are not followed. Nest
 
 Allocated size is not recoverable space. APFS clones, snapshots and shared extents can change what a deletion would free. External alternates and dependencies outside measured roots are not counted.
 
-The current collector uses scalar metadata reads. The native `getattrlistbulk` evaluation is not integrated. There is no cache-category breakdown or automatic cache deletion.
+The current collector reads metadata one entry at a time. The native `getattrlistbulk` evaluation is not integrated. There is no cache-category breakdown or automatic cache deletion.
 
 [Choose a focused review](/docs/targets/) and preserve each run’s scope and dates.

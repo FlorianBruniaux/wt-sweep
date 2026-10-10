@@ -119,7 +119,7 @@ a réussi. La voie native `getattrlistbulk` reste expérimentale.
    rejouer le répertoire interrompu et relire les métadonnées des chemins en
    attente. Le listing courant tronque avant de trier : le dernier nom trié
    ne constitue donc pas un curseur de reprise fiable. La fixture retrouve trois
-   dépôts sans relister les dossiers terminés ; les 24 passages coûtent davantage
+   repos sans relister les dossiers terminés ; les 24 passages coûtent davantage
    qu’un scan complet en une passe. Livré par #23 ; la reprise conserve ses
    intervalles distincts et ne constitue pas un instantané.
 
@@ -154,11 +154,11 @@ Les plafonds et l’index de la ligne restante gardent des preuves inconnues.
 
 | Périmètre | Comportement disponible |
 | --- | --- |
-| Découverte U1-U4, T08 | Un dépôt, plusieurs racines ou les volumes visibles ; origines, progression, interruptions et lacunes conservées. Le parcours global a été testé avec des volumes injectés. |
-| T01-T04 | Cibles explicites, graphe Git, état local courant, stashes partagés et histoire privée, avec budgets et inconnues. |
+| Découverte U1-U4, T08 | Un repo, plusieurs racines ou les volumes visibles ; origines, progression, interruptions et lacunes conservées. Le parcours global a été testé avec des volumes injectés. |
+| T01-T04 | Cibles explicites, graphe Git, état local courant, stashes partagés et historique privé, avec budgets et inconnues. |
 | T05-T07 | Trois verdicts et conditions C1-C5, cibles par famille, filtres, groupes, contexte de commit, changelog et forge sans autorité sur l'intégration. |
 | T09 | Commande `review`, aide par commande, inventaire original et rapports liés par un reçu. |
-| Documentation | README anglais/français, tutoriel jetable, commandes pour un dépôt réel, prompt d'exemple, contrats et guides CLI. |
+| Documentation | README anglais/français, tutoriel sur un repo de test, commandes pour un repo réel, prompt d'exemple, contrats et guides CLI. |
 
 Les contrôles du socle et son ancienne CI sont détaillés dans le
 [registre de livraison du 06/10](finish-ledger.md#livraison-github-du-06102026).
@@ -190,33 +190,33 @@ La CLI consigne le débit de découverte et les durées monotones. Un benchmark
 Rust facultatif vérifie les résultats constants. La [recette de mesure](collection-performance.md#benchmark-rust-reproductible)
 compare 1 et 4 workers ; elle ne promet aucune accélération sur d’autres disques.
 Le lot #11 traite `intent-to-add` et [mesure le premier fait utile](research/collection-benchmark-2026-10-07.md)
-sur des corpus de 50 et 100 worktrees. Les appels Git, les ignorés et l’histoire privée restent
+sur des corpus de 50 et 100 worktrees. Les appels Git, les ignorés et l’historique privé restent
 mesurés séparément ; la reprise persistante demeure hors de ce lot. Les
 indicateurs ne lèvent pas ces limites de collecte.
 
 ## Accompagnement par un assistant
 
-Le [skill du dépôt](assistant-skill.md) fournit un parcours de revue et de lecture
+Le [skill du repo](assistant-skill.md) fournit un parcours de revue et de lecture
 progressive pour Claude et Codex, avec des suggestions de conservation et de
 vérification. Il explique les plafonds de collecte et peut préparer un passage ciblé
 `--budget thorough` après lecture d’un run standard. Il ne débloque pas `apply`.
 Les preuves de génération, de routage et d’utilisation de la CLI sont distinguées
 dans le [registre courant](progress.md#skill-wt-sweep-06102026).
 
-## Collecte des gros dépôts : A1-A6
+## Collecte des gros repos : A1-A6
 
 Les lots A1-A5 ont leurs positifs sur fixtures : 4 200 blobs distincts, 600
 commits et 32 racines privées aboutissent à un candidat avec preuves complètes.
 Une famille de 50 worktrees conserve deux `keep` et établit 48 candidats. Ces
 résultats et leur oracle de conservation concernent les fixtures possédées ;
-ils ne certifient pas le dépôt réel. A6 a ensuite exécuté les passages ciblés
+ils ne certifient pas le repo réel. A6 a ensuite exécuté les passages ciblés
 et la revue de la famille complète, avec les limites détaillées ci-dessous.
 
 | Lot | État observable |
 | --- | --- |
-| A1 : dépasser les anciens plafonds | Fixture positive au-delà de 4 096 objets et d’une histoire de 512 étapes, avec les trois verdicts conservés. |
+| A1 : dépasser les anciens plafonds | Fixture positive au-delà de 4 096 objets et d’un historique de 512 étapes, avec les trois verdicts conservés. |
 | A2 : collecte locale | HEAD/index/disque et cinq zéros complets sur le grand positif ; fichiers non suivis conservés comme raison de `keep`. |
-| A3 : histoire privée | 32 racines couvertes ; les refs directement utiles évitent une expansion inutile. Un suivi borné par quantum réduit les lectures sur sa fixture. |
+| A3 : historique privé | 32 racines couvertes ; les refs directement utiles évitent une expansion inutile. Un suivi borné par quantum réduit les lectures sur sa fixture. |
 | A4 : profils explicites | `standard|thorough` exposés sur `review` et `plan`, avec plafonds finis et métriques de phase. |
 | A5 : famille de 50 | 48 candidats simples et deux `keep`, inventaire et conservation inchangés. |
 | A6 : recette réelle | Terminée en lecture seule : 50 lignes, 49 `keep`, aucun candidat, un `verify` ; dix résumés locaux complets et 40 partiels. Artefacts vérifiés, plafonds et conditions manquantes conservés. |
@@ -232,10 +232,10 @@ de toute la famille ni une accélération d’énumération. Le [checkpoint de c
 sépare les mesures synthétiques, les passages ciblés et le bilan de famille.
 Dans cette recette historique, les phases locale et privée atteignaient leurs
 plafonds. L’unique ligne `verify` gardait une ascendance, une entrée d’index
-`intent-to-add` non interprétée et une histoire privée incomplète. #11 a depuis
+`intent-to-add` non interprétée et un historique privé incomplet. #11 a depuis
 corrigé l’interprétation de cette entrée ; des zéros incomplets ne prouvent
 toujours pas la propreté.
-Le dépôt évolue entre passages : aucune comparaison réelle n’est un benchmark
+Le repo évolue entre passages : aucune comparaison réelle n’est un benchmark
 contrôlé à données constantes.
 
 La recette multi-racines suivante est consignée dans #13, avec ses racines,
@@ -280,8 +280,8 @@ ne lève pas les conditions E1/U5-U7.
 | Étape | Condition de sortie |
 | --- | --- |
 | E1 | Démontrer l'exclusion des écritures concurrentes, y compris depuis un descripteur déjà ouvert. Les expériences actuelles ne la démontrent pas. |
-| U5 | Sauvegarder le contrat complet et restaurer indépendamment, sans accès au dépôt source, après validation d'E1. |
-| U6 | Retirer et restaurer des fixtures jetables, avec fautes et interruptions injectées. |
+| U5 | Sauvegarder le contrat complet et restaurer indépendamment, sans accès au repo source, après validation d'E1. |
+| U6 | Retirer et restaurer des fixtures temporaires, avec fautes et interruptions injectées. |
 | U7 | Revue indépendante et approbation humaine liée à la sélection exacte avant une exécution réelle. |
 
 `apply` reste indisponible. Les conditions et les alternatives à comparer sont

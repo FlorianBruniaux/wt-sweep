@@ -22,6 +22,8 @@ The public hostname is `wt-sweep.bruniaux.com`. Local builds still emit noindex,
 
 ## Documentation
 
+French prose keeps the developer terms repo, worktree, commit and skill. Describe test fixtures as temporary test repos, and concurrent writers as processes writing to the repo. Use complete sentences without translating these terms word for word. Preserve commands, verdict identifiers, measurements and evidence limits when editing either language.
+
 `published-pages.json` is the explicit allowlist. EN/FR portal summaries live in `content/` and link canonical repository docs. Hashes bind each reviewed source; preparation refuses stale sources before touching generated files. When editing canonical docs, review both language summaries before updating their sourceHash. Legal text and the changelog retain their canonical English. `src/content/docs/` and `src/data/product.json` are generated, ignored files.
 
 Screenshots retain the separate 2026-10-08 synthetic provenance. `scripts/generate-demo.py` creates a new owned disposable Git family using the compiled local CLI and verifies artifact receipts and fixture conservation; it never scans real roots. `public/demo` contains that native report and sanitized generation records. Regenerate deliberately with `python3 -B scripts/generate-demo.py`; the tests generate their own temporary output. If `python3` resolves to Apple’s older interpreter, put your existing Python 3.11+ first in PATH or set `WT_SITE_PYTHON` for the test suite.

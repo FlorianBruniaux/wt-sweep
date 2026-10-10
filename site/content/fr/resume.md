@@ -1,4 +1,4 @@
-Un checkpoint poursuit la découverte de répertoires sur racines explicites après une limite ou une interruption. Il ne reprend ni mesure disque, ni hachage local, ni preuves de revue.
+Un checkpoint permet de reprendre la recherche de repos dans les dossiers choisis après une limite atteinte ou une interruption. Il ne reprend ni les mesures disque, ni le hachage local, ni les preuves de l’analyse.
 
 ## Sauvegarder et poursuivre
 
@@ -13,12 +13,12 @@ scan_dir="$(mktemp -d /private/tmp/wt-sweep-discovery.XXXXXX)"
   --checkpoint-out "$scan_dir/pass-2.json" --run-dir "$scan_dir" --html
 ```
 
-Le checkpoint fournit les racines d’origine. Des racines répétées facultatives doivent correspondre exactement, ordre compris. Les nouveaux noms de sortie évitent d’écraser un passage précédent.
+Le checkpoint fournit les racines d’origine. Si vous indiquez de nouveau les racines, elles doivent correspondre exactement, dans le même ordre. Les nouveaux noms de sortie évitent d’écraser un passage précédent.
 
-Seul `scan` sur racines explicites accepte les checkpoints. `--repo`, `--all` et `review` ne les acceptent pas. Un très large répertoire peut demander un plafond d’entrées plus élevé dans la plage autorisée, ou une nouvelle racine plus étroite.
+Seul `scan` sur racines explicites accepte les checkpoints. `--repo`, `--all` et `review` ne les acceptent pas. Un dossier qui contient beaucoup d’entrées peut nécessiter une limite plus élevée, dans la plage autorisée, ou un nouveau parcours sur un dossier plus restreint.
 
 ## Lire le passage suivant
 
-Les preuves des familles connues sont relues. Les répertoires terminés gardent des observations historiques ; un dépôt créé ensuite à l’intérieur peut ne pas être retrouvé par la reprise. Identités des répertoires et digest sont vérifiés. Une identité modifiée peut provoquer un refus.
+wt-sweep relit les preuves des familles Git déjà connues. Les répertoires terminés gardent des observations historiques ; un repo créé ensuite à l’intérieur peut ne pas être retrouvé par la reprise. wt-sweep vérifie l’identité des dossiers et l’empreinte du checkpoint. Une identité modifiée peut provoquer un refus.
 
-Lisez couverture, chemins en attente et omissions de publication. Chaque passage garde ses intervalles et leur ensemble ne forme jamais un instantané atomique. Ni checkpoint ni terminaison n’autorise un nettoyage.
+Lisez la couverture, les chemins en attente et les données absentes des rapports publiés. Chaque passage conserve ses intervalles d’observation ; les regrouper ne fournit pas un instantané atomique. Ni le checkpoint ni la fin du parcours n’autorisent un nettoyage.

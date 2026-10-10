@@ -4,8 +4,8 @@
 
 ## Résultat sur un corpus fixe
 
-Les sessions groupées réduisent les processus Git de 146 à 39 pour l'histoire
-et de 180 à 45 pour l'histoire privée. Chaque phase conserve 145 lectures,
+Les sessions groupées réduisent les processus Git de 146 à 39 pour l'historique
+et de 180 à 45 pour l'historique privé. Chaque phase conserve 145 lectures,
 33 054 octets d'objets et 145 étapes de graphe. Les huit observations de racines
 privées restent couvertes par la même ancre nommée. Les OID, preuves, verdicts,
 plafonds de phase et manifeste des sources sont identiques après normalisation
@@ -14,8 +14,8 @@ des dates, métriques et digests des conteneurs.
 | Durée, en ms | Médiane avant | Médiane après | Étendue avant | Étendue après |
 | --- | ---: | ---: | --- | --- |
 | Commande complète | 21 032 | 12 146 | 20 872 à 23 704 | 11 411 à 14 124 |
-| Histoire | 5 597 | 2 104 | 5 449 à 5 877 | 1 369 à 2 754 |
-| Histoire privée | 7 641 | 2 384 | 7 413 à 8 954 | 2 167 à 2 513 |
+| Historique | 5 597 | 2 104 | 5 449 à 5 877 | 1 369 à 2 754 |
+| Historique privé | 7 641 | 2 384 | 7 413 à 8 954 | 2 167 à 2 513 |
 
 La baisse observée de la durée totale médiane vaut 42,2 %. Elle concerne ce
 corpus synthétique et cet hôte. Les autres applications ne sont pas contrôlées :
@@ -50,7 +50,7 @@ Le manifeste de code trie les chemins avec `sorted()` sur des objets Python
 `pathlib.Path`, puis écrit une ligne `chemin_relatif SHA256\n` par fichier.
 Le nouveau binaire provient de la branche `codex/history-batches` avant commit.
 Les résultats bruts et sorties JSON restent dans les artefacts locaux de la
-campagne ; ce document conserve les mesures sans chemins de dépôts privés.
+campagne ; ce document conserve les mesures sans chemins de repos privés.
 
 Le petit smoke test de 16 commits est comparable. La première campagne complète
 a été interrompue par un calcul de médiane avant le premier échantillon mesuré ;
@@ -69,7 +69,7 @@ lot. Un refus de taille après la sonde préserve les objets indépendants déj�
 
 Le test `repeated_bounded_passes_find_hidden_nested_repositories_without_duplicates`
 compare 24 passages limités à deux répertoires et un scan neuf du même corpus.
-Les deux retrouvent trois dépôts, dont un caché et un imbriqué, sans doublon.
+Les deux retrouvent trois repos, dont un caché et un imbriqué, sans doublon.
 Ils listent exactement 48 répertoires et 122 entrées. Un compteur indépendant
 vérifie que chaque répertoire terminé n'est listé qu'une fois.
 

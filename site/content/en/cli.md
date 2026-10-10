@@ -23,7 +23,7 @@ Run from the built source checkout. Choose an absolute repository path and a ful
 
 ## Saved artifacts
 
-With `--html --run-dir`, a new `run-*` directory contains `inventory.json`, `review.json`, `report.txt`, `report.html` and `run.json`. Keep them together. The output must be outside every inspected root and Git family, with ordinary directory ancestors.
+With `--html --run-dir`, a new `run-*` directory contains `inventory.json`, `review.json`, `report.txt`, `report.html` and `run.json`. Keep them together. The report directory must be outside every inspected root and Git family. Its parent directories must be ordinary directories.
 
 `--html` requires `--run-dir`. `scan --html` is an inventory, marked **not reviewed**, without invented verdicts.
 
@@ -41,4 +41,4 @@ With `--html --run-dir`, a new `run-*` directory contains `inventory.json`, `rev
 
 Display filters do not reduce collection. [Targets and filters](/docs/targets/) and [disk scope](/docs/disk/) explain the distinction.
 
-Exit `0` can still contain partial evidence. Read coverage, missing conditions and diagnostics. [The full repository CLI reference](https://github.com/FlorianBruniaux/wt-sweep/blob/main/docs/cli.md) defines all options and exit codes.
+A command can exit with code `0` while its evidence remains partial. Read the coverage, missing conditions and diagnostics. [The full repository CLI reference](https://github.com/FlorianBruniaux/wt-sweep/blob/main/docs/cli.md) defines all options and exit codes.

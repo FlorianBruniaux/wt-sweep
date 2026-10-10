@@ -33,18 +33,18 @@ travail à conserver. » La version anglaise conserve le sens du README :
 « Find the worktrees taking up disk space and the work you need to keep. »
 
 L'action principale est « Essayer sur une démo », vers un parcours d'installation
-et un dépôt jetable. L'action secondaire montre le rapport HTML. Le site permet
-ensuite de choisir la CLI ou un assistant Claude/Codex pour examiner un dépôt
+et un repo de test temporaire. L'action secondaire montre le rapport HTML. Le site permet
+ensuite de choisir la CLI ou un assistant Claude/Codex pour examiner un repo
 explicitement sélectionné. Il ne lance aucun scan depuis le navigateur.
 
 ## Composition de la landing
 
 | Section | Contenu et destination |
 | --- | --- |
-| Header | Marque Worktree Sweep, Comprendre, Démarrer, Ressources, documentation, langue, dépôt et thème. Un même arbre alimente desktop et mobile. |
+| Header | Marque Worktree Sweep, Comprendre, Démarrer, Ressources, documentation, langue, repo et thème. Un même arbre alimente desktop et mobile. |
 | Hero | Promesse, statut de revue en lecture seule, macOS, démo et aperçu d'un rapport synthétique. |
 | Trois besoins | Retrouver les dossiers, repérer ceux qui prennent de la place, examiner ce qui reste localement. Liens vers les guides adaptés. |
-| Rapport HTML | Vue par famille, recherche, verdicts, tailles, détails et copie de chemins. Captures claires/sombres et provenance du dépôt jetable visibles. |
+| Rapport HTML | Vue par famille, recherche, verdicts, tailles, détails et copie de chemins. Captures claires/sombres et provenance du repo de test temporaire visibles. |
 | Lire un verdict | `keep`, `verify`, `cleanup_candidate`, raison et prochaine vérification. Les lacunes restent présentes dans les exemples. |
 | Fonctionnement | Choisir la portée et les refs, collecter, examiner le rapport, approfondir une ligne. Taille mesurée et espace récupérable restent distincts. |
 | Démarrer | Deux entrées : compiler et essayer la CLI ; utiliser le prompt et la skill dans Claude/Codex. Les commandes gardent leurs prérequis. |
@@ -56,7 +56,7 @@ dans le handoff restent des motifs disponibles, sans imposer des pages inutiles.
 
 ## Architecture et design
 
-Créer une application statique `site/` dans le dépôt wt-sweep. Reprendre Astro 5,
+Créer une application statique `site/` dans le repo wt-sweep. Reprendre Astro 5,
 Starlight, TypeScript strict, CSS natif et les interactions minimales du site
 source, avec un lockfile. Aucun frontend n'appelle la CLI ni ne reçoit de
 chemins privés, identifiants forge ou inventaires réels.
@@ -75,7 +75,7 @@ les ancres de la landing depuis les pages secondaires.
 
 Ne pas importer les commandes MCP, les outils SEO, les fournisseurs, les
 métriques ni les illustrations métier Search Console. Réutiliser les captures
-de rapports jetables de wt-sweep après vérification de leur provenance.
+de rapports générés sur des repos de test de wt-sweep après vérification de leur provenance.
 
 ## Documentation et langues
 
@@ -87,7 +87,7 @@ tailles disque, le rapport HTML, les cibles et filtres, les assistants, les
 contrats des résultats et les limites du produit. Ajouter un plan HTML du site
 et un historique issu du changelog, sans qualifier `Unreleased` de publication.
 
-Les sources canoniques conservent leur langue actuelle dans le dépôt. Les
+Les sources canoniques conservent leur langue actuelle dans le repo. Les
 traductions du portail sont des sources maintenues avec un manifest d'empreintes.
 Un contrôle signale et bloque les traductions périmées lors de la validation.
 Le build prépare une collection générée, séparée des originaux et ignorée par
@@ -106,7 +106,7 @@ la préparation.
   propose des vérifications ; il n'établit pas les preuves à sa place.
 - `cleanup_candidate` ne donne aucun droit de suppression. `apply`, la
   sauvegarde et la restauration restent indisponibles dans cette version.
-- Les exemples de rapports proviennent de fixtures jetables. Les résultats de
+- Les exemples de rapports proviennent de fixtures temporaires. Les résultats de
   tests datés ne deviennent ni une CI actuelle ni des métriques client.
 - La licence observée est FSL-1.1-ALv2. Ne pas annoncer une licence MIT,
   une distribution open source, un paquet public ou un téléchargement validé
