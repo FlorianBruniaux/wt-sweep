@@ -12,6 +12,9 @@ the Cargo package version is a development version.
 
 ### Changed
 
+- Point the website author and Portfolio footer links to
+  `https://florian.bruniaux.com/`.
+
 - Separate the four workflow steps in the French and English landing headings
   with arrows.
 
