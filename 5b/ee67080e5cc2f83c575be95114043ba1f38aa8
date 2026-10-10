@@ -1,0 +1,269 @@
+.github/workflows/site.yml
+  s_ded836f56a6d83::t_3f1e5bc61f5667 1-76
+CHANGELOG.md
+  s_ded836f56a6d83::t_5387a86b67c230 10-39,42-44,76-82
+README.fr.md
+  s_ded836f56a6d83::t_a40773a9c4a24a 24,27-28,49,61,74,81,107,114,146,185,201-202,216,231,255,272,306-307,339,359,408-409
+README.md
+  s_ded836f56a6d83::t_0f776bc7c18e81 59
+docs/README.md
+  s_160b3107588443::t_5bbe585a4da04a 26,30,51-59
+docs/assistant-skill.md
+  s_ded836f56a6d83::t_b52bf90d494375 3,10,17-18,25-26,29,47,49,55,136,143,212,246,251,261,267
+docs/bootstrap-prompt.fr.md
+  s_ded836f56a6d83::t_3a98956554a174 14,25,29,34,39,53,62,91
+docs/cli.md
+  s_160b3107588443::t_18860df13a92b2 132,434
+docs/collection-performance.md
+  s_ded836f56a6d83::t_a07f52f91632d7 1,19,95,131,220,238,240,243,259,261,270,272,289,318,320,324,327,332,342,354,360,401-402,413-414,416-417,427,432,436,444,455,457
+docs/decisions/apply-readiness.md
+  s_ded836f56a6d83::t_e2fd70e985f802 12,28,50,74,79,94,97,99,112
+docs/decisions/exclusion-et-conservation.md
+  s_ded836f56a6d83::t_8305a0c58dda07 12,21,24,40,46,57
+docs/disk-usage.md
+  s_ded836f56a6d83::t_82483eebd4ed1b 6,40,50,159,222,231
+docs/finish-ledger.md
+  s_ded836f56a6d83::t_db9c13802d0ce1 13,37,173,175,186,190,193,206,229,234,246,273
+docs/getting-started.md
+  s_ded836f56a6d83::t_1f34412c76bc79 17
+docs/harness.md
+  s_ded836f56a6d83::t_a42dbfcd6fca5e 1,15,56,65,109
+docs/html-report-plan.md
+  s_ded836f56a6d83::t_e29593ecd3ca33 12,168
+docs/implementation.md
+  s_ded836f56a6d83::t_78659481c44dd2 36,44,62-63,83,95,98-99
+docs/native-boundaries.md
+  s_ded836f56a6d83::t_748624aa43bf63 76
+docs/plan.md
+  s_ded836f56a6d83::t_88efbad8d81d51 21,28,44,60,62,73-75,81,147,150,153
+docs/progress.md
+  s_ded836f56a6d83::t_9047e39e884256 53-56,156,297,303,321,323-324,332,563,595,706,742,763,768,791,807,842,857,866,870-871,879,882,893,900,918,928,932,943,948,1008,1017,1074,1131,1162,1171,1180,1249,1271,1300,1344
+docs/references.md
+  s_ded836f56a6d83::t_cb7dfc25224819 32
+docs/release.md
+  s_ded836f56a6d83::t_6b2c835551ec5f 30,38,50
+docs/research/history-batch-benchmark-2026-10-08.md
+  s_ded836f56a6d83::t_d7617f9dfc7850 7-8,17-18,53,72
+docs/research/multi-project-acceptance-2026-10-07.md
+  s_ded836f56a6d83::t_ab538df6375993 21,44
+docs/research/real-family-acceptance-2026-10-09.md
+  s_ded836f56a6d83::t_abdd780a41d590 50,102
+docs/research/worktree-runtime-comparison-2026-10-07.md
+  s_ded836f56a6d83::t_3a361469a0725a 3,48,72,82,107
+docs/research/worktree-source-2026-10-07/backend.md
+  s_ded836f56a6d83::t_1aec4519b666d3 5,43,48,91,124
+docs/research/worktree-source-2026-10-07/interfaces.md
+  s_ded836f56a6d83::t_5eeb5d621f8510 30,87
+docs/research/worktree-source-2026-10-07/rust.md
+  s_ded836f56a6d83::t_8db123735a84c8 11,21,55,63,67,73,77,81,99,103
+docs/research/worktree-source-2026-10-07/systems.md
+  s_ded836f56a6d83::t_7998826f513be6 11,19,23,27,29,37,43,47,61,63,67,75
+docs/retex-sessions.md
+  s_ded836f56a6d83::t_5fc696e49c5722 10,22,33
+docs/roadmap.md
+  s_160b3107588443::t_137a576139c893 5-17,135,170-171,174,207,213,220,226,231,233,249,252,297-298
+docs/superpowers/plans/2026-10-05-worktree-triage-review.md
+  s_ded836f56a6d83::t_4141c952ecf26d 24,30,41,50,52,54,67,70,99,113
+docs/superpowers/plans/2026-10-05-worktree-triage-v2.md
+  s_ded836f56a6d83::t_5e5391c31dd9e5 14,30,32,36,50-51,56,67,79,147,162-163,165,168,219,241,253,270,277,293,298,308,329,335,341,357,370,381,398,400,402,407,410-412,427,436,438,455,476,488
+docs/superpowers/plans/2026-10-05-worktree-triage.md
+  s_ded836f56a6d83::t_7852d66a248ef2 9-10,26,30,51,53,56,62,64,70,92,94,99,105,109,111,124-125,132,150,155,157,205,211,217,234-235,242-243,256,298,308,310,313,325,329,352
+docs/superpowers/plans/2026-10-09-wt-sweep-site.md
+  s_ded836f56a6d83::t_0ae3516616508c 1-25
+docs/superpowers/specs/2026-10-09-wt-sweep-site-design.md
+  s_ded836f56a6d83::t_182079f12d435e 1-138
+docs/tutorial.fr.md
+  s_ded836f56a6d83::t_51763d57d86921 1,25,30,115,122,176-177,184,274,278,286,298,302,348
+docs/worktree-ecosystem-2026-10-07.md
+  s_ded836f56a6d83::t_8be1762df38042 25,35,37,51,77,98,101,129,132-133,174
+docs/worktree-source-analysis-2026-10-07.md
+  s_ded836f56a6d83::t_a09bdf7b8bc949 5,51,54,79,119,126,146
+site/.gitignore
+  s_ded836f56a6d83::t_a0f3f4e351cd40 1-7
+site/README.md
+  s_ded836f56a6d83::t_c6c2fe427370a1 1-31
+site/VERIFICATION.md
+  s_160b3107588443::t_f9a700f7294e3f 1-95
+site/astro.config.mjs
+  s_ded836f56a6d83::t_80fd930b1bd434 1-4
+site/content/en/assistant.md
+  s_160b3107588443::t_f9109136f7e680 1-37
+site/content/en/changelog.md
+  s_ded836f56a6d83::t_6ff03850d3e072 1-550
+site/content/en/cli.md
+  s_160b3107588443::t_0c9e8dd6797823 1-49
+site/content/en/demo.md
+  s_ded836f56a6d83::t_7fad595f6a0ef1 1-47
+site/content/en/disk.md
+  s_160b3107588443::t_6b16804f34d4c8 1-34
+site/content/en/evidence.md
+  s_160b3107588443::t_9a5440f8bfdd09 1-29
+site/content/en/index.md
+  s_ded836f56a6d83::t_c57d4570c012e3 1-20
+site/content/en/installation.md
+  s_ded836f56a6d83::t_8361133e3e9f3b 1-26
+site/content/en/license.md
+  s_ded836f56a6d83::t_02f43ef77d4d23 1-106
+site/content/en/report.md
+  s_160b3107588443::t_d15883c52ecca8 1-38
+site/content/en/resume.md
+  s_ded836f56a6d83::t_a2a73bff8afb7e 1-24
+site/content/en/targets.md
+  s_ded836f56a6d83::t_72d49d65ba3a8d 1-27
+site/content/fr/assistant.md
+  s_160b3107588443::t_e6349bb623bb38 1-37
+site/content/fr/changelog.md
+  s_ded836f56a6d83::t_3e326fca1e6a85 1-550
+site/content/fr/cli.md
+  s_160b3107588443::t_ce5c76a3165e10 1-49
+site/content/fr/demo.md
+  s_ded836f56a6d83::t_ebe471cc640cef 1-47
+site/content/fr/disk.md
+  s_160b3107588443::t_d43bb855b5415e 1-34
+site/content/fr/evidence.md
+  s_160b3107588443::t_8aa28628c94e32 1-29
+site/content/fr/index.md
+  s_ded836f56a6d83::t_bb2997736a9eae 1-20
+site/content/fr/installation.md
+  s_ded836f56a6d83::t_30df47c3415412 1-26
+site/content/fr/license.md
+  s_ded836f56a6d83::t_1d7a5fedd3ca6d 1-106
+site/content/fr/report.md
+  s_160b3107588443::t_64ee389509589e 1-38
+site/content/fr/resume.md
+  s_ded836f56a6d83::t_e9ea52d4831f16 1-24
+site/content/fr/targets.md
+  s_ded836f56a6d83::t_6ea9d38c800e1a 1-27
+site/package.json
+  s_ded836f56a6d83::t_c5c86bf686625a 1-29
+site/playwright.config.ts
+  s_ded836f56a6d83::t_75b9b01ca2f279 1-2
+site/pnpm-lock.yaml
+  s_ded836f56a6d83::t_81cefad7d791e1 1-5166
+site/public/assets/report-captures.json
+  s_ded836f56a6d83::t_f56d456563d00d 1-57
+site/public/demo/inventory.json
+  s_ded836f56a6d83::t_2868db354f7534 1-254
+site/public/demo/provenance.json
+  s_ded836f56a6d83::t_d4564498a672fa 1-18
+site/public/demo/report.html
+  s_ded836f56a6d83::t_c2c6c7956dd66b 1-3408
+site/public/demo/report.txt
+  s_ded836f56a6d83::t_47df7d5e612c95 1-198
+site/public/demo/review.json
+  s_ded836f56a6d83::t_a4387e8704d0c5 1-2952
+site/public/demo/run.json
+  s_ded836f56a6d83::t_1059d8fbb83350 1-36
+site/public/favicon.svg
+  s_ded836f56a6d83::t_ee8f0a30a08a5a 1
+site/published-pages.json
+  s_ded836f56a6d83::t_a3aa098d4b3e48 1-158
+site/scripts/generate-demo.py
+  s_ded836f56a6d83::t_2de8fea469221e 1-74
+site/scripts/prepare-doc-content.mjs
+  s_ded836f56a6d83::t_ca1c52c0075895 1-49
+site/src/components/DiscoveryPage.astro
+  s_ded836f56a6d83::t_0d1131d47ea98b 1-6
+site/src/components/EvidenceSafety.astro
+  s_ded836f56a6d83::t_26c72c8d3d4202 1-8
+site/src/components/Faq.astro
+  s_ded836f56a6d83::t_9fdc3ec2130837 1-8
+site/src/components/FinalCta.astro
+  s_ded836f56a6d83::t_b97601458fea4d 1-8
+site/src/components/Hero.astro
+  s_ded836f56a6d83::t_77bab8bb3f08cc 1-8
+site/src/components/Install.astro
+  s_ded836f56a6d83::t_080aa8acf2a9f0 1-8
+site/src/components/LandingPage.astro
+  s_ded836f56a6d83::t_b21ffc2875feb8 1-32
+site/src/components/Needs.astro
+  s_ded836f56a6d83::t_1468268e96f9bf 1-8
+site/src/components/Report.astro
+  s_ded836f56a6d83::t_07f26eafa98915 1-8
+site/src/components/SiteFooter.astro
+  s_ded836f56a6d83::t_c5a7ffd8205686 1-6
+site/src/components/SiteHeader.astro
+  s_ded836f56a6d83::t_b4880662f2cca7 1-104
+site/src/components/UpdatesBanner.astro
+  s_ded836f56a6d83::t_e052f839807d25 1-19
+site/src/components/Verdicts.astro
+  s_ded836f56a6d83::t_79da87793eb01b 1-8
+site/src/components/Workflow.astro
+  s_ded836f56a6d83::t_2a79efadee0802 1-8
+site/src/components/docs/DocsFooter.astro
+  s_ded836f56a6d83::t_38e3f1756f2cc4 1-27
+site/src/components/docs/Head.astro
+  s_ded836f56a6d83::t_34950d78761b22 1-12
+site/src/components/docs/SiteTitle.astro
+  s_ded836f56a6d83::t_836f2836b83bad 1-52
+site/src/content.config.ts
+  s_ded836f56a6d83::t_4ba67261c57eaa 1-15
+site/src/data/content.ts
+  s_ded836f56a6d83::t_075e7490f85446 1-7
+site/src/data/landing.ts
+  s_ded836f56a6d83::t_275b7f4290060c 1-11
+site/src/data/navigation.ts
+  s_ded836f56a6d83::t_fb89579c2528ae 1-11
+site/src/data/updates.mjs
+  s_ded836f56a6d83::t_86e1b49c9b6811 1-16
+site/src/layouts/BaseLayout.astro
+  s_ded836f56a6d83::t_67ffb44d7d3bba 1-78
+site/src/pages/404.astro
+  s_ded836f56a6d83::t_8cf6a5dfe726c5 1-4
+site/src/pages/fr/index.astro
+  s_ded836f56a6d83::t_5818280badaff0 1-4
+site/src/pages/fr/sitemap.astro
+  s_ded836f56a6d83::t_8e6ce29e077478 1-4
+site/src/pages/fr/updates.astro
+  s_ded836f56a6d83::t_f69d771ee741ea 1-4
+site/src/pages/index.astro
+  s_ded836f56a6d83::t_564570def4aa36 1-4
+site/src/pages/robots.txt.ts
+  s_ded836f56a6d83::t_51fc4a3cb1cec1 1-2
+site/src/pages/sitemap.astro
+  s_ded836f56a6d83::t_b03aad6f6e7e53 1-4
+site/src/pages/updates.astro
+  s_ded836f56a6d83::t_9485ab251bcab3 1-4
+site/src/scripts/interactions.ts
+  s_ded836f56a6d83::t_32771846b09cc2 1-168
+site/src/styles/global.css
+  s_ded836f56a6d83::t_7ba9ff55cf716d 1-288
+site/src/styles/starlight-overrides.css
+  s_ded836f56a6d83::t_e5c8e09763e730 1-164
+site/tests/browser/site.spec.ts
+  s_ded836f56a6d83::t_04418509718360 1-154
+site/tests/dist.test.mjs
+  s_ded836f56a6d83::t_e4cfb86b222a4d 1-42
+site/tests/doc-content.test.mjs
+  s_ded836f56a6d83::t_251aee68efaa2a 1-52
+site/tests/public-build.test.mjs
+  s_ded836f56a6d83::t_c5d1eff1573b18 1-26
+site/tests/updates.test.mjs
+  s_ded836f56a6d83::t_a20724cd333461 1-15
+site/tsconfig.json
+  s_ded836f56a6d83::t_2dfbcf4c6edf1d 1-5
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "5bee67080e5cc2f83c575be95114043ba1f38aa8",
+  "prompts": {},
+  "sessions": {
+    "s_160b3107588443": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a106f2-069b-7be2-aa09-88b1bbf2331e",
+        "model": "gpt-6-astra"
+      },
+      "human_author": "Florian BRUNIAUX <florian@bruniaux.com>"
+    },
+    "s_ded836f56a6d83": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "2411f16c-88e6-4622-9ccc-03c30968a7a1",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "Florian BRUNIAUX <florian@bruniaux.com>"
+    }
+  }
+}
