@@ -1,5 +1,6 @@
 ---
 import {getEntry} from 'astro:content';
+import product from '../data/product.json';
 import {getSiteLinks, type Locale} from '../data/content';
 import {sourceUpdateDate, formatUpdateDate} from '../data/updates.mjs';
 interface Props {locale:Locale}
@@ -13,6 +14,6 @@ const date=sourceUpdateDate(changelog.body);
 <aside class="updates-banner" aria-label={label}>
   <div class="container updates-banner-inner">
     <a href={getSiteLinks(locale).updates}><strong>{label}</strong><span>{fr?'Rapports, mesures disque et guides':'Reports, disk measurements and guides'}</span><span aria-hidden="true">→</span></a>
-    <p><time datetime={date}>{formatUpdateDate(date,locale)}</time><span>{fr?'Version de développement':'Development version'}</span></p>
+    <p><time datetime={date}>{formatUpdateDate(date,locale)}</time><span>{`v${product.version}`}</span></p>
   </div>
 </aside>

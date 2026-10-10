@@ -11,6 +11,8 @@ the Cargo package version is a development version.
 
 ### Changed
 
+- Display the CLI package version in the website updates banner.
+
 - Point the website author and Portfolio footer links to
   `https://florian.bruniaux.com/`.
 
