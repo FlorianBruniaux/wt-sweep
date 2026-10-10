@@ -1,0 +1,3408 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="color-scheme" content="light dark"><meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline'; script-src 'unsafe-inline'; base-uri 'none'; form-action 'none'; object-src 'none'"><title>Worktree review | Worktree Sweep</title><style>/* Shared semantic tokens: native theme by default, explicit choice when set. */
+:root {
+  color-scheme: light;
+  --bg: #f5f0eb;
+  --surface: #ffffff;
+  --secondary: #fef7f0;
+  --soft: #f0e8df;
+  --ink: #1a1207;
+  --muted: #6b6053;
+  --line: #d4cdc5;
+  --control-line: #8b7e6d;
+  --accent: #c2410c;
+  --accent-hover: #9a3412;
+  --warning: #fff3d8;
+  --warning-ink: #775211;
+  /* Verdict text colors are darker than decorative brand status colors. */
+  --keep: #244fa3;
+  --keep-bg: #eaf0ff;
+  --verify: #775211;
+  --verify-bg: #fff3d8;
+  --candidate: #196345;
+  --candidate-bg: #e6f6ed;
+  --font-sans: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen, Ubuntu, sans-serif;
+  --font-mono: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, "Liberation Mono", monospace;
+  --radius: 8px;
+  --panel-radius: 12px;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    color-scheme: dark;
+    --bg: #0a0a0a;
+    --surface: #141414;
+    --secondary: #141414;
+    --soft: #1e1e1e;
+    --ink: #e5e5e5;
+    --muted: #a3a3a3;
+    --line: #2a2a2a;
+    --control-line: #707070;
+    --accent: #f97316;
+    --accent-hover: #fb923c;
+    --warning: #342e22;
+    --warning-ink: #f6cf87;
+    --keep: #abc5ff;
+    --keep-bg: #223857;
+    --verify: #f6cf87;
+    --verify-bg: #342e22;
+    --candidate: #93e6bb;
+    --candidate-bg: #1a3a32;
+  }
+}
+
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --bg: #0a0a0a;
+  --surface: #141414;
+  --secondary: #141414;
+  --soft: #1e1e1e;
+  --ink: #e5e5e5;
+  --muted: #a3a3a3;
+  --line: #2a2a2a;
+  --control-line: #707070;
+  --accent: #f97316;
+  --accent-hover: #fb923c;
+  --warning: #342e22;
+  --warning-ink: #f6cf87;
+  --keep: #abc5ff;
+  --keep-bg: #223857;
+  --verify: #f6cf87;
+  --verify-bg: #342e22;
+  --candidate: #93e6bb;
+  --candidate-bg: #1a3a32;
+}
+
+* { box-sizing: border-box; }
+html { scroll-behavior: smooth; scroll-padding-top: 1rem; }
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--ink);
+  font: 1rem/1.6 var(--font-sans);
+}
+a {
+  color: var(--accent);
+  text-decoration-thickness: 1px;
+  text-underline-offset: 3px;
+}
+a:hover { color: var(--accent-hover); }
+button, input, select, textarea {
+  min-height: 44px;
+  min-width: 44px;
+  max-width: 100%;
+  padding: .6rem .8rem;
+  border: 1px solid var(--control-line);
+  border-radius: var(--radius);
+  background: var(--surface);
+  color: var(--ink);
+  font: inherit;
+}
+input::placeholder { color: var(--muted); opacity: 1; }
+button { cursor: pointer; }
+button:hover { border-color: var(--accent); color: var(--accent-hover); }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+[hidden] { display: none !important; }
+.js-only { display: none; }
+.js .js-only { display: flex; }
+.skip {
+  position: fixed;
+  left: 1rem;
+  top: -5rem;
+  z-index: 5;
+  min-height: 44px;
+  padding: .75rem;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+}
+.skip:focus { top: 1rem; }
+
+/* Copy controls keep raw path data separate from escaped display labels. */
+.js .copy-path { display: inline-flex; align-items: center; gap: .5rem; margin: .3rem 0; font-size: .75rem; white-space: nowrap; }
+.copy-icon { position: relative; width: 12px; height: 14px; margin-right: 3px; border: 1px solid currentColor; border-radius: 2px; }
+.copy-icon::after { content: ""; position: absolute; width: 10px; height: 12px; top: -4px; left: 3px; border: 1px solid currentColor; border-radius: 2px; background: var(--surface); }
+.copyable-details { position: relative; border-bottom: 1px solid var(--line); }
+.copyable-details > details { width: 100%; min-width: 0; }
+.copyable-details > .copy-path { position: absolute; top: 0; right: 0; }
+.disk-title { display: inline-block; min-height: 2.2rem; }
+.js .disk-title { padding-inline-end: 8rem; }
+.disk-path { display: block; font-weight: 400; }
+.path-actions { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: start; gap: .75rem; }
+.path-actions > code { min-width: 0; overflow-wrap: anywhere; }
+.js .path-actions > .copy-path { margin: 0; }
+.coverage-list:has(> .path-gap) { padding-left: 0; }
+.coverage-list > .path-gap { list-style: none; padding: .75rem 0; border-top: 1px solid var(--line); }
+.path-gap > .gap-reason { margin: .6rem 0 0; }
+.copy-status { position: fixed; bottom: 1rem; left: 50%; transform: translateX(-50%); z-index: 6; max-width: min(36rem, calc(100vw - 2rem)); padding: .8rem 1.1rem; border: 1px solid var(--accent); border-radius: var(--radius); background: var(--surface); color: var(--ink); box-shadow: 0 4px 16px #0002; font-size: .85rem; }
+.copy-status:empty { display: none; }
+#copy-dialog { width: min(34rem, calc(100vw - 2rem)); max-height: calc(100dvh - 2rem); overflow: auto; padding: 1.5rem; border: 1px solid var(--control-line); border-radius: var(--panel-radius); background: var(--surface); color: var(--ink); }
+#copy-dialog::backdrop { background: #0008; }
+#copy-dialog h2 { margin-top: 0; }
+#copy-dialog label { display: block; font-size: .85rem; margin-bottom: .4rem; }
+#copy-value { display: block; width: 100%; resize: vertical; margin-bottom: 1rem; }
+@media print { #copy-dialog, .nav-tooltip { display: none !important; } }
+
+/* Retain report navigation and reading order on both screen sizes. */
+.layout { display: grid; grid-template-columns: 224px minmax(0, 1fr); min-height: 100vh; }
+.sidebar {
+  position: sticky;
+  top: 0;
+  height: 100vh;
+  overflow: auto;
+  padding: 2rem 1rem;
+  background: var(--secondary);
+  border-right: 1px solid var(--line);
+}
+.brand {
+  display: flex;
+  align-items: center;
+  gap: .6rem;
+  font-size: 1.4rem;
+  font-weight: 750;
+  letter-spacing: -.04em;
+}
+.mark { width: 24px; height: 24px; border: 2px solid var(--accent); border-radius: 4px; }
+.sidebar .eyebrow { margin: 1.7rem 0 .5rem; }
+.sidebar nav a {
+  display: flex;
+  align-items: center;
+  min-height: 44px;
+  margin: .15rem 0;
+  padding: .5rem .65rem;
+  border-left: 2px solid transparent;
+  color: var(--ink);
+  font-size: .875rem;
+  text-decoration: none;
+  overflow-wrap: anywhere;
+}
+.sidebar nav a:hover, .sidebar nav a:focus-visible {
+  background: var(--soft);
+  border-left-color: var(--accent);
+  color: var(--accent-hover);
+}
+.nav-item { display: grid; grid-template-columns: minmax(0, 1fr) 44px; align-items: center; }
+.nav-help { min-width: 44px; min-height: 44px; padding: .5rem; border: 0; background: transparent; color: var(--muted); font-weight: 650; }
+.nav-help:hover { background: var(--soft); color: var(--accent-hover); }
+.nav-tooltip { width: min(20rem, calc(100vw - 2rem)); max-height: calc(100dvh - 2rem); overflow: auto; padding: 1rem; border: 1px solid var(--control-line); border-radius: var(--radius); background: var(--surface); color: var(--ink); font-size: .85rem; line-height: 1.6; box-shadow: 0 4px 16px #0002; }
+.sidebar small { display: block; font-size: .75rem; overflow-wrap: anywhere; }
+.sidebar .boundary {
+  margin-top: 2rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--line);
+  color: var(--muted);
+  font-size: .8rem;
+}
+.main { width: 100%; min-width: 0; padding: 2.5rem 2rem 3rem; }
+.eyebrow {
+  color: var(--muted);
+  font-family: var(--font-mono);
+  font-size: .72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: .055em;
+}
+h1 { margin: .5rem 0 1rem; font-size: clamp(2rem, 3.2vw, 3rem); font-weight: 750; line-height: 1.05; letter-spacing: -.05em; }
+h2 { margin: 0; font-size: 1.5rem; line-height: 1.3; letter-spacing: -.025em; }
+h3 { margin: 1.2rem 0 .5rem; font-size: 1rem; }
+p { margin: .5rem 0 1rem; }
+.muted, small { color: var(--muted); }
+.top { display: flex; align-items: flex-start; justify-content: space-between; gap: 1rem; }
+.top > div { min-width: 0; }
+.top p { max-width: 70ch; }
+.theme { flex-shrink: 0; align-items: center; white-space: nowrap; font-size: .8rem; }
+.notice {
+  margin: 1.5rem 0;
+  padding: 1rem 1.2rem;
+  border-left: 3px solid currentColor;
+  border-radius: 0 var(--radius) var(--radius) 0;
+  background: var(--warning);
+  color: var(--warning-ink);
+  font-size: .875rem;
+}
+.notice p:last-child { margin-bottom: 0; }
+
+.report-section.disk-priority { border-top: 3px solid var(--accent); }
+.disk-priority h2 { margin: 0; }
+.disk-priority .section-body > .muted { font-size: .82rem; }
+.space-metrics { display: grid; grid-template-columns: 1.1fr 1fr 1fr; gap: 1.5rem; margin: 1.25rem 0; }
+.space-metrics > div { min-width: 0; }
+.space-metrics strong { display: block; margin: .5rem 0; font-family: var(--font-mono); font-size: clamp(1.1rem, 1.5vw, 1.6rem); line-height: 1.2; overflow-wrap: anywhere; }
+.space-primary strong { font-size: clamp(2rem, 3vw, 3rem); color: var(--accent); }
+.space-caption { display: block; max-width: 48ch; font-size: .82rem; color: var(--muted); }
+.space-coverage { margin: 1rem 0 .25rem; padding-top: 1rem; border-top: 1px solid var(--line); font-size: .85rem; }
+.space-largest { margin-top: .5rem; }
+.space-largest ol { margin: .5rem 0; padding-left: 1.3rem; }
+.space-largest li { margin: .85rem 0; }
+.space-entry-size { display: block; margin-top: .3rem; font-size: .8rem; }
+.space-details-link { display: inline-flex; align-items: center; min-height: 44px; font-size: .85rem; }
+/* Native disclosures keep major sections usable without JavaScript. */
+.section-controls { align-items: center; flex-wrap: wrap; gap: .5rem; margin-top: 1rem; }
+.section-controls > span { margin-right: .5rem; color: var(--muted); font-size: .8rem; }
+.section-controls button { font-size: .8rem; }
+.report-section { margin: 1.2rem 0; padding: 1.25rem; border: 1px solid var(--line); border-radius: var(--panel-radius); background: var(--surface); scroll-margin-top: 1rem; font-size: 1rem; }
+.report-section > summary { padding: .5rem .25rem; }
+.report-section > summary h2 { display: inline; font-size: 1.3rem; }
+.report-section[open] > summary { margin-bottom: 1rem; }
+.section-body { min-width: 0; }
+
+/* One flat totals strip, with dividers instead of repeated floating cards. */
+.metrics { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); margin: 1.5rem 0; padding: 1.25rem 0; border-block: 1px solid var(--line); }
+.metric { min-width: 0; padding: 0 1.25rem; border-left: 1px solid var(--line); overflow-wrap: anywhere; }
+.metric:first-child { border-left: 0; padding-left: 0; }
+.metric:last-child { padding-right: 0; }
+.metric strong { display: block; margin: .4rem 0; font-family: var(--font-mono); font-size: 1.7rem; font-weight: 650; line-height: 1.3; letter-spacing: -.045em; }
+.metric .breakdown { color: var(--muted); font-size: .82rem; }
+.meta { color: var(--muted); font-size: .82rem; overflow-wrap: anywhere; }
+.panel { margin-bottom: 1.2rem; padding: 1.25rem; border: 1px solid var(--line); border-radius: var(--panel-radius); background: var(--surface); }
+.toolbar { display: flex; align-items: end; flex-wrap: wrap; gap: 1rem; margin: 1.5rem 0 .8rem; }
+.field { display: flex; flex-direction: column; min-width: 0; gap: .35rem; font-size: .8rem; font-weight: 650; }
+.field.search { flex: 1; min-width: 180px; }
+.field input { width: 100%; }
+.view-status { margin: 0 0 1rem; color: var(--muted); font-size: .82rem; }
+.family { scroll-margin-top: 1rem; margin: 1.5rem 0 2rem; overflow: hidden; border: 1px solid var(--line); border-radius: var(--panel-radius); background: var(--surface); }
+.family-header { display: flex; align-items: start; justify-content: space-between; flex-wrap: wrap; gap: 1rem; padding: 1.2rem 1.4rem; border-bottom: 1px solid var(--line); background: var(--secondary); }
+.family-header > div { min-width: 0; max-width: 100%; }
+.family-header p { margin: .3rem 0 0; }
+.family-header .identity { font-size: .76rem; }
+.family-header h2.mono { margin-top: .5rem; font-size: 1rem; }
+.family-summary { color: var(--muted); font-size: .82rem; overflow-wrap: anywhere; }
+.family-summary strong, .family-summary small { display: block; }
+.table-wrap { overflow: auto; }
+table { width: 100%; border-collapse: collapse; table-layout: fixed; text-align: left; }
+caption { padding: 1rem 1.4rem; color: var(--muted); font-size: .8rem; text-align: left; }
+thead { background: var(--bg); }
+th { padding: .8rem 1rem; color: var(--muted); font-family: var(--font-mono); font-size: .7rem; font-weight: 650; text-transform: uppercase; letter-spacing: .035em; }
+td { padding: 1.1rem 1rem; border-top: 1px solid var(--line); vertical-align: top; overflow-wrap: anywhere; }
+th:first-child { width: 28%; }
+th:nth-child(2) { width: 19%; }
+th:nth-child(3) { width: 21%; }
+th:nth-child(4) { width: 14%; }
+th:nth-child(5) { width: 18%; }
+.path { display: block; font-weight: 650; }
+.mono, code, pre { font-family: var(--font-mono); font-size: .8rem; overflow-wrap: anywhere; white-space: pre-wrap; word-break: break-word; }
+.head { display: block; margin-top: .6rem; color: var(--muted); font-size: .72rem; }
+.badge { display: inline-block; max-width: 100%; padding: .2rem .5rem; border-radius: 4px; background: var(--bg); color: var(--muted); font-family: var(--font-mono); font-size: .75rem; font-weight: 700; overflow-wrap: anywhere; }
+.badge.keep { color: var(--keep); background: var(--keep-bg); }
+.badge.verify { color: var(--verify); background: var(--verify-bg); }
+.badge.cleanup_candidate { color: var(--candidate); background: var(--candidate-bg); }
+.reasons { margin: .7rem 0 0; padding-left: 1rem; font-size: .77rem; }
+.reasons li { margin-bottom: .45rem; }
+.size strong { display: block; font-family: var(--font-mono); font-size: .82rem; }
+.size small { display: block; font-size: .72rem; }
+details { min-width: 0; font-size: .82rem; }
+summary { min-height: 44px; padding: .65rem .25rem; cursor: pointer; font-weight: 650; overflow-wrap: anywhere; }
+summary:hover { color: var(--accent-hover); }
+summary::marker { color: var(--accent); }
+details[open] > summary { margin-bottom: .6rem; }
+details details { margin-top: .6rem; }
+.evidence { margin: .5rem 0 0; font-size: .76rem; }
+.evidence dt { margin-top: .6rem; font-weight: 650; }
+.evidence dd { margin: .15rem 0 .5rem; }
+.evidence ul, .coverage-list { padding-left: 1.1rem; }
+.coverage-list { font-size: .85rem; }
+.coverage-list li { margin: .4rem 0; }
+nav .coverage-list a { display: flex; align-items: center; min-height: 44px; padding: .5rem 0; }
+.empty { padding: 1.5rem; color: var(--muted); text-align: left; }
+pre { max-height: 28rem; overflow: auto; padding: 1rem; border: 1px solid var(--line); border-radius: var(--radius); background: var(--bg); }
+.footnote { padding-top: 1rem; border-top: 1px solid var(--line); color: var(--muted); font-size: .78rem; }
+.disk-totals { display: flex; flex-wrap: wrap; gap: 2rem; margin: .6rem 0; }
+.disk-totals > div { min-width: 0; overflow-wrap: anywhere; }
+.disk-totals strong { display: block; font-family: var(--font-mono); font-size: 1.15rem; }
+.digest { font-size: .72rem; overflow-wrap: anywhere; }
+.legend { display: flex; flex-wrap: wrap; gap: 1rem; margin: .7rem 0 1.5rem; font-size: .78rem; }
+.legend > span { max-width: 32ch; }
+.section-title { margin-top: 2rem; margin-bottom: 1rem; }
+
+/* Give open evidence useful reading width without changing table semantics.
+   Browsers without :has support retain the original column widths. */
+@media screen and (min-width: 1151px) {
+  table:has(tbody > tr > td:last-child > details[open]) th:first-child { width: 21%; }
+  table:has(tbody > tr > td:last-child > details[open]) th:nth-child(2) { width: 14%; }
+  table:has(tbody > tr > td:last-child > details[open]) th:nth-child(3) { width: 15%; }
+  table:has(tbody > tr > td:last-child > details[open]) th:nth-child(4) { width: 12%; }
+  table:has(tbody > tr > td:last-child > details[open]) th:nth-child(5) { width: 38%; }
+}
+
+@media (max-width: 1150px) {
+  .layout { grid-template-columns: 205px minmax(0, 1fr); }
+  .sidebar { padding: 1.5rem 1rem; }
+  .main { padding: 1.8rem 1.5rem; }
+  td, th { padding: .8rem .65rem; }
+  .metric { padding-inline: 1rem; }
+  .metric strong { font-size: 1.4rem; }
+}
+
+@media (max-width: 800px) {
+  .layout { display: block; }
+  .sidebar { position: static; height: auto; padding: 1rem; border-right: 0; border-bottom: 1px solid var(--line); }
+  .sidebar .eyebrow, .sidebar .boundary, .sidebar small { display: none; }
+  .sidebar nav { display: flex; flex-wrap: wrap; gap: .2rem; margin-top: .7rem; }
+  .nav-item { flex: 1 1 10rem; }
+  .sidebar nav a { padding: .5rem; font-size: .8rem; }
+  .main { padding: 1.5rem 1rem; }
+  .metrics { grid-template-columns: 1fr; padding: 0; }
+  .metric, .metric:first-child, .metric:last-child { padding: 1rem 0; border-left: 0; }
+  .metric + .metric { border-top: 1px solid var(--line); }
+  .metric strong { font-size: 1.5rem; }
+  .top { flex-wrap: wrap; }
+  .section-controls > span { flex-basis: 100%; }
+  .section-controls button { flex: 1; }
+  .toolbar { gap: .7rem; }
+  .field.search { flex-basis: 100%; }
+  .family-header { padding: 1rem; }
+  .table-wrap { overflow: visible; }
+  table, tbody, tr, td { display: block; width: 100%; table-layout: auto; }
+  thead { display: none; }
+  tr { padding: .75rem 1rem; border-bottom: 1px solid var(--line); }
+  tr:last-child { border-bottom: 0; }
+  td { min-width: 0; padding: .45rem 0; border: 0; }
+  td::before { display: block; margin-bottom: .25rem; color: var(--muted); font-family: var(--font-mono); font-size: .7rem; text-transform: uppercase; letter-spacing: .035em; content: attr(data-label); }
+  .head { margin: .2rem 0; }
+  .reasons { margin-top: .4rem; }
+  .notice { padding: .9rem; }
+  .panel { padding: 1rem; }
+  .disk-totals { gap: 1rem; }
+  .report-section { padding: 1rem; }
+  .space-metrics { grid-template-columns: 1fr; gap: 1rem; }
+  .space-metrics > div + div { border-top: 1px solid var(--line); padding-top: 1rem; }
+  .path-actions { grid-template-columns: minmax(0, 1fr); }
+  .path-actions > .copy-path { justify-self: start; }
+  .legend { display: block; }
+  .legend > span { display: block; max-width: none; margin: .7rem 0; }
+  caption { display: block; padding: .7rem 1rem; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+  *, *::before, *::after {
+    animation-duration: .01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: .01ms !important;
+  }
+}
+
+@media print {
+  /* Reset tokens even when an explicit dark preference is saved. */
+  :root, :root[data-theme], :root:not([data-theme="light"]) {
+    color-scheme: light;
+    --bg: #ffffff;
+    --surface: #ffffff;
+    --secondary: #ffffff;
+    --soft: #ffffff;
+    --ink: #000000;
+    --muted: #333333;
+    --line: #777777;
+    --accent: #000000;
+    --accent-hover: #000000;
+    --warning: #ffffff;
+    --warning-ink: #000000;
+    --keep: #000000;
+    --keep-bg: #ffffff;
+    --verify: #000000;
+    --verify-bg: #ffffff;
+    --candidate: #000000;
+    --candidate-bg: #ffffff;
+  }
+  html { scroll-behavior: auto; }
+  .layout { display: block; }
+  .sidebar, .toolbar, .theme, .js-only, .skip { display: none !important; }
+  .main { padding: 0; max-width: none; }
+  .family, .panel, .metric { break-inside: avoid; }
+  details > summary { display: none; }
+  details > * { display: block !important; }
+  .report-section > summary { display: list-item; }
+  .report-section::details-content { content-visibility: visible; display: block; }
+
+  pre { max-height: none; overflow: visible; }
+  .notice { border: 1px solid; }
+  .badge { border: 1px solid var(--line); }
+  .family[hidden], tr[hidden] { display: none !important; }
+}
+</style><script>(() => {
+  'use strict';
+  try {
+    const saved = localStorage.getItem('wt-sweep.theme');
+    if (saved === 'light' || saved === 'dark') document.documentElement.dataset.theme = saved;
+  } catch (_) {
+    // Local-file or privacy policies may deny storage; CSS follows the system.
+  }
+})();
+</script></head><body><a class="skip" href="#content">Skip to report</a><div class="layout"><aside class="sidebar" aria-label="Report navigation"><div class="brand"><span class="mark" aria-hidden="true"></span>wt-sweep</div><p class="eyebrow">Read-only report</p><nav aria-label="Contents"><div class="nav-item"><a href="#overview" aria-describedby="help-overview">Overview</a><button class="nav-help" type="button" popovertarget="help-overview" aria-label="About Overview">?</button><div class="nav-tooltip" id="help-overview" role="tooltip" popover>Recorded totals, review verdicts and the observation period. A discovery-only scan has no cleanup verdict.</div></div><div class="nav-item"><a href="#worktree-families" aria-describedby="help-worktree-families">Git families</a><button class="nav-help" type="button" popovertarget="help-worktree-families" aria-label="About Git families">?</button><div class="nav-tooltip" id="help-worktree-families" role="tooltip" popover>Worktrees grouped by their shared Git repository: paths, branches, HEAD commits, sizes and collected evidence. Reviews also include verdicts.</div></div><div class="nav-item"><a href="#disk" aria-describedby="help-disk">Disk observations</a><button class="nav-help" type="button" popovertarget="help-disk" aria-label="About Disk observations">?</button><div class="nav-tooltip" id="help-disk" role="tooltip" popover>Measured allocated and logical sizes per worktree and shared Git directory. Partial totals are marked. These figures are not recoverable disk space.</div></div><div class="nav-item"><a href="#coverage" aria-describedby="help-coverage">Coverage &amp; evidence</a><button class="nav-help" type="button" popovertarget="help-coverage" aria-label="About Coverage &amp; evidence">?</button><div class="nav-tooltip" id="help-coverage" role="tooltip" popover>Discovery coverage, recorded access errors, collection limits and evidence that was not collected. Incomplete checks remain explicit.</div></div></nav><p class="boundary">Captured facts, deterministic verdicts.<br>No removal authorized.<br>Offline; no external resources.</p></aside><main class="main" id="content"><header class="top"><div><p class="eyebrow">Worktree Sweep / captured observations</p><h1>Worktree review</h1><p class="meta">Observation interval: 2026-10-09 19:06:00.289 UTC to 2026-10-09 19:06:02.234 UTC<br>Unix ms: 1791572760289..1791572762234</p></div><button class="theme js-only" id="theme" type="button">Switch theme</button></header><div class="section-controls js-only" role="group" aria-label="Report sections"><span>Report sections</span><button type="button" id="collapse-sections">Collapse all sections</button><button type="button" id="expand-sections">Expand all sections</button></div><details class="report-section disk-priority" id="disk-priority" open><summary><h2>Disk space review</h2></summary><div class="section-body"><p class="muted">Captured disk collection; unaffected by filters (review and browser).</p><div class="space-metrics"><div class="space-primary"><span class="eyebrow">Observed disk footprint</span><strong><span class="byte-size" title="266240 octets">266,24 Ko</span></strong><span class="space-caption">Captured allocation, deduplicated</span></div><div><span class="eyebrow">Recoverable space</span><strong>Not established</strong><span class="space-caption">APFS clones and snapshots can share blocks. Allocation does not predict freed space.</span></div><div><span class="eyebrow">Cleanup review</span><strong>1 candidate</strong><span class="space-caption">0 still need verification across 4 recorded worktrees. Candidates still need a usage check.</span></div></div><p class="space-coverage">5 requested, 5 measured, 0 not requested; totals cover requested roots only.</p><p class="space-coverage"><strong>5/5 roots fully measured</strong> · 0 partial; 0 not measured. Missing sizes remain unknown.</p><details class="space-largest"><summary>Largest observed worktree sizes (up to 3)</summary><p class="muted">Start the size review here. Unmeasured worktrees may be larger. Row sizes may overlap and are not added together. Check each verdict before planning cleanup.</p><ol><li><div class="path-actions"><code>/private/tmp/wt-sweep-u3-oracle-_a9_dxip/local-notes</code><button class="copy-path js-only" type="button" data-copy-path="2f707269766174652f746d702f77742d73776565702d75332d6f7261636c652d5f61395f647869702f6c6f63616c2d6e6f746573"><span class="copy-icon" aria-hidden="true"></span>Copy path</button></div><span class="space-entry-size"><span class="byte-size" title="12288 octets">12,29 Ko</span> allocated · Complete measurement</span></li><li><div class="path-actions"><code>/private/tmp/wt-sweep-u3-oracle-_a9_dxip/unmerged-feature</code><button class="copy-path js-only" type="button" data-copy-path="2f707269766174652f746d702f77742d73776565702d75332d6f7261636c652d5f61395f647869702f756e6d65726765642d66656174757265"><span class="copy-icon" aria-hidden="true"></span>Copy path</button></div><span class="space-entry-size"><span class="byte-size" title="12288 octets">12,29 Ko</span> allocated · Complete measurement</span></li><li><div class="path-actions"><code>/private/tmp/wt-sweep-u3-oracle-_a9_dxip/source branch</code><button class="copy-path js-only" type="button" data-copy-path="2f707269766174652f746d702f77742d73776565702d75332d6f7261636c652d5f61395f647869702f736f75726365206272616e6368"><span class="copy-icon" aria-hidden="true"></span>Copy path</button></div><span class="space-entry-size"><span class="byte-size" title="8192 octets">8,19 Ko</span> allocated · Complete measurement</span></li></ol></details><a class="space-details-link" href="#disk">See disk measurements and limits &#8594;</a></div></details><div class="notice"><strong>No removal authorized.</strong> A cleanup candidate still needs a usage check. Writer exclusion, durable backup and independent restore are not established by this report. Observations are not an atomic snapshot.</div><details class="report-section overview-section" id="overview" open><summary><h2>Overview</h2></summary><div class="section-body"><div class="metrics"><div class="metric"><span class="eyebrow">Source totals</span><strong>4 worktrees</strong><span class="breakdown">3 keep · 0 verify · 1 cleanup_candidate</span></div><div class="metric"><span class="eyebrow">Selected totals</span><strong>4 worktrees</strong><span class="breakdown">3 keep · 0 verify · 1 cleanup_candidate</span></div><div class="metric"><span class="eyebrow">Policy</span><strong>triage/1</strong><span class="breakdown">Deterministic verdicts, no model decision</span></div></div><div class="legend"><span><span class="badge keep">keep</span> Positive retention reason observed.</span><span><span class="badge verify">verify</span> Required evidence is missing or inconsistent.</span><span><span class="badge cleanup_candidate">cleanup_candidate</span> Current C1-C5 checks satisfied; usage remains unverified.</span></div><details class="panel"><summary>View filters and source identity</summary><p>HTML groups rows by historical Git family. The saved view grouping is <code>repo</code>. Filters select rows only; coverage and disk totals retain the source scope.</p><details><summary>Recorded evidence (JSON)</summary><pre>{
+  &quot;repository&quot;: null,
+  &quot;path_prefix&quot;: null,
+  &quot;branch&quot;: null,
+  &quot;local_state&quot;: null,
+  &quot;verdict&quot;: null
+}</pre></details><p class="digest">Inventory SHA-256: <code>4dd4e770619761fa2ff8ccf916e7d9dc571512227df06b351f376f6fd9a49447</code></p><p class="digest">Review SHA-256: <code>163e0f430f4f8120dc6576157502ecfe04b878ce20b971547bcb4b0c045a25bd</code></p><p class="digest">View SHA-256: <code>0479cb1354a30432c5e85e5f091f6136566cc939c72b13dbacd27f066fc4366f</code></p></details></div></details><details class="report-section families-section" id="worktree-families" open><summary><h2>Git families</h2></summary><div class="section-body"><div class="toolbar js-only"><label class="field search">Search recorded rows<input id="search" type="search" placeholder="Path, branch, reason, full OID…" aria-controls="worktree-families"></label><label class="field">Verdict<select id="verdict" aria-controls="worktree-families"><option value="">All verdicts</option><option value="keep">keep</option><option value="verify">verify</option><option value="cleanup_candidate">cleanup_candidate</option></select></label><label class="field">Sort within families<select id="sort" aria-controls="worktree-families"><option value="path">Path bytes</option><option value="branch">Branch bytes</option><option value="verdict">Verdict</option><option value="allocated">Allocated bytes, largest first</option></select></label></div><p class="view-status" id="visible-status" role="status" aria-live="polite">Visible 4 selected worktrees. Source totals and disk measurements are unchanged.</p><noscript><p class="notice">JavaScript is disabled. All selected rows and recorded evidence remain readable; family links and expandable details work. Search, sorting, path copying and the theme button require JavaScript.</p></noscript><p id="no-matches" class="empty" hidden>No rows match. Clear the search or verdict filter.</p><details class="panel"><summary>Family index</summary><nav aria-label="Git family index"><ul class="coverage-list"><li><a class="mono" href="#family-0">/private/tmp/wt-sweep-u3-oracle-_a9_dxip/principal/.git</a><button class="copy-path js-only" type="button" data-copy-path="2f707269766174652f746d702f77742d73776565702d75332d6f7261636c652d5f61395f647869702f7072696e636970616c2f2e676974"><span class="copy-icon" aria-hidden="true"></span>Copy path</button></li></ul></nav></details><section class="family" id="family-0" aria-labelledby="family-title-0"><header class="family-header"><div><p class="eyebrow">Git family 01</p><h2 id="family-title-0" class="mono">/private/tmp/wt-sweep-u3-oracle-_a9_dxip/principal/.git</h2><button class="copy-path js-only" type="button" data-copy-path="2f707269766174652f746d702f77742d73776565702d75332d6f7261636c652d5f61395f647869702f7072696e636970616c2f2e676974"><span class="copy-icon" aria-hidden="true"></span>Copy path</button><p class="identity muted">Historical device 16777231 / inode 471350122. Current identity is not established by grouping.</p></div><div class="family-summary"><span class="visible-count">4</span> visible / 4 selected / 4 source rows<p>Shared Git: <strong><span class="byte-size" title="229376 octets">229,38 Ko</span> allocated</strong><small><span class="byte-size" title="30012 octets">30,01 Ko</span> logical</small><small>complete</small></p></div></header><div class="table-wrap"><table><caption>Recorded worktrees. Row sizes may overlap; only the source disk total deduplicates.</caption><thead><tr><th scope="col">Worktree / HEAD</th><th scope="col">Branch</th><th scope="col">Verdict / reasons</th><th scope="col">Disk observations</th><th scope="col">Evidence / gaps</th></tr></thead><tbody><tr data-worktree="" data-path-hex="2f707269766174652f746d702f77742d73776565702d75332d6f7261636c652d5f61395f647869702f6c6f63616c2d6e6f746573" data-verdict="keep" data-branch="726566732f68656164732f6c6f63616c2d6e6f746573" data-allocated="12288"><td data-label="Worktree and full HEAD"><span class="path mono">/private/tmp/wt-sweep-u3-oracle-_a9_dxip/local-notes</span><button class="copy-path js-only" type="button" data-copy-path="2f707269766174652f746d702f77742d73776565702d75332d6f7261636c652d5f61395f647869702f6c6f63616c2d6e6f746573"><span class="copy-icon" aria-hidden="true"></span>Copy path</button><span class="head mono">HEAD 4f581578547ee6d88dd4b24074f6aa30810d88da</span></td><td data-label="Branch"><span class="mono">refs/heads/local-notes</span></td><td data-label="Verdict and reasons"><span class="badge keep">keep</span><ul class="reasons"><li><code>local_untracked</code>: Untracked content observed; inspect and preserve it</li><li>Missing <code>C2</code>: Select the intended target and complete commit, tree and blob verification</li><li>Missing <code>C3</code>: Inspect local gaps and collect all current HEAD, index and file comparisons</li><li>Missing <code>C5</code>: Run a fresh scan and review after resolving changed or incomplete checks</li></ul></td><td class="size" data-label="Allocated and logical bytes"><strong><span class="byte-size" title="12288 octets">12,29 Ko</span> allocated</strong><small><span class="byte-size" title="119 octets">119 o</span> logical</small><small>complete</small></td><td data-label="Evidence and gaps"><details><summary>Inspect evidence (3 gaps)</summary><dl class="evidence"><dt>Commit subject</dt><dd class="mono">Base</dd><dt>Current controls</dt><dd>linked / complete; Unix ms 1791572760289..1791572762085<ul></ul></dd><dt>Current local summary</dt><dd>staged: 0<br>unstaged: 0<br>conflicts: 0<br>untracked: 1<br>ignored: 0<br></dd><dt>Risks</dt><dd><ul><li>integration observations do not establish preservation of local files</li><li>no removal authorized; ACLs, xattrs and unreachable objects outside enumerated roots are outside preservation scope</li></ul></dd><dt>Unknowns</dt><dd><ul><li>deep verification not required for an already retained or incomplete worktree</li><li>forge state unknown (no export)</li><li>usage UNKNOWN; confirm usage before any removal</li></ul></dd></dl><details><summary>Recorded evidence (JSON)</summary><pre>{
+  &quot;worktree_state&quot;: {
+    &quot;observed&quot;: {
+      &quot;path&quot;: {
+        &quot;hex&quot;: &quot;2f707269766174652f746d702f77742d73776565702d75332d6f7261636c652d5f61395f647869702f6c6f63616c2d6e6f746573&quot;
+      },
+      &quot;identity&quot;: {
+        &quot;device&quot;: 16777231,
+        &quot;inode&quot;: 471350217
+      },
+      &quot;head&quot;: &quot;4f581578547ee6d88dd4b24074f6aa30810d88da&quot;,
+      &quot;branch&quot;: {
+        &quot;hex&quot;: &quot;726566732f68656164732f6c6f63616c2d6e6f746573&quot;
+      },
+      &quot;detached&quot;: false,
+      &quot;bare&quot;: false,
+      &quot;locked&quot;: null,
+      &quot;prunable&quot;: null,
+      &quot;path_state&quot;: {
+        &quot;state&quot;: &quot;present&quot;
+      }
+    },
+    &quot;common_dir&quot;: {
+      &quot;hex&quot;: &quot;2f707269766174652f746d702f77742d73776565702d75332d6f7261636c652d5f61395f647869702f7072696e636970616c2f2e676974&quot;
+    },
+    &quot;family_identity&quot;: {
+      &quot;device&quot;: 16777231,
+      &quot;inode&quot;: 471350122
+    },
+    &quot;git_dir&quot;: {
+      &quot;hex&quot;: &quot;2f707269766174652f746d702f77742d73776565702d75332d6f7261636c652d5f61395f647869702f7072696e636970616c2f2e6769742f776f726b74726565732f6c6f63616c2d6e6f746573&quot;
+    },
+    &quot;git_dir_identity&quot;: {
+      &quot;device&quot;: 16777231,
+      &quot;inode&quot;: 471350215
+    },
+    &quot;role&quot;: &quot;linked&quot;,
+    &quot;protections&quot;: [],
+    &quot;protection_complete&quot;: true,
+    &quot;operations&quot;: [],
+    &quot;operations_complete&quot;: true,
+    &quot;checks&quot;: &quot;complete&quot;,
+    &quot;started_unix_ms&quot;: 1791572760289,
+    &quot;finished_unix_ms&quot;: 1791572762085,
+    &quot;sources&quot;: [
+      {
+        &quot;path&quot;: {
+          &quot;hex&quot;: &quot;2f707269766174652f746d702f77742d73776565702d75332d6f7261636c652d5f61395f647869702f7072696e636970616c2f2e6769742f776f726b74726565732f6c6f63616c2d6e6f746573&quot;
+        },
+        &quot;kind&quot;: &quot;administration&quot;,
+        &quot;exists&quot;: true,
+        &quot;sha256&quot;: null,
+        &quot;bytes&quot;: null,
+        &quot;complete&quot;: true
+      },
+      {
+        &quot;path&quot;: {
+          &quot;hex&quot;: &quot;2f707269766174652f746d702f77742d73776565702d75332d6f7261636c652d5f61395f647869702f7072696e636970616c2f2e6769742f776f726b74726565732f6c6f63616c2d6e6f7465732f696e6465782e6c6f636b&quot;
+        },
+        &quot;kind&quot;: &quot;protection&quot;,
+        &quot;exists&quot;: false,
+        &quot;sha256&quot;: null,
+        &quot;bytes&quot;: null,
+        &quot;complete&quot;: true
+      },
+      {
+        &quot;path&quot;: {
+          &quot;hex&quot;: &quot;2f707269766174652f746d702f77742d73776565702d75332d6f7261636c652d5f61395f647869702f7072696e636970616c2f2e6769742f776f726b74726565732f6c6f63616c2d6e6f7465732f484541442e6c6f636b&quot;
+        },
+        &quot;kind&quot;: &quot;protection&quot;,
+        &quot;exists&quot;: false,
+        &quot;sha256&quot;: null,
+        &quot;bytes&quot;: null,
+        &quot;complete&quot;: true
+      },
+      {
+        &quot;path&quot;: {
+          &quot;hex&quot;: &quot;2f707269766174652f746d702f77742d73776565702d75332d6f7261636c652d5f61395f647869702f7072696e636970616c2f2e6769742f776f726b74726565732f6c6f63616c2d6e6f7465732f636f6e6669672e776f726b747265652e6c6f636b&quot;
+        },
+        &quot;kind&quot;: &quot;protection&quot;,
+        &quot;exists&quot;: false,
+        &quot;sha256&quot;: null,
+        &quot;bytes&quot;: null,
+        &quot;complete&quot;: true
+      },
+      {
+        &quot;path&quot;: {
+          &quot;hex&quot;: &quot;2f707269766174652f746d702f77742d73776565702d75332d6f7261636c652d5f61395f647869702f7072696e636970616c2f2e6769742f776f726b74726565732f6c6f63616c2d6e6f7465732f7368616c6c6f772e6c6f636b&quot;
+        },
+        &quot;kind&quot;: &quot;protection&quot;,
+        &quot;exists&quot;: false,
+        &quot;sha256&quot;: null,
+        &quot;bytes&quot;: null,
+        &quot;complete&quot;: true
+      },
+      {
+        &quot;path&quot;: {
+          &quot;hex&quot;: &quot;2f707269766174652f746d702f77742d73776565702d75332d6f7261636c652d5f61395f647869702f7072696e636970616c2f2e6769742f776f726b74726565732f6c6f63616c2d6e6f7465732f4d455247455f48454144&quot;
+        },
+        &quot;kind&quot;: &quot;operation&quot;,
+        &quot;exists&quot;: false,
+        &quot;sha256&quot;: null,
+        &quot;bytes&quot;: null,
+        &quot;complete&quot;: true
+      },
+      {
+        &quot;path&quot;: {
+          &quot;hex&quot;: &quot;2f707269766174652f746d702f77742d73776565702d75332d6f7261636c652d5f61395f647869702f7072696e636970616c2f2e6769742f776f726b74726565732f6c6f63616c2d6e6f7465732f4348455252595f5049434b5f48454144&quot;
+        },
+        &quot;kind&quot;: &quot;operation&quot;,
+        &quot;exists&quot;: false,
+        &quot;sha256&quot;: null,
+        &quot;bytes&quot;: null,
+        &quot;complete&quot;: true
+      },
+      {
+        &quot;path&quot;: {
+          &quot;hex&quot;: &quot;2f707269766174652f746d702f77742d73776565702d75332d6f7261636c652d5f61395f647869702f7072696e636970616c2f2e6769742f776f726b74726565732f6c6f63616c2d6e6f7465732f5245564552545f48454144&quot;
+        },
+        &quot;kind&quot;: &quot;operation&quot;,
+        &quot;exists&quot;: false,
+        &quot;sha256&quot;: null,
+        &quot;bytes&quot;: null,
+        &quot;complete&quot;: true
+      },
+      {
+        &quot;path&quot;: {
+          &quot;hex&quot;: &quot;2f707269766174652f746d702f77742d73776565702d75332d6f7261636c652d5f61395f647869702f7072696e636970616c2f2e6769742f776f726b74726565732f6c6f63616c2d6e6f7465732f7265626173652d6170706c79&quot;
+        },
+        &quot;kind&quot;: &quot;operation&quot;,
+        &quot;exists&quot;: false,
+        &quot;sha256&quot;: null,
+        &quot;bytes&quot;: null,
+        &quot;complete&quot;: true
+      },
+      {
+        &quot;path&quot;: {
+          &quot;hex&quot;: &quot;2f707269766174652f746d702f77742d73776565702d75332d6f7261636c652d5f61395f647869702f7072696e636970616c2f2e6769742f776f726b74726565732f6c6f63616c2d6e6f7465732f7265626173652d6d65726765&quot;
+        },
+        &quot;kind&quot;: &quot;operation&quot;,
+        &quot;exists&quot;: false,
+        &quot;sha256&quot;: null,
+        &quot;bytes&quot;: null,
+        &quot;complete&quot;: true
+      },
+      {
+        &quot;path&quot;: {
+          &quot;hex&quot;: &quot;2f707269766174652f746d702f77742d73776565702d75332d6f7261636c652d5f61395f647869702f7072696e636970616c2f2e6769742f776f726b74726565732f6c6f63616c2d6e6f7465732f73657175656e636572&quot;
+        },
+        &quot;kind&quot;: &quot;operation&quot;,
+        &quot;exists&quot;: false,
+        &quot;sha256&quot;: null,
+        &quot;bytes&quot;: null,
+        &quot;complete&quot;: true
+      },
+      {
+        &quot;path&quot;: {
+          &quot;hex&quot;: &quot;2f707269766174652f746d702f77742d73776565702d75332d6f7261636c652d5f61395f647869702f7072696e636970616c2f2e6769742f776f726b74726565732f6c6f63616c2d6e6f7465732f4249534543545f4c4f47&quot;
+        },
+        &quot;kind&quot;: &quot;operation&quot;,
+        &quot;exists&quot;: false,
+        &quot;sha256&quot;: null,
+        &quot;bytes&quot;: null,
+        &quot;complete&quot;: true
+      },
+      {
+        &quot;path&quot;: {
+          &quot;hex&quot;: &quot;2f707269766174652f746d702f77742d73776565702d75332d6f7261636c652d5f61395f647869702f7072696e636970616c2f2e6769742f776f726b74726565732f6c6f63616c2d6e6f7465732f4249534543545f5354415254&quot;
+        },
+        &quot;kind&quot;: &quot;operation&quot;,
+        &quot;exists&quot;: false,
+        &quot;sha256&quot;: null,
+        &quot;bytes&quot;: null,
+        &quot;complete&quot;: true
+      }
+    ],
+    &quot;gaps&quot;: []
+  },
+  &quot;decision&quot;: {
+    &quot;keep_reasons&quot;: [
+      &quot;local_untracked&quot;
+    ],
+    &quot;missing_conditions&quot;: [
+      &quot;C2&quot;,
+      &quot;C3&quot;,
+      &quot;C5&quot;
+    ]
+  },
+  &quot;path&quot;: {
+    &quot;hex&quot;: &quot;2f707269766174652f746d702f77742d73776565702d75332d6f7261636c652d5f61395f647869702f6c6f63616c2d6e6f746573&quot;
+  },
+  &quot;private_history&quot;: {
+    &quot;git_dir&quot;: {
+      &quot;hex&quot;: &quot;2f707269766174652f746d702f77742d73776565702d75332d6f7261636c652d5f61395f647869702f7072696e636970616c2f2e6769742f776f726b74726565732f6c6f63616c2d6e6f746573&quot;
+    },
+    &quot;git_dir_identity&quot;: {
+      &quot;device&quot;: 16777231,
+      &quot;inode&quot;: 471350215
+    },
+    &quot;started_unix_ms&quot;: 1791572761302,
+    &quot;finished_unix_ms&quot;: 1791572762200,
+    &quot;enumeration_complete&quot;: true,
+    &quot;anchors_complete&quot;: true,
+    &quot;temporal_consistency&quot;: &quot;not_guaranteed&quot;,
+    &quot;sources&quot;: [
+      {
+        &quot;path&quot;: {
+          &quot;hex&quot;: &quot;2f707269766174652f746d702f77742d73776565702d75332d6f7261636c652d5f61395f647869702f7072696e636970616c2f2e6769742f72656673&quot;
+        },
+        &quot;kind&quot;: &quot;ref_directory&quot;,
+        &quot;exists&quot;: true,
+        &quot;sha256&quot;: &quot;2d03a5456185f2ec6319fb9228efaee0bb3a9a555811675aae2fb282dfda8169&quot;,
+        &quot;bytes&quot;: 79,
+        &quot;complete&quot;: true
+      },
+      {
+        &quot;path&quot;: {
+          &quot;hex&quot;: &quot;2f707269766174652f746d702f77742d73776565702d75332d6f7261636c652d5f61395f647869702f7072696e636970616c2f2e6769742f726566732f6865616473&quot;
+        },
+        &quot;kind&quot;: &quot;ref_directory&quot;,
+        &quot;exists&quot;: true,
+        &quot;sha256&quot;: &quot;e5a466cbc17ff91ed723b583e8eb52e2bba6bfb183c4b7244faae01483d5b9b3&quot;,
+        &quot;bytes&quot;: 158,
+        &quot;complete&quot;: true
+      },
+      {
+        &quot;path&quot;: {
+          &quot;hex&quot;: &quot;2f707269766174652f746d702f77742d73776565702d75332d6f7261636c652d5f61395f647869702f7072696e636970616c2f2e6769742f726566732f68656164732f6c6f63616c2d6e6f746573&quot;
+        },
+        &quot;kind&quot;: &quot;ref&quot;,
+        &quot;exists&quot;: true,
+        &quot;sha256&quot;: &quot;b06d43ac18ed7b9e9dd632c2f033f6271b40ac890ec0e6dcb76c6de9e46a6384&quot;,
+        &quot;bytes&quot;: 41,
+        &quot;complete&quot;: true
+      },
+      {
+        &quot;path&quot;: {
+          &quot;hex&quot;: &quot;2f707269766174652f746d702f77742d73776565702d75332d6f7261636c652d5f61395f647869702f7072696e636970616c2f2e6769742f726566732f68656164732f6d61696e&quot;
+        },
+        &quot;kind&quot;: &quot;ref&quot;,
+        &quot;exists&quot;: true,
+        &quot;sha256&quot;: &quot;b06d43ac18ed7b9e9dd632c2f033f6271b40ac890ec0e6dcb76c6de9e46a6384&quot;,
+        &quot;bytes&quot;: 41,
+        &quot;complete&quot;: true
+      },
+      {
+        &quot;path&quot;: {
+          &quot;hex&quot;: &quot;2f707269766174652f746d702f77742d73776565702d75332d6f7261636c652d5f61395f647869702f7072696e636970616c2f2e6769742f726566732f68656164732f746f706963&quot;
+        },
+        &quot;kind&quot;: &quot;ref&quot;,
+        &quot;exists&quot;: true,
+        &quot;sha256&quot;: &quot;b06d43ac18ed7b9e9dd632c2f033f6271b40ac890ec0e6dcb76c6de9e46a6384&quot;,
+        &quot;bytes&quot;: 41,
+        &quot;complete&quot;: true
+      },
+      {
+        &quot;path&quot;: {
+          &quot;hex&quot;: &quot;2f707269766174652f746d702f77742d73776565702d75332d6f7261636c652d5f61395f647869702f7072696e636970616c2f2e6769742f726566732f68656164732f756e6d65726765642d66656174757265&quot;
+        },
+        &quot;kind&quot;: &quot;ref&quot;,
+        &quot;exists&quot;: true,
+        &quot;sha256&quot;: &quot;d5e61f8848358defed4f861dd324eb36c2f2ccb0306eb6604570cdc136ac0fb8&quot;,
+        &quot;bytes&quot;: 41,
+        &quot;complete&quot;: true
+      },
+      {
+        &quot;path&quot;: {
+          &quot;hex&quot;: &quot;2f707269766174652f746d702f77742d73776565702d75332d6f7261636c652d5f61395f647869702f7072696e636970616c2f2e6769742f726566732f74616773&quot;
+        },
+        &quot;kind&quot;: &quot;ref_directory&quot;,
+        &quot;exists&quot;: true,
+        &quot;sha256&quot;: &quot;ca7972425866b69c7338e2d45f3efc08bc4f9686df99e357266e5d709bc9940a&quot;,
+        &quot;bytes&quot;: 18,
+        &quot;complete&quot;: true
+      },
+      {
+        &quot;path&quot;: {
+          &quot;hex&quot;: &quot;2f707269766174652f746d702f77742d73776565702d75332d6f7261636c652d5f61395f647869702f7072696e636970616c2f2e6769742f7061636b65642d72656673&quot;
+        },
+        &quot;kind&quot;: &quot;packed_refs&quot;,
+        &quot;exists&quot;: false,
+        &quot;sha256&quot;: null,
+        &quot;bytes&quot;: null,
+        &quot;complete&quot;: true
+      },
+      {
+        &quot;path&quot;: {
+          &quot;hex&quot;: &quot;2f707269766174652f746d702f77742d73776565702d75332d6f7261636c652d5f61395f647869702f7072696e636970616c2f2e6769742f776f726b74726565732f6c6f63616c2d6e6f746573&quot;
+        },
+        &quot;kind&quot;: &quot;private_administration_membership&quot;,
+        &quot;exists&quot;: true,
+        &quot;sha256&quot;: &quot;b8c1ad249bc26593ed549706284683fe29ac46ec908cbbc77cba939e99471f1a&quot;,
+        &quot;bytes&quot;: 241,
+        &quot;complete&quot;: true
+      },
+      {
+        &quot;path&quot;: {
+          &quot;hex&quot;: &quot;2f707269766174652f746d702f77742d73776565702d75332d6f7261636c652d5f61395f647869702f7072696e636970616c2f2e6769742f776f726b74726565732f6c6f63616c2d6e6f7465732f726566732f626973656374&quot;
+        },
+        &quot;kind&quot;: &quot;ref_directory&quot;,
+        &quot;exists&quot;: false,
+        &quot;sha256&quot;: null,
+        &quot;bytes&quot;: null,
+        &quot;complete&quot;: true
+      },
+      {
+        &quot;path&quot;: {
+          &quot;hex&quot;: &quot;2f707269766174652f746d702f77742d73776565702d75332d6f7261636c652d5f61395f647869702f7072696e636970616c2f2e6769742f776f726b74726565732f6c6f63616c2d6e6f7465732f726566732f776f726b74726565&quot;
+        },
+        &quot;kind&quot;: &quot;ref_directory&quot;,
+        &quot;exists&quot;: false,
+        &quot;sha256&quot;: null,
+        &quot;bytes&quot;: null,
+        &quot;complete&quot;: true
+      },
+      {
+        &quot;path&quot;: {
+          &quot;hex&quot;: &quot;2f707269766174652f746d702f77742d73776565702d75332d6f7261636c652d5f61395f647869702f7072696e636970616c2f2e6769742f776f726b74726565732f6c6f63616c2d6e6f7465732f726566732f72657772697474656e&quot;
+        },
+        &quot;kind&quot;: &quot;ref_directory&quot;,
+        &quot;exists&quot;: false,
+        &quot;sha256&quot;: null,
+        &quot;bytes&quot;: null,
+        &quot;complete&quot;: true
+      },
+      {
+        &quot;path&quot;: {
+          &quot;hex&quot;: &quot;2f707269766174652f746d702f77742d73776565702d75332d6f7261636c652d5f61395f647869702f7072696e636970616c2f2e6769742f776f726b74726565732f6c6f63616c2d6e6f7465732f48454144&quot;
+        },
+        &quot;kind&quot;: &quot;root_ref&quot;,
+        &quot;exists&quot;: true,
+        &quot;sha256&quot;: &quot;d60164100dfbdb40e052b8c5c64f44295abc7578a4ea82e3dba1d2db10d923ca&quot;,
+        &quot;bytes&quot;: 28,
+        &quot;complete&quot;: true
+      },
+      {
+        &quot;path&quot;: {
+          &quot;hex&quot;: &quot;2f707269766174652f746d702f77742d73776565702d75332d6f7261636c652d5f61395f647869702f7072696e636970616c2f2e6769742f776f726b74726565732f6c6f63616c2d6e6f7465732f4f5249475f48454144&quot;
+        },
+        &quot;kind&quot;: &quot;root_ref&quot;,
+        &quot;exists&quot;: true,
+        &quot;sha256&quot;: &quot;b06d43ac18ed7b9e9dd632c2f033f6271b40ac890ec0e6dcb76c6de9e46a6384&quot;,
+        &quot;bytes&quot;: 41,
+        &quot;complete&quot;: true
+      },
+      {
+        &quot;path&quot;: {
+          &quot;hex&quot;: &quot;2f707269766174652f746d702f77742d73776565702d75332d6f7261636c652d5f61395f647869702f7072696e636970616c2f2e6769742f776f726b74726565732f6c6f63616c2d6e6f7465732f6c6f6773&quot;
+        },
+        &quot;kind&quot;: &quot;own_root_reflog_membership&quot;,
+        &quot;exists&quot;: true,
+        &quot;sha256&quot;: &quot;cb65ea02b4a445b2b799f8703d093d97e75f7f18685f2025504ef3b752593dff&quot;,
+        &quot;bytes&quot;: 48,
+        &quot;complete&quot;: true
+      },
+      {
+        &quot;path&quot;: {
+          &quot;hex&quot;: &quot;2f707269766174652f746d702f77742d73776565702d75332d6f7261636c652d5f61395f647869702f7072696e636970616c2f2e6769742f776f726b74726565732f6c6f63616c2d6e6f7465732f6c6f67732f48454144&quot;
+        },
+        &quot;kind&quot;: &quot;private_reflog&quot;,
+        &quot;exists&quot;: true,
+        &quot;sha256&quot;: &quot;e1684de679943b384cc3697a3d21bd8b21d0e5d6351253c5e377a5c27a54938f&quot;,
+        &quot;bytes&quot;: 288,
+        &quot;complete&quot;: true
+      },
+      {
+        &quot;path&quot;: {
+          &quot;hex&quot;: &quot;2f707269766174652f746d702f77742d73776565702d75332d6f7261636c652d5f61395f647869702f7072696e636970616c2f2e6769742f776f726b74726565732f6c6f63616c2d6e6f7465732f6c6f67732f726566732f626973656374&quot;
+        },
+        &quot;kind&quot;: &quot;private_reflog_directory&quot;,
+        &quot;exists&quot;: false,
+        &quot;sha256&quot;: null,
+        &quot;bytes&quot;: null,
+        &quot;complete&quot;: true
+      },
+      {
+        &quot;path&quot;: {
+          &quot;hex&quot;: &quot;2f707269766174652f746d702f77742d73776565702d75332d6f7261636c652d5f61395f647869702f7072696e636970616c2f2e6769742f776f726b74726565732f6c6f63616c2d6e6f7465732f6c6f67732f726566732f776f726b74726565&quot;
+        },
+        &quot;kind&quot;: &quot;private_reflog_directory&quot;,
+        &quot;exists&quot;: false,
+        &quot;sha256&quot;: null,
+        &quot;bytes&quot;: null,
+        &quot;complete&quot;: true
+      },
+      {
+        &quot;path&quot;: {
+          &quot;hex&quot;: &quot;2f707269766174652f746d702f77742d73776565702d75332d6f7261636c652d5f61395f647869702f7072696e636970616c2f2e6769742f776f726b74726565732f6c6f63616c2d6e6f7465732f6c6f67732f726566732f72657772697474656e&quot;
+        },
+        &quot;kind&quot;: &quot;private_reflog_directory&quot;,
+        &quot;exists&quot;: false,
+        &quot;sha256&quot;: null,
+        &quot;bytes&quot;: null,
+        &quot;complete&quot;: true
+      }
+    ],
+    &quot;roots&quot;: [
+      {
+        &quot;oid&quot;: &quot;4f581578547ee6d88dd4b24074f6aa30810d88da&quot;,
+        &quot;provenance&quot;: [
+          {
+            &quot;source&quot;: {
+              &quot;hex&quot;: &quot;2f707269766174652f746d702f77742d73776565702d75332d6f7261636c652d5f61395f647869702f7072696e636970616c2f2e6769742f776f726b74726565732f6c6f63616c2d6e6f7465732f48454144&quot;
+            },
+            &quot;kind&quot;: &quot;head&quot;
+          },
+          {
+            &quot;source&quot;: {
+              &quot;hex&quot;: &quot;2f707269766174652f746d702f77742d73776565702d75332d6f7261636c652d5f61395f647869702f7072696e636970616c2f2e6769742f776f726b74726565732f6c6f63616c2d6e6f7465732f4f5249475f48454144&quot;
+            },
+            &quot;kind&quot;: &quot;root_ref&quot;
+          },
+          {
+            &quot;source&quot;: {
+              &quot;hex&quot;: &quot;2f707269766174652f746d702f77742d73776565702d75332d6f7261636c652d5f61395f647869702f7072696e636970616c2f2e6769742f776f726b74726565732f6c6f63616c2d6e6f7465732f6c6f67732f48454144&quot;
+            },
+            &quot;kind&quot;: &quot;reflog_new&quot;
+          },
+          {
+            &quot;source&quot;: {
+              &quot;hex&quot;: &quot;2f707269766174652f746d702f77742d73776565702d75332d6f7261636c652d5f61395f647869702f7072696e636970616c2f2e6769742f776f726b74726565732f6c6f63616c2d6e6f7465732f6c6f67732f48454144&quot;
+            },
+            &quot;kind&quot;: &quot;reflog_old&quot;
+          }
+        ],
+        &quot;result&quot;: &quot;covered&quot;,
+        &quot;anchor&quot;: {
+          &quot;reference&quot;: {
+            &quot;hex&quot;: &quot;726566732f68656164732f6c6f63616c2d6e6f746573&quot;
+          },
+          &quot;oid&quot;: &quot;4f581578547ee6d88dd4b24074f6aa30810d88da&quot;
+        },
+        &quot;observed_result&quot;: null,
+        &quot;reason&quot;: null
+      }
+    ],
+    &quot;gaps&quot;: []
+  },
+  &quot;history&quot;: [
+    {
+      &quot;source_oid&quot;: &quot;4f581578547ee6d88dd4b24074f6aa30810d88da&quot;,
+      &quot;target_ref&quot;: {
+        &quot;hex&quot;: &quot;726566732f68656164732f6d61696e&quot;
+      },
+      &quot;target_oid&quot;: &quot;4f581578547ee6d88dd4b24074f6aa30810d88da&quot;,
+      &quot;result&quot;: &quot;identical_commit&quot;,
+      &quot;observed_result&quot;: null,
+      &quot;started_unix_ms&quot;: 1791572760486,
+      &quot;finished_unix_ms&quot;: 1791572762130,
+      &quot;stop_reason&quot;: null
+    }
+  ],
+  &quot;history_omitted_targets&quot;: 0,
+  &quot;local_summary&quot;: {
+    &quot;worktree_identity&quot;: {
+      &quot;device&quot;: 16777231,
+      &quot;inode&quot;: 471350217
+    },
+    &quot;git_dir&quot;: {
+      &quot;hex&quot;: &quot;2f707269766174652f746d702f77742d73776565702d75332d6f7261636c652d5f61395f647869702f7072696e636970616c2f2e6769742f776f726b74726565732f6c6f63616c2d6e6f746573&quot;
+    },
+    &quot;head&quot;: &quot;4f581578547ee6d88dd4b24074f6aa30810d88da&quot;,
+    &quot;started_unix_ms&quot;: 1791572760640,
+    &quot;finished_unix_ms&quot;: 1791572760795,
+    &quot;staged&quot;: {
+      &quot;observed&quot;: 0,
+      &quot;complete&quot;: true,
+      &quot;samples&quot;: [],
+      &quot;samples_omitted&quot;: 0
+    },
+    &quot;unstaged&quot;: {
+      &quot;observed&quot;: 0,
+      &quot;complete&quot;: true,
+      &quot;samples&quot;: [],
+      &quot;samples_omitted&quot;: 0
+    },
+    &quot;conflicts&quot;: {
+      &quot;observed&quot;: 0,
+      &quot;complete&quot;: true,
+      &quot;samples&quot;: [],
+      &quot;samples_omitted&quot;: 0
+    },
+    &quot;untracked&quot;: {
+      &quot;observed&quot;: 1,
+      &quot;complete&quot;: true,
+      &quot;samples&quot;: [
+        {
+          &quot;hex&quot;: &quot;6e6f7465732e747874&quot;
+        }
+      ],
+      &quot;samples_omitted&quot;: 0
+    },
+    &quot;ignored&quot;: {
+      &quot;observed&quot;: 0,
+      &quot;complete&quot;: true,
+      &quot;samples&quot;: [],
+      &quot;samples_omitted&quot;: 0
+    },
+    &quot;head_complete&quot;: true,
+    &quot;index_complete&quot;: true,
+    &quot;disk_complete&quot;: true,
+    &quot;temporal_consistency&quot;: &quot;not_guaranteed&quot;,
+    &quot;sources&quot;: [
+      {
+        &quot;kind&quot;: &quot;head&quot;,
+        &quot;path&quot;: {
+          &quot;hex&quot;: &quot;2f707269766174652f746d702f77742d73776565702d75332d6f7261636c652d5f61395f647869702f7072696e636970616c2f2e6769742f776f726b74726565732f6c6f63616c2d6e6f7465732f48454144&quot;
+        },
+        &quot;sha256&quot;: &quot;d60164100dfbdb40e052b8c5c64f44295abc7578a4ea82e3dba1d2db10d923ca&quot;
+      },
+      {
+        &quot;kind&quot;: &quot;index&quot;,
+        &quot;path&quot;: {
+          &quot;hex&quot;: &quot;2f707269766174652f746d702f77742d73776565702d75332d6f7261636c652d5f61395f647869702f7072696e636970616c2f2e6769742f776f726b74726565732f6c6f63616c2d6e6f7465732f696e646578&quot;
+        },
+        &quot;sha256&quot;: &quot;bb0f6c56fe802a4a7f33158bd48ebcacd84a7c17d3a7f58dd53444c1fef3667e&quot;
+      }
+    ],
+    &quot;gaps&quot;: [],
+    &quot;details_truncated&quot;: false,
+    &quot;digest_sha256&quot;: &quot;711b4e947d184a3526e44115f4ab55eefdc18324424629eb69ed3b44da5d77ee&quot;
+  },
+  &quot;branch&quot;: {
+    &quot;hex&quot;: &quot;726566732f68656164732f6c6f63616c2d6e6f746573&quot;
+  },
+  &quot;head&quot;: &quot;4f581578547ee6d88dd4b24074f6aa30810d88da&quot;,
+  &quot;subject&quot;: {
+    &quot;hex&quot;: &quot;42617365&quot;
+  },
+  &quot;subject_truncated&quot;: false,
+  &quot;classification&quot;: &quot;keep&quot;,
+  &quot;observations&quot;: [],
+  &quot;requests&quot;: [],
+  &quot;risks&quot;: [
+    &quot;integration observations do not establish preservation of local files&quot;,
+    &quot;no removal authorized; ACLs, xattrs and unreachable objects outside enumerated roots are outside preservation scope&quot;
+  ],
+  &quot;unknowns&quot;: [
+    &quot;deep verification not required for an already retained or incomplete worktree&quot;,
+    &quot;forge state unknown (no export)&quot;,
+    &quot;usage UNKNOWN; confirm usage before any removal&quot;
+  ]
+}</pre></details></details></td></tr><tr data-worktree="" data-path-hex="2f707269766174652f746d702f77742d73776565702d75332d6f7261636c652d5f61395f647869702f7072696e636970616c" data-verdict="keep" data-branch="726566732f68656164732f6d61696e" data-allocated="4096"><td data-label="Worktree and full HEAD"><span class="path mono">/private/tmp/wt-sweep-u3-oracle-_a9_dxip/principal</span><button class="copy-path js-only" type="button" data-copy-path="2f707269766174652f746d702f77742d73776565702d75332d6f7261636c652d5f61395f647869702f7072696e636970616c"><span class="copy-icon" aria-hidden="true"></span>Copy path</button><span class="head mono">HEAD 4f581578547ee6d88dd4b24074f6aa30810d88da</span></td><td data-label="Branch"><span class="mono">refs/heads/main</span></td><td data-label="Verdict and reasons"><span class="badge keep">keep</span><ul class="reasons"><li><code>main_checkout</code>: Main checkout; keep the repository entry point</li><li>Missing <code>C1</code>: Rescan identity, Git administration, locks and operation markers</li><li>Missing <code>C2</code>: Select the intended target and complete commit, tree and blob verification</li><li>Missing <code>C5</code>: Run a fresh scan and review after resolving changed or incomplete checks</li></ul></td><td class="size" data-label="Allocated and logical bytes"><strong><span class="byte-size" title="4096 octets">4,10 Ko</span> allocated</strong><small><span class="byte-size" title="5 octets">5 o</span> logical</small><small>complete</small></td><td data-label="Evidence and gaps"><details><summary>Inspect evidence (3 gaps)</summary><dl class="evidence"><dt>Commit subject</dt><dd class="mono">Base</dd><dt>Current controls</dt><dd>main / complete; Unix ms 1791572760289..1791572762071<ul></ul></dd><dt>Current local summary</dt><dd>staged: 0<br>unstaged: 0<br>conflicts: 0<br>untracked: 0<br>ignored: 0<br></dd><dt>Risks</dt><dd><ul><li>integration observations do not establish preservation of local files</li><li>no removal authorized; ACLs, xattrs and unreachable objects outside enumerated roots are outside preservation scope</li></ul></dd><dt>Unknowns</dt><dd><ul><li>deep verification not required for an already retained or incomplete worktree</li><li>forge state unknown (no export)</li><li>usage UNKNOWN; confirm usage before any removal</li></ul></dd></dl><details><summary>Recorded evidence (JSON)</summary><pre>{
+  &quot;worktree_state&quot;: {
+    &quot;observed&quot;: {
+      &quot;path&quot;: {
+        &quot;hex&quot;: &quot;2f707269766174652f746d702f77742d73776565702d75332d6f7261636c652d5f61395f647869702f7072696e636970616c&quot;
+      },
+      &quot;identity&quot;: {
+        &quot;device&quot;: 16777231,
+        &quot;inode&quot;: 471350121
+      },
+      &quot;head&quot;: &quot;4f581578547ee6d88dd4b24074f6aa30810d88da&quot;,
+      &quot;branch&quot;: {
+        &quot;hex&quot;: &quot;726566732f68656164732f6d61696e&quot;
+      },
+      &quot;detached&quot;: false,
+      &quot;bare&quot;: false,
+      &quot;locked&quot;: null,
+      &quot;prunable&quot;: null,
+      &quot;path_state&quot;: {
+        &quot;state&quot;: &quot;present&quot;
+      }
+    },
+    &quot;common_dir&quot;: {
+      &quot;hex&quot;: &quot;2f707269766174652f746d702f77742d73776565702d75332d6f7261636c652d5f61395f647869702f7072696e636970616c2f2e676974&quot;
+    },
+    &quot;family_identity&quot;: {
+      &quot;device&quot;: 16777231,
+      &quot;inode&quot;: 471350122
+    },
+    &quot;git_dir&quot;: {
+      &quot;hex&quot;: &quot;2f707269766174652f746d702f77742d73776565702d75332d6f7261636c652d5f61395f647869702f7072696e636970616c2f2e676974&quot;
+    },
+    &quot;git_dir_identity&quot;: {
+      &quot;device&quot;: 16777231,
+      &quot;inode&quot;: 471350122
+    },
+    &quot;role&quot;: &quot;main&quot;,
+    &quot;protections&quot;: [],
+    &quot;protection_complete&quot;: true,
+    &quot;operations&quot;: [],
+    &quot;operations_complete&quot;: true,
+    &quot;checks&quot;: &quot;complete&quot;,
+    &quot;started_unix_ms&quot;: 1791572760289,
+    &quot;finished_unix_ms&quot;: 1791572762071,
+    &quot;sources&quot;: [
+      {
+        &quot;path&quot;: {
+          &quot;hex&quot;: &quot;2f707269766174652f746d702f77742d73776565702d75332d6f7261636c652d5f61395f647869702f7072696e636970616c2f2e676974&quot;
+        },
+        &quot;kind&quot;: &quot;administration&quot;,
+        &quot;exists&quot;: true,
+        &quot;sha256&quot;: null,
+        &quot;bytes&quot;: null,
+        &quot;complete&quot;: true
+      },
+      {
+        &quot;path&quot;: {
+          &quot;hex&quot;: &quot;2f707269766174652f746d702f77742d73776565702d75332d6f7261636c652d5f61395f647869702f7072696e636970616c2f2e6769742f696e6465782e6c6f636b&quot;
+        },
+        &quot;kind&quot;: &quot;protection&quot;,
+        &quot;exists&quot;: false,
+        &quot;sha256&quot;: null,
+        &quot;bytes&quot;: null,
+        &quot;complete&quot;: true
+      },
+      {
+        &quot;path&quot;: {
+          &quot;hex&quot;: &quot;2f707269766174652f746d702f77742d73776565702d75332d6f7261636c652d5f61395f647869702f7072696e636970616c2f2e6769742f484541442e6c6f636b&quot;
+        },
+        &quot;kind&quot;: &quot;protection&quot;,
+        &quot;exists&quot;: false,
+        &quot;sha256&quot;: null,
+        &quot;bytes&quot;: null,
+        &quot;complete&quot;: true
+      },
+      {
+        &quot;path&quot;: {
+          &quot;hex&quot;: &quot;2f707269766174652f746d702f77742d73776565702d75332d6f7261636c652d5f61395f647869702f7072696e636970616c2f2e6769742f636f6e6669672e776f726b747265652e6c6f636b&quot;
+        },
+        &quot;kind&quot;: &quot;protection&quot;,
+        &quot;exists&quot;: false,
+        &quot;sha256&quot;: null,
+        &quot;bytes&quot;: null,
+        &quot;complete&quot;: true
+      },
+      {
+        &quot;path&quot;: {
+          &quot;hex&quot;: &quot;2f707269766174652f746d702f77742d73776565702d75332d6f7261636c652d5f61395f647869702f7072696e636970616c2f2e6769742f7368616c6c6f772e6c6f636b&quot;
+        },
+        &quot;kind&quot;: &quot;protection&quot;,
+        &quot;exists&quot;: false,
+        &quot;sha256&quot;: null,
+        &quot;bytes&quot;: null,
+        &quot;complete&quot;: true
+      },
+      {
+        &quot;path&quot;: {
+          &quot;hex&quot;: &quot;2f707269766174652f746d702f77742d73776565702d75332d6f7261636c652d5f61395f647869702f7072696e636970616c2f2e6769742f4d455247455f48454144&quot;
+        },
+        &quot;kind&quot;: &quot;operation&quot;,
+        &quot;exists&quot;: false,
+        &quot;sha256&quot;: null,
+        &quot;bytes&quot;: null,
+        &quot;complete&quot;: true
+      },
+      {
+        &quot;path&quot;: {
+          &quot;hex&quot;: &quot;2f707269766174652f746d702f77742d73776565702d75332d6f7261636c652d5f61395f647869702f7072696e636970616c2f2e6769742f4348455252595f5049434b5f48454144&quot;
+        },
+        &quot;kind&quot;: &quot;operation&quot;,
+        &quot;exists&quot;: false,
+        &quot;sha256&quot;: null,
+        &quot;bytes&quot;: null,
+        &quot;complete&quot;: true
+      },
+      {
+        &quot;path&quot;: {
+          &quot;hex&quot;: &quot;2f707269766174652f746d702f77742d73776565702d75332d6f7261636c652d5f61395f647869702f7072696e636970616c2f2e6769742f5245564552545f48454144&quot;
+        },
+        &quot;kind&quot;: &quot;operation&quot;,
+        &quot;exists&quot;: false,
+        &quot;sha256&quot;: null,
+        &quot;bytes&quot;: null,
+        &quot;complete&quot;: true
+      },
+      {
+        &quot;path&quot;: {
+          &quot;hex&quot;: &quot;2f707269766174652f746d702f77742d73776565702d75332d6f7261636c652d5f61395f647869702f7072696e636970616c2f2e6769742f7265626173652d6170706c79&quot;
+        },
+        &quot;kind&quot;: &quot;operation&quot;,
+        &quot;exists&quot;: false,
+        &quot;sha256&quot;: null,
+        &quot;bytes&quot;: null,
+        &quot;complete&quot;: true
+      },
+      {
+        &quot;path&quot;: {
+          &quot;hex&quot;: &quot;2f707269766174652f746d702f77742d73776565702d75332d6f7261636c652d5f61395f647869702f7072696e636970616c2f2e6769742f7265626173652d6d65726765&quot;
+        },
+        &quot;kind&quot;: &quot;operation&quot;,
+        &quot;exists&quot;: false,
+        &quot;sha256&quot;: null,
+        &quot;bytes&quot;: null,
+        &quot;complete&quot;: true
+      },
+      {
+        &quot;path&quot;: {
+          &quot;hex&quot;: &quot;2f707269766174652f746d702f77742d73776565702d75332d6f7261636c652d5f61395f647869702f7072696e636970616c2f2e6769742f73657175656e636572&quot;
+        },
+        &quot;kind&quot;: &quot;operation&quot;,
+        &quot;exists&quot;: false,
+        &quot;sha256&quot;: null,
+        &quot;bytes&quot;: null,
+        &quot;complete&quot;: true
+      },
+      {
+        &quot;path&quot;: {
+          &quot;hex&quot;: &quot;2f707269766174652f746d702f77742d73776565702d75332d6f7261636c652d5f61395f647869702f7072696e636970616c2f2e6769742f4249534543545f4c4f47&quot;
+        },
+        &quot;kind&quot;: &quot;operation&quot;,
+        &quot;exists&quot;: false,
+        &quot;sha256&quot;: null,
+        &quot;bytes&quot;: null,
+        &quot;complete&quot;: true
+      },
+      {
+        &quot;path&quot;: {
+          &quot;hex&quot;: &quot;2f707269766174652f746d702f77742d73776565702d75332d6f7261636c652d5f61395f647869702f7072696e636970616c2f2e6769742f4249534543545f5354415254&quot;
+        },
+        &quot;kind&quot;: &quot;operation&quot;,
+        &quot;exists&quot;: false,
+        &quot;sha256&quot;: null,
+        &quot;bytes&quot;: null,
+        &quot;complete&quot;: true
+      }
+    ],
+    &quot;gaps&quot;: []
+  },
+  &quot;decision&quot;: {
+    &quot;keep_reasons&quot;: [
+      &quot;main_checkout&quot;
+    ],
+    &quot;missing_conditions&quot;: [
+      &quot;C1&quot;,
+      &quot;C2&quot;,
+      &quot;C5&quot;
+    ]
+  },
+  &quot;path&quot;: {
+    &quot;hex&quot;: &quot;2f707269766174652f746d702f77742d73776565702d75332d6f7261636c652d5f61395f647869702f7072696e636970616c&quot;
+  },
+  &quot;private_history&quot;: {
+    &quot;git_dir&quot;: {
+      &quot;hex&quot;: &quot;2f707269766174652f746d702f77742d73776565702d75332d6f7261636c652d5f61395f647869702f7072696e636970616c2f2e676974&quot;
+    },
+    &quot;git_dir_identity&quot;: {
+      &quot;device&quot;: 16777231,
+      &quot;inode&quot;: 471350122
+    },
+    &quot;started_unix_ms&quot;: 1791572761302,
+    &quot;finished_unix_ms&quot;: 1791572762188,
+    &quot;enumeration_complete&quot;: true,
+    &quot;anchors_complete&quot;: true,
+    &quot;temporal_consistency&quot;: &quot;not_guaranteed&quot;,
+    &quot;sources&quot;: [
+      {
+        &quot;path&quot;: {
+          &quot;hex&quot;: &quot;2f707269766174652f746d702f77742d73776565702d75332d6f7261636c652d5f61395f647869702f7072696e636970616c2f2e6769742f72656673&quot;
+        },
+        &quot;kind&quot;: &quot;ref_directory&quot;,
+        &quot;exists&quot;: true,
+        &quot;sha256&quot;: &quot;2d03a5456185f2ec6319fb9228efaee0bb3a9a555811675aae2fb282dfda8169&quot;,
+        &quot;bytes&quot;: 79,
+        &quot;complete&quot;: true
+      },
+      {
+        &quot;path&quot;: {
+          &quot;hex&quot;: &quot;2f707269766174652f746d702f77742d73776565702d75332d6f7261636c652d5f61395f647869702f7072696e636970616c2f2e6769742f726566732f6865616473&quot;
+        },
+        &quot;kind&quot;: &quot;ref_directory&quot;,
+        &quot;exists&quot;: true,
+        &quot;sha256&quot;: &quot;e5a466cbc17ff91ed723b583e8eb52e2bba6bfb183c4b7244faae01483d5b9b3&quot;,
+        &quot;bytes&quot;: 158,
+        &quot;complete&quot;: true
+      },
+      {
+        &quot;path&quot;: {
+          &quot;hex&quot;: &quot;2f707269766174652f746d702f77742d73776565702d75332d6f7261636c652d5f61395f647869702f7072696e636970616c2f2e6769742f726566732f68656164732f6c6f63616c2d6e6f746573&quot;
+        },
+        &quot;kind&quot;: &quot;ref&quot;,
+        &quot;exists&quot;: true,
+        &quot;sha256&quot;: &quot;b06d43ac18ed7b9e9dd632c2f033f6271b40ac890ec0e6dcb76c6de9e46a6384&quot;,
+        &quot;bytes&quot;: 41,
+        &quot;complete&quot;: true
+      },
+      {
+        &quot;path&quot;: {
+          &quot;hex&quot;: &quot;2f707269766174652f746d702f77742d73776565702d75332d6f7261636c652d5f61395f647869702f7072696e636970616c2f2e6769742f726566732f68656164732f6d61696e&quot;
+        },
+        &quot;kind&quot;: &quot;ref&quot;,
+        &quot;exists&quot;: true,
+        &quot;sha256&quot;: &quot;b06d43ac18ed7b9e9dd632c2f033f6271b40ac890ec0e6dcb76c6de9e46a6384&quot;,
+        &quot;bytes&quot;: 41,
+        &quot;complete&quot;: true
+      },
+      {
+        &quot;path&quot;: {
+          &quot;hex&quot;: &quot;2f707269766174652f746d702f77742d73776565702d75332d6f7261636c652d5f61395f647869702f7072696e636970616c2f2e6769742f726566732f68656164732f746f706963&quot;
+        },
+        &quot;kind&quot;: &quot;ref&quot;,
+        &quot;exists&quot;: true,
+        &quot;sha256&quot;: &quot;b06d43ac18ed7b9e9dd632c2f033f6271b40ac890ec0e6dcb76c6de9e46a6384&quot;,
+        &quot;bytes&quot;: 41,
+        &quot;complete&quot;: true
+      },
+      {
+        &quot;path&quot;: {
+          &quot;hex&quot;: &quot;2f707269766174652f746d702f77742d73776565702d75332d6f7261636c652d5f61395f647869702f7072696e636970616c2f2e6769742f726566732f68656164732f756e6d65726765642d66656174757265&quot;
+        },
+        &quot;kind&quot;: &quot;ref&quot;,
+        &quot;exists&quot;: true,
+        &quot;sha256&quot;: &quot;d5e61f8848358defed4f861dd324eb36c2f2ccb0306eb6604570cdc136ac0fb8&quot;,
+        &quot;bytes&quot;: 41,
+        &quot;complete&quot;: true
+      },
+      {
+        &quot;path&quot;: {
+          &quot;hex&quot;: &quot;2f707269766174652f746d702f77742d73776565702d75332d6f7261636c652d5f61395f647869702f7072696e636970616c2f2e6769742f726566732f74616773&quot;
+        },
+        &quot;kind&quot;: &quot;ref_directory&quot;,
+        &quot;exists&quot;: true,
+        &quot;sha256&quot;: &quot;ca7972425866b69c7338e2d45f3efc08bc4f9686df99e357266e5d709bc9940a&quot;,
+        &quot;bytes&quot;: 18,
+        &quot;complete&quot;: true
+      },
+      {
+        &quot;path&quot;: {
+          &quot;hex&quot;: &quot;2f707269766174652f746d702f77742d73776565702d75332d6f7261636c652d5f61395f647869702f7072696e636970616c2f2e6769742f7061636b65642d72656673&quot;
+        },
+        &quot;kind&quot;: &quot;packed_refs&quot;,
+        &quot;exists&quot;: false,
+        &quot;sha256&quot;: null,
+        &quot;bytes&quot;: null,
+        &quot;complete&quot;: true
+      },
+      {
+        &quot;path&quot;: {
+          &quot;hex&quot;: &quot;2f707269766174652f746d702f77742d73776565702d75332d6f7261636c652d5f61395f647869702f7072696e636970616c2f2e676974&quot;
+        },
+        &quot;kind&quot;: &quot;private_administration_membership&quot;,
+        &quot;exists&quot;: true,
+        &quot;sha256&quot;: &quot;0466ca48db917468591cd8c8fd132a58b7bd033156f9700a0d1fcdd49d169fc9&quot;,
+        &quot;bytes&quot;: 377,
+        &quot;complete&quot;: true
+      },
+      {
+        &quot;path&quot;: {
+          &quot;hex&quot;: &quot;2f707269766174652f746d702f77742d73776565702d75332d6f7261636c652d5f61395f647869702f7072696e636970616c2f2e6769742f726566732f626973656374&quot;
+        },
+        &quot;kind&quot;: &quot;ref_directory&quot;,
+        &quot;exists&quot;: false,
+        &quot;sha256&quot;: null,
+        &quot;bytes&quot;: null,
+        &quot;complete&quot;: true
+      },
+      {
+        &quot;path&quot;: {
+          &quot;hex&quot;: &quot;2f707269766174652f746d702f77742d73776565702d75332d6f7261636c652d5f61395f647869702f7072696e636970616c2f2e6769742f726566732f776f726b74726565&quot;
+        },
+        &quot;kind&quot;: &quot;ref_directory&quot;,
+        &quot;exists&quot;: false,
+        &quot;sha256&quot;: null,
+        &quot;bytes&quot;: null,
+        &quot;complete&quot;: true
+      },
+      {
+        &quot;path&quot;: {
+          &quot;hex&quot;: &quot;2f707269766174652f746d702f77742d73776565702d75332d6f7261636c652d5f61395f647869702f7072696e636970616c2f2e6769742f726566732f72657772697474656e&quot;
+        },
+        &quot;kind&quot;: &quot;ref_directory&quot;,
+        &quot;exists&quot;: false,
+        &quot;sha256&quot;: null,
+        &quot;bytes&quot;: null,
+        &quot;complete&quot;: true
+      },
+      {
+        &quot;path&quot;: {
+          &quot;hex&quot;: &quot;2f707269766174652f746d702f77742d73776565702d75332d6f7261636c652d5f61395f647869702f7072696e636970616c2f2e6769742f48454144&quot;
+        },
+        &quot;kind&quot;: &quot;root_ref&quot;,
+        &quot;exists&quot;: true,
+        &quot;sha256&quot;: &quot;28d25bf82af4c0e2b72f50959b2beb859e3e60b9630a5e8c603dad4ddb2b6e80&quot;,
+        &quot;bytes&quot;: 21,
+        &quot;complete&quot;: true
+      },
+      {
+        &quot;path&quot;: {
+          &quot;hex&quot;: &quot;2f707269766174652f746d702f77742d73776565702d75332d6f7261636c652d5f61395f647869702f7072696e636970616c2f2e6769742f6c6f6773&quot;
+        },
+        &quot;kind&quot;: &quot;own_root_reflog_membership&quot;,
+        &quot;exists&quot;: true,
+        &quot;sha256&quot;: &quot;24efba921534d3d12d97bdbfc4e16a269e60007e1dc0e5e4411354eb5136d399&quot;,
+        &quot;bytes&quot;: 78,
+        &quot;complete&quot;: true
+      },
+      {
+        &quot;path&quot;: {
+          &quot;hex&quot;: &quot;2f707269766174652f746d702f77742d73776565702d75332d6f7261636c652d5f61395f647869702f7072696e636970616c2f2e6769742f6c6f67732f48454144&quot;
+        },
+        &quot;kind&quot;: &quot;private_reflog&quot;,
+        &quot;exists&quot;: true,
+        &quot;sha256&quot;: &quot;8cb90f138c811b030f5f583da4a9d79a03b47f138e19bda68371ad4747501291&quot;,
+        &quot;bytes&quot;: 156,
+        &quot;complete&quot;: true
+      },
+      {
+        &quot;path&quot;: {
+          &quot;hex&quot;: &quot;2f707269766174652f746d702f77742d73776565702d75332d6f7261636c652d5f61395f647869702f7072696e636970616c2f2e6769742f6c6f67732f726566732f626973656374&quot;
+        },
+        &quot;kind&quot;: &quot;private_reflog_directory&quot;,
+        &quot;exists&quot;: false,
+        &quot;sha256&quot;: null,
+        &quot;bytes&quot;: null,
+        &quot;complete&quot;: true
+      },
+      {
+        &quot;path&quot;: {
+          &quot;hex&quot;: &quot;2f707269766174652f746d702f77742d73776565702d75332d6f7261636c652d5f61395f647869702f7072696e636970616c2f2e6769742f6c6f67732f726566732f776f726b74726565&quot;
+        },
+        &quot;kind&quot;: &quot;private_reflog_directory&quot;,
+        &quot;exists&quot;: false,
+        &quot;sha256&quot;: null,
+        &quot;bytes&quot;: null,
+        &quot;complete&quot;: true
+      },
+      {
+        &quot;path&quot;: {
+          &quot;hex&quot;: &quot;2f707269766174652f746d702f77742d73776565702d75332d6f7261636c652d5f61395f647869702f7072696e636970616c2f2e6769742f6c6f67732f726566732f72657772697474656e&quot;
+        },
+        &quot;kind&quot;: &quot;private_reflog_directory&quot;,
+        &quot;exists&quot;: false,
+        &quot;sha256&quot;: null,
+        &quot;bytes&quot;: null,
+        &quot;complete&quot;: true
+      }
+    ],
+    &quot;roots&quot;: [
+      {
+        &quot;oid&quot;: &quot;4f581578547ee6d88dd4b24074f6aa30810d88da&quot;,
+        &quot;provenance&quot;: [
+          {
+            &quot;source&quot;: {
+              &quot;hex&quot;: &quot;2f707269766174652f746d702f77742d73776565702d75332d6f7261636c652d5f61395f647869702f7072696e636970616c2f2e6769742f48454144&quot;
+            },
+            &quot;kind&quot;: &quot;head&quot;
+          },
+          {
+            &quot;source&quot;: {
+              &quot;hex&quot;: &quot;2f707269766174652f746d702f77742d73776565702d75332d6f7261636c652d5f61395f647869702f7072696e636970616c2f2e6769742f6c6f67732f48454144&quot;
+            },
+            &quot;kind&quot;: &quot;reflog_new&quot;
+          }
+        ],
+        &quot;result&quot;: &quot;covered&quot;,
+        &quot;anchor&quot;: {
+          &quot;reference&quot;: {
+            &quot;hex&quot;: &quot;726566732f68656164732f6c6f63616c2d6e6f746573&quot;
+          },
+          &quot;oid&quot;: &quot;4f581578547ee6d88dd4b24074f6aa30810d88da&quot;
+        },
+        &quot;observed_result&quot;: null,
+        &quot;reason&quot;: null
+      }
+    ],
+    &quot;gaps&quot;: []
+  },
+  &quot;history&quot;: [
+    {
+      &quot;source_oid&quot;: &quot;4f581578547ee6d88dd4b24074f6aa30810d88da&quot;,
+      &quot;target_ref&quot;: {
+        &quot;hex&quot;: &quot;726566732f68656164732f6d61696e&quot;
+      },
+      &quot;target_oid&quot;: &quot;4f581578547ee6d88dd4b24074f6aa30810d88da&quot;,
+      &quot;result&quot;: &quot;identical_commit&quot;,
+      &quot;observed_result&quot;: null,
+      &quot;started_unix_ms&quot;: 1791572760457,
+      &quot;finished_unix_ms&quot;: 1791572762130,
+      &quot;stop_reason&quot;: null
+    }
+  ],
+  &quot;history_omitted_targets&quot;: 0,
+  &quot;local_summary&quot;: {
+    &quot;worktree_identity&quot;: {
+      &quot;device&quot;: 16777231,
+      &quot;inode&quot;: 471350121
+    },
+    &quot;git_dir&quot;: {
+      &quot;hex&quot;: &quot;2f707269766174652f746d702f77742d73776565702d75332d6f7261636c652d5f61395f647869702f7072696e636970616c2f2e676974&quot;
+    },
+    &quot;head&quot;: &quot;4f581578547ee6d88dd4b24074f6aa30810d88da&quot;,
+    &quot;started_unix_ms&quot;: 1791572760500,
+    &quot;finished_unix_ms&quot;: 1791572760639,
+    &quot;staged&quot;: {
+      &quot;observed&quot;: 0,
+      &quot;complete&quot;: true,
+      &quot;samples&quot;: [],
+      &quot;samples_omitted&quot;: 0
+    },
+    &quot;unstaged&quot;: {
+      &quot;observed&quot;: 0,
+      &quot;complete&quot;: true,
+      &quot;samples&quot;: [],
+      &quot;samples_omitted&quot;: 0
+    },
+    &quot;conflicts&quot;: {
+      &quot;observed&quot;: 0,
+      &quot;complete&quot;: true,
+      &quot;samples&quot;: [],
+      &quot;samples_omitted&quot;: 0
+    },
+    &quot;untracked&quot;: {
+      &quot;observed&quot;: 0,
+      &quot;complete&quot;: true,
+      &quot;samples&quot;: [],
+      &quot;samples_omitted&quot;: 0
+    },
+    &quot;ignored&quot;: {
+      &quot;observed&quot;: 0,
+      &quot;complete&quot;: true,
+      &quot;samples&quot;: [],
+      &quot;samples_omitted&quot;: 0
+    },
+    &quot;head_complete&quot;: true,
+    &quot;index_complete&quot;: true,
+    &quot;disk_complete&quot;: true,
+    &quot;temporal_consistency&quot;: &quot;not_guaranteed&quot;,
+    &quot;sources&quot;: [
+      {
+        &quot;kind&quot;: &quot;head&quot;,
+        &quot;path&quot;: {
+          &quot;hex&quot;: &quot;2f707269766174652f746d702f77742d73776565702d75332d6f7261636c652d5f61395f647869702f7072696e636970616c2f2e6769742f48454144&quot;
+        },
+        &quot;sha256&quot;: &quot;28d25bf82af4c0e2b72f50959b2beb859e3e60b9630a5e8c603dad4ddb2b6e80&quot;
+      },
+      {
+        &quot;kind&quot;: &quot;index&quot;,
+        &quot;path&quot;: {
+          &quot;hex&quot;: &quot;2f707269766174652f746d702f77742d73776565702d75332d6f7261636c652d5f61395f647869702f7072696e636970616c2f2e6769742f696e646578&quot;
+        },
+        &quot;sha256&quot;: &quot;0add8958a125e668e6e306825034829f6a220db3791b5250623f765ca20f92e2&quot;
+      }
+    ],
+    &quot;gaps&quot;: [],
+    &quot;details_truncated&quot;: false,
+    &quot;digest_sha256&quot;: &quot;2e7b42b37bbb38d549a242a36fbe6a8b520e1c3d50d6f74cf46cf94590ab2f40&quot;
+  },
+  &quot;branch&quot;: {
+    &quot;hex&quot;: &quot;726566732f68656164732f6d61696e&quot;
+  },
+  &quot;head&quot;: &quot;4f581578547ee6d88dd4b24074f6aa30810d88da&quot;,
+  &quot;subject&quot;: {
+    &quot;hex&quot;: &quot;42617365&quot;
+  },
+  &quot;subject_truncated&quot;: false,
+  &quot;classification&quot;: &quot;keep&quot;,
+  &quot;observations&quot;: [],
+  &quot;requests&quot;: [],
+  &quot;risks&quot;: [
+    &quot;integration observations do not establish preservation of local files&quot;,
+    &quot;no removal authorized; ACLs, xattrs and unreachable objects outside enumerated roots are outside preservation scope&quot;
+  ],
+  &quot;unknowns&quot;: [
+    &quot;deep verification not required for an already retained or incomplete worktree&quot;,
+    &quot;forge state unknown (no export)&quot;,
+    &quot;usage UNKNOWN; confirm usage before any removal&quot;
+  ]
+}</pre></details></details></td></tr><tr data-worktree="" data-path-hex="2f707269766174652f746d702f77742d73776565702d75332d6f7261636c652d5f61395f647869702f736f75726365206272616e6368" data-verdict="cleanup_candidate" data-branch="726566732f68656164732f746f706963" data-allocated="8192"><td data-label="Worktree and full HEAD"><span class="path mono">/private/tmp/wt-sweep-u3-oracle-_a9_dxip/source branch</span><button class="copy-path js-only" type="button" data-copy-path="2f707269766174652f746d702f77742d73776565702d75332d6f7261636c652d5f61395f647869702f736f75726365206272616e6368"><span class="copy-icon" aria-hidden="true"></span>Copy path</button><span class="head mono">HEAD 4f581578547ee6d88dd4b24074f6aa30810d88da</span></td><td data-label="Branch"><span class="mono">refs/heads/topic</span></td><td data-label="Verdict and reasons"><span class="badge cleanup_candidate">cleanup_candidate</span><ul class="reasons"></ul><p class="evidence">Usage UNKNOWN. Confirm before removal.</p></td><td class="size" data-label="Allocated and logical bytes"><strong><span class="byte-size" title="8192 octets">8,19 Ko</span> allocated</strong><small><span class="byte-size" title="93 octets">93 o</span> logical</small><small>complete</small></td><td data-label="Evidence and gaps"><details><summary>Inspect evidence (2 gaps)</summary><dl class="evidence"><dt>Commit subject</dt><dd class="mono">Base</dd><dt>Current controls</dt><dd>linked / complete; Unix ms 1791572760289..1791572762100<ul></ul></dd><dt>Current local summary</dt><dd>staged: 0<br>unstaged: 0<br>conflicts: 0<br>untracked: 0<br>ignored: 0<br></dd><dt>Risks</dt><dd><ul><li>integration observations do not establish preservation of local files</li><li>no removal authorized; ACLs, xattrs and unreachable objects outside enumerated roots are outside preservation scope</li></ul></dd><dt>Unknowns</dt><dd><ul><li>forge state unknown (no export)</li><li>usage UNKNOWN; confirm usage before any removal</li></ul></dd></dl><details><summary>Recorded evidence (JSON)</summary><pre>{
+  &quot;worktree_state&quot;: {
+    &quot;observed&quot;: {
+      &quot;path&quot;: {
+        &quot;hex&quot;: &quot;2f707269766174652f746d702f77742d73776565702d75332d6f7261636c652d5f61395f647869702f736f75726365206272616e6368&quot;
+      },
+      &quot;identity&quot;: {
+        &quot;device&quot;: 16777231,
+        &quot;inode&quot;: 471350196
+      },
+      &quot;head&quot;: &quot;4f581578547ee6d88dd4b24074f6aa30810d88da&quot;,
+      &quot;branch&quot;: {
+        &quot;hex&quot;: &quot;726566732f68656164732f746f706963&quot;
+      },
+      &quot;detached&quot;: false,
+      &quot;bare&quot;: false,
+      &quot;locked&quot;: null,
+      &quot;prunable&quot;: null,
+      &quot;path_state&quot;: {
+        &quot;state&quot;: &quot;present&quot;
+      }
+    },
+    &quot;common_dir&quot;: {
+      &quot;hex&quot;: &quot;2f707269766174652f746d702f77742d73776565702d75332d6f7261636c652d5f61395f647869702f7072696e636970616c2f2e676974&quot;
+    },
+    &quot;family_identity&quot;: {
+      &quot;device&quot;: 16777231,
+      &quot;inode&quot;: 471350122
+    },
+    &quot;git_dir&quot;: {
+      &quot;hex&quot;: &quot;2f707269766174652f746d702f77742d73776565702d75332d6f7261636c652d5f61395f647869702f7072696e636970616c2f2e6769742f776f726b74726565732f736f757263652d6272616e6368&quot;
+    },
+    &quot;git_dir_identity&quot;: {
+      &quot;device&quot;: 16777231,
+      &quot;inode&quot;: 471350194
+    },
+    &quot;role&quot;: &quot;linked&quot;,
+    &quot;protections&quot;: [],
+    &quot;protection_complete&quot;: true,
+    &quot;operations&quot;: [],
+    &quot;operations_complete&quot;: true,
+    &quot;checks&quot;: &quot;complete&quot;,
+    &quot;started_unix_ms&quot;: 1791572760289,
+    &quot;finished_unix_ms&quot;: 1791572762100,
+    &quot;sources&quot;: [
+      {
+        &quot;path&quot;: {
+          &quot;hex&quot;: &quot;2f707269766174652f746d702f77742d73776565702d75332d6f7261636c652d5f61395f647869702f7072696e636970616c2f2e6769742f776f726b74726565732f736f757263652d6272616e6368&quot;
+        },
+        &quot;kind&quot;: &quot;administration&quot;,
+        &quot;exists&quot;: true,
+        &quot;sha256&quot;: null,
+        &quot;bytes&quot;: null,
+        &quot;complete&quot;: true
+      },
+      {
+        &quot;path&quot;: {
+          &quot;hex&quot;: &quot;2f707269766174652f746d702f77742d73776565702d75332d6f7261636c652d5f61395f647869702f7072696e636970616c2f2e6769742f776f726b74726565732f736f757263652d6272616e63682f696e6465782e6c6f636b&quot;
+        },
+        &quot;kind&quot;: &quot;protection&quot;,
+        &quot;exists&quot;: false,
+        &quot;sha256&quot;: null,
+        &quot;bytes&quot;: null,
+        &quot;complete&quot;: true
+      },
+      {
+        &quot;path&quot;: {
+          &quot;hex&quot;: &quot;2f707269766174652f746d702f77742d73776565702d75332d6f7261636c652d5f61395f647869702f7072696e636970616c2f2e6769742f776f726b74726565732f736f757263652d6272616e63682f484541442e6c6f636b&quot;
+        },
+        &quot;kind&quot;: &quot;protection&quot;,
+        &quot;exists&quot;: false,
+        &quot;sha256&quot;: null,
+        &quot;bytes&quot;: null,
+        &quot;complete&quot;: true
+      },
+      {
+        &quot;path&quot;: {
+          &quot;hex&quot;: &quot;2f707269766174652f746d702f77742d73776565702d75332d6f7261636c652d5f61395f647869702f7072696e636970616c2f2e6769742f776f726b74726565732f736f757263652d6272616e63682f636f6e6669672e776f726b747265652e6c6f636b&quot;
+        },
+        &quot;kind&quot;: &quot;protection&quot;,
+        &quot;exists&quot;: false,
+        &quot;sha256&quot;: null,
+        &quot;bytes&quot;: null,
+        &quot;complete&quot;: true
+      },
+      {
+        &quot;path&quot;: {
+          &quot;hex&quot;: &quot;2f707269766174652f746d702f77742d73776565702d75332d6f7261636c652d5f61395f647869702f7072696e636970616c2f2e6769742f776f726b74726565732f736f757263652d6272616e63682f7368616c6c6f772e6c6f636b&quot;
+        },
+        &quot;kind&quot;: &quot;protection&quot;,
+        &quot;exists&quot;: false,
+        &quot;sha256&quot;: null,
+        &quot;bytes&quot;: null,
+        &quot;complete&quot;: true
+      },
+      {
+        &quot;path&quot;: {
+          &quot;hex&quot;: &quot;2f707269766174652f746d702f77742d73776565702d75332d6f7261636c652d5f61395f647869702f7072696e636970616c2f2e6769742f776f726b74726565732f736f757263652d6272616e63682f4d455247455f48454144&quot;
+        },
+        &quot;kind&quot;: &quot;operation&quot;,
+        &quot;exists&quot;: false,
+        &quot;sha256&quot;: null,
+        &quot;bytes&quot;: null,
+        &quot;complete&quot;: true
+      },
+      {
+        &quot;path&quot;: {
+          &quot;hex&quot;: &quot;2f707269766174652f746d702f77742d73776565702d75332d6f7261636c652d5f61395f647869702f7072696e636970616c2f2e6769742f776f726b74726565732f736f757263652d6272616e63682f4348455252595f5049434b5f48454144&quot;
+        },
+        &quot;kind&quot;: &quot;operation&quot;,
+        &quot;exists&quot;: false,
+        &quot;sha256&quot;: null,
+        &quot;bytes&quot;: null,
+        &quot;complete&quot;: true
+      },
+      {
+        &quot;path&quot;: {
+          &quot;hex&quot;: &quot;2f707269766174652f746d702f77742d73776565702d75332d6f7261636c652d5f61395f647869702f7072696e636970616c2f2e6769742f776f726b74726565732f736f757263652d6272616e63682f5245564552545f48454144&quot;
+        },
+        &quot;kind&quot;: &quot;operation&quot;,
+        &quot;exists&quot;: false,
+        &quot;sha256&quot;: null,
+        &quot;bytes&quot;: null,
+        &quot;complete&quot;: true
+      },
+      {
+        &quot;path&quot;: {
+          &quot;hex&quot;: &quot;2f707269766174652f746d702f77742d73776565702d75332d6f7261636c652d5f61395f647869702f7072696e636970616c2f2e6769742f776f726b74726565732f736f757263652d6272616e63682f7265626173652d6170706c79&quot;
+        },
+        &quot;kind&quot;: &quot;operation&quot;,
+        &quot;exists&quot;: false,
+        &quot;sha256&quot;: null,
+        &quot;bytes&quot;: null,
+        &quot;complete&quot;: true
+      },
+      {
+        &quot;path&quot;: {
+          &quot;hex&quot;: &quot;2f707269766174652f746d702f77742d73776565702d75332d6f7261636c652d5f61395f647869702f7072696e636970616c2f2e6769742f776f726b74726565732f736f757263652d6272616e63682f7265626173652d6d65726765&quot;
+        },
+        &quot;kind&quot;: &quot;operation&quot;,
+        &quot;exists&quot;: false,
+        &quot;sha256&quot;: null,
+        &quot;bytes&quot;: null,
+        &quot;complete&quot;: true
+      },
+      {
+        &quot;path&quot;: {
+          &quot;hex&quot;: &quot;2f707269766174652f746d702f77742d73776565702d75332d6f7261636c652d5f61395f647869702f7072696e636970616c2f2e6769742f776f726b74726565732f736f757263652d6272616e63682f73657175656e636572&quot;
+        },
+        &quot;kind&quot;: &quot;operation&quot;,
+        &quot;exists&quot;: false,
+        &quot;sha256&quot;: null,
+        &quot;bytes&quot;: null,
+        &quot;complete&quot;: true
+      },
+      {
+        &quot;path&quot;: {
+          &quot;hex&quot;: &quot;2f707269766174652f746d702f77742d73776565702d75332d6f7261636c652d5f61395f647869702f7072696e636970616c2f2e6769742f776f726b74726565732f736f757263652d6272616e63682f4249534543545f4c4f47&quot;
+        },
+        &quot;kind&quot;: &quot;operation&quot;,
+        &quot;exists&quot;: false,
+        &quot;sha256&quot;: null,
+        &quot;bytes&quot;: null,
+        &quot;complete&quot;: true
+      },
+      {
+        &quot;path&quot;: {
+          &quot;hex&quot;: &quot;2f707269766174652f746d702f77742d73776565702d75332d6f7261636c652d5f61395f647869702f7072696e636970616c2f2e6769742f776f726b74726565732f736f757263652d6272616e63682f4249534543545f5354415254&quot;
+        },
+        &quot;kind&quot;: &quot;operation&quot;,
+        &quot;exists&quot;: false,
+        &quot;sha256&quot;: null,
+        &quot;bytes&quot;: null,
+        &quot;complete&quot;: true
+      }
+    ],
+    &quot;gaps&quot;: []
+  },
+  &quot;decision&quot;: {
+    &quot;keep_reasons&quot;: [],
+    &quot;missing_conditions&quot;: []
+  },
+  &quot;path&quot;: {
+    &quot;hex&quot;: &quot;2f707269766174652f746d702f77742d73776565702d75332d6f7261636c652d5f61395f647869702f736f75726365206272616e6368&quot;
+  },
+  &quot;private_history&quot;: {
+    &quot;git_dir&quot;: {
+      &quot;hex&quot;: &quot;2f707269766174652f746d702f77742d73776565702d75332d6f7261636c652d5f61395f647869702f7072696e636970616c2f2e6769742f776f726b74726565732f736f757263652d6272616e6368&quot;
+    },
+    &quot;git_dir_identity&quot;: {
+      &quot;device&quot;: 16777231,
+      &quot;inode&quot;: 471350194
+    },
+    &quot;started_unix_ms&quot;: 1791572761302,
+    &quot;finished_unix_ms&quot;: 1791572762217,
+    &quot;enumeration_complete&quot;: true,
+    &quot;anchors_complete&quot;: true,
+    &quot;temporal_consistency&quot;: &quot;not_guaranteed&quot;,
+    &quot;sources&quot;: [
+      {
+        &quot;path&quot;: {
+          &quot;hex&quot;: &quot;2f707269766174652f746d702f77742d73776565702d75332d6f7261636c652d5f61395f647869702f7072696e636970616c2f2e6769742f72656673&quot;
+        },
+        &quot;kind&quot;: &quot;ref_directory&quot;,
+        &quot;exists&quot;: true,
+        &quot;sha256&quot;: &quot;2d03a5456185f2ec6319fb9228efaee0bb3a9a555811675aae2fb282dfda8169&quot;,
+        &quot;bytes&quot;: 79,
+        &quot;complete&quot;: true
+      },
+      {
+        &quot;path&quot;: {
+          &quot;hex&quot;: &quot;2f707269766174652f746d702f77742d73776565702d75332d6f7261636c652d5f61395f647869702f7072696e636970616c2f2e6769742f726566732f6865616473&quot;
+        },
+        &quot;kind&quot;: &quot;ref_directory&quot;,
+        &quot;exists&quot;: true,
+        &quot;sha256&quot;: &quot;e5a466cbc17ff91ed723b583e8eb52e2bba6bfb183c4b7244faae01483d5b9b3&quot;,
+        &quot;bytes&quot;: 158,
+        &quot;complete&quot;: true
+      },
+      {
+        &quot;path&quot;: {
+          &quot;hex&quot;: &quot;2f707269766174652f746d702f77742d73776565702d75332d6f7261636c652d5f61395f647869702f7072696e636970616c2f2e6769742f726566732f68656164732f6c6f63616c2d6e6f746573&quot;
+        },
+        &quot;kind&quot;: &quot;ref&quot;,
+        &quot;exists&quot;: true,
+        &quot;sha256&quot;: &quot;b06d43ac18ed7b9e9dd632c2f033f6271b40ac890ec0e6dcb76c6de9e46a6384&quot;,
+        &quot;bytes&quot;: 41,
+        &quot;complete&quot;: true
+      },
+      {
+        &quot;path&quot;: {
+          &quot;hex&quot;: &quot;2f707269766174652f746d702f77742d73776565702d75332d6f7261636c652d5f61395f647869702f7072696e636970616c2f2e6769742f726566732f68656164732f6d61696e&quot;
+        },
+        &quot;kind&quot;: &quot;ref&quot;,
+        &quot;exists&quot;: true,
+        &quot;sha256&quot;: &quot;b06d43ac18ed7b9e9dd632c2f033f6271b40ac890ec0e6dcb76c6de9e46a6384&quot;,
+        &quot;bytes&quot;: 41,
+        &quot;complete&quot;: true
+      },
+      {
+        &quot;path&quot;: {
+          &quot;hex&quot;: &quot;2f707269766174652f746d702f77742d73776565702d75332d6f7261636c652d5f61395f647869702f7072696e636970616c2f2e6769742f726566732f68656164732f746f706963&quot;
+        },
+        &quot;kind&quot;: &quot;ref&quot;,
+        &quot;exists&quot;: true,
+        &quot;sha256&quot;: &quot;b06d43ac18ed7b9e9dd632c2f033f6271b40ac890ec0e6dcb76c6de9e46a6384&quot;,
+        &quot;bytes&quot;: 41,
+        &quot;complete&quot;: true
+      },
+      {
+        &quot;path&quot;: {
+          &quot;hex&quot;: &quot;2f707269766174652f746d702f77742d73776565702d75332d6f7261636c652d5f61395f647869702f7072696e636970616c2f2e6769742f726566732f68656164732f756e6d65726765642d66656174757265&quot;
+        },
+        &quot;kind&quot;: &quot;ref&quot;,
+        &quot;exists&quot;: true,
+        &quot;sha256&quot;: &quot;d5e61f8848358defed4f861dd324eb36c2f2ccb0306eb6604570cdc136ac0fb8&quot;,
+        &quot;bytes&quot;: 41,
+        &quot;complete&quot;: true
+      },
+      {
+        &quot;path&quot;: {
+          &quot;hex&quot;: &quot;2f707269766174652f746d702f77742d73776565702d75332d6f7261636c652d5f61395f647869702f7072696e636970616c2f2e6769742f726566732f74616773&quot;
+        },
+        &quot;kind&quot;: &quot;ref_directory&quot;,
+        &quot;exists&quot;: true,
+        &quot;sha256&quot;: &quot;ca7972425866b69c7338e2d45f3efc08bc4f9686df99e357266e5d709bc9940a&quot;,
+        &quot;bytes&quot;: 18,
+        &quot;complete&quot;: true
+      },
+      {
+        &quot;path&quot;: {
+          &quot;hex&quot;: &quot;2f707269766174652f746d702f77742d73776565702d75332d6f7261636c652d5f61395f647869702f7072696e636970616c2f2e6769742f7061636b65642d72656673&quot;
+        },
+        &quot;kind&quot;: &quot;packed_refs&quot;,
+        &quot;exists&quot;: false,
+        &quot;sha256&quot;: null,
+        &quot;bytes&quot;: null,
+        &quot;complete&quot;: true
+      },
+      {
+        &quot;path&quot;: {
+          &quot;hex&quot;: &quot;2f707269766174652f746d702f77742d73776565702d75332d6f7261636c652d5f61395f647869702f7072696e636970616c2f2e6769742f776f726b74726565732f736f757263652d6272616e6368&quot;
+        },
+        &quot;kind&quot;: &quot;private_administration_membership&quot;,
+        &quot;exists&quot;: true,
+        &quot;sha256&quot;: &quot;03c03a98387fda6a48fa73ca2faad2af160df021ee7eb232405142f34ff7d41a&quot;,
+        &quot;bytes&quot;: 241,
+        &quot;complete&quot;: true
+      },
+      {
+        &quot;path&quot;: {
+          &quot;hex&quot;: &quot;2f707269766174652f746d702f77742d73776565702d75332d6f7261636c652d5f61395f647869702f7072696e636970616c2f2e6769742f776f726b74726565732f736f757263652d6272616e63682f726566732f626973656374&quot;
+        },
+        &quot;kind&quot;: &quot;ref_directory&quot;,
+        &quot;exists&quot;: false,
+        &quot;sha256&quot;: null,
+        &quot;bytes&quot;: null,
+        &quot;complete&quot;: true
+      },
+      {
+        &quot;path&quot;: {
+          &quot;hex&quot;: &quot;2f707269766174652f746d702f77742d73776565702d75332d6f7261636c652d5f61395f647869702f7072696e636970616c2f2e6769742f776f726b74726565732f736f757263652d6272616e63682f726566732f776f726b74726565&quot;
+        },
+        &quot;kind&quot;: &quot;ref_directory&quot;,
+        &quot;exists&quot;: false,
+        &quot;sha256&quot;: null,
+        &quot;bytes&quot;: null,
+        &quot;complete&quot;: true
+      },
+      {
+        &quot;path&quot;: {
+          &quot;hex&quot;: &quot;2f707269766174652f746d702f77742d73776565702d75332d6f7261636c652d5f61395f647869702f7072696e636970616c2f2e6769742f776f726b74726565732f736f757263652d6272616e63682f726566732f72657772697474656e&quot;
+        },
+        &quot;kind&quot;: &quot;ref_directory&quot;,
+        &quot;exists&quot;: false,
+        &quot;sha256&quot;: null,
+        &quot;bytes&quot;: null,
+        &quot;complete&quot;: true
+      },
+      {
+        &quot;path&quot;: {
+          &quot;hex&quot;: &quot;2f707269766174652f746d702f77742d73776565702d75332d6f7261636c652d5f61395f647869702f7072696e636970616c2f2e6769742f776f726b74726565732f736f757263652d6272616e63682f48454144&quot;
+        },
+        &quot;kind&quot;: &quot;root_ref&quot;,
+        &quot;exists&quot;: true,
+        &quot;sha256&quot;: &quot;448c9cfd551ccfeb7f9b0512f566cf61603939a62de1f5f036a1eac4d1c60334&quot;,
+        &quot;bytes&quot;: 22,
+        &quot;complete&quot;: true
+      },
+      {
+        &quot;path&quot;: {
+          &quot;hex&quot;: &quot;2f707269766174652f746d702f77742d73776565702d75332d6f7261636c652d5f61395f647869702f7072696e636970616c2f2e6769742f776f726b74726565732f736f757263652d6272616e63682f4f5249475f48454144&quot;
+        },
+        &quot;kind&quot;: &quot;root_ref&quot;,
+        &quot;exists&quot;: true,
+        &quot;sha256&quot;: &quot;b06d43ac18ed7b9e9dd632c2f033f6271b40ac890ec0e6dcb76c6de9e46a6384&quot;,
+        &quot;bytes&quot;: 41,
+        &quot;complete&quot;: true
+      },
+      {
+        &quot;path&quot;: {
+          &quot;hex&quot;: &quot;2f707269766174652f746d702f77742d73776565702d75332d6f7261636c652d5f61395f647869702f7072696e636970616c2f2e6769742f776f726b74726565732f736f757263652d6272616e63682f6c6f6773&quot;
+        },
+        &quot;kind&quot;: &quot;own_root_reflog_membership&quot;,
+        &quot;exists&quot;: true,
+        &quot;sha256&quot;: &quot;868dbd5390fe29c1f4e16910b12beb0437bfbf1a591eca18623d43810be67d70&quot;,
+        &quot;bytes&quot;: 48,
+        &quot;complete&quot;: true
+      },
+      {
+        &quot;path&quot;: {
+          &quot;hex&quot;: &quot;2f707269766174652f746d702f77742d73776565702d75332d6f7261636c652d5f61395f647869702f7072696e636970616c2f2e6769742f776f726b74726565732f736f757263652d6272616e63682f6c6f67732f48454144&quot;
+        },
+        &quot;kind&quot;: &quot;private_reflog&quot;,
+        &quot;exists&quot;: true,
+        &quot;sha256&quot;: &quot;e1684de679943b384cc3697a3d21bd8b21d0e5d6351253c5e377a5c27a54938f&quot;,
+        &quot;bytes&quot;: 288,
+        &quot;complete&quot;: true
+      },
+      {
+        &quot;path&quot;: {
+          &quot;hex&quot;: &quot;2f707269766174652f746d702f77742d73776565702d75332d6f7261636c652d5f61395f647869702f7072696e636970616c2f2e6769742f776f726b74726565732f736f757263652d6272616e63682f6c6f67732f726566732f626973656374&quot;
+        },
+        &quot;kind&quot;: &quot;private_reflog_directory&quot;,
+        &quot;exists&quot;: false,
+        &quot;sha256&quot;: null,
+        &quot;bytes&quot;: null,
+        &quot;complete&quot;: true
+      },
+      {
+        &quot;path&quot;: {
+          &quot;hex&quot;: &quot;2f707269766174652f746d702f77742d73776565702d75332d6f7261636c652d5f61395f647869702f7072696e636970616c2f2e6769742f776f726b74726565732f736f757263652d6272616e63682f6c6f67732f726566732f776f726b74726565&quot;
+        },
+        &quot;kind&quot;: &quot;private_reflog_directory&quot;,
+        &quot;exists&quot;: false,
+        &quot;sha256&quot;: null,
+        &quot;bytes&quot;: null,
+        &quot;complete&quot;: true
+      },
+      {
+        &quot;path&quot;: {
+          &quot;hex&quot;: &quot;2f707269766174652f746d702f77742d73776565702d75332d6f7261636c652d5f61395f647869702f7072696e636970616c2f2e6769742f776f726b74726565732f736f757263652d6272616e63682f6c6f67732f726566732f72657772697474656e&quot;
+        },
+        &quot;kind&quot;: &quot;private_reflog_directory&quot;,
+        &quot;exists&quot;: false,
+        &quot;sha256&quot;: null,
+        &quot;bytes&quot;: null,
+        &quot;complete&quot;: true
+      }
+    ],
+    &quot;roots&quot;: [
+      {
+        &quot;oid&quot;: &quot;4f581578547ee6d88dd4b24074f6aa30810d88da&quot;,
+        &quot;provenance&quot;: [
+          {
+            &quot;source&quot;: {
+              &quot;hex&quot;: &quot;2f707269766174652f746d702f77742d73776565702d75332d6f7261636c652d5f61395f647869702f7072696e636970616c2f2e6769742f776f726b74726565732f736f757263652d6272616e63682f48454144&quot;
+            },
+            &quot;kind&quot;: &quot;head&quot;
+          },
+          {
+            &quot;source&quot;: {
+              &quot;hex&quot;: &quot;2f707269766174652f746d702f77742d73776565702d75332d6f7261636c652d5f61395f647869702f7072696e636970616c2f2e6769742f776f726b74726565732f736f757263652d6272616e63682f4f5249475f48454144&quot;
+            },
+            &quot;kind&quot;: &quot;root_ref&quot;
+          },
+          {
+            &quot;source&quot;: {
+              &quot;hex&quot;: &quot;2f707269766174652f746d702f77742d73776565702d75332d6f7261636c652d5f61395f647869702f7072696e636970616c2f2e6769742f776f726b74726565732f736f757263652d6272616e63682f6c6f67732f48454144&quot;
+            },
+            &quot;kind&quot;: &quot;reflog_new&quot;
+          },
+          {
+            &quot;source&quot;: {
+              &quot;hex&quot;: &quot;2f707269766174652f746d702f77742d73776565702d75332d6f7261636c652d5f61395f647869702f7072696e636970616c2f2e6769742f776f726b74726565732f736f757263652d6272616e63682f6c6f67732f48454144&quot;
+            },
+            &quot;kind&quot;: &quot;reflog_old&quot;
+          }
+        ],
+        &quot;result&quot;: &quot;covered&quot;,
+        &quot;anchor&quot;: {
+          &quot;reference&quot;: {
+            &quot;hex&quot;: &quot;726566732f68656164732f6c6f63616c2d6e6f746573&quot;
+          },
+          &quot;oid&quot;: &quot;4f581578547ee6d88dd4b24074f6aa30810d88da&quot;
+        },
+        &quot;observed_result&quot;: null,
+        &quot;reason&quot;: null
+      }
+    ],
+    &quot;gaps&quot;: []
+  },
+  &quot;history&quot;: [
+    {
+      &quot;source_oid&quot;: &quot;4f581578547ee6d88dd4b24074f6aa30810d88da&quot;,
+      &quot;target_ref&quot;: {
+        &quot;hex&quot;: &quot;726566732f68656164732f6d61696e&quot;
+      },
+      &quot;target_oid&quot;: &quot;4f581578547ee6d88dd4b24074f6aa30810d88da&quot;,
+      &quot;result&quot;: &quot;identical_commit&quot;,
+      &quot;observed_result&quot;: null,
+      &quot;started_unix_ms&quot;: 1791572760486,
+      &quot;finished_unix_ms&quot;: 1791572762130,
+      &quot;stop_reason&quot;: null
+    }
+  ],
+  &quot;history_omitted_targets&quot;: 0,
+  &quot;local_summary&quot;: {
+    &quot;worktree_identity&quot;: {
+      &quot;device&quot;: 16777231,
+      &quot;inode&quot;: 471350196
+    },
+    &quot;git_dir&quot;: {
+      &quot;hex&quot;: &quot;2f707269766174652f746d702f77742d73776565702d75332d6f7261636c652d5f61395f647869702f7072696e636970616c2f2e6769742f776f726b74726565732f736f757263652d6272616e6368&quot;
+    },
+    &quot;head&quot;: &quot;4f581578547ee6d88dd4b24074f6aa30810d88da&quot;,
+    &quot;started_unix_ms&quot;: 1791572760795,
+    &quot;finished_unix_ms&quot;: 1791572760921,
+    &quot;staged&quot;: {
+      &quot;observed&quot;: 0,
+      &quot;complete&quot;: true,
+      &quot;samples&quot;: [],
+      &quot;samples_omitted&quot;: 0
+    },
+    &quot;unstaged&quot;: {
+      &quot;observed&quot;: 0,
+      &quot;complete&quot;: true,
+      &quot;samples&quot;: [],
+      &quot;samples_omitted&quot;: 0
+    },
+    &quot;conflicts&quot;: {
+      &quot;observed&quot;: 0,
+      &quot;complete&quot;: true,
+      &quot;samples&quot;: [],
+      &quot;samples_omitted&quot;: 0
+    },
+    &quot;untracked&quot;: {
+      &quot;observed&quot;: 0,
+      &quot;complete&quot;: true,
+      &quot;samples&quot;: [],
+      &quot;samples_omitted&quot;: 0
+    },
+    &quot;ignored&quot;: {
+      &quot;observed&quot;: 0,
+      &quot;complete&quot;: true,
+      &quot;samples&quot;: [],
+      &quot;samples_omitted&quot;: 0
+    },
+    &quot;head_complete&quot;: true,
+    &quot;index_complete&quot;: true,
+    &quot;disk_complete&quot;: true,
+    &quot;temporal_consistency&quot;: &quot;not_guaranteed&quot;,
+    &quot;sources&quot;: [
+      {
+        &quot;kind&quot;: &quot;head&quot;,
+        &quot;path&quot;: {
+          &quot;hex&quot;: &quot;2f707269766174652f746d702f77742d73776565702d75332d6f7261636c652d5f61395f647869702f7072696e636970616c2f2e6769742f776f726b74726565732f736f757263652d6272616e63682f48454144&quot;
+        },
+        &quot;sha256&quot;: &quot;448c9cfd551ccfeb7f9b0512f566cf61603939a62de1f5f036a1eac4d1c60334&quot;
+      },
+      {
+        &quot;kind&quot;: &quot;index&quot;,
+        &quot;path&quot;: {
+          &quot;hex&quot;: &quot;2f707269766174652f746d702f77742d73776565702d75332d6f7261636c652d5f61395f647869702f7072696e636970616c2f2e6769742f776f726b74726565732f736f757263652d6272616e63682f696e646578&quot;
+        },
+        &quot;sha256&quot;: &quot;5090cf8e66d31cbfb7ccf3d1f3424edf043c18e9c99fec65d854a345bce68957&quot;
+      }
+    ],
+    &quot;gaps&quot;: [],
+    &quot;details_truncated&quot;: false,
+    &quot;digest_sha256&quot;: &quot;f7a2c2120f363b28efea607c3f5b9fe1e92bf70cc336df08eca2890c081e2bd5&quot;
+  },
+  &quot;branch&quot;: {
+    &quot;hex&quot;: &quot;726566732f68656164732f746f706963&quot;
+  },
+  &quot;head&quot;: &quot;4f581578547ee6d88dd4b24074f6aa30810d88da&quot;,
+  &quot;subject&quot;: {
+    &quot;hex&quot;: &quot;42617365&quot;
+  },
+  &quot;subject_truncated&quot;: false,
+  &quot;classification&quot;: &quot;cleanup_candidate&quot;,
+  &quot;observations&quot;: [
+    {
+      &quot;source_oid&quot;: &quot;4f581578547ee6d88dd4b24074f6aa30810d88da&quot;,
+      &quot;target_ref&quot;: {
+        &quot;hex&quot;: &quot;726566732f68656164732f6d61696e&quot;
+      },
+      &quot;target_oid&quot;: &quot;4f581578547ee6d88dd4b24074f6aa30810d88da&quot;,
+      &quot;relation&quot;: &quot;identical_commit&quot;,
+      &quot;target_role&quot;: &quot;integration&quot;,
+      &quot;started_unix_ms&quot;: 1791572761093,
+      &quot;finished_unix_ms&quot;: 1791572761166
+    },
+    {
+      &quot;source_oid&quot;: &quot;4f581578547ee6d88dd4b24074f6aa30810d88da&quot;,
+      &quot;target_ref&quot;: {
+        &quot;hex&quot;: &quot;726566732f68656164732f6c6f63616c2d6e6f746573&quot;
+      },
+      &quot;target_oid&quot;: &quot;4f581578547ee6d88dd4b24074f6aa30810d88da&quot;,
+      &quot;relation&quot;: &quot;identical_commit&quot;,
+      &quot;target_role&quot;: &quot;intermediate&quot;,
+      &quot;started_unix_ms&quot;: 1791572761166,
+      &quot;finished_unix_ms&quot;: 1791572761202
+    },
+    {
+      &quot;source_oid&quot;: &quot;4f581578547ee6d88dd4b24074f6aa30810d88da&quot;,
+      &quot;target_ref&quot;: {
+        &quot;hex&quot;: &quot;726566732f68656164732f756e6d65726765642d66656174757265&quot;
+      },
+      &quot;target_oid&quot;: &quot;aa9565fb2b523a39181b9473b85e9665eaffb4c0&quot;,
+      &quot;relation&quot;: &quot;ancestor&quot;,
+      &quot;target_role&quot;: &quot;intermediate&quot;,
+      &quot;started_unix_ms&quot;: 1791572761202,
+      &quot;finished_unix_ms&quot;: 1791572761302
+    }
+  ],
+  &quot;requests&quot;: [],
+  &quot;risks&quot;: [
+    &quot;integration observations do not establish preservation of local files&quot;,
+    &quot;no removal authorized; ACLs, xattrs and unreachable objects outside enumerated roots are outside preservation scope&quot;
+  ],
+  &quot;unknowns&quot;: [
+    &quot;forge state unknown (no export)&quot;,
+    &quot;usage UNKNOWN; confirm usage before any removal&quot;
+  ]
+}</pre></details></details></td></tr><tr data-worktree="" data-path-hex="2f707269766174652f746d702f77742d73776565702d75332d6f7261636c652d5f61395f647869702f756e6d65726765642d66656174757265" data-verdict="keep" data-branch="726566732f68656164732f756e6d65726765642d66656174757265" data-allocated="12288"><td data-label="Worktree and full HEAD"><span class="path mono">/private/tmp/wt-sweep-u3-oracle-_a9_dxip/unmerged-feature</span><button class="copy-path js-only" type="button" data-copy-path="2f707269766174652f746d702f77742d73776565702d75332d6f7261636c652d5f61395f647869702f756e6d65726765642d66656174757265"><span class="copy-icon" aria-hidden="true"></span>Copy path</button><span class="head mono">HEAD aa9565fb2b523a39181b9473b85e9665eaffb4c0</span></td><td data-label="Branch"><span class="mono">refs/heads/unmerged-feature</span></td><td data-label="Verdict and reasons"><span class="badge keep">keep</span><ul class="reasons"><li><code>head_not_integrated</code>: HEAD is not an ancestor of any completely examined accepted target</li><li>Missing <code>C2</code>: Select the intended target and complete commit, tree and blob verification</li><li>Missing <code>C5</code>: Run a fresh scan and review after resolving changed or incomplete checks</li></ul></td><td class="size" data-label="Allocated and logical bytes"><strong><span class="byte-size" title="12288 octets">12,29 Ko</span> allocated</strong><small><span class="byte-size" title="121 octets">121 o</span> logical</small><small>complete</small></td><td data-label="Evidence and gaps"><details><summary>Inspect evidence (3 gaps)</summary><dl class="evidence"><dt>Commit subject</dt><dd class="mono">Synthetic history</dd><dt>Current controls</dt><dd>linked / complete; Unix ms 1791572760289..1791572762116<ul></ul></dd><dt>Current local summary</dt><dd>staged: 0<br>unstaged: 0<br>conflicts: 0<br>untracked: 0<br>ignored: 0<br></dd><dt>Risks</dt><dd><ul><li>integration observations do not establish preservation of local files</li><li>no removal authorized; ACLs, xattrs and unreachable objects outside enumerated roots are outside preservation scope</li></ul></dd><dt>Unknowns</dt><dd><ul><li>deep verification not required for an already retained or incomplete worktree</li><li>forge state unknown (no export)</li><li>usage UNKNOWN; confirm usage before any removal</li></ul></dd></dl><details><summary>Recorded evidence (JSON)</summary><pre>{
+  &quot;worktree_state&quot;: {
+    &quot;observed&quot;: {
+      &quot;path&quot;: {
+        &quot;hex&quot;: &quot;2f707269766174652f746d702f77742d73776565702d75332d6f7261636c652d5f61395f647869702f756e6d65726765642d66656174757265&quot;
+      },
+      &quot;identity&quot;: {
+        &quot;device&quot;: 16777231,
+        &quot;inode&quot;: 471350238
+      },
+      &quot;head&quot;: &quot;aa9565fb2b523a39181b9473b85e9665eaffb4c0&quot;,
+      &quot;branch&quot;: {
+        &quot;hex&quot;: &quot;726566732f68656164732f756e6d65726765642d66656174757265&quot;
+      },
+      &quot;detached&quot;: false,
+      &quot;bare&quot;: false,
+      &quot;locked&quot;: null,
+      &quot;prunable&quot;: null,
+      &quot;path_state&quot;: {
+        &quot;state&quot;: &quot;present&quot;
+      }
+    },
+    &quot;common_dir&quot;: {
+      &quot;hex&quot;: &quot;2f707269766174652f746d702f77742d73776565702d75332d6f7261636c652d5f61395f647869702f7072696e636970616c2f2e676974&quot;
+    },
+    &quot;family_identity&quot;: {
+      &quot;device&quot;: 16777231,
+      &quot;inode&quot;: 471350122
+    },
+    &quot;git_dir&quot;: {
+      &quot;hex&quot;: &quot;2f707269766174652f746d702f77742d73776565702d75332d6f7261636c652d5f61395f647869702f7072696e636970616c2f2e6769742f776f726b74726565732f756e6d65726765642d66656174757265&quot;
+    },
+    &quot;git_dir_identity&quot;: {
+      &quot;device&quot;: 16777231,
+      &quot;inode&quot;: 471350236
+    },
+    &quot;role&quot;: &quot;linked&quot;,
+    &quot;protections&quot;: [],
+    &quot;protection_complete&quot;: true,
+    &quot;operations&quot;: [],
+    &quot;operations_complete&quot;: true,
+    &quot;checks&quot;: &quot;complete&quot;,
+    &quot;started_unix_ms&quot;: 1791572760289,
+    &quot;finished_unix_ms&quot;: 1791572762116,
+    &quot;sources&quot;: [
+      {
+        &quot;path&quot;: {
+          &quot;hex&quot;: &quot;2f707269766174652f746d702f77742d73776565702d75332d6f7261636c652d5f61395f647869702f7072696e636970616c2f2e6769742f776f726b74726565732f756e6d65726765642d66656174757265&quot;
+        },
+        &quot;kind&quot;: &quot;administration&quot;,
+        &quot;exists&quot;: true,
+        &quot;sha256&quot;: null,
+        &quot;bytes&quot;: null,
+        &quot;complete&quot;: true
+      },
+      {
+        &quot;path&quot;: {
+          &quot;hex&quot;: &quot;2f707269766174652f746d702f77742d73776565702d75332d6f7261636c652d5f61395f647869702f7072696e636970616c2f2e6769742f776f726b74726565732f756e6d65726765642d666561747572652f696e6465782e6c6f636b&quot;
+        },
+        &quot;kind&quot;: &quot;protection&quot;,
+        &quot;exists&quot;: false,
+        &quot;sha256&quot;: null,
+        &quot;bytes&quot;: null,
+        &quot;complete&quot;: true
+      },
+      {
+        &quot;path&quot;: {
+          &quot;hex&quot;: &quot;2f707269766174652f746d702f77742d73776565702d75332d6f7261636c652d5f61395f647869702f7072696e636970616c2f2e6769742f776f726b74726565732f756e6d65726765642d666561747572652f484541442e6c6f636b&quot;
+        },
+        &quot;kind&quot;: &quot;protection&quot;,
+        &quot;exists&quot;: false,
+        &quot;sha256&quot;: null,
+        &quot;bytes&quot;: null,
+        &quot;complete&quot;: true
+      },
+      {
+        &quot;path&quot;: {
+          &quot;hex&quot;: &quot;2f707269766174652f746d702f77742d73776565702d75332d6f7261636c652d5f61395f647869702f7072696e636970616c2f2e6769742f776f726b74726565732f756e6d65726765642d666561747572652f636f6e6669672e776f726b747265652e6c6f636b&quot;
+        },
+        &quot;kind&quot;: &quot;protection&quot;,
+        &quot;exists&quot;: false,
+        &quot;sha256&quot;: null,
+        &quot;bytes&quot;: null,
+        &quot;complete&quot;: true
+      },
+      {
+        &quot;path&quot;: {
+          &quot;hex&quot;: &quot;2f707269766174652f746d702f77742d73776565702d75332d6f7261636c652d5f61395f647869702f7072696e636970616c2f2e6769742f776f726b74726565732f756e6d65726765642d666561747572652f7368616c6c6f772e6c6f636b&quot;
+        },
+        &quot;kind&quot;: &quot;protection&quot;,
+        &quot;exists&quot;: false,
+        &quot;sha256&quot;: null,
+        &quot;bytes&quot;: null,
+        &quot;complete&quot;: true
+      },
+      {
+        &quot;path&quot;: {
+          &quot;hex&quot;: &quot;2f707269766174652f746d702f77742d73776565702d75332d6f7261636c652d5f61395f647869702f7072696e636970616c2f2e6769742f776f726b74726565732f756e6d65726765642d666561747572652f4d455247455f48454144&quot;
+        },
+        &quot;kind&quot;: &quot;operation&quot;,
+        &quot;exists&quot;: false,
+        &quot;sha256&quot;: null,
+        &quot;bytes&quot;: null,
+        &quot;complete&quot;: true
+      },
+      {
+        &quot;path&quot;: {
+          &quot;hex&quot;: &quot;2f707269766174652f746d702f77742d73776565702d75332d6f7261636c652d5f61395f647869702f7072696e636970616c2f2e6769742f776f726b74726565732f756e6d65726765642d666561747572652f4348455252595f5049434b5f48454144&quot;
+        },
+        &quot;kind&quot;: &quot;operation&quot;,
+        &quot;exists&quot;: false,
+        &quot;sha256&quot;: null,
+        &quot;bytes&quot;: null,
+        &quot;complete&quot;: true
+      },
+      {
+        &quot;path&quot;: {
+          &quot;hex&quot;: &quot;2f707269766174652f746d702f77742d73776565702d75332d6f7261636c652d5f61395f647869702f7072696e636970616c2f2e6769742f776f726b74726565732f756e6d65726765642d666561747572652f5245564552545f48454144&quot;
+        },
+        &quot;kind&quot;: &quot;operation&quot;,
+        &quot;exists&quot;: false,
+        &quot;sha256&quot;: null,
+        &quot;bytes&quot;: null,
+        &quot;complete&quot;: true
+      },
+      {
+        &quot;path&quot;: {
+          &quot;hex&quot;: &quot;2f707269766174652f746d702f77742d73776565702d75332d6f7261636c652d5f61395f647869702f7072696e636970616c2f2e6769742f776f726b74726565732f756e6d65726765642d666561747572652f7265626173652d6170706c79&quot;
+        },
+        &quot;kind&quot;: &quot;operation&quot;,
+        &quot;exists&quot;: false,
+        &quot;sha256&quot;: null,
+        &quot;bytes&quot;: null,
+        &quot;complete&quot;: true
+      },
+      {
+        &quot;path&quot;: {
+          &quot;hex&quot;: &quot;2f707269766174652f746d702f77742d73776565702d75332d6f7261636c652d5f61395f647869702f7072696e636970616c2f2e6769742f776f726b74726565732f756e6d65726765642d666561747572652f7265626173652d6d65726765&quot;
+        },
+        &quot;kind&quot;: &quot;operation&quot;,
+        &quot;exists&quot;: false,
+        &quot;sha256&quot;: null,
+        &quot;bytes&quot;: null,
+        &quot;complete&quot;: true
+      },
+      {
+        &quot;path&quot;: {
+          &quot;hex&quot;: &quot;2f707269766174652f746d702f77742d73776565702d75332d6f7261636c652d5f61395f647869702f7072696e636970616c2f2e6769742f776f726b74726565732f756e6d65726765642d666561747572652f73657175656e636572&quot;
+        },
+        &quot;kind&quot;: &quot;operation&quot;,
+        &quot;exists&quot;: false,
+        &quot;sha256&quot;: null,
+        &quot;bytes&quot;: null,
+        &quot;complete&quot;: true
+      },
+      {
+        &quot;path&quot;: {
+          &quot;hex&quot;: &quot;2f707269766174652f746d702f77742d73776565702d75332d6f7261636c652d5f61395f647869702f7072696e636970616c2f2e6769742f776f726b74726565732f756e6d65726765642d666561747572652f4249534543545f4c4f47&quot;
+        },
+        &quot;kind&quot;: &quot;operation&quot;,
+        &quot;exists&quot;: false,
+        &quot;sha256&quot;: null,
+        &quot;bytes&quot;: null,
+        &quot;complete&quot;: true
+      },
+      {
+        &quot;path&quot;: {
+          &quot;hex&quot;: &quot;2f707269766174652f746d702f77742d73776565702d75332d6f7261636c652d5f61395f647869702f7072696e636970616c2f2e6769742f776f726b74726565732f756e6d65726765642d666561747572652f4249534543545f5354415254&quot;
+        },
+        &quot;kind&quot;: &quot;operation&quot;,
+        &quot;exists&quot;: false,
+        &quot;sha256&quot;: null,
+        &quot;bytes&quot;: null,
+        &quot;complete&quot;: true
+      }
+    ],
+    &quot;gaps&quot;: []
+  },
+  &quot;decision&quot;: {
+    &quot;keep_reasons&quot;: [
+      &quot;head_not_integrated&quot;
+    ],
+    &quot;missing_conditions&quot;: [
+      &quot;C2&quot;,
+      &quot;C5&quot;
+    ]
+  },
+  &quot;path&quot;: {
+    &quot;hex&quot;: &quot;2f707269766174652f746d702f77742d73776565702d75332d6f7261636c652d5f61395f647869702f756e6d65726765642d66656174757265&quot;
+  },
+  &quot;private_history&quot;: {
+    &quot;git_dir&quot;: {
+      &quot;hex&quot;: &quot;2f707269766174652f746d702f77742d73776565702d75332d6f7261636c652d5f61395f647869702f7072696e636970616c2f2e6769742f776f726b74726565732f756e6d65726765642d66656174757265&quot;
+    },
+    &quot;git_dir_identity&quot;: {
+      &quot;device&quot;: 16777231,
+      &quot;inode&quot;: 471350236
+    },
+    &quot;started_unix_ms&quot;: 1791572761302,
+    &quot;finished_unix_ms&quot;: 1791572762233,
+    &quot;enumeration_complete&quot;: true,
+    &quot;anchors_complete&quot;: true,
+    &quot;temporal_consistency&quot;: &quot;not_guaranteed&quot;,
+    &quot;sources&quot;: [
+      {
+        &quot;path&quot;: {
+          &quot;hex&quot;: &quot;2f707269766174652f746d702f77742d73776565702d75332d6f7261636c652d5f61395f647869702f7072696e636970616c2f2e6769742f72656673&quot;
+        },
+        &quot;kind&quot;: &quot;ref_directory&quot;,
+        &quot;exists&quot;: true,
+        &quot;sha256&quot;: &quot;2d03a5456185f2ec6319fb9228efaee0bb3a9a555811675aae2fb282dfda8169&quot;,
+        &quot;bytes&quot;: 79,
+        &quot;complete&quot;: true
+      },
+      {
+        &quot;path&quot;: {
+          &quot;hex&quot;: &quot;2f707269766174652f746d702f77742d73776565702d75332d6f7261636c652d5f61395f647869702f7072696e636970616c2f2e6769742f726566732f6865616473&quot;
+        },
+        &quot;kind&quot;: &quot;ref_directory&quot;,
+        &quot;exists&quot;: true,
+        &quot;sha256&quot;: &quot;e5a466cbc17ff91ed723b583e8eb52e2bba6bfb183c4b7244faae01483d5b9b3&quot;,
+        &quot;bytes&quot;: 158,
+        &quot;complete&quot;: true
+      },
+      {
+        &quot;path&quot;: {
+          &quot;hex&quot;: &quot;2f707269766174652f746d702f77742d73776565702d75332d6f7261636c652d5f61395f647869702f7072696e636970616c2f2e6769742f726566732f68656164732f6c6f63616c2d6e6f746573&quot;
+        },
+        &quot;kind&quot;: &quot;ref&quot;,
+        &quot;exists&quot;: true,
+        &quot;sha256&quot;: &quot;b06d43ac18ed7b9e9dd632c2f033f6271b40ac890ec0e6dcb76c6de9e46a6384&quot;,
+        &quot;bytes&quot;: 41,
+        &quot;complete&quot;: true
+      },
+      {
+        &quot;path&quot;: {
+          &quot;hex&quot;: &quot;2f707269766174652f746d702f77742d73776565702d75332d6f7261636c652d5f61395f647869702f7072696e636970616c2f2e6769742f726566732f68656164732f6d61696e&quot;
+        },
+        &quot;kind&quot;: &quot;ref&quot;,
+        &quot;exists&quot;: true,
+        &quot;sha256&quot;: &quot;b06d43ac18ed7b9e9dd632c2f033f6271b40ac890ec0e6dcb76c6de9e46a6384&quot;,
+        &quot;bytes&quot;: 41,
+        &quot;complete&quot;: true
+      },
+      {
+        &quot;path&quot;: {
+          &quot;hex&quot;: &quot;2f707269766174652f746d702f77742d73776565702d75332d6f7261636c652d5f61395f647869702f7072696e636970616c2f2e6769742f726566732f68656164732f746f706963&quot;
+        },
+        &quot;kind&quot;: &quot;ref&quot;,
+        &quot;exists&quot;: true,
+        &quot;sha256&quot;: &quot;b06d43ac18ed7b9e9dd632c2f033f6271b40ac890ec0e6dcb76c6de9e46a6384&quot;,
+        &quot;bytes&quot;: 41,
+        &quot;complete&quot;: true
+      },
+      {
+        &quot;path&quot;: {
+          &quot;hex&quot;: &quot;2f707269766174652f746d702f77742d73776565702d75332d6f7261636c652d5f61395f647869702f7072696e636970616c2f2e6769742f726566732f68656164732f756e6d65726765642d66656174757265&quot;
+        },
+        &quot;kind&quot;: &quot;ref&quot;,
+        &quot;exists&quot;: true,
+        &quot;sha256&quot;: &quot;d5e61f8848358defed4f861dd324eb36c2f2ccb0306eb6604570cdc136ac0fb8&quot;,
+        &quot;bytes&quot;: 41,
+        &quot;complete&quot;: true
+      },
+      {
+        &quot;path&quot;: {
+          &quot;hex&quot;: &quot;2f707269766174652f746d702f77742d73776565702d75332d6f7261636c652d5f61395f647869702f7072696e636970616c2f2e6769742f726566732f74616773&quot;
+        },
+        &quot;kind&quot;: &quot;ref_directory&quot;,
+        &quot;exists&quot;: true,
+        &quot;sha256&quot;: &quot;ca7972425866b69c7338e2d45f3efc08bc4f9686df99e357266e5d709bc9940a&quot;,
+        &quot;bytes&quot;: 18,
+        &quot;complete&quot;: true
+      },
+      {
+        &quot;path&quot;: {
+          &quot;hex&quot;: &quot;2f707269766174652f746d702f77742d73776565702d75332d6f7261636c652d5f61395f647869702f7072696e636970616c2f2e6769742f7061636b65642d72656673&quot;
+        },
+        &quot;kind&quot;: &quot;packed_refs&quot;,
+        &quot;exists&quot;: false,
+        &quot;sha256&quot;: null,
+        &quot;bytes&quot;: null,
+        &quot;complete&quot;: true
+      },
+      {
+        &quot;path&quot;: {
+          &quot;hex&quot;: &quot;2f707269766174652f746d702f77742d73776565702d75332d6f7261636c652d5f61395f647869702f7072696e636970616c2f2e6769742f776f726b74726565732f756e6d65726765642d66656174757265&quot;
+        },
+        &quot;kind&quot;: &quot;private_administration_membership&quot;,
+        &quot;exists&quot;: true,
+        &quot;sha256&quot;: &quot;cca8e06396f98e1736c4e57b6a77ef4a4bfc2e8fa1185de76a27e644c6fef75e&quot;,
+        &quot;bytes&quot;: 281,
+        &quot;complete&quot;: true
+      },
+      {
+        &quot;path&quot;: {
+          &quot;hex&quot;: &quot;2f707269766174652f746d702f77742d73776565702d75332d6f7261636c652d5f61395f647869702f7072696e636970616c2f2e6769742f776f726b74726565732f756e6d65726765642d666561747572652f726566732f626973656374&quot;
+        },
+        &quot;kind&quot;: &quot;ref_directory&quot;,
+        &quot;exists&quot;: false,
+        &quot;sha256&quot;: null,
+        &quot;bytes&quot;: null,
+        &quot;complete&quot;: true
+      },
+      {
+        &quot;path&quot;: {
+          &quot;hex&quot;: &quot;2f707269766174652f746d702f77742d73776565702d75332d6f7261636c652d5f61395f647869702f7072696e636970616c2f2e6769742f776f726b74726565732f756e6d65726765642d666561747572652f726566732f776f726b74726565&quot;
+        },
+        &quot;kind&quot;: &quot;ref_directory&quot;,
+        &quot;exists&quot;: false,
+        &quot;sha256&quot;: null,
+        &quot;bytes&quot;: null,
+        &quot;complete&quot;: true
+      },
+      {
+        &quot;path&quot;: {
+          &quot;hex&quot;: &quot;2f707269766174652f746d702f77742d73776565702d75332d6f7261636c652d5f61395f647869702f7072696e636970616c2f2e6769742f776f726b74726565732f756e6d65726765642d666561747572652f726566732f72657772697474656e&quot;
+        },
+        &quot;kind&quot;: &quot;ref_directory&quot;,
+        &quot;exists&quot;: false,
+        &quot;sha256&quot;: null,
+        &quot;bytes&quot;: null,
+        &quot;complete&quot;: true
+      },
+      {
+        &quot;path&quot;: {
+          &quot;hex&quot;: &quot;2f707269766174652f746d702f77742d73776565702d75332d6f7261636c652d5f61395f647869702f7072696e636970616c2f2e6769742f776f726b74726565732f756e6d65726765642d666561747572652f48454144&quot;
+        },
+        &quot;kind&quot;: &quot;root_ref&quot;,
+        &quot;exists&quot;: true,
+        &quot;sha256&quot;: &quot;8fb2a6a1cacc44026906789ff4f7383db38ed50726f76bf6b461ef9df3fd9819&quot;,
+        &quot;bytes&quot;: 33,
+        &quot;complete&quot;: true
+      },
+      {
+        &quot;path&quot;: {
+          &quot;hex&quot;: &quot;2f707269766174652f746d702f77742d73776565702d75332d6f7261636c652d5f61395f647869702f7072696e636970616c2f2e6769742f776f726b74726565732f756e6d65726765642d666561747572652f4f5249475f48454144&quot;
+        },
+        &quot;kind&quot;: &quot;root_ref&quot;,
+        &quot;exists&quot;: true,
+        &quot;sha256&quot;: &quot;b06d43ac18ed7b9e9dd632c2f033f6271b40ac890ec0e6dcb76c6de9e46a6384&quot;,
+        &quot;bytes&quot;: 41,
+        &quot;complete&quot;: true
+      },
+      {
+        &quot;path&quot;: {
+          &quot;hex&quot;: &quot;2f707269766174652f746d702f77742d73776565702d75332d6f7261636c652d5f61395f647869702f7072696e636970616c2f2e6769742f776f726b74726565732f756e6d65726765642d666561747572652f6c6f6773&quot;
+        },
+        &quot;kind&quot;: &quot;own_root_reflog_membership&quot;,
+        &quot;exists&quot;: true,
+        &quot;sha256&quot;: &quot;36b7abd05419daaff1c58cdb95a5182e830ea24a75baafbab283d54c8daabda4&quot;,
+        &quot;bytes&quot;: 48,
+        &quot;complete&quot;: true
+      },
+      {
+        &quot;path&quot;: {
+          &quot;hex&quot;: &quot;2f707269766174652f746d702f77742d73776565702d75332d6f7261636c652d5f61395f647869702f7072696e636970616c2f2e6769742f776f726b74726565732f756e6d65726765642d666561747572652f6c6f67732f48454144&quot;
+        },
+        &quot;kind&quot;: &quot;private_reflog&quot;,
+        &quot;exists&quot;: true,
+        &quot;sha256&quot;: &quot;d577cd79430fc46d674d66e0926b8023fc41b01e4bdc08fef1af37942f724458&quot;,
+        &quot;bytes&quot;: 447,
+        &quot;complete&quot;: true
+      },
+      {
+        &quot;path&quot;: {
+          &quot;hex&quot;: &quot;2f707269766174652f746d702f77742d73776565702d75332d6f7261636c652d5f61395f647869702f7072696e636970616c2f2e6769742f776f726b74726565732f756e6d65726765642d666561747572652f6c6f67732f726566732f626973656374&quot;
+        },
+        &quot;kind&quot;: &quot;private_reflog_directory&quot;,
+        &quot;exists&quot;: false,
+        &quot;sha256&quot;: null,
+        &quot;bytes&quot;: null,
+        &quot;complete&quot;: true
+      },
+      {
+        &quot;path&quot;: {
+          &quot;hex&quot;: &quot;2f707269766174652f746d702f77742d73776565702d75332d6f7261636c652d5f61395f647869702f7072696e636970616c2f2e6769742f776f726b74726565732f756e6d65726765642d666561747572652f6c6f67732f726566732f776f726b74726565&quot;
+        },
+        &quot;kind&quot;: &quot;private_reflog_directory&quot;,
+        &quot;exists&quot;: false,
+        &quot;sha256&quot;: null,
+        &quot;bytes&quot;: null,
+        &quot;complete&quot;: true
+      },
+      {
+        &quot;path&quot;: {
+          &quot;hex&quot;: &quot;2f707269766174652f746d702f77742d73776565702d75332d6f7261636c652d5f61395f647869702f7072696e636970616c2f2e6769742f776f726b74726565732f756e6d65726765642d666561747572652f6c6f67732f726566732f72657772697474656e&quot;
+        },
+        &quot;kind&quot;: &quot;private_reflog_directory&quot;,
+        &quot;exists&quot;: false,
+        &quot;sha256&quot;: null,
+        &quot;bytes&quot;: null,
+        &quot;complete&quot;: true
+      }
+    ],
+    &quot;roots&quot;: [
+      {
+        &quot;oid&quot;: &quot;4f581578547ee6d88dd4b24074f6aa30810d88da&quot;,
+        &quot;provenance&quot;: [
+          {
+            &quot;source&quot;: {
+              &quot;hex&quot;: &quot;2f707269766174652f746d702f77742d73776565702d75332d6f7261636c652d5f61395f647869702f7072696e636970616c2f2e6769742f776f726b74726565732f756e6d65726765642d666561747572652f4f5249475f48454144&quot;
+            },
+            &quot;kind&quot;: &quot;root_ref&quot;
+          },
+          {
+            &quot;source&quot;: {
+              &quot;hex&quot;: &quot;2f707269766174652f746d702f77742d73776565702d75332d6f7261636c652d5f61395f647869702f7072696e636970616c2f2e6769742f776f726b74726565732f756e6d65726765642d666561747572652f6c6f67732f48454144&quot;
+            },
+            &quot;kind&quot;: &quot;reflog_new&quot;
+          },
+          {
+            &quot;source&quot;: {
+              &quot;hex&quot;: &quot;2f707269766174652f746d702f77742d73776565702d75332d6f7261636c652d5f61395f647869702f7072696e636970616c2f2e6769742f776f726b74726565732f756e6d65726765642d666561747572652f6c6f67732f48454144&quot;
+            },
+            &quot;kind&quot;: &quot;reflog_old&quot;
+          }
+        ],
+        &quot;result&quot;: &quot;covered&quot;,
+        &quot;anchor&quot;: {
+          &quot;reference&quot;: {
+            &quot;hex&quot;: &quot;726566732f68656164732f6c6f63616c2d6e6f746573&quot;
+          },
+          &quot;oid&quot;: &quot;4f581578547ee6d88dd4b24074f6aa30810d88da&quot;
+        },
+        &quot;observed_result&quot;: null,
+        &quot;reason&quot;: null
+      },
+      {
+        &quot;oid&quot;: &quot;aa9565fb2b523a39181b9473b85e9665eaffb4c0&quot;,
+        &quot;provenance&quot;: [
+          {
+            &quot;source&quot;: {
+              &quot;hex&quot;: &quot;2f707269766174652f746d702f77742d73776565702d75332d6f7261636c652d5f61395f647869702f7072696e636970616c2f2e6769742f776f726b74726565732f756e6d65726765642d666561747572652f48454144&quot;
+            },
+            &quot;kind&quot;: &quot;head&quot;
+          },
+          {
+            &quot;source&quot;: {
+              &quot;hex&quot;: &quot;2f707269766174652f746d702f77742d73776565702d75332d6f7261636c652d5f61395f647869702f7072696e636970616c2f2e6769742f776f726b74726565732f756e6d65726765642d666561747572652f6c6f67732f48454144&quot;
+            },
+            &quot;kind&quot;: &quot;reflog_new&quot;
+          }
+        ],
+        &quot;result&quot;: &quot;covered&quot;,
+        &quot;anchor&quot;: {
+          &quot;reference&quot;: {
+            &quot;hex&quot;: &quot;726566732f68656164732f756e6d65726765642d66656174757265&quot;
+          },
+          &quot;oid&quot;: &quot;aa9565fb2b523a39181b9473b85e9665eaffb4c0&quot;
+        },
+        &quot;observed_result&quot;: null,
+        &quot;reason&quot;: null
+      }
+    ],
+    &quot;gaps&quot;: []
+  },
+  &quot;history&quot;: [
+    {
+      &quot;source_oid&quot;: &quot;aa9565fb2b523a39181b9473b85e9665eaffb4c0&quot;,
+      &quot;target_ref&quot;: {
+        &quot;hex&quot;: &quot;726566732f68656164732f6d61696e&quot;
+      },
+      &quot;target_oid&quot;: &quot;4f581578547ee6d88dd4b24074f6aa30810d88da&quot;,
+      &quot;result&quot;: &quot;not_ancestor&quot;,
+      &quot;observed_result&quot;: null,
+      &quot;started_unix_ms&quot;: 1791572760486,
+      &quot;finished_unix_ms&quot;: 1791572762130,
+      &quot;stop_reason&quot;: null
+    }
+  ],
+  &quot;history_omitted_targets&quot;: 0,
+  &quot;local_summary&quot;: {
+    &quot;worktree_identity&quot;: {
+      &quot;device&quot;: 16777231,
+      &quot;inode&quot;: 471350238
+    },
+    &quot;git_dir&quot;: {
+      &quot;hex&quot;: &quot;2f707269766174652f746d702f77742d73776565702d75332d6f7261636c652d5f61395f647869702f7072696e636970616c2f2e6769742f776f726b74726565732f756e6d65726765642d66656174757265&quot;
+    },
+    &quot;head&quot;: &quot;aa9565fb2b523a39181b9473b85e9665eaffb4c0&quot;,
+    &quot;started_unix_ms&quot;: 1791572760921,
+    &quot;finished_unix_ms&quot;: 1791572761068,
+    &quot;staged&quot;: {
+      &quot;observed&quot;: 0,
+      &quot;complete&quot;: true,
+      &quot;samples&quot;: [],
+      &quot;samples_omitted&quot;: 0
+    },
+    &quot;unstaged&quot;: {
+      &quot;observed&quot;: 0,
+      &quot;complete&quot;: true,
+      &quot;samples&quot;: [],
+      &quot;samples_omitted&quot;: 0
+    },
+    &quot;conflicts&quot;: {
+      &quot;observed&quot;: 0,
+      &quot;complete&quot;: true,
+      &quot;samples&quot;: [],
+      &quot;samples_omitted&quot;: 0
+    },
+    &quot;untracked&quot;: {
+      &quot;observed&quot;: 0,
+      &quot;complete&quot;: true,
+      &quot;samples&quot;: [],
+      &quot;samples_omitted&quot;: 0
+    },
+    &quot;ignored&quot;: {
+      &quot;observed&quot;: 0,
+      &quot;complete&quot;: true,
+      &quot;samples&quot;: [],
+      &quot;samples_omitted&quot;: 0
+    },
+    &quot;head_complete&quot;: true,
+    &quot;index_complete&quot;: true,
+    &quot;disk_complete&quot;: true,
+    &quot;temporal_consistency&quot;: &quot;not_guaranteed&quot;,
+    &quot;sources&quot;: [
+      {
+        &quot;kind&quot;: &quot;head&quot;,
+        &quot;path&quot;: {
+          &quot;hex&quot;: &quot;2f707269766174652f746d702f77742d73776565702d75332d6f7261636c652d5f61395f647869702f7072696e636970616c2f2e6769742f776f726b74726565732f756e6d65726765642d666561747572652f48454144&quot;
+        },
+        &quot;sha256&quot;: &quot;8fb2a6a1cacc44026906789ff4f7383db38ed50726f76bf6b461ef9df3fd9819&quot;
+      },
+      {
+        &quot;kind&quot;: &quot;index&quot;,
+        &quot;path&quot;: {
+          &quot;hex&quot;: &quot;2f707269766174652f746d702f77742d73776565702d75332d6f7261636c652d5f61395f647869702f7072696e636970616c2f2e6769742f776f726b74726565732f756e6d65726765642d666561747572652f696e646578&quot;
+        },
+        &quot;sha256&quot;: &quot;af4327da304fe6d4986301e952f2a6014ae7d55898192dcded9ee69557abb22b&quot;
+      }
+    ],
+    &quot;gaps&quot;: [],
+    &quot;details_truncated&quot;: false,
+    &quot;digest_sha256&quot;: &quot;c81e0a86a20142e00f37aeb6af90cb96d86a4ae4f372ef6d3d3c82a065826859&quot;
+  },
+  &quot;branch&quot;: {
+    &quot;hex&quot;: &quot;726566732f68656164732f756e6d65726765642d66656174757265&quot;
+  },
+  &quot;head&quot;: &quot;aa9565fb2b523a39181b9473b85e9665eaffb4c0&quot;,
+  &quot;subject&quot;: {
+    &quot;hex&quot;: &quot;53796e74686574696320686973746f7279&quot;
+  },
+  &quot;subject_truncated&quot;: false,
+  &quot;classification&quot;: &quot;keep&quot;,
+  &quot;observations&quot;: [],
+  &quot;requests&quot;: [],
+  &quot;risks&quot;: [
+    &quot;integration observations do not establish preservation of local files&quot;,
+    &quot;no removal authorized; ACLs, xattrs and unreachable objects outside enumerated roots are outside preservation scope&quot;
+  ],
+  &quot;unknowns&quot;: [
+    &quot;deep verification not required for an already retained or incomplete worktree&quot;,
+    &quot;forge state unknown (no export)&quot;,
+    &quot;usage UNKNOWN; confirm usage before any removal&quot;
+  ]
+}</pre></details></details></td></tr></tbody></table></div></section></div></details><details class="report-section panel" id="disk" open><summary><h2>Disk observations</h2></summary><div class="section-body"><p class="muted">All recorded source roots are listed. Review and browser filters do not narrow the disk collection selection.</p><p>5 requested, 5 measured, 0 not requested; totals cover requested roots only.</p><div class="disk-totals"><div><span class="eyebrow">Deduplicated allocated</span><strong><span class="byte-size" title="266240 octets">266,24 Ko</span></strong></div><div><span class="eyebrow">Deduplicated logical</span><strong><span class="byte-size" title="30350 octets">30,35 Ko</span></strong></div></div><p class="muted">Decimal units (1 Ko = 1000 octets). Display rounded to two decimals; exact counts are available on hover or in the details.</p><details><summary>Exact totals (octets)</summary><dl class="evidence"><dt>Deduplicated allocated</dt><dd>266240</dd><dt>Deduplicated logical</dt><dd>30350</dd></dl></details><p>5 measurements, complete. Unix ms 1791572760288..1791572760289. Temporal consistency: not_guaranteed.</p><div class="copyable-details"><details><summary><span class="disk-title">Worktree</span><code class="disk-path">/private/tmp/wt-sweep-u3-oracle-_a9_dxip/local-notes</code></summary><div class="size"><strong><span class="byte-size" title="12288 octets">12,29 Ko</span> allocated</strong><small><span class="byte-size" title="119 octets">119 o</span> logical</small><small>complete</small></div><ul class="coverage-list"></ul><p>Additional disk gaps: 0</p><details><summary>Recorded evidence (JSON)</summary><pre>{
+  &quot;path&quot;: {
+    &quot;hex&quot;: &quot;2f707269766174652f746d702f77742d73776565702d75332d6f7261636c652d5f61395f647869702f6c6f63616c2d6e6f746573&quot;
+  },
+  &quot;kind&quot;: &quot;worktree&quot;,
+  &quot;identity&quot;: {
+    &quot;device&quot;: 16777231,
+    &quot;inode&quot;: 471350217
+  },
+  &quot;bytes&quot;: {
+    &quot;logical&quot;: 119,
+    &quot;allocated&quot;: 12288
+  },
+  &quot;complete&quot;: true,
+  &quot;entries_checked&quot;: 4,
+  &quot;excluded_registered_roots&quot;: 0,
+  &quot;elapsed_ms&quot;: 0,
+  &quot;gaps&quot;: [],
+  &quot;gaps_omitted&quot;: 0
+}</pre></details></details><button class="copy-path js-only" type="button" data-copy-path="2f707269766174652f746d702f77742d73776565702d75332d6f7261636c652d5f61395f647869702f6c6f63616c2d6e6f746573"><span class="copy-icon" aria-hidden="true"></span>Copy path</button></div><div class="copyable-details"><details><summary><span class="disk-title">Worktree</span><code class="disk-path">/private/tmp/wt-sweep-u3-oracle-_a9_dxip/principal</code></summary><div class="size"><strong><span class="byte-size" title="4096 octets">4,10 Ko</span> allocated</strong><small><span class="byte-size" title="5 octets">5 o</span> logical</small><small>complete</small></div><ul class="coverage-list"></ul><p>Additional disk gaps: 0</p><details><summary>Recorded evidence (JSON)</summary><pre>{
+  &quot;path&quot;: {
+    &quot;hex&quot;: &quot;2f707269766174652f746d702f77742d73776565702d75332d6f7261636c652d5f61395f647869702f7072696e636970616c&quot;
+  },
+  &quot;kind&quot;: &quot;worktree&quot;,
+  &quot;identity&quot;: {
+    &quot;device&quot;: 16777231,
+    &quot;inode&quot;: 471350121
+  },
+  &quot;bytes&quot;: {
+    &quot;logical&quot;: 5,
+    &quot;allocated&quot;: 4096
+  },
+  &quot;complete&quot;: true,
+  &quot;entries_checked&quot;: 3,
+  &quot;excluded_registered_roots&quot;: 1,
+  &quot;elapsed_ms&quot;: 0,
+  &quot;gaps&quot;: [],
+  &quot;gaps_omitted&quot;: 0
+}</pre></details></details><button class="copy-path js-only" type="button" data-copy-path="2f707269766174652f746d702f77742d73776565702d75332d6f7261636c652d5f61395f647869702f7072696e636970616c"><span class="copy-icon" aria-hidden="true"></span>Copy path</button></div><div class="copyable-details"><details><summary><span class="disk-title">Shared Git</span><code class="disk-path">/private/tmp/wt-sweep-u3-oracle-_a9_dxip/principal/.git</code></summary><div class="size"><strong><span class="byte-size" title="229376 octets">229,38 Ko</span> allocated</strong><small><span class="byte-size" title="30012 octets">30,01 Ko</span> logical</small><small>complete</small></div><ul class="coverage-list"></ul><p>Additional disk gaps: 0</p><details><summary>Recorded evidence (JSON)</summary><pre>{
+  &quot;path&quot;: {
+    &quot;hex&quot;: &quot;2f707269766174652f746d702f77742d73776565702d75332d6f7261636c652d5f61395f647869702f7072696e636970616c2f2e676974&quot;
+  },
+  &quot;kind&quot;: &quot;git_common&quot;,
+  &quot;identity&quot;: {
+    &quot;device&quot;: 16777231,
+    &quot;inode&quot;: 471350122
+  },
+  &quot;bytes&quot;: {
+    &quot;logical&quot;: 30012,
+    &quot;allocated&quot;: 229376
+  },
+  &quot;complete&quot;: true,
+  &quot;entries_checked&quot;: 82,
+  &quot;excluded_registered_roots&quot;: 0,
+  &quot;elapsed_ms&quot;: 0,
+  &quot;gaps&quot;: [],
+  &quot;gaps_omitted&quot;: 0
+}</pre></details></details><button class="copy-path js-only" type="button" data-copy-path="2f707269766174652f746d702f77742d73776565702d75332d6f7261636c652d5f61395f647869702f7072696e636970616c2f2e676974"><span class="copy-icon" aria-hidden="true"></span>Copy path</button></div><div class="copyable-details"><details><summary><span class="disk-title">Worktree</span><code class="disk-path">/private/tmp/wt-sweep-u3-oracle-_a9_dxip/source branch</code></summary><div class="size"><strong><span class="byte-size" title="8192 octets">8,19 Ko</span> allocated</strong><small><span class="byte-size" title="93 octets">93 o</span> logical</small><small>complete</small></div><ul class="coverage-list"></ul><p>Additional disk gaps: 0</p><details><summary>Recorded evidence (JSON)</summary><pre>{
+  &quot;path&quot;: {
+    &quot;hex&quot;: &quot;2f707269766174652f746d702f77742d73776565702d75332d6f7261636c652d5f61395f647869702f736f75726365206272616e6368&quot;
+  },
+  &quot;kind&quot;: &quot;worktree&quot;,
+  &quot;identity&quot;: {
+    &quot;device&quot;: 16777231,
+    &quot;inode&quot;: 471350196
+  },
+  &quot;bytes&quot;: {
+    &quot;logical&quot;: 93,
+    &quot;allocated&quot;: 8192
+  },
+  &quot;complete&quot;: true,
+  &quot;entries_checked&quot;: 3,
+  &quot;excluded_registered_roots&quot;: 0,
+  &quot;elapsed_ms&quot;: 0,
+  &quot;gaps&quot;: [],
+  &quot;gaps_omitted&quot;: 0
+}</pre></details></details><button class="copy-path js-only" type="button" data-copy-path="2f707269766174652f746d702f77742d73776565702d75332d6f7261636c652d5f61395f647869702f736f75726365206272616e6368"><span class="copy-icon" aria-hidden="true"></span>Copy path</button></div><div class="copyable-details"><details><summary><span class="disk-title">Worktree</span><code class="disk-path">/private/tmp/wt-sweep-u3-oracle-_a9_dxip/unmerged-feature</code></summary><div class="size"><strong><span class="byte-size" title="12288 octets">12,29 Ko</span> allocated</strong><small><span class="byte-size" title="121 octets">121 o</span> logical</small><small>complete</small></div><ul class="coverage-list"></ul><p>Additional disk gaps: 0</p><details><summary>Recorded evidence (JSON)</summary><pre>{
+  &quot;path&quot;: {
+    &quot;hex&quot;: &quot;2f707269766174652f746d702f77742d73776565702d75332d6f7261636c652d5f61395f647869702f756e6d65726765642d66656174757265&quot;
+  },
+  &quot;kind&quot;: &quot;worktree&quot;,
+  &quot;identity&quot;: {
+    &quot;device&quot;: 16777231,
+    &quot;inode&quot;: 471350238
+  },
+  &quot;bytes&quot;: {
+    &quot;logical&quot;: 121,
+    &quot;allocated&quot;: 12288
+  },
+  &quot;complete&quot;: true,
+  &quot;entries_checked&quot;: 4,
+  &quot;excluded_registered_roots&quot;: 0,
+  &quot;elapsed_ms&quot;: 0,
+  &quot;gaps&quot;: [],
+  &quot;gaps_omitted&quot;: 0
+}</pre></details></details><button class="copy-path js-only" type="button" data-copy-path="2f707269766174652f746d702f77742d73776565702d75332d6f7261636c652d5f61395f647869702f756e6d65726765642d66656174757265"><span class="copy-icon" aria-hidden="true"></span>Copy path</button></div><p class="footnote">Hidden and ignored files are included in captured measurements; symlink targets are not followed. Row and family sizes may overlap. The deduplicated total uses device/inode across measured requested roots. Shared Git is included when requested. APFS shared extents and snapshots are not deduplicated. These figures are not reclaimable space and do not affect a verdict.</p></div></details><details class="report-section panel" id="coverage" open><summary><h2>Coverage &amp; evidence limits</h2></summary><div class="section-body"><p>Traversal: complete. Temporal consistency: not_guaranteed. 0 recorded coverage gaps.</p><ul class="coverage-list"></ul><details><summary>Not collected</summary><ul><li>local file contents, ignored files, index and reflog inventory</li><li>restoration, writer exclusion and current remote state</li></ul></details><details><summary>Recorded evidence (JSON)</summary><pre>{
+  &quot;discovery_metrics&quot;: {
+    &quot;elapsed_ms&quot;: 86,
+    &quot;directory_read_attempts&quot;: 0,
+    &quot;entries_listed&quot;: 0,
+    &quot;workers&quot;: 1
+  },
+  &quot;traversal_complete&quot;: true,
+  &quot;temporal_consistency&quot;: &quot;not_guaranteed&quot;,
+  &quot;gaps&quot;: [],
+  &quot;roots&quot;: [
+    {
+      &quot;hex&quot;: &quot;2f707269766174652f746d702f77742d73776565702d75332d6f7261636c652d5f61395f647869702f7072696e636970616c&quot;
+    }
+  ],
+  &quot;volumes&quot;: [],
+  &quot;aliases&quot;: []
+}</pre></details><details class="panel"><summary>Shared and descriptive evidence</summary><p>Shared stashes and descriptive context are source observations; they do not change a verdict or prove integration.</p><details><summary>Recorded evidence (JSON)</summary><pre>[
+  {
+    &quot;common_dir&quot;: {
+      &quot;hex&quot;: &quot;2f707269766174652f746d702f77742d73776565702d75332d6f7261636c652d5f61395f647869702f7072696e636970616c2f2e676974&quot;
+    },
+    &quot;identity&quot;: {
+      &quot;device&quot;: 16777231,
+      &quot;inode&quot;: 471350122
+    },
+    &quot;started_unix_ms&quot;: 1791572761302,
+    &quot;finished_unix_ms&quot;: 1791572762175,
+    &quot;enumeration_complete&quot;: true,
+    &quot;temporal_consistency&quot;: &quot;not_guaranteed&quot;,
+    &quot;sources&quot;: [
+      {
+        &quot;path&quot;: {
+          &quot;hex&quot;: &quot;2f707269766174652f746d702f77742d73776565702d75332d6f7261636c652d5f61395f647869702f7072696e636970616c2f2e6769742f726566732f7374617368&quot;
+        },
+        &quot;kind&quot;: &quot;stash_ref&quot;,
+        &quot;exists&quot;: false,
+        &quot;sha256&quot;: null,
+        &quot;bytes&quot;: null,
+        &quot;complete&quot;: true
+      },
+      {
+        &quot;path&quot;: {
+          &quot;hex&quot;: &quot;2f707269766174652f746d702f77742d73776565702d75332d6f7261636c652d5f61395f647869702f7072696e636970616c2f2e6769742f6c6f67732f726566732f7374617368&quot;
+        },
+        &quot;kind&quot;: &quot;stash_reflog&quot;,
+        &quot;exists&quot;: false,
+        &quot;sha256&quot;: null,
+        &quot;bytes&quot;: null,
+        &quot;complete&quot;: true
+      },
+      {
+        &quot;path&quot;: {
+          &quot;hex&quot;: &quot;2f707269766174652f746d702f77742d73776565702d75332d6f7261636c652d5f61395f647869702f7072696e636970616c2f2e6769742f7061636b65642d72656673&quot;
+        },
+        &quot;kind&quot;: &quot;packed_refs&quot;,
+        &quot;exists&quot;: false,
+        &quot;sha256&quot;: null,
+        &quot;bytes&quot;: null,
+        &quot;complete&quot;: true
+      }
+    ],
+    &quot;entries&quot;: [],
+    &quot;gaps&quot;: []
+  }
+]</pre></details><details><summary>Recorded evidence (JSON)</summary><pre>{
+  &quot;started_unix_ms&quot;: 1791572762234,
+  &quot;finished_unix_ms&quot;: 1791572762235,
+  &quot;items&quot;: [
+    {
+      &quot;path&quot;: {
+        &quot;hex&quot;: &quot;2f707269766174652f746d702f77742d73776565702d75332d6f7261636c652d5f61395f647869702f7072696e636970616c&quot;
+      },
+      &quot;common_dir&quot;: {
+        &quot;hex&quot;: &quot;2f707269766174652f746d702f77742d73776565702d75332d6f7261636c652d5f61395f647869702f7072696e636970616c2f2e676974&quot;
+      },
+      &quot;family_identity&quot;: {
+        &quot;device&quot;: 16777231,
+        &quot;inode&quot;: 471350122
+      },
+      &quot;head_oid&quot;: &quot;4f581578547ee6d88dd4b24074f6aa30810d88da&quot;,
+      &quot;uncovered&quot;: {
+        &quot;targets&quot;: [
+          {
+            &quot;reference&quot;: {
+              &quot;hex&quot;: &quot;726566732f68656164732f6d61696e&quot;
+            },
+            &quot;oid&quot;: &quot;4f581578547ee6d88dd4b24074f6aa30810d88da&quot;
+          }
+        ],
+        &quot;observed&quot;: 0,
+        &quot;complete&quot;: true,
+        &quot;samples&quot;: [],
+        &quot;samples_omitted&quot;: 0,
+        &quot;gaps&quot;: []
+      },
+      &quot;changelogs&quot;: [
+        {
+          &quot;revision_oid&quot;: &quot;4f581578547ee6d88dd4b24074f6aa30810d88da&quot;,
+          &quot;path&quot;: {
+            &quot;hex&quot;: &quot;4348414e47454c4f472e6d64&quot;
+          },
+          &quot;tree_oid&quot;: &quot;3e21a205dd9b55021aeae87965092623807e455f&quot;,
+          &quot;blob_oid&quot;: null,
+          &quot;status&quot;: &quot;absent&quot;,
+          &quot;blob_bytes&quot;: null,
+          &quot;excerpt&quot;: null,
+          &quot;excerpt_truncated&quot;: false,
+          &quot;gaps&quot;: []
+        },
+        {
+          &quot;revision_oid&quot;: &quot;4f581578547ee6d88dd4b24074f6aa30810d88da&quot;,
+          &quot;path&quot;: {
+            &quot;hex&quot;: &quot;4348414e47454c4f47&quot;
+          },
+          &quot;tree_oid&quot;: &quot;3e21a205dd9b55021aeae87965092623807e455f&quot;,
+          &quot;blob_oid&quot;: null,
+          &quot;status&quot;: &quot;absent&quot;,
+          &quot;blob_bytes&quot;: null,
+          &quot;excerpt&quot;: null,
+          &quot;excerpt_truncated&quot;: false,
+          &quot;gaps&quot;: []
+        },
+        {
+          &quot;revision_oid&quot;: &quot;4f581578547ee6d88dd4b24074f6aa30810d88da&quot;,
+          &quot;path&quot;: {
+            &quot;hex&quot;: &quot;4348414e4745532e6d64&quot;
+          },
+          &quot;tree_oid&quot;: &quot;3e21a205dd9b55021aeae87965092623807e455f&quot;,
+          &quot;blob_oid&quot;: null,
+          &quot;status&quot;: &quot;absent&quot;,
+          &quot;blob_bytes&quot;: null,
+          &quot;excerpt&quot;: null,
+          &quot;excerpt_truncated&quot;: false,
+          &quot;gaps&quot;: []
+        },
+        {
+          &quot;revision_oid&quot;: &quot;4f581578547ee6d88dd4b24074f6aa30810d88da&quot;,
+          &quot;path&quot;: {
+            &quot;hex&quot;: &quot;4348414e474553&quot;
+          },
+          &quot;tree_oid&quot;: &quot;3e21a205dd9b55021aeae87965092623807e455f&quot;,
+          &quot;blob_oid&quot;: null,
+          &quot;status&quot;: &quot;absent&quot;,
+          &quot;blob_bytes&quot;: null,
+          &quot;excerpt&quot;: null,
+          &quot;excerpt_truncated&quot;: false,
+          &quot;gaps&quot;: []
+        },
+        {
+          &quot;revision_oid&quot;: &quot;4f581578547ee6d88dd4b24074f6aa30810d88da&quot;,
+          &quot;path&quot;: {
+            &quot;hex&quot;: &quot;484953544f52592e6d64&quot;
+          },
+          &quot;tree_oid&quot;: &quot;3e21a205dd9b55021aeae87965092623807e455f&quot;,
+          &quot;blob_oid&quot;: null,
+          &quot;status&quot;: &quot;absent&quot;,
+          &quot;blob_bytes&quot;: null,
+          &quot;excerpt&quot;: null,
+          &quot;excerpt_truncated&quot;: false,
+          &quot;gaps&quot;: []
+        },
+        {
+          &quot;revision_oid&quot;: &quot;4f581578547ee6d88dd4b24074f6aa30810d88da&quot;,
+          &quot;path&quot;: {
+            &quot;hex&quot;: &quot;484953544f5259&quot;
+          },
+          &quot;tree_oid&quot;: &quot;3e21a205dd9b55021aeae87965092623807e455f&quot;,
+          &quot;blob_oid&quot;: null,
+          &quot;status&quot;: &quot;absent&quot;,
+          &quot;blob_bytes&quot;: null,
+          &quot;excerpt&quot;: null,
+          &quot;excerpt_truncated&quot;: false,
+          &quot;gaps&quot;: []
+        }
+      ],
+      &quot;gaps&quot;: []
+    },
+    {
+      &quot;path&quot;: {
+        &quot;hex&quot;: &quot;2f707269766174652f746d702f77742d73776565702d75332d6f7261636c652d5f61395f647869702f6c6f63616c2d6e6f746573&quot;
+      },
+      &quot;common_dir&quot;: {
+        &quot;hex&quot;: &quot;2f707269766174652f746d702f77742d73776565702d75332d6f7261636c652d5f61395f647869702f7072696e636970616c2f2e676974&quot;
+      },
+      &quot;family_identity&quot;: {
+        &quot;device&quot;: 16777231,
+        &quot;inode&quot;: 471350122
+      },
+      &quot;head_oid&quot;: &quot;4f581578547ee6d88dd4b24074f6aa30810d88da&quot;,
+      &quot;uncovered&quot;: {
+        &quot;targets&quot;: [
+          {
+            &quot;reference&quot;: {
+              &quot;hex&quot;: &quot;726566732f68656164732f6d61696e&quot;
+            },
+            &quot;oid&quot;: &quot;4f581578547ee6d88dd4b24074f6aa30810d88da&quot;
+          }
+        ],
+        &quot;observed&quot;: 0,
+        &quot;complete&quot;: true,
+        &quot;samples&quot;: [],
+        &quot;samples_omitted&quot;: 0,
+        &quot;gaps&quot;: []
+      },
+      &quot;changelogs&quot;: [
+        {
+          &quot;revision_oid&quot;: &quot;4f581578547ee6d88dd4b24074f6aa30810d88da&quot;,
+          &quot;path&quot;: {
+            &quot;hex&quot;: &quot;4348414e47454c4f472e6d64&quot;
+          },
+          &quot;tree_oid&quot;: &quot;3e21a205dd9b55021aeae87965092623807e455f&quot;,
+          &quot;blob_oid&quot;: null,
+          &quot;status&quot;: &quot;absent&quot;,
+          &quot;blob_bytes&quot;: null,
+          &quot;excerpt&quot;: null,
+          &quot;excerpt_truncated&quot;: false,
+          &quot;gaps&quot;: []
+        },
+        {
+          &quot;revision_oid&quot;: &quot;4f581578547ee6d88dd4b24074f6aa30810d88da&quot;,
+          &quot;path&quot;: {
+            &quot;hex&quot;: &quot;4348414e47454c4f47&quot;
+          },
+          &quot;tree_oid&quot;: &quot;3e21a205dd9b55021aeae87965092623807e455f&quot;,
+          &quot;blob_oid&quot;: null,
+          &quot;status&quot;: &quot;absent&quot;,
+          &quot;blob_bytes&quot;: null,
+          &quot;excerpt&quot;: null,
+          &quot;excerpt_truncated&quot;: false,
+          &quot;gaps&quot;: []
+        },
+        {
+          &quot;revision_oid&quot;: &quot;4f581578547ee6d88dd4b24074f6aa30810d88da&quot;,
+          &quot;path&quot;: {
+            &quot;hex&quot;: &quot;4348414e4745532e6d64&quot;
+          },
+          &quot;tree_oid&quot;: &quot;3e21a205dd9b55021aeae87965092623807e455f&quot;,
+          &quot;blob_oid&quot;: null,
+          &quot;status&quot;: &quot;absent&quot;,
+          &quot;blob_bytes&quot;: null,
+          &quot;excerpt&quot;: null,
+          &quot;excerpt_truncated&quot;: false,
+          &quot;gaps&quot;: []
+        },
+        {
+          &quot;revision_oid&quot;: &quot;4f581578547ee6d88dd4b24074f6aa30810d88da&quot;,
+          &quot;path&quot;: {
+            &quot;hex&quot;: &quot;4348414e474553&quot;
+          },
+          &quot;tree_oid&quot;: &quot;3e21a205dd9b55021aeae87965092623807e455f&quot;,
+          &quot;blob_oid&quot;: null,
+          &quot;status&quot;: &quot;absent&quot;,
+          &quot;blob_bytes&quot;: null,
+          &quot;excerpt&quot;: null,
+          &quot;excerpt_truncated&quot;: false,
+          &quot;gaps&quot;: []
+        },
+        {
+          &quot;revision_oid&quot;: &quot;4f581578547ee6d88dd4b24074f6aa30810d88da&quot;,
+          &quot;path&quot;: {
+            &quot;hex&quot;: &quot;484953544f52592e6d64&quot;
+          },
+          &quot;tree_oid&quot;: &quot;3e21a205dd9b55021aeae87965092623807e455f&quot;,
+          &quot;blob_oid&quot;: null,
+          &quot;status&quot;: &quot;absent&quot;,
+          &quot;blob_bytes&quot;: null,
+          &quot;excerpt&quot;: null,
+          &quot;excerpt_truncated&quot;: false,
+          &quot;gaps&quot;: []
+        },
+        {
+          &quot;revision_oid&quot;: &quot;4f581578547ee6d88dd4b24074f6aa30810d88da&quot;,
+          &quot;path&quot;: {
+            &quot;hex&quot;: &quot;484953544f5259&quot;
+          },
+          &quot;tree_oid&quot;: &quot;3e21a205dd9b55021aeae87965092623807e455f&quot;,
+          &quot;blob_oid&quot;: null,
+          &quot;status&quot;: &quot;absent&quot;,
+          &quot;blob_bytes&quot;: null,
+          &quot;excerpt&quot;: null,
+          &quot;excerpt_truncated&quot;: false,
+          &quot;gaps&quot;: []
+        }
+      ],
+      &quot;gaps&quot;: []
+    },
+    {
+      &quot;path&quot;: {
+        &quot;hex&quot;: &quot;2f707269766174652f746d702f77742d73776565702d75332d6f7261636c652d5f61395f647869702f736f75726365206272616e6368&quot;
+      },
+      &quot;common_dir&quot;: {
+        &quot;hex&quot;: &quot;2f707269766174652f746d702f77742d73776565702d75332d6f7261636c652d5f61395f647869702f7072696e636970616c2f2e676974&quot;
+      },
+      &quot;family_identity&quot;: {
+        &quot;device&quot;: 16777231,
+        &quot;inode&quot;: 471350122
+      },
+      &quot;head_oid&quot;: &quot;4f581578547ee6d88dd4b24074f6aa30810d88da&quot;,
+      &quot;uncovered&quot;: {
+        &quot;targets&quot;: [
+          {
+            &quot;reference&quot;: {
+              &quot;hex&quot;: &quot;726566732f68656164732f6d61696e&quot;
+            },
+            &quot;oid&quot;: &quot;4f581578547ee6d88dd4b24074f6aa30810d88da&quot;
+          }
+        ],
+        &quot;observed&quot;: 0,
+        &quot;complete&quot;: true,
+        &quot;samples&quot;: [],
+        &quot;samples_omitted&quot;: 0,
+        &quot;gaps&quot;: []
+      },
+      &quot;changelogs&quot;: [
+        {
+          &quot;revision_oid&quot;: &quot;4f581578547ee6d88dd4b24074f6aa30810d88da&quot;,
+          &quot;path&quot;: {
+            &quot;hex&quot;: &quot;4348414e47454c4f472e6d64&quot;
+          },
+          &quot;tree_oid&quot;: &quot;3e21a205dd9b55021aeae87965092623807e455f&quot;,
+          &quot;blob_oid&quot;: null,
+          &quot;status&quot;: &quot;absent&quot;,
+          &quot;blob_bytes&quot;: null,
+          &quot;excerpt&quot;: null,
+          &quot;excerpt_truncated&quot;: false,
+          &quot;gaps&quot;: []
+        },
+        {
+          &quot;revision_oid&quot;: &quot;4f581578547ee6d88dd4b24074f6aa30810d88da&quot;,
+          &quot;path&quot;: {
+            &quot;hex&quot;: &quot;4348414e47454c4f47&quot;
+          },
+          &quot;tree_oid&quot;: &quot;3e21a205dd9b55021aeae87965092623807e455f&quot;,
+          &quot;blob_oid&quot;: null,
+          &quot;status&quot;: &quot;absent&quot;,
+          &quot;blob_bytes&quot;: null,
+          &quot;excerpt&quot;: null,
+          &quot;excerpt_truncated&quot;: false,
+          &quot;gaps&quot;: []
+        },
+        {
+          &quot;revision_oid&quot;: &quot;4f581578547ee6d88dd4b24074f6aa30810d88da&quot;,
+          &quot;path&quot;: {
+            &quot;hex&quot;: &quot;4348414e4745532e6d64&quot;
+          },
+          &quot;tree_oid&quot;: &quot;3e21a205dd9b55021aeae87965092623807e455f&quot;,
+          &quot;blob_oid&quot;: null,
+          &quot;status&quot;: &quot;absent&quot;,
+          &quot;blob_bytes&quot;: null,
+          &quot;excerpt&quot;: null,
+          &quot;excerpt_truncated&quot;: false,
+          &quot;gaps&quot;: []
+        },
+        {
+          &quot;revision_oid&quot;: &quot;4f581578547ee6d88dd4b24074f6aa30810d88da&quot;,
+          &quot;path&quot;: {
+            &quot;hex&quot;: &quot;4348414e474553&quot;
+          },
+          &quot;tree_oid&quot;: &quot;3e21a205dd9b55021aeae87965092623807e455f&quot;,
+          &quot;blob_oid&quot;: null,
+          &quot;status&quot;: &quot;absent&quot;,
+          &quot;blob_bytes&quot;: null,
+          &quot;excerpt&quot;: null,
+          &quot;excerpt_truncated&quot;: false,
+          &quot;gaps&quot;: []
+        },
+        {
+          &quot;revision_oid&quot;: &quot;4f581578547ee6d88dd4b24074f6aa30810d88da&quot;,
+          &quot;path&quot;: {
+            &quot;hex&quot;: &quot;484953544f52592e6d64&quot;
+          },
+          &quot;tree_oid&quot;: &quot;3e21a205dd9b55021aeae87965092623807e455f&quot;,
+          &quot;blob_oid&quot;: null,
+          &quot;status&quot;: &quot;absent&quot;,
+          &quot;blob_bytes&quot;: null,
+          &quot;excerpt&quot;: null,
+          &quot;excerpt_truncated&quot;: false,
+          &quot;gaps&quot;: []
+        },
+        {
+          &quot;revision_oid&quot;: &quot;4f581578547ee6d88dd4b24074f6aa30810d88da&quot;,
+          &quot;path&quot;: {
+            &quot;hex&quot;: &quot;484953544f5259&quot;
+          },
+          &quot;tree_oid&quot;: &quot;3e21a205dd9b55021aeae87965092623807e455f&quot;,
+          &quot;blob_oid&quot;: null,
+          &quot;status&quot;: &quot;absent&quot;,
+          &quot;blob_bytes&quot;: null,
+          &quot;excerpt&quot;: null,
+          &quot;excerpt_truncated&quot;: false,
+          &quot;gaps&quot;: []
+        }
+      ],
+      &quot;gaps&quot;: []
+    },
+    {
+      &quot;path&quot;: {
+        &quot;hex&quot;: &quot;2f707269766174652f746d702f77742d73776565702d75332d6f7261636c652d5f61395f647869702f756e6d65726765642d66656174757265&quot;
+      },
+      &quot;common_dir&quot;: {
+        &quot;hex&quot;: &quot;2f707269766174652f746d702f77742d73776565702d75332d6f7261636c652d5f61395f647869702f7072696e636970616c2f2e676974&quot;
+      },
+      &quot;family_identity&quot;: {
+        &quot;device&quot;: 16777231,
+        &quot;inode&quot;: 471350122
+      },
+      &quot;head_oid&quot;: &quot;aa9565fb2b523a39181b9473b85e9665eaffb4c0&quot;,
+      &quot;uncovered&quot;: {
+        &quot;targets&quot;: [
+          {
+            &quot;reference&quot;: {
+              &quot;hex&quot;: &quot;726566732f68656164732f6d61696e&quot;
+            },
+            &quot;oid&quot;: &quot;4f581578547ee6d88dd4b24074f6aa30810d88da&quot;
+          }
+        ],
+        &quot;observed&quot;: 1,
+        &quot;complete&quot;: true,
+        &quot;samples&quot;: [
+          {
+            &quot;oid&quot;: &quot;aa9565fb2b523a39181b9473b85e9665eaffb4c0&quot;,
+            &quot;subject&quot;: {
+              &quot;hex&quot;: &quot;53796e74686574696320686973746f7279&quot;
+            },
+            &quot;subject_truncated&quot;: false
+          }
+        ],
+        &quot;samples_omitted&quot;: 0,
+        &quot;gaps&quot;: []
+      },
+      &quot;changelogs&quot;: [
+        {
+          &quot;revision_oid&quot;: &quot;aa9565fb2b523a39181b9473b85e9665eaffb4c0&quot;,
+          &quot;path&quot;: {
+            &quot;hex&quot;: &quot;4348414e47454c4f472e6d64&quot;
+          },
+          &quot;tree_oid&quot;: &quot;8a392917aec25548548ee9bb47ffc1b2abaa0e97&quot;,
+          &quot;blob_oid&quot;: null,
+          &quot;status&quot;: &quot;absent&quot;,
+          &quot;blob_bytes&quot;: null,
+          &quot;excerpt&quot;: null,
+          &quot;excerpt_truncated&quot;: false,
+          &quot;gaps&quot;: []
+        },
+        {
+          &quot;revision_oid&quot;: &quot;aa9565fb2b523a39181b9473b85e9665eaffb4c0&quot;,
+          &quot;path&quot;: {
+            &quot;hex&quot;: &quot;4348414e47454c4f47&quot;
+          },
+          &quot;tree_oid&quot;: &quot;8a392917aec25548548ee9bb47ffc1b2abaa0e97&quot;,
+          &quot;blob_oid&quot;: null,
+          &quot;status&quot;: &quot;absent&quot;,
+          &quot;blob_bytes&quot;: null,
+          &quot;excerpt&quot;: null,
+          &quot;excerpt_truncated&quot;: false,
+          &quot;gaps&quot;: []
+        },
+        {
+          &quot;revision_oid&quot;: &quot;aa9565fb2b523a39181b9473b85e9665eaffb4c0&quot;,
+          &quot;path&quot;: {
+            &quot;hex&quot;: &quot;4348414e4745532e6d64&quot;
+          },
+          &quot;tree_oid&quot;: &quot;8a392917aec25548548ee9bb47ffc1b2abaa0e97&quot;,
+          &quot;blob_oid&quot;: null,
+          &quot;status&quot;: &quot;absent&quot;,
+          &quot;blob_bytes&quot;: null,
+          &quot;excerpt&quot;: null,
+          &quot;excerpt_truncated&quot;: false,
+          &quot;gaps&quot;: []
+        },
+        {
+          &quot;revision_oid&quot;: &quot;aa9565fb2b523a39181b9473b85e9665eaffb4c0&quot;,
+          &quot;path&quot;: {
+            &quot;hex&quot;: &quot;4348414e474553&quot;
+          },
+          &quot;tree_oid&quot;: &quot;8a392917aec25548548ee9bb47ffc1b2abaa0e97&quot;,
+          &quot;blob_oid&quot;: null,
+          &quot;status&quot;: &quot;absent&quot;,
+          &quot;blob_bytes&quot;: null,
+          &quot;excerpt&quot;: null,
+          &quot;excerpt_truncated&quot;: false,
+          &quot;gaps&quot;: []
+        },
+        {
+          &quot;revision_oid&quot;: &quot;aa9565fb2b523a39181b9473b85e9665eaffb4c0&quot;,
+          &quot;path&quot;: {
+            &quot;hex&quot;: &quot;484953544f52592e6d64&quot;
+          },
+          &quot;tree_oid&quot;: &quot;8a392917aec25548548ee9bb47ffc1b2abaa0e97&quot;,
+          &quot;blob_oid&quot;: null,
+          &quot;status&quot;: &quot;absent&quot;,
+          &quot;blob_bytes&quot;: null,
+          &quot;excerpt&quot;: null,
+          &quot;excerpt_truncated&quot;: false,
+          &quot;gaps&quot;: []
+        },
+        {
+          &quot;revision_oid&quot;: &quot;aa9565fb2b523a39181b9473b85e9665eaffb4c0&quot;,
+          &quot;path&quot;: {
+            &quot;hex&quot;: &quot;484953544f5259&quot;
+          },
+          &quot;tree_oid&quot;: &quot;8a392917aec25548548ee9bb47ffc1b2abaa0e97&quot;,
+          &quot;blob_oid&quot;: null,
+          &quot;status&quot;: &quot;absent&quot;,
+          &quot;blob_bytes&quot;: null,
+          &quot;excerpt&quot;: null,
+          &quot;excerpt_truncated&quot;: false,
+          &quot;gaps&quot;: []
+        }
+      ],
+      &quot;gaps&quot;: []
+    }
+  ],
+  &quot;omitted_items&quot;: 0,
+  &quot;gaps&quot;: []
+}</pre></details><details><summary>Recorded evidence (JSON)</summary><pre>[]</pre></details></details></div></details><div id="copy-status" class="copy-status js-only" role="status" aria-live="polite" aria-atomic="true"></div><dialog id="copy-dialog" aria-labelledby="copy-title" aria-describedby="copy-help"><h2 id="copy-title">Copy path</h2><p id="copy-help">Automatic copy is unavailable. The exact path is selected below. Press ⌘C on Mac or Ctrl+C, or use your device’s Copy action.</p><label for="copy-value">Path (plain text)</label><textarea id="copy-value" class="mono" readonly spellcheck="false" rows="4"></textarea><button id="copy-close" type="button">Close</button></dialog><footer class="footnote">Generated locally from captured observations. Git family grouping uses historical registrations; it does not establish current controls. Path labels use reversible byte escapes; full hex identities remain in recorded evidence.</footer></main></div><script>(() => {
+  'use strict';
+  const root = document.documentElement;
+  const families = Array.from(document.querySelectorAll('.family'));
+  const rows = Array.from(document.querySelectorAll('[data-worktree]'));
+  const search = document.getElementById('search');
+  const verdict = document.getElementById('verdict');
+  const sort = document.getElementById('sort');
+  const status = document.getElementById('visible-status');
+  const theme = document.getElementById('theme');
+  // Control labels and transient copy feedback must not become search terms.
+  const searchable = new Map(rows.map(row => {
+    const content = row.cloneNode(true);
+    content.querySelectorAll('[data-copy-path]').forEach(button => button.remove());
+    return [row, content.textContent.toLowerCase()];
+  }));
+  const compare = (a, b) => a < b ? -1 : a > b ? 1 : 0;
+  const update = () => {
+    const query = search.value.trim().toLowerCase();
+    let visible = 0;
+    const counts = new Map();
+    for (const row of rows) {
+      const matches = (!query || searchable.get(row).includes(query)) &&
+        (!verdict.value || row.dataset.verdict === verdict.value);
+      row.hidden = !matches;
+      if (matches) {
+        visible += 1;
+        counts.set(row.dataset.verdict, (counts.get(row.dataset.verdict) || 0) + 1);
+      }
+    }
+    for (const family of families) {
+      const tbody = family.querySelector('tbody');
+      const children = Array.from(tbody.querySelectorAll('[data-worktree]'));
+      children.sort((a, b) => {
+        let result = 0;
+        if (sort.value === 'allocated') {
+          const av = a.dataset.allocated, bv = b.dataset.allocated;
+          result = !av && !bv ? 0 : !av ? 1 : !bv ? -1 : compare(BigInt(bv), BigInt(av));
+        } else if (sort.value === 'verdict') {
+          result = compare(a.dataset.verdict, b.dataset.verdict);
+        } else if (sort.value === 'branch') {
+          result = compare(a.dataset.branch, b.dataset.branch);
+        }
+        return result || compare(a.dataset.pathHex, b.dataset.pathHex);
+      });
+      for (const row of children) tbody.append(row);
+      const count = children.filter(row => !row.hidden).length;
+      family.querySelector('.visible-count').textContent = String(count);
+      family.hidden = count === 0 && children.length > 0;
+    }
+    const totals = Array.from(counts, ([name, count]) => `${count} ${name}`).join(', ');
+    status.textContent = `Visible ${visible} of ${rows.length} selected worktrees${totals ? ': ' + totals : ''}. Source totals and disk measurements are unchanged.`;
+    document.getElementById('no-matches').hidden = visible !== 0 || rows.length === 0;
+  };
+  search.addEventListener('input', update);
+  verdict.addEventListener('change', update);
+  sort.addEventListener('change', update);
+  const sections = Array.from(document.querySelectorAll('details.report-section'));
+  document.getElementById('collapse-sections').addEventListener('click', () => {
+    for (const section of sections) section.open = false;
+  });
+  document.getElementById('expand-sections').addEventListener('click', () => {
+    for (const section of sections) section.open = true;
+  });
+  const revealFragment = hash => {
+    let id;
+    try { id = decodeURIComponent(hash.slice(1)); } catch (_) { return; }
+    const target = document.getElementById(id);
+    if (!target) return;
+    for (let ancestor = target; ancestor; ancestor = ancestor.parentElement) {
+      if (ancestor.matches('details')) ancestor.open = true;
+    }
+  };
+  // Also handle repeated links to the current fragment, which do not fire hashchange.
+  document.addEventListener('click', event => {
+    const link = event.target.closest('a[href^="#"]');
+    if (link) revealFragment(link.getAttribute('href'));
+  });
+  window.addEventListener('hashchange', () => revealFragment(location.hash));
+  revealFragment(location.hash);
+  // Native popovers keep help outside the scrolling sidebar and work on tap without JS.
+  for (const item of document.querySelectorAll('.nav-item')) {
+    const link = item.querySelector('a'), button = item.querySelector('button');
+    const tip = item.querySelector('[popover]');
+    if (typeof tip.showPopover !== 'function') continue;
+    let pinned = false, timer;
+    const isOpen = () => tip.matches(':popover-open');
+    const position = () => {
+      if (!isOpen()) return;
+      const anchor = link.getBoundingClientRect(), box = tip.getBoundingClientRect();
+      const left = innerWidth > 800 ? item.getBoundingClientRect().right + 12 : anchor.left;
+      const top = innerWidth > 800 ? anchor.top : anchor.bottom + 8;
+      tip.style.margin = '0';
+      tip.style.left = `${Math.max(16, Math.min(left, innerWidth - box.width - 16))}px`;
+      tip.style.top = `${Math.max(16, Math.min(top, innerHeight - box.height - 16))}px`;
+    };
+    const show = () => { clearTimeout(timer); if (!isOpen()) tip.showPopover(); position(); };
+    const hide = () => { clearTimeout(timer); pinned = false; if (isOpen()) tip.hidePopover(); };
+    const leave = () => {
+      clearTimeout(timer);
+      timer = setTimeout(() => {
+        if (!pinned && document.activeElement !== link && document.activeElement !== button && !tip.matches(':hover')) hide();
+      }, 200);
+    };
+    link.addEventListener('mouseenter', show);
+    link.addEventListener('mouseleave', leave);
+    link.addEventListener('focus', show);
+    link.addEventListener('blur', leave);
+    link.addEventListener('click', hide);
+    button.addEventListener('focus', show);
+    button.addEventListener('blur', leave);
+    button.addEventListener('click', event => {
+      event.preventDefault();
+      if (pinned && isOpen()) hide(); else { pinned = true; show(); }
+    });
+    tip.addEventListener('mouseenter', () => clearTimeout(timer));
+    tip.addEventListener('mouseleave', leave);
+    tip.addEventListener('toggle', () => { if (!isOpen()) pinned = false; });
+    window.addEventListener('resize', position);
+  }
+  const systemTheme = matchMedia('(prefers-color-scheme: dark)');
+  const isDark = () => root.dataset.theme ? root.dataset.theme === 'dark' : systemTheme.matches;
+  const updateThemeLabel = () => {
+    theme.textContent = isDark() ? 'Switch to light' : 'Switch to dark';
+  };
+  theme.addEventListener('click', () => {
+    root.dataset.theme = isDark() ? 'light' : 'dark';
+    try {
+      localStorage.setItem('wt-sweep.theme', root.dataset.theme);
+    } catch (_) {
+      // Switching still works when local-file storage is unavailable.
+    }
+    updateThemeLabel();
+  });
+  systemTheme.addEventListener('change', updateThemeLabel);
+  updateThemeLabel();
+  const copyStatus = document.getElementById('copy-status');
+  const copyDialog = document.getElementById('copy-dialog');
+  const copyValue = document.getElementById('copy-value');
+  let copySequence = 0, copyTimer;
+  const announceCopy = message => {
+    clearTimeout(copyTimer);
+    copyStatus.textContent = message;
+    copyTimer = setTimeout(() => { copyStatus.textContent = ''; }, 6000);
+  };
+  document.getElementById('copy-close').addEventListener('click', () => copyDialog.close());
+  document.addEventListener('click', async event => {
+    const button = event.target.closest('[data-copy-path]');
+    if (!button) return;
+    const sequence = ++copySequence;
+    let path;
+    try {
+      const hex = button.dataset.copyPath;
+      if (!/^(?:[0-9a-f]{2})+$/.test(hex)) throw Error('Invalid path bytes');
+      const bytes = Uint8Array.from(hex.match(/../g), pair => parseInt(pair, 16));
+      // Fatal decoding refuses substitutions; ignoreBOM preserves the BOM byte sequence.
+      path = new TextDecoder('utf-8', {fatal: true, ignoreBOM: true}).decode(bytes);
+    } catch (_) {
+      announceCopy('Cannot copy this path as UTF-8 text. Its exact hex bytes are in the recorded evidence.');
+      return;
+    }
+    if (/[\u0000-\u001f\u007f-\u009f\u2028-\u202e\u2066-\u2069]/u.test(path)) {
+      announceCopy('Cannot copy this path: it contains control characters. Its exact hex bytes are in the recorded evidence.');
+      return;
+    }
+    announceCopy('Copying path…');
+    try {
+      await navigator.clipboard.writeText(path);
+      if (sequence === copySequence) announceCopy('Path copied.');
+    } catch (_) {
+      if (sequence !== copySequence) return;
+      announceCopy('Automatic copy unavailable. Copy the selected path manually.');
+      copyValue.value = path;
+      copyDialog.showModal();
+      copyValue.focus();
+      copyValue.select();
+    }
+  });
+  root.classList.add('js');
+  update();
+})();
+</script></body></html>

@@ -1,0 +1,8 @@
+---
+import type {Locale} from '../data/content';
+import {getLandingView} from '../data/landing';
+interface Props {locale:Locale}
+const {locale}=Astro.props;
+const {t}=getLandingView(locale);
+---
+<section id="workflow" class="section-tinted"><div class="container"><div class="section-heading"><p class="kicker">04 / {t('THE WORKFLOW','LE PARCOURS')}</p><h2>{t('Choose. Collect. Review. Focus.','Choisir. Collecter. Lire. Cibler.')}</h2></div><ol class="workflow">{[[t('Choose the scope','Choisir le périmètre'),t('Explicit roots and confirmed full integration refs. No guessed default branch.','Racines explicites et refs d’intégration complètes confirmées. Aucune branche par défaut devinée.')],[t('Collect current evidence','Collecter les preuves actuelles'),t('Run review. Add disk measurement when it helps prioritize. Budgets stay finite.','Lancez review. Ajoutez la mesure disque pour prioriser. Les budgets restent finis.')],[t('Read the saved report','Lire le rapport sauvegardé'),t('Inspect verdicts, coverage and next checks. Keep JSON and the receipt alongside HTML.','Examinez verdicts, couverture et contrôles suivants. Conservez JSON et reçu avec le HTML.')],[t('Focus the next check','Cibler la vérification suivante'),t('Narrow Git evidence with --worktree and disk scope with --disk-root. Their budgets are separate.','Ciblez les preuves Git avec --worktree et le disque avec --disk-root. Leurs budgets sont distincts.')]].map(([heading,body])=><li><h3>{heading}</h3><p>{body}</p></li>)}</ol></div></section>

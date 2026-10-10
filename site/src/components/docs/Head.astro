@@ -1,0 +1,12 @@
+---
+const { head } = Astro.locals.starlightRoute
+const isPublic = Astro.site?.protocol === 'https:'
+const publishedHead = head.filter(({ attrs }) => isPublic || attrs?.rel !== 'sitemap')
+const englishPath = Astro.url.pathname.replace(/^\/fr(?=\/|$)/, '') || '/'
+const xDefault = new URL(englishPath, Astro.site)
+---
+
+{publishedHead.map(({ tag: Tag, attrs, content }) => <Tag {...attrs} set:html={content} />)}
+<link rel="alternate" hreflang="x-default" href={xDefault} />
+
+{Astro.site?.protocol !== 'https:' && <meta name="robots" content="noindex, nofollow" />}

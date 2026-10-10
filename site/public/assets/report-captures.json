@@ -1,0 +1,57 @@
+{
+  "captured_on": "2026-10-08",
+  "source": "native CLI report from disposable Git fixtures",
+  "generator_base_commit": "e751c104d92bffee513a6e9b69841a757a21da33",
+  "local_html_changes_uncommitted": true,
+  "binary_sha256": "12803cc9ae196a51ccb1b09fb748216a55db5319a9eef3a90d07c4979cd0e9de",
+  "report_sha256": "01b13876a712a16cef385771c2dc0ed40a7b32d2fc012b2ff226dc443ace1b32",
+  "worktrees": 4,
+  "verdicts": {
+    "keep": 3,
+    "cleanup_candidate": 1,
+    "verify": 0
+  },
+  "fixture_conserved": true,
+  "receipt_verified": true,
+  "image_generation_used": false,
+  "external_requests": 0,
+  "browser_errors": 0,
+  "viewport": {
+    "width": 1440,
+    "height": 800
+  },
+  "captures": [
+    {
+      "file": "report-light.png",
+      "width": 1440,
+      "height": 800,
+      "bytes": 124337,
+      "sha256": "9d6f9f977529416b82d8bd082ba474b038402164dbf737d76d5a858d32cd6061",
+      "region": "overview viewport"
+    },
+    {
+      "file": "report-dark.png",
+      "width": 1440,
+      "height": 800,
+      "bytes": 110544,
+      "sha256": "5ba3020b945c762e2edc069b9eafc324051110321b87955db49396d0291230c8",
+      "region": "overview viewport"
+    },
+    {
+      "file": "report-details-light.png",
+      "width": 1136,
+      "height": 1427,
+      "bytes": 232569,
+      "sha256": "5885a715b090ce32faf7e7a317592bf0e74711e580b1c119701d2eeff33bfc6e",
+      "region": "family-0 element"
+    },
+    {
+      "file": "report-details-dark.png",
+      "width": 1136,
+      "height": 1427,
+      "bytes": 198065,
+      "sha256": "ebad74b56a7298eb4b16c354a05edd06d9d1d1903c87adfd572be4338c855d48",
+      "region": "family-0 element"
+    }
+  ]
+}

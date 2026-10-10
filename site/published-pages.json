@@ -1,0 +1,158 @@
+[
+  {
+    "slug": "index",
+    "source": "docs/getting-started.md",
+    "sourceHash": "ece2cc869d98fab1d8b7dc0ac8b1fd53cee20984cd948382a152be588ce80d38",
+    "title": {
+      "en": "Start with wt-sweep",
+      "fr": "Démarrer avec wt-sweep"
+    },
+    "description": {
+      "en": "Start with wt-sweep: read-only Git worktree review with wt-sweep.",
+      "fr": "Démarrer avec wt-sweep : revue des worktrees Git en lecture seule avec wt-sweep."
+    }
+  },
+  {
+    "slug": "installation",
+    "source": "docs/getting-started.md",
+    "sourceHash": "ece2cc869d98fab1d8b7dc0ac8b1fd53cee20984cd948382a152be588ce80d38",
+    "title": {
+      "en": "Installation from source",
+      "fr": "Installer depuis les sources"
+    },
+    "description": {
+      "en": "Installation from source: read-only Git worktree review with wt-sweep.",
+      "fr": "Installer depuis les sources : revue des worktrees Git en lecture seule avec wt-sweep."
+    }
+  },
+  {
+    "slug": "demo",
+    "source": "docs/getting-started.md",
+    "sourceHash": "ece2cc869d98fab1d8b7dc0ac8b1fd53cee20984cd948382a152be588ce80d38",
+    "title": {
+      "en": "Disposable demo",
+      "fr": "Démo jetable"
+    },
+    "description": {
+      "en": "Disposable demo: read-only Git worktree review with wt-sweep.",
+      "fr": "Démo jetable : revue des worktrees Git en lecture seule avec wt-sweep."
+    }
+  },
+  {
+    "slug": "cli",
+    "source": "docs/cli.md",
+    "sourceHash": "7b8f253d026311e766512a276605accecb878fa264da7fede1dded8048a57dc9",
+    "title": {
+      "en": "CLI workflow",
+      "fr": "Parcours CLI"
+    },
+    "description": {
+      "en": "CLI workflow: read-only Git worktree review with wt-sweep.",
+      "fr": "Parcours CLI : revue des worktrees Git en lecture seule avec wt-sweep."
+    }
+  },
+  {
+    "slug": "disk",
+    "source": "docs/disk-usage.md",
+    "sourceHash": "f27e8280735ab04e1e648b6b91f682e01dcb33b502ba3e6e6dcd555e34acf09e",
+    "title": {
+      "en": "Read disk measurements",
+      "fr": "Lire les mesures disque"
+    },
+    "description": {
+      "en": "Read disk measurements: read-only Git worktree review with wt-sweep.",
+      "fr": "Lire les mesures disque : revue des worktrees Git en lecture seule avec wt-sweep."
+    }
+  },
+  {
+    "slug": "report",
+    "source": "docs/html-report-plan.md",
+    "sourceHash": "ddd8f10c3ead2ff392fdea25812b826c301895967a96726e8ce7a622e5f837b3",
+    "title": {
+      "en": "Read the HTML report",
+      "fr": "Lire le rapport HTML"
+    },
+    "description": {
+      "en": "Read the HTML report: read-only Git worktree review with wt-sweep.",
+      "fr": "Lire le rapport HTML : revue des worktrees Git en lecture seule avec wt-sweep."
+    }
+  },
+  {
+    "slug": "targets",
+    "source": "docs/targets-and-filters.md",
+    "sourceHash": "7c972e389a41edc6d0c7165de6a45020c7ae963e63f67bdf049c8c109a7c2f2b",
+    "title": {
+      "en": "Targets and focused reviews",
+      "fr": "Cibles et revues ciblées"
+    },
+    "description": {
+      "en": "Targets and focused reviews: read-only Git worktree review with wt-sweep.",
+      "fr": "Cibles et revues ciblées : revue des worktrees Git en lecture seule avec wt-sweep."
+    }
+  },
+  {
+    "slug": "assistant",
+    "source": "docs/assistant-skill.md",
+    "sourceHash": "9729ce4c421494d918bb6a1bee93e38934faf139c5c6f9ecc816cf876e33fe34",
+    "title": {
+      "en": "Claude Code and Codex",
+      "fr": "Claude Code et Codex"
+    },
+    "description": {
+      "en": "Claude Code and Codex: read-only Git worktree review with wt-sweep.",
+      "fr": "Claude Code et Codex : revue des worktrees Git en lecture seule avec wt-sweep."
+    }
+  },
+  {
+    "slug": "evidence",
+    "source": "docs/contracts.md",
+    "sourceHash": "a2e2463e7f63719259fdc1a6c627d2ce9ef2d40102cc94aab6488bfdf3a9b45f",
+    "title": {
+      "en": "Evidence and limits",
+      "fr": "Preuves et limites"
+    },
+    "description": {
+      "en": "Evidence and limits: read-only Git worktree review with wt-sweep.",
+      "fr": "Preuves et limites : revue des worktrees Git en lecture seule avec wt-sweep."
+    }
+  },
+  {
+    "slug": "resume",
+    "source": "docs/discovery-resume.md",
+    "sourceHash": "006894abc61992ee83c02d727c0c80ed203ea585436d96cb59e4bddec7656708",
+    "title": {
+      "en": "Resume discovery",
+      "fr": "Reprendre une découverte"
+    },
+    "description": {
+      "en": "Resume discovery: read-only Git worktree review with wt-sweep.",
+      "fr": "Reprendre une découverte : revue des worktrees Git en lecture seule avec wt-sweep."
+    }
+  },
+  {
+    "slug": "changelog",
+    "source": "CHANGELOG.md",
+    "sourceHash": "6607238baae9e21744c168cd4e04704fa8549d6a9d6593a1699336451f50a432",
+    "title": {
+      "en": "Changelog",
+      "fr": "Historique des changements"
+    },
+    "description": {
+      "en": "Changelog: read-only Git worktree review with wt-sweep.",
+      "fr": "Historique des changements : revue des worktrees Git en lecture seule avec wt-sweep."
+    }
+  },
+  {
+    "slug": "license",
+    "source": "LICENSE.md",
+    "sourceHash": "b6c31886f74eff732a37bd1d8e54be4b1e5fa803f658516f055e792898552617",
+    "title": {
+      "en": "License: FSL-1.1-ALv2",
+      "fr": "Licence : FSL-1.1-ALv2"
+    },
+    "description": {
+      "en": "License: FSL-1.1-ALv2: read-only Git worktree review with wt-sweep.",
+      "fr": "Licence : FSL-1.1-ALv2 : revue des worktrees Git en lecture seule avec wt-sweep."
+    }
+  }
+]

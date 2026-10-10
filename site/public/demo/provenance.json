@@ -1,0 +1,18 @@
+{
+  "generated_at": "2026-10-09T19:06:02.384319+00:00",
+  "source": "native CLI report from a disposable synthetic Git family",
+  "product_base_commit": "c3e38f7810424ae57f58d6ea10c4db996e9122fb",
+  "binary_sha256": "cc3d214540d1bc88d90f72796c1feb1d1166fc4d507612b667f07a4e45bfd39c",
+  "report_sha256": "f9bc66656fe21aafb0e0332aa46c4db130c5fdf53630d0fcc72041638e5d61be",
+  "verdicts": {
+    "keep": 3,
+    "cleanup_candidate": 1
+  },
+  "fixture_conserved": true,
+  "receipt_verified": true,
+  "real_repository_scans": 0,
+  "worktrees_removed": 0,
+  "usage_checked": false,
+  "recoverable_space_established": false,
+  "paths": "synthetic temporary paths only; the fixture no longer exists"
+}

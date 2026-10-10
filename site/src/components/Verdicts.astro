@@ -1,0 +1,8 @@
+---
+import type {Locale} from '../data/content';
+import {getLandingView} from '../data/landing';
+interface Props {locale:Locale}
+const {locale}=Astro.props;
+const {l,t,verdicts}=getLandingView(locale);
+---
+<section id="verdicts"><div class="container"><div class="section-heading"><p class="kicker">03 / {t('THREE VERDICTS','TROIS VERDICTS')}</p><h2>{t('Know what is established. See what is missing.','Savoir ce qui est établi. Voir ce qui manque.')}</h2><p>{t('Deterministic rules judge the collected evidence. Age, a closed PR or an AI suggestion do not prove integration.','Des règles déterministes jugent les preuves collectées. L’âge, une PR close ou une suggestion IA ne prouvent pas l’intégration.')}</p></div><div class="triple">{verdicts.map(x=><article class="verdict"><span class={`badge ${x.css}`}>{x.tag}</span><h3>{x.title}</h3><p>{x.body}</p><p class="next">{x.next}</p></article>)}</div><p class="hero-note">{t('No verdict authorizes removal. apply remains unavailable.','Aucun verdict n’autorise un retrait. apply reste indisponible.')} <a href={l.evidence}>{t('Read the decision conditions','Lire les conditions de décision')}</a></p></div></section>

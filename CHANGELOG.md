@@ -7,6 +7,18 @@ the Cargo package version is a development version.
 
 ## [Unreleased]
 
+<!-- unreleased-updated: 2026-10-10 -->
+
+### Changed
+
+- Align the website header and hero with the Search Console 90rem envelope,
+  and add a bilingual source-updates banner linked to the updates page. Its date
+  comes from this changelog; the banner labels the changes as unreleased.
+
+- Adopt the Compact website header: hero-aligned navigation, accessible GitHub
+  and language icons, frameless theme control and a final orange Install action.
+  Mobile actions use full-width Docs and Install rows with keyboard focus trapping.
+
 ### Fixed
 
 - Preserve the Git child's exit verdict when it has already closed its input
@@ -16,6 +28,13 @@ the Cargo package version is a development version.
   successful and failed child exits before finalization.
 
 ### Added
+
+- Local bilingual wt-sweep website with Astro and Starlight: product landing,
+  twelve reviewed documentation guides in English and French, HTML sitemap,
+  source-status updates, accessible navigation and theme controls. Publish only
+  the explicit documentation allowlist, refuse stale reviewed source hashes
+  and retain synthetic native report provenance. Public metadata requires an
+  explicit HTTPS origin; no site publication or release is implied.
 
 - Prepare version `0.1.0-alpha.1` with a publication checklist and a scoped
   Apple Silicon archive plan. Align the declared Rust minimum with the tested

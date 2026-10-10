@@ -1,0 +1,29 @@
+{
+  "name": "wt-sweep-site",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "prepare:docs": "node scripts/prepare-doc-content.mjs",
+    "verify:translations": "node scripts/prepare-doc-content.mjs --verify-translations",
+    "dev": "node scripts/prepare-doc-content.mjs && astro dev",
+    "build": "node scripts/prepare-doc-content.mjs && astro build",
+    "check": "node scripts/prepare-doc-content.mjs && astro check",
+    "preview": "astro preview",
+    "test:docs": "node --test tests/doc-content.test.mjs tests/updates.test.mjs",
+    "test:dist": "node --test tests/dist.test.mjs",
+    "test:e2e": "playwright test",
+    "verify": "pnpm test:docs && pnpm verify:translations && pnpm check && pnpm build && pnpm test:dist && pnpm test:public && pnpm test:e2e",
+    "test:public": "node --test tests/public-build.test.mjs"
+  },
+  "dependencies": {
+    "@astrojs/sitemap": "^3.7.0",
+    "@astrojs/starlight": "0.37.7",
+    "astro": "^5.17.1"
+  },
+  "devDependencies": {
+    "@astrojs/check": "^0.9.10",
+    "@axe-core/playwright": "^4.10.2",
+    "@playwright/test": "^1.55.0",
+    "typescript": "^5.9.3"
+  }
+}

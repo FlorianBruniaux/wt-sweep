@@ -1,0 +1,198 @@
+
+DISK USAGE (all recorded roots, metadata only)
+  Disk collection: 5 requested, 5 measured, 0 not requested; totals cover requested roots only
+  Measured completely: 5/5 roots; 0.0s
+  Scope: 4 worktree directories and 1 shared Git directories; unaffected by review filters or --worktree.
+  Observed allocated, deduplicated: 260.00 KiB
+  Observed logical file sizes, deduplicated: 29.64 KiB
+  Disk observation interval (Unix ms): 1791572760288..1791572760289; recorded sizes, not remeasured during rendering.
+  These are filesystem observations, not reclaimable space. APFS shared extents and snapshots are not deduplicated.
+  Hidden/ignored files included; symlink targets not followed. Other registered roots counted separately.
+  Row sizes may overlap through hardlinks/aliases; only the total deduplicates across rows. No atomic snapshot.
+  Entries checked: 96; only requested roots contribute to the total.
+
+  Shared Git: 224.00 KiB allocated / 29.31 KiB logical [complete]
+    /private/tmp/wt-sweep-u3-oracle-_a9_dxip/principal/.git
+
+  Worktree: 12.00 KiB allocated / 119.00 B logical [complete]
+    /private/tmp/wt-sweep-u3-oracle-_a9_dxip/local-notes
+
+  Worktree: 12.00 KiB allocated / 121.00 B logical [complete]
+    /private/tmp/wt-sweep-u3-oracle-_a9_dxip/unmerged-feature
+
+  Worktree: 8.00 KiB allocated / 93.00 B logical [complete]
+    /private/tmp/wt-sweep-u3-oracle-_a9_dxip/source branch
+
+  Worktree: 4.00 KiB allocated / 5.00 B logical [complete]
+    /private/tmp/wt-sweep-u3-oracle-_a9_dxip/principal
+
+WORKTREE	SUBJECT	BRANCH	HEAD	CLASSIFICATION
+/private/tmp/wt-sweep-u3-oracle-_a9_dxip/local-notes	Base	refs/heads/local-notes	4f581578547ee6d88dd4b24074f6aa30810d88da	keep
+  Current controls 1791572760289..1791572762085: role=linked; checks=complete; family=/private/tmp/wt-sweep-u3-oracle-_a9_dxip/principal/.git
+  Keep [local_untracked]: Untracked content observed; inspect and preserve it
+  Next check C2: Select the intended target and complete commit, tree and blob verification
+  Next check C3: Inspect local gaps and collect all current HEAD, index and file comparisons
+  Next check C5: Run a fresh scan and review after resolving changed or incomplete checks
+  History identical_commit 4f581578547ee6d88dd4b24074f6aa30810d88da -> refs/heads/main 4f581578547ee6d88dd4b24074f6aa30810d88da (commit graph only; 1791572760486..1791572762130)
+  Private history 1791572761302..1791572762200: 1 observed roots; enumeration=complete; anchors=complete; commit graph only
+    Root 4f581578547ee6d88dd4b24074f6aa30810d88da: covered
+      Covered via: refs/heads/local-notes 4f581578547ee6d88dd4b24074f6aa30810d88da
+      Source head: /private/tmp/wt-sweep-u3-oracle-_a9_dxip/principal/.git/worktrees/local-notes/HEAD
+      Source root_ref: /private/tmp/wt-sweep-u3-oracle-_a9_dxip/principal/.git/worktrees/local-notes/ORIG_HEAD
+      Source reflog_new: /private/tmp/wt-sweep-u3-oracle-_a9_dxip/principal/.git/worktrees/local-notes/logs/HEAD
+      Source reflog_old: /private/tmp/wt-sweep-u3-oracle-_a9_dxip/principal/.git/worktrees/local-notes/logs/HEAD
+  Local now 1791572760640..1791572760795: staged=0; unstaged=0; conflicts=0; untracked=1; ignored=0
+    untracked: notes.txt
+  UNKNOWN: deep verification not required for an already retained or incomplete worktree
+  UNKNOWN: forge state unknown (no export)
+  UNKNOWN: usage UNKNOWN; confirm usage before any removal
+  Risk: integration observations do not establish preservation of local files
+  Risk: no removal authorized; ACLs, xattrs and unreachable objects outside enumerated roots are outside preservation scope
+  Context for recorded HEAD 4f581578547ee6d88dd4b24074f6aa30810d88da in /private/tmp/wt-sweep-u3-oracle-_a9_dxip/principal/.git (family 16777231:471350122)
+    Commits outside accepted target union: 0; samples=0; known samples omitted=0
+      Recorded target refs/heads/main 4f581578547ee6d88dd4b24074f6aa30810d88da
+    Changelog CHANGELOG.md at 4f581578547ee6d88dd4b24074f6aa30810d88da: absent; root tree=3e21a205dd9b55021aeae87965092623807e455f; blob=UNKNOWN; verified blob bytes=UNKNOWN
+    Changelog CHANGELOG at 4f581578547ee6d88dd4b24074f6aa30810d88da: absent; root tree=3e21a205dd9b55021aeae87965092623807e455f; blob=UNKNOWN; verified blob bytes=UNKNOWN
+    Changelog CHANGES.md at 4f581578547ee6d88dd4b24074f6aa30810d88da: absent; root tree=3e21a205dd9b55021aeae87965092623807e455f; blob=UNKNOWN; verified blob bytes=UNKNOWN
+    Changelog CHANGES at 4f581578547ee6d88dd4b24074f6aa30810d88da: absent; root tree=3e21a205dd9b55021aeae87965092623807e455f; blob=UNKNOWN; verified blob bytes=UNKNOWN
+    Changelog HISTORY.md at 4f581578547ee6d88dd4b24074f6aa30810d88da: absent; root tree=3e21a205dd9b55021aeae87965092623807e455f; blob=UNKNOWN; verified blob bytes=UNKNOWN
+    Changelog HISTORY at 4f581578547ee6d88dd4b24074f6aa30810d88da: absent; root tree=3e21a205dd9b55021aeae87965092623807e455f; blob=UNKNOWN; verified blob bytes=UNKNOWN
+/private/tmp/wt-sweep-u3-oracle-_a9_dxip/principal	Base	refs/heads/main	4f581578547ee6d88dd4b24074f6aa30810d88da	keep
+  Current controls 1791572760289..1791572762071: role=main; checks=complete; family=/private/tmp/wt-sweep-u3-oracle-_a9_dxip/principal/.git
+  Keep [main_checkout]: Main checkout; keep the repository entry point
+  Next check C1: Rescan identity, Git administration, locks and operation markers
+  Next check C2: Select the intended target and complete commit, tree and blob verification
+  Next check C5: Run a fresh scan and review after resolving changed or incomplete checks
+  History identical_commit 4f581578547ee6d88dd4b24074f6aa30810d88da -> refs/heads/main 4f581578547ee6d88dd4b24074f6aa30810d88da (commit graph only; 1791572760457..1791572762130)
+  Private history 1791572761302..1791572762188: 1 observed roots; enumeration=complete; anchors=complete; commit graph only
+    Root 4f581578547ee6d88dd4b24074f6aa30810d88da: covered
+      Covered via: refs/heads/local-notes 4f581578547ee6d88dd4b24074f6aa30810d88da
+      Source head: /private/tmp/wt-sweep-u3-oracle-_a9_dxip/principal/.git/HEAD
+      Source reflog_new: /private/tmp/wt-sweep-u3-oracle-_a9_dxip/principal/.git/logs/HEAD
+  Local now 1791572760500..1791572760639: staged=0; unstaged=0; conflicts=0; untracked=0; ignored=0
+  UNKNOWN: deep verification not required for an already retained or incomplete worktree
+  UNKNOWN: forge state unknown (no export)
+  UNKNOWN: usage UNKNOWN; confirm usage before any removal
+  Risk: integration observations do not establish preservation of local files
+  Risk: no removal authorized; ACLs, xattrs and unreachable objects outside enumerated roots are outside preservation scope
+  Context for recorded HEAD 4f581578547ee6d88dd4b24074f6aa30810d88da in /private/tmp/wt-sweep-u3-oracle-_a9_dxip/principal/.git (family 16777231:471350122)
+    Commits outside accepted target union: 0; samples=0; known samples omitted=0
+      Recorded target refs/heads/main 4f581578547ee6d88dd4b24074f6aa30810d88da
+    Changelog CHANGELOG.md at 4f581578547ee6d88dd4b24074f6aa30810d88da: absent; root tree=3e21a205dd9b55021aeae87965092623807e455f; blob=UNKNOWN; verified blob bytes=UNKNOWN
+    Changelog CHANGELOG at 4f581578547ee6d88dd4b24074f6aa30810d88da: absent; root tree=3e21a205dd9b55021aeae87965092623807e455f; blob=UNKNOWN; verified blob bytes=UNKNOWN
+    Changelog CHANGES.md at 4f581578547ee6d88dd4b24074f6aa30810d88da: absent; root tree=3e21a205dd9b55021aeae87965092623807e455f; blob=UNKNOWN; verified blob bytes=UNKNOWN
+    Changelog CHANGES at 4f581578547ee6d88dd4b24074f6aa30810d88da: absent; root tree=3e21a205dd9b55021aeae87965092623807e455f; blob=UNKNOWN; verified blob bytes=UNKNOWN
+    Changelog HISTORY.md at 4f581578547ee6d88dd4b24074f6aa30810d88da: absent; root tree=3e21a205dd9b55021aeae87965092623807e455f; blob=UNKNOWN; verified blob bytes=UNKNOWN
+    Changelog HISTORY at 4f581578547ee6d88dd4b24074f6aa30810d88da: absent; root tree=3e21a205dd9b55021aeae87965092623807e455f; blob=UNKNOWN; verified blob bytes=UNKNOWN
+/private/tmp/wt-sweep-u3-oracle-_a9_dxip/source branch	Base	refs/heads/topic	4f581578547ee6d88dd4b24074f6aa30810d88da	cleanup_candidate
+  Current controls 1791572760289..1791572762100: role=linked; checks=complete; family=/private/tmp/wt-sweep-u3-oracle-_a9_dxip/principal/.git
+  Usage UNKNOWN: confirm before removal; this report authorizes no removal.
+  History identical_commit 4f581578547ee6d88dd4b24074f6aa30810d88da -> refs/heads/main 4f581578547ee6d88dd4b24074f6aa30810d88da (commit graph only; 1791572760486..1791572762130)
+  Private history 1791572761302..1791572762217: 1 observed roots; enumeration=complete; anchors=complete; commit graph only
+    Root 4f581578547ee6d88dd4b24074f6aa30810d88da: covered
+      Covered via: refs/heads/local-notes 4f581578547ee6d88dd4b24074f6aa30810d88da
+      Source head: /private/tmp/wt-sweep-u3-oracle-_a9_dxip/principal/.git/worktrees/source-branch/HEAD
+      Source root_ref: /private/tmp/wt-sweep-u3-oracle-_a9_dxip/principal/.git/worktrees/source-branch/ORIG_HEAD
+      Source reflog_new: /private/tmp/wt-sweep-u3-oracle-_a9_dxip/principal/.git/worktrees/source-branch/logs/HEAD
+      Source reflog_old: /private/tmp/wt-sweep-u3-oracle-_a9_dxip/principal/.git/worktrees/source-branch/logs/HEAD
+  Local now 1791572760795..1791572760921: staged=0; unstaged=0; conflicts=0; untracked=0; ignored=0
+  identical_commit 4f581578547ee6d88dd4b24074f6aa30810d88da -> refs/heads/main 4f581578547ee6d88dd4b24074f6aa30810d88da [integration]
+  identical_commit 4f581578547ee6d88dd4b24074f6aa30810d88da -> refs/heads/local-notes 4f581578547ee6d88dd4b24074f6aa30810d88da [intermediate]
+  ancestor 4f581578547ee6d88dd4b24074f6aa30810d88da -> refs/heads/unmerged-feature aa9565fb2b523a39181b9473b85e9665eaffb4c0 [intermediate]
+  UNKNOWN: forge state unknown (no export)
+  UNKNOWN: usage UNKNOWN; confirm usage before any removal
+  Risk: integration observations do not establish preservation of local files
+  Risk: no removal authorized; ACLs, xattrs and unreachable objects outside enumerated roots are outside preservation scope
+  Context for recorded HEAD 4f581578547ee6d88dd4b24074f6aa30810d88da in /private/tmp/wt-sweep-u3-oracle-_a9_dxip/principal/.git (family 16777231:471350122)
+    Commits outside accepted target union: 0; samples=0; known samples omitted=0
+      Recorded target refs/heads/main 4f581578547ee6d88dd4b24074f6aa30810d88da
+    Changelog CHANGELOG.md at 4f581578547ee6d88dd4b24074f6aa30810d88da: absent; root tree=3e21a205dd9b55021aeae87965092623807e455f; blob=UNKNOWN; verified blob bytes=UNKNOWN
+    Changelog CHANGELOG at 4f581578547ee6d88dd4b24074f6aa30810d88da: absent; root tree=3e21a205dd9b55021aeae87965092623807e455f; blob=UNKNOWN; verified blob bytes=UNKNOWN
+    Changelog CHANGES.md at 4f581578547ee6d88dd4b24074f6aa30810d88da: absent; root tree=3e21a205dd9b55021aeae87965092623807e455f; blob=UNKNOWN; verified blob bytes=UNKNOWN
+    Changelog CHANGES at 4f581578547ee6d88dd4b24074f6aa30810d88da: absent; root tree=3e21a205dd9b55021aeae87965092623807e455f; blob=UNKNOWN; verified blob bytes=UNKNOWN
+    Changelog HISTORY.md at 4f581578547ee6d88dd4b24074f6aa30810d88da: absent; root tree=3e21a205dd9b55021aeae87965092623807e455f; blob=UNKNOWN; verified blob bytes=UNKNOWN
+    Changelog HISTORY at 4f581578547ee6d88dd4b24074f6aa30810d88da: absent; root tree=3e21a205dd9b55021aeae87965092623807e455f; blob=UNKNOWN; verified blob bytes=UNKNOWN
+/private/tmp/wt-sweep-u3-oracle-_a9_dxip/unmerged-feature	Synthetic history	refs/heads/unmerged-feature	aa9565fb2b523a39181b9473b85e9665eaffb4c0	keep
+  Current controls 1791572760289..1791572762116: role=linked; checks=complete; family=/private/tmp/wt-sweep-u3-oracle-_a9_dxip/principal/.git
+  Keep [head_not_integrated]: HEAD is not an ancestor of any completely examined accepted target
+  Next check C2: Select the intended target and complete commit, tree and blob verification
+  Next check C5: Run a fresh scan and review after resolving changed or incomplete checks
+  History not_ancestor aa9565fb2b523a39181b9473b85e9665eaffb4c0 -> refs/heads/main 4f581578547ee6d88dd4b24074f6aa30810d88da (commit graph only; 1791572760486..1791572762130)
+  Private history 1791572761302..1791572762233: 2 observed roots; enumeration=complete; anchors=complete; commit graph only
+    Root 4f581578547ee6d88dd4b24074f6aa30810d88da: covered
+      Covered via: refs/heads/local-notes 4f581578547ee6d88dd4b24074f6aa30810d88da
+      Source root_ref: /private/tmp/wt-sweep-u3-oracle-_a9_dxip/principal/.git/worktrees/unmerged-feature/ORIG_HEAD
+      Source reflog_new: /private/tmp/wt-sweep-u3-oracle-_a9_dxip/principal/.git/worktrees/unmerged-feature/logs/HEAD
+      Source reflog_old: /private/tmp/wt-sweep-u3-oracle-_a9_dxip/principal/.git/worktrees/unmerged-feature/logs/HEAD
+    Root aa9565fb2b523a39181b9473b85e9665eaffb4c0: covered
+      Covered via: refs/heads/unmerged-feature aa9565fb2b523a39181b9473b85e9665eaffb4c0
+      Source head: /private/tmp/wt-sweep-u3-oracle-_a9_dxip/principal/.git/worktrees/unmerged-feature/HEAD
+      Source reflog_new: /private/tmp/wt-sweep-u3-oracle-_a9_dxip/principal/.git/worktrees/unmerged-feature/logs/HEAD
+  Local now 1791572760921..1791572761068: staged=0; unstaged=0; conflicts=0; untracked=0; ignored=0
+  UNKNOWN: deep verification not required for an already retained or incomplete worktree
+  UNKNOWN: forge state unknown (no export)
+  UNKNOWN: usage UNKNOWN; confirm usage before any removal
+  Risk: integration observations do not establish preservation of local files
+  Risk: no removal authorized; ACLs, xattrs and unreachable objects outside enumerated roots are outside preservation scope
+  Context for recorded HEAD aa9565fb2b523a39181b9473b85e9665eaffb4c0 in /private/tmp/wt-sweep-u3-oracle-_a9_dxip/principal/.git (family 16777231:471350122)
+    Commits outside accepted target union: 1; samples=1; known samples omitted=0
+      Recorded target refs/heads/main 4f581578547ee6d88dd4b24074f6aa30810d88da
+      Commit aa9565fb2b523a39181b9473b85e9665eaffb4c0: Synthetic history
+    Changelog CHANGELOG.md at aa9565fb2b523a39181b9473b85e9665eaffb4c0: absent; root tree=8a392917aec25548548ee9bb47ffc1b2abaa0e97; blob=UNKNOWN; verified blob bytes=UNKNOWN
+    Changelog CHANGELOG at aa9565fb2b523a39181b9473b85e9665eaffb4c0: absent; root tree=8a392917aec25548548ee9bb47ffc1b2abaa0e97; blob=UNKNOWN; verified blob bytes=UNKNOWN
+    Changelog CHANGES.md at aa9565fb2b523a39181b9473b85e9665eaffb4c0: absent; root tree=8a392917aec25548548ee9bb47ffc1b2abaa0e97; blob=UNKNOWN; verified blob bytes=UNKNOWN
+    Changelog CHANGES at aa9565fb2b523a39181b9473b85e9665eaffb4c0: absent; root tree=8a392917aec25548548ee9bb47ffc1b2abaa0e97; blob=UNKNOWN; verified blob bytes=UNKNOWN
+    Changelog HISTORY.md at aa9565fb2b523a39181b9473b85e9665eaffb4c0: absent; root tree=8a392917aec25548548ee9bb47ffc1b2abaa0e97; blob=UNKNOWN; verified blob bytes=UNKNOWN
+    Changelog HISTORY at aa9565fb2b523a39181b9473b85e9665eaffb4c0: absent; root tree=8a392917aec25548548ee9bb47ffc1b2abaa0e97; blob=UNKNOWN; verified blob bytes=UNKNOWN
+Shared stashes for /private/tmp/wt-sweep-u3-oracle-_a9_dxip/principal/.git (family 16777231:471350122; 1791572761302..1791572762175): 0 observed; list=complete
+
+DISCOVERY PERFORMANCE (source inventory)
+  Elapsed: 0.086s; metadata workers: 1
+  Directory read attempts: 0; entries listed: 0
+  Coverage: complete; 0 gaps. Timing excludes disk sizing, local analysis and publication.
+
+COLLECTION TIME
+  Identity and protections: 0.2s
+  Commit history: 0.0s; 3 Git processes
+  Local files: 0.6s; 6 paths checked (10.6 paths/s); 37 Git processes
+  Candidate object verification: 0.2s; 15 Git processes
+  Private history: 0.7s; 47 Git processes
+  Final checks: 0.3s
+  Optional context: 0.0s
+  Recorded phases: 1.9s (excludes discovery, disk size measurement and publication)
+  Slowest phase: Private history (34.2% of recorded collection time)
+Collection budget: standard
+Applied limit deep_object_bytes: 33554432
+Applied limit deep_object_reads: 2048
+Applied limit deep_per_target_steps: 512
+Applied limit deep_traversal_steps: 65536
+Applied limit history_object_bytes: 33554432
+Applied limit history_object_reads: 2048
+Applied limit history_per_target_steps: 512
+Applied limit history_timeout_ms: 60000
+Applied limit history_traversal_steps: 65536
+Applied limit local_max_objects: 4096
+Applied limit local_max_total_bytes: 134217728
+Applied limit local_phase_timeout_ms: 120000
+Applied limit local_worktree_timeout_ms: 30000
+Applied limit private_git_processes: 4096
+Applied limit private_object_bytes: 33554432
+Applied limit private_object_reads: 2048
+Applied limit private_pending_oids: 4096
+Applied limit private_per_root_steps: 512
+Applied limit private_timeout_ms: 60000
+Applied limit private_traversal_steps: 65536
+Collection phase controls: 168 ms; {}
+Collection phase history: 43 ms; {"cache_hits": 6, "git_processes": 3, "object_bytes": 403, "object_reads": 2, "traversal_steps": 1}
+Collection phase local: 568 ms; {"cache_hits": 15, "git_processes": 37, "object_bytes": 985, "object_reads": 13, "paths_checked": 6}
+Collection phase deep: 233 ms; {"cache_hits": 14, "git_processes": 15, "object_bytes": 550, "object_reads": 6, "traversal_steps": 4}
+Collection phase private_history: 664 ms; {"anchors_verified": 4, "cache_hits": 3, "git_processes": 47, "object_bytes": 403, "object_reads": 2, "output_serializations": 25, "roots_enumerated": 5, "traversal_steps": 0}
+Collection phase revalidation: 267 ms; {"history_git_processes": 3, "private_git_processes": 5, "private_output_serializations": 5}
+Collection phase context: 1 ms; {}
+History phase: 4/4 worktrees started; 4 targets complete; 0 unknown; 2 object reads; 6 Git children; 84 ms
+Decision evidence interval: 1791572760289..1791572762234
+Context collection interval: 1791572762234..1791572762235; recorded Git OIDs only; no continuity after decision checks.
+Context rows omitted: 0
+Commit membership does not establish semantic equivalence; squash, cherry-pick and revert require separate review.
+Conservation limits: ACLs, extended attributes and unreachable objects outside examined roots are not covered. Writer exclusion and durable backup are not established.
+Review SHA-256: 163e0f430f4f8120dc6576157502ecfe04b878ce20b971547bcb4b0c045a25bd

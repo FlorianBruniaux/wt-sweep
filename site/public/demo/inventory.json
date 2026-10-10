@@ -1,0 +1,254 @@
+{
+  "schema": "wt-sweep.inventory/1",
+  "scope": {
+    "mode": "repo",
+    "path": {
+      "hex": "2f707269766174652f746d702f77742d73776565702d75332d6f7261636c652d5f61395f647869702f7072696e636970616c"
+    }
+  },
+  "started_unix_ms": 1791572760201,
+  "finished_unix_ms": 1791572760288,
+  "families": [
+    {
+      "common_dir": {
+        "hex": "2f707269766174652f746d702f77742d73776565702d75332d6f7261636c652d5f61395f647869702f7072696e636970616c2f2e676974"
+      },
+      "identity": {
+        "device": 16777231,
+        "inode": 471350122
+      },
+      "worktrees": [
+        {
+          "path": {
+            "hex": "2f707269766174652f746d702f77742d73776565702d75332d6f7261636c652d5f61395f647869702f7072696e636970616c"
+          },
+          "identity": {
+            "device": 16777231,
+            "inode": 471350121
+          },
+          "head": "4f581578547ee6d88dd4b24074f6aa30810d88da",
+          "branch": {
+            "hex": "726566732f68656164732f6d61696e"
+          },
+          "detached": false,
+          "bare": false,
+          "locked": null,
+          "prunable": null,
+          "path_state": {
+            "state": "present"
+          }
+        },
+        {
+          "path": {
+            "hex": "2f707269766174652f746d702f77742d73776565702d75332d6f7261636c652d5f61395f647869702f6c6f63616c2d6e6f746573"
+          },
+          "identity": {
+            "device": 16777231,
+            "inode": 471350217
+          },
+          "head": "4f581578547ee6d88dd4b24074f6aa30810d88da",
+          "branch": {
+            "hex": "726566732f68656164732f6c6f63616c2d6e6f746573"
+          },
+          "detached": false,
+          "bare": false,
+          "locked": null,
+          "prunable": null,
+          "path_state": {
+            "state": "present"
+          }
+        },
+        {
+          "path": {
+            "hex": "2f707269766174652f746d702f77742d73776565702d75332d6f7261636c652d5f61395f647869702f736f75726365206272616e6368"
+          },
+          "identity": {
+            "device": 16777231,
+            "inode": 471350196
+          },
+          "head": "4f581578547ee6d88dd4b24074f6aa30810d88da",
+          "branch": {
+            "hex": "726566732f68656164732f746f706963"
+          },
+          "detached": false,
+          "bare": false,
+          "locked": null,
+          "prunable": null,
+          "path_state": {
+            "state": "present"
+          }
+        },
+        {
+          "path": {
+            "hex": "2f707269766174652f746d702f77742d73776565702d75332d6f7261636c652d5f61395f647869702f756e6d65726765642d66656174757265"
+          },
+          "identity": {
+            "device": 16777231,
+            "inode": 471350238
+          },
+          "head": "aa9565fb2b523a39181b9473b85e9665eaffb4c0",
+          "branch": {
+            "hex": "726566732f68656164732f756e6d65726765642d66656174757265"
+          },
+          "detached": false,
+          "bare": false,
+          "locked": null,
+          "prunable": null,
+          "path_state": {
+            "state": "present"
+          }
+        }
+      ]
+    }
+  ],
+  "coverage": {
+    "discovery_metrics": {
+      "elapsed_ms": 86,
+      "directory_read_attempts": 0,
+      "entries_listed": 0,
+      "workers": 1
+    },
+    "traversal_complete": true,
+    "temporal_consistency": "not_guaranteed",
+    "gaps": [],
+    "roots": [
+      {
+        "hex": "2f707269766174652f746d702f77742d73776565702d75332d6f7261636c652d5f61395f647869702f7072696e636970616c"
+      }
+    ],
+    "volumes": [],
+    "aliases": []
+  },
+  "markers": [],
+  "not_collected": [
+    "local file contents, ignored files, index and reflog inventory",
+    "restoration, writer exclusion and current remote state"
+  ],
+  "local_inventories": [],
+  "disk_usage": {
+    "started_unix_ms": 1791572760288,
+    "finished_unix_ms": 1791572760289,
+    "elapsed_ms": 1,
+    "limits": {
+      "max_entries": 2000000,
+      "max_entries_per_root": 500000,
+      "max_depth": 128,
+      "timeout": {
+        "secs": 600,
+        "nanos": 0
+      },
+      "timeout_per_root": {
+        "secs": 30,
+        "nanos": 0
+      }
+    },
+    "complete": true,
+    "temporal_consistency": "not_guaranteed",
+    "unique_bytes": {
+      "logical": 30350,
+      "allocated": 266240
+    },
+    "measurements": [
+      {
+        "path": {
+          "hex": "2f707269766174652f746d702f77742d73776565702d75332d6f7261636c652d5f61395f647869702f6c6f63616c2d6e6f746573"
+        },
+        "kind": "worktree",
+        "identity": {
+          "device": 16777231,
+          "inode": 471350217
+        },
+        "bytes": {
+          "logical": 119,
+          "allocated": 12288
+        },
+        "complete": true,
+        "entries_checked": 4,
+        "excluded_registered_roots": 0,
+        "elapsed_ms": 0,
+        "gaps": [],
+        "gaps_omitted": 0
+      },
+      {
+        "path": {
+          "hex": "2f707269766174652f746d702f77742d73776565702d75332d6f7261636c652d5f61395f647869702f7072696e636970616c"
+        },
+        "kind": "worktree",
+        "identity": {
+          "device": 16777231,
+          "inode": 471350121
+        },
+        "bytes": {
+          "logical": 5,
+          "allocated": 4096
+        },
+        "complete": true,
+        "entries_checked": 3,
+        "excluded_registered_roots": 1,
+        "elapsed_ms": 0,
+        "gaps": [],
+        "gaps_omitted": 0
+      },
+      {
+        "path": {
+          "hex": "2f707269766174652f746d702f77742d73776565702d75332d6f7261636c652d5f61395f647869702f7072696e636970616c2f2e676974"
+        },
+        "kind": "git_common",
+        "identity": {
+          "device": 16777231,
+          "inode": 471350122
+        },
+        "bytes": {
+          "logical": 30012,
+          "allocated": 229376
+        },
+        "complete": true,
+        "entries_checked": 82,
+        "excluded_registered_roots": 0,
+        "elapsed_ms": 0,
+        "gaps": [],
+        "gaps_omitted": 0
+      },
+      {
+        "path": {
+          "hex": "2f707269766174652f746d702f77742d73776565702d75332d6f7261636c652d5f61395f647869702f736f75726365206272616e6368"
+        },
+        "kind": "worktree",
+        "identity": {
+          "device": 16777231,
+          "inode": 471350196
+        },
+        "bytes": {
+          "logical": 93,
+          "allocated": 8192
+        },
+        "complete": true,
+        "entries_checked": 3,
+        "excluded_registered_roots": 0,
+        "elapsed_ms": 0,
+        "gaps": [],
+        "gaps_omitted": 0
+      },
+      {
+        "path": {
+          "hex": "2f707269766174652f746d702f77742d73776565702d75332d6f7261636c652d5f61395f647869702f756e6d65726765642d66656174757265"
+        },
+        "kind": "worktree",
+        "identity": {
+          "device": 16777231,
+          "inode": 471350238
+        },
+        "bytes": {
+          "logical": 121,
+          "allocated": 12288
+        },
+        "complete": true,
+        "entries_checked": 4,
+        "excluded_registered_roots": 0,
+        "elapsed_ms": 0,
+        "gaps": [],
+        "gaps_omitted": 0
+      }
+    ]
+  }
+}

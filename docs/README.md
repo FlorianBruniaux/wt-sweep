@@ -48,6 +48,15 @@ les conditions de publication et le paquet macOS prévu.
 | [Recette réelle multi-projets, 07/10](research/multi-project-acceptance-2026-10-07.md) | 69 registered worktrees, matching text/JSON/HTML, partial disk and local coverage, and delivery limits. |
 | [Finishing ledger](finish-ledger.md) | Historical RETEX checkpoint, current triage checks, repository trial and remaining gates. |
 
+## Website
+
+| Document | Contents |
+| --- | --- |
+| [Site implementation](../site/README.md) | Local preview, EN/FR portal, reviewed sources, tests and public-origin configuration. |
+| [Website validation](../site/VERIFICATION.md) | Observed checks, reference component status, independent review and remaining evidence limits. |
+| [Website design](superpowers/specs/2026-10-09-wt-sweep-site-design.md) | Validated structure, BoldGuy design and product boundaries. |
+| [Website plan](superpowers/plans/2026-10-09-wt-sweep-site.md) | Implementation sequence and observed checks. |
+
 ## Design and decisions
 
 | Document | Contents |
