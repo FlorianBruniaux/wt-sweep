@@ -23,3 +23,7 @@ Les contrôles nécessaires pour bloquer les écritures concurrentes, vérifier 
 ## Limites de plateforme
 
 La CLI active un contrôle macOS contre la matérialisation des fichiers dataless. Les vrais placeholders FileProvider et refus TCC restent non vérifiés. Un appel bloqué dans le noyau peut dépasser le délai fixé par la CLI. Les [tailles disque](/fr/docs/disk/) ne promettent jamais un espace APFS récupérable.
+
+## Contexte de forge
+
+Les URL de dépôt, branche et commit viennent de métadonnées locales capturées. Elles ne sont pas vérifiées auprès du serveur. Les PR/MR affichées exigent une association exacte avec des observations importées ; les liens de remotes ne changent pas le triage. [Liens du rapport et provenance](/fr/docs/report/#liens-github-et-gitlab).

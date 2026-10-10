@@ -12,10 +12,8 @@ Depuis le checkout wt-sweep compilé, choisissez le chemin absolu du repo et con
   IFS= read -r target_ref
   /usr/bin/git --no-optional-locks -c core.fsmonitor=false -C "$repo_path" \
     show-ref --verify --quiet "$target_ref"
-  report_dir="$(mktemp -d /private/tmp/wt-sweep-report.XXXXXX)"
   "$sweep_bin" review --repo "$repo_path" --target "$target_ref" \
-    --disk-usage --summary --html --run-dir "$report_dir"
-  open "$report_dir"/run-*/report.html
+    --disk-usage --summary --open
 )
 ```
 
@@ -23,9 +21,15 @@ Depuis le checkout wt-sweep compilé, choisissez le chemin absolu du repo et con
 
 ## Fichiers produits
 
-Avec `--html --run-dir`, un nouveau dossier `run-*` contient `inventory.json`, `review.json`, `report.txt`, `report.html` et `run.json`. Gardez-les ensemble. Le dossier des rapports doit être en dehors de toutes les racines et familles Git inspectées. Ses répertoires parents doivent être des dossiers ordinaires.
+Avec `--html` ou `--open`, un nouveau dossier `run-*` contient `inventory.json`, `review.json`, `report.txt`, `report.html` et `run.json`. Gardez-les ensemble. Le dossier des rapports doit être en dehors de toutes les racines et familles Git inspectées. Ses répertoires parents doivent être des dossiers ordinaires.
 
-`--html` exige `--run-dir`. `scan --html` produit un inventaire marqué **not reviewed**, sans attribuer de verdict.
+Sur macOS, les rapports HTML vont par défaut dans `~/Desktop/Worktree Sweep/run-*/`. Le Bureau doit exister. Ajoutez `--run-dir "/dossier/absolu/existant"` pour choisir une sortie hors du périmètre inspecté. `--html` enregistre sans ouvrir ; `--open` demande aussi à macOS d’ouvrir le HTML après publication. Un échec d’ouverture laisse les fichiers disponibles et affiche un avertissement. La console fournit une commande pour rouvrir le rapport.
+
+`scan --html` produit un inventaire marqué **not reviewed**, sans attribuer de verdict.
+
+## Lire le récapitulatif console
+
+Le bilan en anglais commence par l’allocation disque observée en KB/MB/GB, si elle a été mesurée. Il sépare les relations entre commits des verdicts de nettoyage, puis liste jusqu’à cinq worktrees sélectionnés par taille observée, leurs blocages et les limites de collecte. La commande de reprise reprend les cibles enregistrées pour la ligne ; vérifiez qu’elles conviennent encore. Une taille partielle peut sous-classer un worktree et l’allocation observée n’est pas l’espace récupérable.
 
 ## Options par besoin
 
@@ -37,6 +41,7 @@ Avec `--html --run-dir`, un nouveau dossier `run-*` contient `inventory.json`, `
 | Mesurer le disque | `--disk-usage`, budget indépendant `--disk-budget standard\|thorough` |
 | Cibler les vérifications Git et locales coûteuses | `--worktree CHEMIN_EXACT`, `--budget standard\|thorough` |
 | Cibler les racines disque | `--disk-root CHEMIN_EXACT` répété avec `--disk-usage` |
+| Enregistrer et ouvrir le HTML | `--html`, `--open`, `--run-dir DOSSIER_EXISTANT` |
 | Présentation | `--summary`, `--verdict`, `--path-prefix`, `--group-by` |
 
 Les filtres d’affichage ne réduisent pas la collecte. Les guides [cibles et filtres](/fr/docs/targets/) et [périmètre disque](/fr/docs/disk/) expliquent la distinction.

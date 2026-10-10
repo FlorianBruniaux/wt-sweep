@@ -314,17 +314,14 @@ fn navigation(h: &mut Html) -> fmt::Result {
     ] {
         write!(
             h.out,
-            "<div class=\"nav-item\"><a href=\"#{id}\" aria-describedby=\"help-{id}\">"
+            "<div class=\"nav-item\"><a href=\"#{id}\" aria-describedby=\"help-{id}\" title=\""
         )?;
+        h.text(help)?;
+        h.raw("\">")?;
         h.text(label)?;
         write!(
             h.out,
-            "</a><button class=\"nav-help\" type=\"button\" popovertarget=\"help-{id}\" aria-label=\"About "
-        )?;
-        h.text(label)?;
-        write!(
-            h.out,
-            "\">?</button><div class=\"nav-tooltip\" id=\"help-{id}\" role=\"tooltip\" popover>"
+            "</a><div class=\"nav-tooltip\" id=\"help-{id}\" role=\"tooltip\" popover>"
         )?;
         h.text(help)?;
         h.raw("</div></div>")?;
@@ -588,6 +585,11 @@ fn review_into(
             .filter(|(_, (_, rows))| !rows.is_empty())
             .map(|(index, ((common, _, _), _))| (index, *common)),
     )?;
+    let contexts: BTreeMap<_, _> = source
+        .context
+        .as_ref()
+        .map(|c| c.items.iter().map(|r| (&r.path, r)).collect())
+        .unwrap_or_default();
     let sizes = measurements(source.disk_usage.as_ref());
     let mut source_counts: BTreeMap<&BytePath, usize> = BTreeMap::new();
     for binding in &view.row_bindings {
@@ -663,7 +665,15 @@ fn review_into(
             }
             h.raw("</td>")?;
             disk_cell(h, &row.path, &sizes)?;
-            review_evidence(h, row)?;
+            review_evidence(
+                h,
+                row,
+                contexts
+                    .get(&row.path)
+                    .copied()
+                    .filter(|c| c.common_dir == **common && c.head_oid == row.head),
+                source.forge.as_ref(),
+            )?;
             h.raw("</tr>")?;
         }
         family_end(h)?;
@@ -880,8 +890,137 @@ fn gap_item(h: &mut Html, gap: &Gap) -> fmt::Result {
     h.text(&gap.reason)?;
     h.raw("</p></li>")
 }
-fn review_evidence(h: &mut Html, row: &ReviewItem) -> fmt::Result {
-    h.raw("<td data-label=\"Evidence and gaps\"><details><summary>Inspect evidence")?;
+fn web_link(h: &mut Html, label: &str, url: &str) -> fmt::Result {
+    h.raw("<a href=\"")?;
+    h.text(url)?;
+    h.raw("\" target=\"_blank\" rel=\"noopener noreferrer\">")?;
+    h.text(label)?;
+    h.raw("</a>")
+}
+fn forge_navigation(
+    h: &mut Html,
+    row: &ReviewItem,
+    context: Option<&WorktreeContext>,
+    forge: Option<&ForgeExport>,
+) -> fmt::Result {
+    h.raw("<div class=\"forge-navigation\"><strong>GitHub / GitLab</strong><p class=\"muted\">Server not checked.</p>")?;
+    if let Some(remote) = context.and_then(|c| c.remote.as_ref()) {
+        write!(
+            h.out,
+            "<details class=\"forge-remotes\"><summary>Repository links ({} remotes)</summary>",
+            remote.remotes.len()
+        )?;
+        for record in &remote.remotes {
+            let links = crate::forge_links::links(record, row.head.as_deref());
+            if links.is_empty() {
+                continue;
+            }
+            h.raw("<div class=\"remote-record\"><span class=\"mono\">")?;
+            h.path(&record.name)?;
+            h.raw(" · ")?;
+            h.text(&record.provider)?;
+            h.raw("</span><div class=\"forge-links\">")?;
+            for (label, url) in links {
+                web_link(h, label, &url)?;
+            }
+            h.raw("</div><details><summary>Local tracking</summary><p class=\"mono\">")?;
+            h.text(&record.host)?;
+            h.raw("/")?;
+            h.text(&record.project)?;
+            h.raw("</p><p class=\"muted\">")?;
+            h.raw(match record.head_matches_tracking {
+                Some(true) => "HEAD matches the local tracking ref",
+                Some(false) => "HEAD differs from the local tracking ref",
+                None => "Publication unknown; no matching local tracking observation",
+            })?;
+            if let Some(reference) = &record.tracking_ref {
+                h.raw(": <code>")?;
+                h.path(reference)?;
+                h.raw("</code>")?;
+            }
+            h.raw(". Server not checked.</p></details></div>")?;
+        }
+        if remote.remotes.is_empty() {
+            h.raw("<p class=\"muted\">No supported remote link collected.</p>")?;
+        }
+        if !remote.gaps.is_empty() {
+            h.raw("<details><summary>Remote collection gaps</summary>")?;
+            list(h, &remote.gaps)?;
+            h.raw("</details>")?;
+        }
+        write!(
+            h.out,
+            "<details><summary>Link provenance</summary><p>Constructed from local remote configuration; branch and commit pages may be unavailable. Local observation: Unix ms {}..{}. No fetch or server check.</p></details>",
+            remote.started_unix_ms, remote.finished_unix_ms
+        )?;
+        h.raw("</details>")?;
+    } else {
+        h.raw(
+            "<p class=\"muted\">Remote links not collected. Run review with context enabled.</p>",
+        )?;
+    }
+    if row.requests.is_empty() {
+        h.raw("<p class=\"muted\">No associated PR/MR in the imported evidence. Use --forge FILE to include a capture; absence is not established.</p>")?;
+    }
+    for request in &row.requests {
+        h.raw("<div class=\"request-record\"><p>")?;
+        let label = format!(
+            "{} #{}",
+            if request.provider == "gitlab" {
+                "MR"
+            } else {
+                "PR"
+            },
+            request.iid
+        );
+        if let Some(url) = crate::forge_links::request_url(request) {
+            web_link(h, &label, &url)?;
+        } else {
+            h.text(&label)?;
+            h.raw(" (URL unavailable)")?;
+        }
+        h.raw(" · captured state: <strong>")?;
+        h.text(&request.state)?;
+        h.raw("</strong></p><details><summary>PR/MR details</summary><p>")?;
+        h.text(request.title.as_deref().unwrap_or("Title not captured"))?;
+        h.raw("</p><p>Updated at: ")?;
+        h.text(request.updated_at.as_deref().unwrap_or("not captured"))?;
+        h.raw(". State comes from the imported capture, not a live server check.</p>")?;
+        if let Some(source) = forge.and_then(|f| f.sources.get(request.source_index)) {
+            h.raw("<p>Source: ")?;
+            h.path(&source.raw_path)?;
+            h.raw("<br>SHA-256: <code>")?;
+            h.text(&source.sha256)?;
+            h.raw("</code></p>")?;
+            write!(
+                h.out,
+                "<p>Receipt verified locally: {}. Capture interval: ",
+                source.receipt_verified
+            )?;
+            match (source.started_unix_ms, source.finished_unix_ms) {
+                (Some(start), Some(end)) => {
+                    date(h, start)?;
+                    h.raw(" to ")?;
+                    date(h, end)?;
+                }
+                _ => h.raw("not captured")?,
+            }
+            h.raw(".</p>")?;
+            list(h, &source.gaps)?;
+        }
+        h.raw("</details></div>")?;
+    }
+    h.raw("</div>")
+}
+fn review_evidence(
+    h: &mut Html,
+    row: &ReviewItem,
+    context: Option<&WorktreeContext>,
+    forge: Option<&ForgeExport>,
+) -> fmt::Result {
+    h.raw("<td data-label=\"Evidence and gaps\">")?;
+    forge_navigation(h, row, context, forge)?;
+    h.raw("<details><summary>Inspect evidence")?;
     let gaps = row.unknowns.len() + row.worktree_state.as_ref().map_or(0, |s| s.gaps.len());
     if gaps > 0 {
         write!(h.out, " ({gaps} gaps)")?;

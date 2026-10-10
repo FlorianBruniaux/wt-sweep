@@ -162,6 +162,72 @@ impl Reader<'_> {
         self.cache.insert(key, bytes.clone());
         Ok(bytes)
     }
+    fn metadata_read(
+        &mut self,
+        family: &Family,
+        operation: GitRead,
+    ) -> Result<Vec<u8>, SweepError> {
+        self.allowed(family)?;
+        if self.reads >= self.limits.object_read_attempts || self.bytes >= self.limits.object_bytes
+        {
+            return Err(error("context metadata read budget reached"));
+        }
+        let remaining = self.limits.timeout.saturating_sub(self.started.elapsed());
+        let git = ControlledGit::with_output_limit(
+            remaining.min(Duration::from_secs(1)),
+            self.limits
+                .object_output_bytes
+                .min(self.limits.object_bytes - self.bytes),
+        );
+        self.reads += 1;
+        let result = git.read(&family.common_dir.to_path()?, operation.clone());
+        if result.as_ref().is_err_and(|e| e.code == "git_timeout") {
+            self.stopped
+                .insert((family.identity.device, family.identity.inode), operation);
+        }
+        // Never retain Git stderr here: malformed config errors can quote credential URLs.
+        let bytes =
+            result.map_err(|e| error(format!("remote metadata unavailable ({})", e.code)))?;
+        self.bytes += bytes.len();
+        Ok(bytes)
+    }
+    fn remote_snapshot(
+        &mut self,
+        family: &Family,
+        items: &[ReviewItem],
+    ) -> crate::forge_links::Snapshot {
+        let mut snapshot = crate::forge_links::Snapshot::default();
+        snapshot.started_unix_ms = now_ms();
+        let hints = items
+            .iter()
+            .filter(|i| family.worktrees.iter().any(|w| w.path == i.path))
+            .flat_map(|i| &i.requests)
+            .filter(|r| crate::forge_links::request_url(r).is_some())
+            .filter_map(|r| {
+                r.host
+                    .as_ref()
+                    .map(|h| (h.to_ascii_lowercase(), r.provider.clone()))
+            })
+            .collect();
+        match self.metadata_read(family, GitRead::RemoteUrls) {
+            Ok(raw) => {
+                snapshot.parse_remotes(&raw, &hints);
+                if snapshot.has_remotes() {
+                    match self.metadata_read(family, GitRead::TrackingRefs) {
+                        Ok(raw) => {
+                            if let Err(reason) = snapshot.parse_refs(&raw) {
+                                snapshot.gaps.push(reason.into());
+                            }
+                        }
+                        Err(e) => snapshot.gaps.push(e.message),
+                    }
+                }
+            }
+            Err(e) => snapshot.gaps.push(e.message),
+        }
+        snapshot.finished_unix_ms = now_ms();
+        snapshot
+    }
     fn commit(&mut self, family: &Family, oid: &str) -> Result<Commit, SweepError> {
         // A parsed history cache entry cannot prove the raw structural framing.
         // Existing verified raw bytes are reused; otherwise this spends only context budgets.
@@ -506,6 +572,7 @@ pub(super) fn collect(
         steps: 0,
         row_steps: 0,
     };
+    let mut remote_snapshots = BTreeMap::new();
     let mut detail_omitted = false;
     for item in items {
         if output.items.len() >= options.limits.rows {
@@ -520,6 +587,7 @@ pub(super) fn collect(
         };
         reader.row_steps = 0;
         let mut row = WorktreeContext {
+            remote: None,
             path: item.path.clone(),
             common_dir: family.common_dir.clone(),
             family_identity: family.identity.clone(),
@@ -556,6 +624,24 @@ pub(super) fn collect(
         // Reserve essential row provenance before any optional object read.
         if charged + size(&row)? > options.limits.output_bytes {
             break;
+        }
+        if !remote_snapshots.contains_key(&family.common_dir) {
+            remote_snapshots.insert(
+                family.common_dir.clone(),
+                reader.remote_snapshot(family, items),
+            );
+        }
+        row.remote = remote_snapshots
+            .get(&family.common_dir)
+            .map(|s| s.for_worktree(item.branch.as_ref(), item.head.as_deref()));
+        if charged + size(&row)? > options.limits.output_bytes {
+            row.remote = None;
+            row.gaps
+                .push("remote metadata omitted by output budget".into());
+            detail_omitted = true;
+            if charged + size(&row)? > options.limits.output_bytes {
+                break;
+            }
         }
         row.uncovered = reader.uncovered(family, item, targets.for_family(family));
         if charged + size(&row)? > options.limits.output_bytes {
@@ -833,6 +919,9 @@ mod tests {
                     .status,
                 "unknown"
             );
+            let remote = reader.remote_snapshot(family, &[]);
+            assert!(!remote.has_remotes());
+            assert!(!remote.gaps.is_empty());
             assert!(take_child_read_journal().is_empty());
         }
     }

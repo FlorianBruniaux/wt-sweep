@@ -33,3 +33,5 @@ Distingue les observations enregistrées de l’état actuel, qui n’a pas ét�
 ```
 
 Le chemin doit désigner le dossier `run-*` contenant le reçu de publication et les fichiers du rapport. Un rapport historique ne suffit pas pour décider d’une suppression actuelle. Les [analyses ciblées](/fr/docs/targets/) peuvent recueillir une preuve manquante lors d’une nouvelle exécution.
+
+Les rapports peuvent inclure des liens GitHub/GitLab et les états capturés des PR/MR importées et associées. Ces éléments ne prouvent ni publication, ni intégration, ni éligibilité au nettoyage. [Lire la provenance des liens](/fr/docs/report/#liens-github-et-gitlab).

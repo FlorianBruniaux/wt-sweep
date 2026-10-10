@@ -33,3 +33,5 @@ Distinguish recorded observations from current state, which was not rechecked.
 ```
 
 The path must identify the `run-*` directory containing the receipt and artifacts. A historical report cannot decide a present-day deletion. [Focused reviews](/docs/targets/) may gather a missing proof in a new run.
+
+Reports can include GitHub/GitLab navigation and associated imported PR/MR states. Treat them as captured context, not proof of publication, integration or cleanup eligibility. [Read the link provenance](/docs/report/#github-and-gitlab-links).

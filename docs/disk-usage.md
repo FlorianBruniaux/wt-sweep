@@ -8,6 +8,14 @@ par taille allouée décroissante. Le collecteur Rust calcule les tailles et le
 rendu les inscrit dans les rapports à partir des données capturées, sans LLM.
 Ces chiffres ne participent pas à la décision de nettoyage.
 
+Dans `review --summary`, le total disque apparaît en tête, en unités décimales
+KB/MB/GB. Les cinq plus gros worktrees mesurés de la sélection suivent les
+relations Git et les verdicts, avec la mention `complete` ou `partial` et les
+contrôles manquants. Une taille partielle peut masquer un dossier plus volumineux.
+Le total garde son périmètre source ; les tailles des lignes ne sont pas
+additionnées. Le HTML conserve Ko/Mo/Go, le détail texte et `--verbose` leurs
+unités binaires KiB/MiB/GiB. Le JSON conserve les octets exacts.
+
 ## Lancer une mesure
 
 Depuis le checkout de Worktree Sweep, sur macOS :
@@ -84,8 +92,9 @@ Git et locales. Par défaut, le comptage disque couvre **toutes les racines inve
 `--worktree` et les filtres de présentation ne le réduisent pas. Les totaux sont
 étiquetés en conséquence, même si une seule ligne de revue est sélectionnée.
 
-Avec `--html --run-dir`, le [rapport HTML par famille](html-report-plan.md)
-affiche les mêmes mesures capturées. La recherche et les filtres du navigateur
+Avec `--html` ou `--open`, le [rapport HTML par famille](html-report-plan.md)
+affiche les mêmes mesures capturées. Sur macOS, il est enregistré sur le Bureau
+par défaut ; `--run-dir BASE` choisit un autre dossier existant. La recherche et les filtres du navigateur
 changent les lignes visibles, sans recalculer les totaux source. L’absence de
 mesure et les lacunes restent affichées ; `run.json` lie aussi `report.html`.
 `report.txt` reste disponible dans le même dossier.

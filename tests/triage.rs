@@ -924,6 +924,7 @@ fn optional_context_cannot_change_any_triage_verdict_or_condition() {
             omitted_items: 0,
             gaps: vec![],
             items: vec![WorktreeContext {
+                remote: None,
                 path: facts.items[0].path.clone(),
                 common_dir: family.common_dir.clone(),
                 family_identity: family.identity.clone(),

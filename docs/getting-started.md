@@ -70,9 +70,9 @@ RESULTS
   Needs verification: 0
 ```
 
-`COVERAGE` separates discovery from local checks: complete, partial or not
-collected. When present, `CHECKS STILL NEEDED` counts worktrees missing each
-decision condition;
+`CHECKS TO COMPLETE` separates discovery from local checks: complete, partial
+or not collected. It also counts unresolved worktrees missing each decision
+condition;
 `COLLECTION LIMITS` groups recurring budget and timeout diagnostics when present.
 With filters, verdicts describe the selection and coverage still describes the
 whole source review. Usage by agents or terminals is always reported as not checked.
@@ -109,12 +109,17 @@ From the source checkout, enter the repository and target you have confirmed:
   IFS= read -r target_ref
   /usr/bin/git --no-optional-locks -c core.fsmonitor=false -C "$repo_path" \
     show-ref --verify --quiet "$target_ref"
-  report_dir="$(mktemp -d /private/tmp/wt-sweep-report.XXXXXX)"
   "$sweep_bin" review --repo "$repo_path" --target "$target_ref" \
-    --summary --html --run-dir "$report_dir"
-  printf 'Reports: %s\n' "$report_dir"
+    --summary --open
 )
 ```
+
+The reports are saved in `~/Desktop/Worktree Sweep/run-*/` on macOS.
+`--open` asks the default HTML application to open the saved page; `--html`
+only saves it. Add `--run-dir "/absolute/path/to/reports"` to use an existing
+directory outside the inspected scope. If Desktop is missing, inaccessible or
+inside a selected root, choose another destination. Opening failure leaves the
+saved reports intact and prints a reopen command.
 
 The target must be a full local ref. A `refs/remotes/...` ref is its locally
 recorded value; the tool does not fetch it. A missing or unverified target stays

@@ -18,15 +18,24 @@ Depuis le checkout compilé, renseignez le repo et sa cible confirmée :
   IFS= read -r repo_path
   printf 'Cible complète confirmée (refs/heads/... ou refs/remotes/...) : '
   IFS= read -r target_ref
-  report_dir="$(mktemp -d /private/tmp/wt-sweep-html.XXXXXX)"
   ./target/release/wt-sweep review --repo "$repo_path" --target "$target_ref" \
-    --summary --disk-usage --html --run-dir "$report_dir"
-  open "$report_dir"/run-*/report.html
+    --summary --disk-usage --open
 )
 ```
 
-Le dossier de sortie doit être extérieur aux repos inspectés. `--html` exige
-`--run-dir` ; il ne modifie ni le JSON émis sur stdout ni les verdicts.
+Sur macOS, `--open` implique `--html`, enregistre dans
+`~/Desktop/Worktree Sweep/run-*/`, puis demande à l’application associée au HTML
+d’ouvrir le rapport. `--html` seul enregistre sans ouvrir. Le Bureau doit déjà
+exister ; Sweep crée seulement son dossier `Worktree Sweep`, avec accès privé.
+Chaque exécution crée un nouveau sous-dossier sans écraser les rapports passés.
+
+Ajoutez `--run-dir "/chemin/vers/rapports"` pour choisir un dossier existant,
+extérieur au périmètre inspecté et aux dossiers Git. Si le Bureau est absent,
+bloqué ou situé dans une racine choisie avec `--root`, utilisez une autre sortie.
+La console affiche le chemin et une commande `Open HTML` pour le rouvrir.
+L’ouverture suit la publication réussie ; son échec ne supprime aucun rapport
+et reste un avertissement. Aucun navigateur n’est lancé sans `--open`.
+Le JSON sur stdout et les verdicts restent inchangés.
 `plan --inventory` accepte la même option, avec une cible ou une carte par famille.
 `scan --html` fournit un inventaire marqué **not reviewed**, sans verdict inventé.
 
@@ -203,18 +212,38 @@ demande une vraie lacune dans les données du rapport et échoue si elle manque.
 ## Aides du menu
 
 Chaque entrée décrit le contenu de sa section : bilan et période, familles Git,
-mesures disque, couverture et lacunes. Survolez le lien, placez-y le focus au
-clavier ou utilisez le bouton **?**. Échap ou un clic à l’extérieur ferme l’aide.
-Le lien continue de naviguer vers la section ; le bouton ouvre seulement l’aide.
+mesures disque, couverture et lacunes. L’intitulé est le seul contrôle : son
+survol, son focus au clavier ou son clic affiche l’explication. Le clic continue
+de naviguer vers la section. Échap ou un clic à l’extérieur ferme l’aide.
 
-Les boutons utilisent les popovers natifs du navigateur et restent utilisables
-sans JavaScript dans Chromium testé. Le survol, le focus et le positionnement
-près du lien sont ajoutés par JavaScript. Safari et Firefox ne sont pas vérifiés.
+Avec JavaScript, un popover positionne l’aide près du lien. Sans JavaScript,
+l’attribut `title` conserve une aide native au survol et les liens naviguent
+normalement. Le comportement est vérifié dans Chromium ; Safari et Firefox
+ne sont pas vérifiés.
 
 ```sh
 node tests/html-nav.cjs /chemin/vers/report.html /chemin/vers/nouvelles-captures
 ```
 
 Ce contrôle réutilise Playwright et Chromium déjà installés. Il vérifie les
-quatre explications en clair/sombre, sur desktop/mobile, avec et sans JavaScript :
-survol, maintien sous le pointeur, focus, Échap, clic, ancres et limites du viewport.
+quatre liens en clair/sombre, sur desktop/mobile, avec et sans JavaScript. Avec
+JavaScript, il contrôle le survol, le maintien sous le pointeur, le focus, Échap,
+le clic et les limites du viewport. Sans JavaScript, il vérifie les ancres et
+la présence de l’attribut `title`, sans observer l’infobulle native elle-même.
+
+## Liens GitHub et GitLab
+
+Dans une revue, chaque ligne propose les liens du dépôt, de la branche et du
+commit pour les remotes identifiés. Les remotes sont nommés séparément ; le lien
+de branche utilise l’upstream configuré quand il est connu. Une égalité avec la
+ref locale de suivi reste une observation locale, sans preuve de push actuel.
+
+Les PR/MR précisément associées par `--forge FILE` affichent leur titre, leur
+état capturé et un lien direct. Leur provenance est dépliable. Aucun appel réseau
+n’est ajouté à la collecte ni au chargement du HTML. Un clic ouvre la forge dans
+un nouvel onglet. Les routes et libellés sont validés et échappés.
+
+`--no-context` omet les liens issus des remotes, sans retirer les PR/MR importées.
+Les anciens rapports et `scan --html` ne reçoivent pas de données inventées.
+Voir [le contrat des liens](forge.md#links-in-review-reports), notamment les
+limites sur les forks GitLab et les instances auto-hébergées.

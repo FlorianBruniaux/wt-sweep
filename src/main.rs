@@ -1,4 +1,8 @@
+mod report_access;
 mod terminal;
+
+#[cfg(test)]
+mod report_output_tests;
 
 use std::{collections::BTreeMap, ffi::OsString, io::Write, path::PathBuf, process::ExitCode};
 use wt_sweep::{
@@ -12,8 +16,8 @@ const HELP: &str = "Worktree Sweep (wt-sweep)
 
 Usage:
   wt-sweep review (--repo PATH | --root PATH... | --all) [--workers 1..8] [--disk-usage] [--disk-budget standard|thorough] [PLAN OPTIONS]
-  wt-sweep scan (--repo PATH | --root PATH... | --all | --resume FILE) [--workers 1..8] [--local] [--disk-usage] [--disk-budget standard|thorough] [--format json|table] [--out FILE | --run-dir BASE]
-  wt-sweep plan --inventory FILE [--target FULL_REF... | --target-map FILE] [--filter-repo PATH] [--path-prefix PATH] [--branch FULL_REF] [--local-state clean|dirty|unknown] [--verdict keep|cleanup_candidate|verify] [--group-by repo|directory] [--changelog-path RELATIVE...] [--no-context] [--forge FILE] [--summary] [--format json|table] [--out FILE | --run-dir BASE]
+  wt-sweep scan (--repo PATH | --root PATH... | --all | --resume FILE) [--workers 1..8] [--local] [--disk-usage] [--disk-budget standard|thorough] [--format json|table] [--html] [--open] [--out FILE | --run-dir BASE]
+  wt-sweep plan --inventory FILE [--target FULL_REF... | --target-map FILE] [--filter-repo PATH] [--path-prefix PATH] [--branch FULL_REF] [--local-state clean|dirty|unknown] [--verdict keep|cleanup_candidate|verify] [--group-by repo|directory] [--changelog-path RELATIVE...] [--no-context] [--forge FILE] [--summary] [--format json|table] [--html] [--open] [--out FILE | --run-dir BASE]
   wt-sweep forge commandes
   wt-sweep forge ingerer --raw FILE [--receipt FILE] [--out FILE | --run-dir BASE]
   wt-sweep --help | --version
@@ -34,7 +38,10 @@ review and plan report readable progress on stderr and keep JSON on stdout.
 Auto respects NO_COLOR and TERM=dumb; JSON and saved reports stay plain.
 --worktree PATH focuses evidence collection; unselected rows remain explicitly incomplete.
 --run-dir creates an isolated run below an existing directory outside inspected targets.
---html adds an offline report.html to scan/review/plan runs; requires --run-dir.
+--html saves an offline report.html; default on macOS: ~/Desktop/Worktree Sweep/.
+--run-dir BASE overrides that destination; BASE must exist outside inspected targets.
+--open implies --html and asks macOS to open the saved report; no browser is opened otherwise.
+If Desktop is missing or blocked, choose --run-dir BASE. Reports are never overwritten.
 apply is unavailable until conservation and approval gates are verified.
 ";
 
@@ -88,6 +95,7 @@ fn options(args: &[OsString], allowed: &[&str], repeat: &[&str]) -> Result<Optio
                 | "--disk-usage"
                 | "--verbose"
                 | "--html"
+                | "--open"
         ) {
             OsString::from("true")
         } else {
@@ -112,8 +120,19 @@ fn options(args: &[OsString], allowed: &[&str], repeat: &[&str]) -> Result<Optio
     if values.contains_key("--out") && values.contains_key("--run-dir") {
         return Err("--out and --run-dir are mutually exclusive".into());
     }
-    if values.contains_key("--html") && !values.contains_key("--run-dir") {
-        return Err("--html requires --run-dir BASE".into());
+    if values.contains_key("--open") {
+        if !cfg!(target_os = "macos") {
+            return Err("--open is supported on macOS only; use --html --run-dir BASE".into());
+        }
+        values.insert("--html".into(), vec![OsString::from("true")]);
+    }
+    if values.contains_key("--html") {
+        if values.contains_key("--out") {
+            return Err("--html and --open are incompatible with --out; use --run-dir BASE".into());
+        }
+        if !values.contains_key("--run-dir") {
+            report_access::default_base()?;
+        }
     }
     Ok(values)
 }
@@ -152,7 +171,7 @@ fn run(args: Vec<OsString>) -> Result<(), String> {
 fn command_help(command: &str) -> Result<(), String> {
     let usage = match command {
         "scan" => {
-            "wt-sweep scan (--repo PATH | --root PATH... | --all | --resume FILE) [--workers 1..8] [--local] [--disk-usage] [--disk-budget standard|thorough] [--format json|table] [--out FILE | --run-dir BASE]"
+            "wt-sweep scan (--repo PATH | --root PATH... | --all | --resume FILE) [--workers 1..8] [--local] [--disk-usage] [--disk-budget standard|thorough] [--format json|table] [--html] [--open] [--out FILE | --run-dir BASE]"
         }
         "plan" => "wt-sweep plan --inventory FILE [REVIEW OPTIONS]",
         "review" => {
@@ -169,10 +188,10 @@ fn command_help(command: &str) -> Result<(), String> {
     };
     let notes = match command {
         "scan" => {
-            "Discovery requires an explicit scope.\n--checkpoint-out NEW_FILE saves traversal state for --root scopes.\n--resume FILE --checkpoint-out NEW_FILE resumes the saved exact roots; no old Git HEAD is reused.\n--discovery-directories 1..100000, --discovery-entries 1..1000000, --discovery-seconds 1..600 bound each pass.\nDefaults: 100000 directories, 1000000 entries, 60 seconds. Intervals remain separate; this is not a snapshot.\n--disk-usage measures registered roots, including ignored files, without hashing.\nDisk budgets: 30s/500,000 entries per root; 600s/2,000,000 entries overall; depth 128.\n--disk-budget thorough: 120s/1,000,000 entries per root; 1800s/10,000,000 overall.\n--disk-root ABSOLUTE_PATH (repeatable) selects exact registered roots; requires --disk-usage.\nRemaining total entries and time are shared among roots still to visit.\nAllocated blocks are not a reclaim estimate; partial measurements remain explicit.\n--local additionally hashes local content within budgets.\n--html adds report.html to the run and requires --run-dir BASE.\nProgress is compact on stderr. --verbose adds paths and discovery counters.\n--color auto|always|never controls terminal color and icons.\nReports retain discovery metrics and coverage separately. Gaps and unfinished scope remain in the inventory.\n"
+            "Discovery requires an explicit scope.\n--checkpoint-out NEW_FILE saves traversal state for --root scopes.\n--resume FILE --checkpoint-out NEW_FILE resumes the saved exact roots; no old Git HEAD is reused.\n--discovery-directories 1..100000, --discovery-entries 1..1000000, --discovery-seconds 1..600 bound each pass.\nDefaults: 100000 directories, 1000000 entries, 60 seconds. Intervals remain separate; this is not a snapshot.\n--disk-usage measures registered roots, including ignored files, without hashing.\nDisk budgets: 30s/500,000 entries per root; 600s/2,000,000 entries overall; depth 128.\n--disk-budget thorough: 120s/1,000,000 entries per root; 1800s/10,000,000 overall.\n--disk-root ABSOLUTE_PATH (repeatable) selects exact registered roots; requires --disk-usage.\nRemaining total entries and time are shared among roots still to visit.\nAllocated blocks are not a reclaim estimate; partial measurements remain explicit.\n--local additionally hashes local content within budgets.\n--html saves report.html; default on macOS: ~/Desktop/Worktree Sweep/.\n--run-dir BASE overrides it and must be an existing directory outside inspected targets.\n--open implies --html and asks macOS to open the report after successful publication.\nIf Desktop is unavailable, choose --run-dir BASE. Browser failures leave the report saved.\nProgress is compact on stderr. --verbose adds paths and discovery counters.\n--color auto|always|never controls terminal color and icons.\nReports retain discovery metrics and coverage separately. Gaps and unfinished scope remain in the inventory.\n"
         }
         "plan" | "review" => {
-            "REVIEW OPTIONS:\n  --budget standard|thorough (default: standard; larger finite collection allowances)\n  --target FULL_REF... | --target-map FILE\n  --worktree ABSOLUTE_PATH (collect evidence for this exact recorded worktree)\n  --filter-repo PATH  --path-prefix PATH  --branch FULL_REF\n  --local-state clean|dirty|unknown  --verdict keep|cleanup_candidate|verify\n  --group-by repo|directory  --forge FILE\n  --changelog-path RELATIVE... | --no-context\n  --summary  --format json|table  --out FILE | --run-dir BASE\n  --html (offline report.html; requires --run-dir BASE)\n\nTargets must be explicit; no target leaves integration unknown.\nFilters select rows after judgement and retain source coverage in JSON views.\n--worktree narrows history/local/private/context reads; full inventory and identity checks remain.\nOther rows explicitly retain missing evidence. Add --path-prefix for a focused display.\n--summary cannot be combined with --format json. Progress is compact on stderr.\n--verbose adds detailed progress and recap metrics.\n--color auto|always|never (default: auto; respects NO_COLOR and TERM=dumb).\nJSON and saved report.txt files are always plain text.\n--run-dir needs an existing directory outside inspected targets.\nreview accepts --disk-usage [--disk-budget standard|thorough] for metadata-only sizes.\nDisk measurement covers all inventoried roots by default. --disk-root ABSOLUTE_PATH (repeatable) selects exact roots.\n--disk-root requires --disk-usage and is independent of --worktree and display filters.\nRemaining total entries and time are shared among roots still to visit; unused shares go forward.\nIts budget is separate from --budget; defaults: 30s/root, 600s overall; thorough: 120s/root, 1800s overall.\nreview saves inventory.json, review.json, report.txt and run.json together.\nplan reuses saved disk observations with their original interval; it does not recount sizes.\nplan saves review.json, report.txt and run.json.\nA cleanup_candidate still requires confirmation of its use. apply is unavailable.\n"
+            "REVIEW OPTIONS:\n  --budget standard|thorough (default: standard; larger finite collection allowances)\n  --target FULL_REF... | --target-map FILE\n  --worktree ABSOLUTE_PATH (collect evidence for this exact recorded worktree)\n  --filter-repo PATH  --path-prefix PATH  --branch FULL_REF\n  --local-state clean|dirty|unknown  --verdict keep|cleanup_candidate|verify\n  --group-by repo|directory  --forge FILE\n  --changelog-path RELATIVE... | --no-context (skip commit, changelog and remote-link context)\n  --summary  --format json|table  --out FILE | --run-dir BASE\n  --html (offline report.html; macOS default: ~/Desktop/Worktree Sweep/)\n  --open (implies --html; ask macOS to open the saved report)\n\nTargets must be explicit; no target leaves integration unknown.\nFilters select rows after judgement and retain source coverage in JSON views.\n--worktree narrows history/local/private/context reads; full inventory and identity checks remain.\nOther rows explicitly retain missing evidence. Add --path-prefix for a focused display.\n--summary cannot be combined with --format json. Progress is compact on stderr.\n--verbose adds detailed progress and recap metrics.\n--color auto|always|never (default: auto; respects NO_COLOR and TERM=dumb).\nJSON and saved report.txt files are always plain text.\n--run-dir needs an existing directory outside inspected targets; it overrides the Desktop default.\nWithout --html/--open, output defaults are unchanged. If Desktop is unavailable, choose --run-dir.\nOpening failure leaves the saved report available and prints a reopen command.\nreview accepts --disk-usage [--disk-budget standard|thorough] for metadata-only sizes.\nDisk measurement covers all inventoried roots by default. --disk-root ABSOLUTE_PATH (repeatable) selects exact roots.\n--disk-root requires --disk-usage and is independent of --worktree and display filters.\nRemaining total entries and time are shared among roots still to visit; unused shares go forward.\nIts budget is separate from --budget; defaults: 30s/root, 600s overall; thorough: 120s/root, 1800s overall.\nGitHub/GitLab repository, branch and commit links use local remotes (no fetch or server check).\nPR/MR links and captured states require --forge FILE and an exact source association.\nSelf-hosted forge routes need an associated import to identify the provider.\nscan does not collect remote-link context; use review or plan.\nreview saves inventory.json, review.json, report.txt and run.json together.\nplan reuses saved disk observations with their original interval; it does not recount sizes.\nplan saves review.json, report.txt and run.json.\nA cleanup_candidate still requires confirmation of its use. apply is unavailable.\n"
         }
         _ => {
             "Offline evidence only. No network command is executed by these subcommands.\ncommandes prints capture guidance; ingerer reads captured raw data and its receipt.\n"
@@ -198,6 +217,7 @@ fn scan(args: &[OsString]) -> Result<(), String> {
             "--discovery-seconds",
             "--local",
             "--html",
+            "--open",
             "--disk-usage",
             "--disk-budget",
             "--disk-root",
@@ -227,12 +247,15 @@ fn scan(args: &[OsString]) -> Result<(), String> {
         })
         .transpose()
         .map_err(|e| e.to_string())?;
-    let boundaries =
-        if opts.contains_key("--out") || opts.contains_key("--run-dir") || checkpoint.is_some() {
-            wt_sweep::output::revalidate_boundaries(&inventory).map_err(|e| e.to_string())?
-        } else {
-            inventory
-        };
+    let boundaries = if opts.contains_key("--out")
+        || opts.contains_key("--run-dir")
+        || opts.contains_key("--html")
+        || checkpoint.is_some()
+    {
+        wt_sweep::output::revalidate_boundaries(&inventory).map_err(|e| e.to_string())?
+    } else {
+        inventory
+    };
     if let Some(bytes) = checkpoint {
         let path = std::path::absolute(
             one(&opts, "--checkpoint-out").ok_or("missing checkpoint destination")?,
@@ -562,6 +585,7 @@ fn collect_local(inventory: &mut Inventory, publication_limits: &PublicationLimi
 
 const PLAN_OPTIONS: &[&str] = &[
     "--html",
+    "--open",
     "--verbose",
     "--color",
     "--budget",
@@ -822,17 +846,28 @@ fn produce_review(
         wt_sweep::presentation::detail_bounded(&review, publication_limits.report_bytes)
     }
     .map_err(|e| e.to_string())?;
+    let executable = std::env::current_exe()
+        .ok()
+        .map(|p| BytePath::from_path(&p))
+        .unwrap_or_else(|| BytePath::from_bytes(b"wt-sweep"));
     let mut table = if opts.contains_key("--summary") {
         match (&view, opts.contains_key("--verbose")) {
             (Some(view), true) => wt_sweep::presentation::view_summary(view),
             (None, true) => wt_sweep::presentation::summary(&review),
-            (Some(view), false) => wt_sweep::presentation::compact_view_summary(view),
-            (None, false) => wt_sweep::presentation::compact_summary(&review),
+            (Some(view), false) => {
+                wt_sweep::presentation::compact_view_summary_with_executable(view, &executable)
+            }
+            (None, false) => {
+                wt_sweep::presentation::compact_summary_with_executable(&review, &executable)
+            }
         }
     } else {
         detail.clone()
     };
-    if opts.contains_key("--summary") && !opts.contains_key("--run-dir") {
+    if opts.contains_key("--summary")
+        && !opts.contains_key("--run-dir")
+        && !opts.contains_key("--html")
+    {
         table.push_str("\nDetails: omit --summary, or use --run-dir to save report.txt.\n");
     }
     let json = if let Some(view) = &view {
@@ -841,7 +876,10 @@ fn produce_review(
         bounded_json(&review, publication_limits.json_bytes)
     }
     .map_err(|e| e.to_string())?;
-    let boundaries = if opts.contains_key("--out") || opts.contains_key("--run-dir") {
+    let boundaries = if opts.contains_key("--out")
+        || opts.contains_key("--run-dir")
+        || opts.contains_key("--html")
+    {
         wt_sweep::output::revalidate_boundaries(&inventory).map_err(|e| e.to_string())?
     } else {
         inventory
@@ -905,6 +943,17 @@ fn deliver(
     inventory: &Inventory,
     run: RunInfo<'_>,
 ) -> Result<(), String> {
+    deliver_with_opener(opts, json, table, inventory, run, &report_access::open)
+}
+
+fn deliver_with_opener(
+    opts: &Options,
+    json: Vec<u8>,
+    table: String,
+    inventory: &Inventory,
+    run: RunInfo<'_>,
+    opener: &dyn Fn(&std::path::Path) -> Result<(), String>,
+) -> Result<(), String> {
     let limits = PublicationLimits::default();
     if json.len() > limits.json_bytes || run.detail.unwrap_or(&table).len() > limits.report_bytes {
         return Err(
@@ -914,7 +963,17 @@ fn deliver(
     if !json.ends_with(b"\n") {
         return Err("serialized artifact is missing its final newline".into());
     }
-    if let Some(base) = one(opts, "--run-dir") {
+    let base = one(opts, "--run-dir")
+        .map(Ok)
+        .or_else(|| {
+            opts.contains_key("--html")
+                .then(report_access::default_base)
+        })
+        .transpose()?;
+    if let Some(base) = base {
+        if !opts.contains_key("--run-dir") {
+            wt_sweep::output::ensure_run_base(&base, inventory).map_err(|e| e.to_string())?;
+        }
         let artifact = wt_sweep::run::Artifact {
             command: run.command,
             name: run.name,
@@ -930,14 +989,16 @@ fn deliver(
         }
         .map_err(|e| e.to_string())?;
         let html_path = if run.html.is_some() {
-            format!(
-                "  HTML: {}\n",
-                BytePath::from_path(&path.join("report.html")).display()
-            )
+            let html = path.join("report.html");
+            let mut location = format!("  HTML: {}\n", BytePath::from_path(&html).display());
+            if let Some(command) = report_access::reopen_command(&html) {
+                location.push_str(&format!("  Open HTML: {command}\n"));
+            }
+            location
         } else {
             String::new()
         };
-        if opts.get("--format").is_some_and(|v| v[0] == "json") {
+        let printed = if opts.get("--format").is_some_and(|v| v[0] == "json") {
             print(&json)
         } else if opts.contains_key("--summary") {
             print_table(
@@ -955,7 +1016,22 @@ fn deliver(
                     BytePath::from_path(&path).display()
                 ),
             )
+        };
+        // Publication is complete before asking a desktop application to open it.
+        if opts.contains_key("--open") && !wt_sweep::cancel::requested() {
+            let html = path.join("report.html");
+            if let Err(error) = opener(&html) {
+                eprintln!(
+                    "wt-sweep: report saved; could not open HTML: {}",
+                    BytePath::from_bytes(error.as_bytes()).display()
+                );
+                eprintln!("  HTML: {}", BytePath::from_path(&html).display());
+                if let Some(command) = report_access::reopen_command(&html) {
+                    eprintln!("  Open HTML: {command}");
+                }
+            }
         }
+        printed
     } else if let Some(out) = one(opts, "--out") {
         write_new(&out, &json, inventory).map_err(|e| e.to_string())?;
         print_table(opts, &table)

@@ -43,17 +43,21 @@ la référence manque localement, sans en choisir une autre.
   IFS= read -r target_ref
   /usr/bin/git --no-optional-locks -c core.fsmonitor=false -C "$repo_path" \
     show-ref --verify --quiet "$target_ref"
-  report_dir="$(mktemp -d /private/tmp/wt-sweep-report.XXXXXX)"
   "$sweep_bin" review --repo "$repo_path" --target "$target_ref" \
-    --summary --disk-usage --html --run-dir "$report_dir"
-  printf 'Rapports : %s\n' "$report_dir"
-  open "$report_dir"/run-*/report.html
+    --summary --disk-usage --open
 )
 ```
 
-Les six `X` de `XXXXXX` sont à garder littéralement. `mktemp` les remplace par un
-suffixe unique. Le dossier des rapports doit se trouver hors du clone, de ses
-worktrees enregistrés et de leurs administrations Git. `--repo` inclut les
+`--open` enregistre le rapport dans `~/Desktop/Worktree Sweep/run-*/` puis
+l’ouvre avec l’application macOS associée au HTML, généralement le navigateur.
+Le Bureau doit exister et être accessible ; Sweep crée seulement `Worktree Sweep`.
+Chaque analyse a son propre dossier. Les anciens rapports sont conservés.
+Pour enregistrer sans ouvrir, remplacez `--open` par `--html`.
+Pour choisir la destination, ajoutez `--run-dir "/chemin/vers/rapports"` avec
+un dossier existant hors du périmètre inspecté, des worktrees et des dossiers Git.
+Si le Bureau est indisponible ou inclus dans un `--root`, choisissez une autre
+sortie. La console donne le chemin et une commande `Open HTML` pour rouvrir le
+rapport. Un échec d’ouverture laisse les fichiers enregistrés. `--repo` inclut les
 worktrees enregistrés de cette famille, même hors du dossier du clone.
 
 Une référence `refs/remotes/origin/main` désigne sa valeur déjà présente
@@ -82,6 +86,13 @@ Le bilan ne remplace pas le détail. Le chemin d’exécution est
 affiché lors de la publication. Un reçu lie les octets qu’il énumère ; une erreur
 de synchronisation finale laisse la durabilité inconnue. Aucun fichier de cette
 liste ne constitue une sauvegarde des worktrees.
+
+Le récap en anglais commence par `DISK USAGE`. `COMMIT HISTORY` expose ensuite
+les relations d’ascendance connues, même quand `RESULTS` conserve le verdict
+`verify`. `LARGEST WORKTREES` aide à choisir où approfondir ; `NEXT CHECK` propose
+une commande avec le binaire courant et les cibles déjà enregistrées. Vérifiez
+ces cibles avant de copier la commande. Elle relance les contrôles d’un worktree,
+sans nouvelle mesure disque ni publication de rapport par défaut.
 
 ### Lire chaque verdict
 
@@ -157,13 +168,13 @@ Résultats attendus sur une collecte complète de cette fixture :
 
 La section `RESULTS` doit afficher `Keep: 2`, `Cleanup candidates: 1` et
 `Needs verification: 0`. Sans cible, elle affiche respectivement 2, 0 et 1.
-`COVERAGE` distingue les contrôles locaux complets, partiels et non collectés.
+`CHECKS TO COMPLETE` distingue les contrôles locaux complets, partiels et non collectés.
 Une découverte complète ne signifie pas que l’analyse des fichiers ou de
-l’historique est complet. `CHECKS STILL NEEDED` indique les conditions manquantes ;
+l’historique est complète. Le même bloc indique les conditions manquantes ;
 `COLLECTION LIMITS` regroupe les limites de collecte observées. `Resolved
 verdicts` compte les `keep` et candidats ; un `keep` peut conserver des contrôles
-incomplets sans redevenir `verify`. `CHECKS STILL NEEDED` décrit les lignes
-encore à résoudre. `COLLECTION TIME` donne les temps enregistrés par phase.
+incomplets sans redevenir `verify`. Les temps détaillés par phase figurent
+dans le rapport texte ou avec `--verbose`.
 Le chemin du rapport détaillé figure dans `REPORT`.
 L’absence d’export forge reste inconnue ; le reçu peut être `partial` malgré le code `0`.
 

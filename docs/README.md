@@ -4,7 +4,9 @@
 
 These guides cover the read-only macOS MVP and the T01-T09 triage workflow.
 The [current delivery record](progress.md#état-publié-et-suite-au-09102026)
-separates merged code, CI and real-world observations. The [roadmap](roadmap.md)
+separates merged code, CI and real-world observations. The [report delivery,
+10 October](https://github.com/FlorianBruniaux/wt-sweep/pull/26) tracks forge links,
+HTML opening, the console recap and their final checks. The [roadmap](roadmap.md)
 names the remaining #20 evaluation and the separate #14 vision; the
 [validation ledger](finish-ledger.md#triage-t01-t09) retains historical checks.
 The project overview is available in English and French. The tutorial, assistant
@@ -23,11 +25,11 @@ les conditions de publication et le paquet macOS prévu.
 | [Assistant skill (French)](assistant-skill.md) | Claude/Codex invocation, progressive report reading, cleanup suggestions and local verification. |
 | [Getting started](getting-started.md) | macOS setup, disposable demo, report interpretation and troubleshooting. |
 | [Espace disque](disk-usage.md) | Taille par worktree, Git partagé, total dédupliqué et limites de la mesure. |
-| [Rapport HTML par projet](html-report-plan.md) | HTML hors ligne, lecture par famille, thème BoldGuy, unités lisibles, copie des chemins et reçus. |
+| [Rapport HTML par projet](html-report-plan.md) | HTML hors ligne, ouverture sur macOS, lecture par famille, liens GitHub/GitLab, copie des chemins et reçus. |
 | [Resume discovery](discovery-resume.md) | Save an explicit-root traversal, continue it and interpret separate observation intervals. |
 | [CLI reference](cli.md) | Implemented commands, output rules, exit codes and collection limits. |
 | [Targets and filters](targets-and-filters.md) | Select refs per repository and inspect a subset while retaining source evidence. |
-| [Offline forge imports](forge.md) | Supported exports, capture receipts and limits of MR/PR association. |
+| [Forge links and offline imports](forge.md) | Repository, branch and commit links, captured PR/MR states, import receipts and association limits. |
 | [Evidence and JSON contracts](contracts.md) | Artifact fields, classifications, path encoding, digests and receipts. |
 
 ## Develop and verify

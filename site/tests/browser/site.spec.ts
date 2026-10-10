@@ -1,6 +1,7 @@
 import { test, expect } from '@playwright/test';
 import AxeBuilder from '@axe-core/playwright';
 import {readFileSync} from 'node:fs';
+const packageVersion = readFileSync(new URL('../../../Cargo.toml', import.meta.url), 'utf8').match(/^version\s*=\s*"([^"]+)"/m)?.[1];
 const sourceUpdateDate = readFileSync(new URL('../../../CHANGELOG.md', import.meta.url), 'utf8').match(/<!-- unreleased-updated: (\d{4}-\d{2}-\d{2}) -->/)?.[1];
 for(const lang of ['en','fr']) for(const theme of ['light','dark']) for(const width of [390,768,1024,1440]) {
  test(`${lang} ${theme} ${width}: accessible report journey and working navigation`,async({page,context})=>{
@@ -144,7 +145,8 @@ for (const lang of ['en', 'fr']) for (const width of [390, 1440, 2048]) {
   const update = banner.getByRole('link');
   await expect(update).toHaveAttribute('href', `${prefix}/updates/`);
   await expect(banner.locator('time')).toHaveAttribute('datetime', sourceUpdateDate!);
-  await expect(banner).toContainText(lang === 'fr' ? 'Version de développement' : 'Development version');
+  expect(packageVersion).toBeTruthy();
+  await expect(banner).toContainText(`v${packageVersion}`);
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
   await update.focus(); await page.keyboard.press('Enter');
   await expect(page).toHaveURL(new RegExp(`${prefix}/updates/$`));

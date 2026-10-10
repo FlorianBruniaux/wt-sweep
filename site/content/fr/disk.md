@@ -8,6 +8,8 @@ Utilisez `--disk-root CHEMIN_ABSOLU_EXACT`, répété si nécessaire, pour chois
 
 `--disk-budget standard|thorough` est distinct du `--budget` des vérifications Git et locales. Commencez par standard ; des limites plus élevées ne garantissent pas une collecte complète. `plan --inventory` reprend les tailles capturées et leurs dates, sans les recompter.
 
+Le récapitulatif console utilise KB/MB/GB et liste les cinq plus gros worktrees sélectionnés selon leur taille observée. Les mesures partielles peuvent les sous-classer ; les tailles absentes restent signalées.
+
 ## Lire les valeurs
 
 | Valeur | Sens |

@@ -5,6 +5,8 @@ import json
 import os
 from pathlib import Path
 import subprocess
+import shlex
+import sys
 import tempfile
 import unittest
 
@@ -63,10 +65,80 @@ class HtmlCliTests(unittest.TestCase):
         data = json.loads((run / primary).read_bytes())
         return run, html, data
 
-    def test_html_requires_run_directory_before_inspecting_scope(self):
-        result = self.invoke("scan", "--repo", self.out / "does-not-exist",
-                             "--html", success=False)
-        self.assertIn(b"--html requires --run-dir", result.stderr)
+    def desktop(self):
+        home = self.out / "home with an apostrophe's"
+        desktop = home / "Desktop"
+        desktop.mkdir(parents=True)
+        self.fixture.env["HOME"] = str(home)
+        return desktop
+
+    @unittest.skipUnless(sys.platform == "darwin", "macOS desktop default")
+    def test_html_defaults_to_desktop_and_repeated_runs_preserve_first_report(self):
+        desktop = self.desktop()
+        result = self.invoke("scan", "--repo", self.fixture.principal, "--html")
+        base = desktop / "Worktree Sweep"
+        run, _, _ = self.verify_run(base, "inventory.json")
+        before = filesystem_manifest(run)
+        command = next(line.split("Open HTML: ", 1)[1] for line in result.stdout.decode().splitlines()
+                       if "Open HTML: " in line)
+        self.assertEqual(shlex.split(command), ["/usr/bin/open", str(run / "report.html")])
+        self.invoke("scan", "--repo", self.fixture.principal, "--html")
+        self.assertEqual(len(list(base.glob("run-*"))), 2)
+        self.assertEqual(before, filesystem_manifest(run))
+        self.assertEqual(base.stat().st_mode & 0o777, 0o700)
+
+    @unittest.skipUnless(sys.platform == "darwin", "macOS desktop default")
+    def test_review_and_plan_default_html_keep_json_stdout(self):
+        desktop = self.desktop()
+        base = desktop / "Worktree Sweep"
+        result = self.invoke("review", "--repo", self.fixture.principal,
+                             "--target", "refs/heads/main", "--html", "--format", "json")
+        run, _, review = self.verify_run(base, "review.json")
+        self.assertEqual(json.loads(result.stdout), review)
+        first = run
+        result = self.invoke("plan", "--inventory", first / "inventory.json",
+                             "--target", "refs/heads/main", "--html", "--format", "json")
+        second, = set(base.glob("run-*")) - {first}
+        self.assertEqual(json.loads(result.stdout), json.loads((second / "review.json").read_bytes()))
+        self.assertTrue((second / "report.html").is_file())
+        self.assertTrue((second / "run.json").is_file())
+
+    @unittest.skipUnless(sys.platform == "darwin", "macOS desktop default")
+    def test_custom_run_directory_overrides_desktop_and_plain_json_creates_nothing(self):
+        desktop = self.desktop()
+        custom = self.output("custom")
+        self.invoke("scan", "--repo", self.fixture.principal, "--html", "--run-dir", custom)
+        self.verify_run(custom, "inventory.json")
+        result = self.invoke("scan", "--repo", self.fixture.principal, "--format", "json")
+        self.assertEqual(json.loads(result.stdout)["schema"], "wt-sweep.inventory/1")
+        self.assertEqual(list(desktop.iterdir()), [])
+
+    @unittest.skipUnless(sys.platform == "darwin", "macOS desktop default")
+    def test_default_destination_refuses_symlink_or_protected_desktop_without_writing(self):
+        desktop = self.desktop()
+        destination = desktop / "Worktree Sweep"
+        destination.symlink_to(self.fixture.principal, target_is_directory=True)
+        self.invoke("scan", "--repo", self.fixture.principal, "--html", success=False)
+        destination.unlink()
+        # The default must not create even its base folder inside a scanned root.
+        self.invoke("scan", "--root", desktop, "--html", success=False)
+        self.assertEqual(list(desktop.iterdir()), [])
+
+    def test_html_and_open_conflicts_refuse_before_collection(self):
+        for flag in ("--html", "--open"):
+            with self.subTest(flag=flag):
+                result = self.invoke("scan", "--repo", self.out / "does-not-exist",
+                                     flag, "--out", self.out / "forbidden.json", success=False)
+                self.assertIn(b"--out", result.stderr)
+                self.assertIn(b"incompatible", result.stderr)
+        self.assertEqual(list(self.out.iterdir()), [])
+
+    @unittest.skipUnless(sys.platform == "darwin", "macOS desktop default")
+    def test_open_without_desktop_explains_custom_destination_before_collection(self):
+        self.fixture.env["HOME"] = str(self.out)
+        result = self.invoke("scan", "--repo", self.out / "does-not-exist", "--open", success=False)
+        self.assertIn(b"Desktop", result.stderr)
+        self.assertIn(b"--run-dir", result.stderr)
         self.assertEqual(list(self.out.iterdir()), [])
 
     def test_scan_html_matches_saved_inventory_and_is_explicitly_unreviewed(self):

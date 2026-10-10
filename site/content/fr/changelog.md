@@ -4,7 +4,7 @@ L’historique canonique ci-dessous conserve sa langue d’origine et ses dates 
 No release has been published. `Unreleased` covers the current source checkout;
 the Cargo package version is a development version.
 
-[Project overview](https://github.com/FlorianBruniaux/wt-sweep/blob/main/README.md) · [Documentation](/fr/docs/) · [Contributing](https://github.com/FlorianBruniaux/wt-sweep/blob/main/CONTRIBUTING.md)
+[Project overview](README.md) · [Documentation](docs/README.md) · [Contributing](CONTRIBUTING.md)
 
 ## [Unreleased]
 
@@ -40,6 +40,13 @@ the Cargo package version is a development version.
 
 ### Fixed
 
+- Align website browser assertions with the package version now displayed in
+  the updates banner; retain layout, date and navigation checks.
+
+- Remove redundant question-mark buttons from the HTML sidebar. Section labels
+  retain explanations on hover, keyboard focus and click, with native hover
+  help when JavaScript is disabled. Links still navigate to their sections.
+
 - Preserve the Git child's exit verdict when it has already closed its input
   before a commit session finishes. On macOS, this ordering previously returned
   `input_io` before checking the exit status. Failed exits, malformed output and
@@ -47,6 +54,25 @@ the Cargo package version is a development version.
   successful and failed child exits before finalization.
 
 ### Added
+
+- GitHub/GitLab repository, branch and commit links in review HTML and text,
+  with local upstream observations and capture intervals. Display associated
+  imported PR/MR links, titles, states and provenance. No fetch or server query:
+  page availability and publication remain unverified. `--no-context` skips
+  remote collection; imported PR/MR associations retain their existing rules.
+
+- Save HTML runs to `~/Desktop/Worktree Sweep/` on macOS when `--run-dir` is
+  omitted. Add `--open` to generate HTML and request opening after successful
+  publication; print a quoted reopen command in human output. Explicit output
+  directories, plain JSON defaults and publication protections remain intact.
+  A failed opener leaves the saved report available and emits a warning.
+
+- English console recap led by observed disk allocation in decimal KB/MB/GB.
+  Separate per-worktree commit ancestry from cleanup verdicts, rank up to five
+  selected worktrees by measured size, explain blockers and name collection
+  limits. Offer a safely quoted focused command using the running executable
+  and that row's recorded targets. Missing sizes, provisional history and
+  omitted targets remain explicit; no collection limits or verdicts change.
 
 - Local bilingual wt-sweep website with Astro and Starlight: product landing,
   twelve reviewed documentation guides in English and French, HTML sitemap,

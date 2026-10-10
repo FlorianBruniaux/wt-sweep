@@ -2,6 +2,18 @@
 
 [Open the synthetic example](/demo/report.html).
 
+## Save and open a report
+
+Add `--open` to `review`, `scan` or `plan` to save HTML and ask macOS to open it after publication. Without `--run-dir`, the destination is `~/Desktop/Worktree Sweep/run-*/`; the Desktop must already exist. Use `--html` to save without opening, or an explicit `--run-dir` outside the inspected roots. Each run has its own directory.
+
+## GitHub and GitLab links
+
+In a review, expand **Repository links** to open the recorded repository, branch or commit. These URLs come from recognized local remotes. A local tracking ref and its equality with HEAD do not establish the current server state or prove a push. The CLI does not contact the forge.
+
+Associated PR/MR links are visible alongside their captured state; expand their details for title and provenance. They require a matching `--forge FILE` import. Self-hosted providers also need an associated import to identify them. Unknown or ambiguous remotes remain explicit. `--no-context` skips remote metadata; existing imported PR/MR associations still appear. Inventory-only scans do not collect these links.
+
+Opening an external link contacts the chosen forge through your browser. It does not change a verdict. [Import format and association rules](https://github.com/FlorianBruniaux/wt-sweep/blob/main/docs/forge.md#links-in-review-reports).
+
 ## Read in this order
 
 1. Scope, observation intervals, coverage and source/selection totals.
@@ -19,7 +31,7 @@ Sizes use decimal units and are rounded for display; exact bytes stay in tooltip
 
 ## Navigation and sharing
 
-You can open and close the detail sections using the keyboard. The theme follows your system, with an optional local saved choice. Copy path uses the recorded path identity and offers a manual fallback if the clipboard is refused. Non-UTF-8 or control-containing paths retain reversible byte evidence instead of a lossy text copy.
+The sidebar labels provide explanations on hover, focus or click. You can open and close the detail sections using the keyboard. The theme follows your system, with an optional local saved choice. Copy path uses the recorded path identity and offers a manual fallback if the clipboard is refused. Non-UTF-8 or control-containing paths retain reversible byte evidence instead of a lossy text copy.
 
 Keep `run.json`, JSON and text with HTML. Verify artifact sizes and SHA-256 against the receipt before sharing a saved result. A receipt is neither a backup nor proof of successful final disk synchronization. An older report may no longer describe the current worktree state.
 

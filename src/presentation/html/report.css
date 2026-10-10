@@ -180,9 +180,7 @@ button:hover { border-color: var(--accent); color: var(--accent-hover); }
   border-left-color: var(--accent);
   color: var(--accent-hover);
 }
-.nav-item { display: grid; grid-template-columns: minmax(0, 1fr) 44px; align-items: center; }
-.nav-help { min-width: 44px; min-height: 44px; padding: .5rem; border: 0; background: transparent; color: var(--muted); font-weight: 650; }
-.nav-help:hover { background: var(--soft); color: var(--accent-hover); }
+.nav-item { display: grid; grid-template-columns: minmax(0, 1fr); }
 .nav-tooltip { width: min(20rem, calc(100vw - 2rem)); max-height: calc(100dvh - 2rem); overflow: auto; padding: 1rem; border: 1px solid var(--control-line); border-radius: var(--radius); background: var(--surface); color: var(--ink); font-size: .85rem; line-height: 1.6; box-shadow: 0 4px 16px #0002; }
 .sidebar small { display: block; font-size: .75rem; overflow-wrap: anywhere; }
 .sidebar .boundary {
@@ -418,3 +416,9 @@ pre { max-height: 28rem; overflow: auto; padding: 1rem; border: 1px solid var(--
   .badge { border: 1px solid var(--line); }
   .family[hidden], tr[hidden] { display: none !important; }
 }
+
+.forge-navigation { margin-bottom: 1rem; }
+.remote-record, .request-record { margin-top: .75rem; overflow-wrap: anywhere; }
+.forge-links { display: flex; flex-wrap: wrap; gap: .5rem 1rem; margin: .5rem 0; }
+.forge-navigation p { margin: .4rem 0; }
+.forge-navigation details { margin: .5rem 0; }

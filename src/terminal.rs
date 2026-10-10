@@ -22,15 +22,27 @@ pub fn decorate(opts: &Options, plain: &str) -> String {
     for line in plain.split_inclusive('\n') {
         let (icon, color) = if line.starts_with("WORKTREE SWEEP") {
             ("📋 ", "1;36")
-        } else if line.starts_with("  Keep:") {
+        } else if line.starts_with("  Keep:") || line.starts_with("  - Keep:") {
             ("  📌 ", "36")
-        } else if line.starts_with("  Cleanup candidates:") {
+        } else if line.starts_with("  Cleanup candidates:")
+            || line.starts_with("  - Cleanup candidates:")
+        {
             ("  🔎 ", "33")
-        } else if line.starts_with("  Needs verification:") {
+        } else if line.starts_with("  Needs verification:")
+            || line.starts_with("  - Needs verification:")
+        {
             ("  ⚠ ", "33")
         } else if line.starts_with("DISK USAGE") {
             ("💾 ", "1;36")
-        } else if line.starts_with("COVERAGE") {
+        } else if line.starts_with("  - ") && line.contains(" observed allocated") {
+            ("", "1;36")
+        } else if line.starts_with("COMMIT HISTORY") {
+            ("🌿 ", "1;36")
+        } else if line.starts_with("LARGEST WORKTREES") {
+            ("🎯 ", "1;36")
+        } else if line.starts_with("COLLECTION LIMITS") {
+            ("⚠ ", "1;33")
+        } else if line.starts_with("COVERAGE") || line.starts_with("CHECKS TO COMPLETE") {
             ("🔎 ", "1;36")
         } else if line.starts_with("NEXT CHECK") {
             ("👉 ", "1;33")
@@ -42,7 +54,14 @@ pub fn decorate(opts: &Options, plain: &str) -> String {
             output.push_str(line);
             continue;
         };
-        output.push_str(&format!("\x1b[{color}m{icon}{}\x1b[0m", line.trim()));
+        output.push_str(&format!(
+            "\x1b[{color}m{icon}{}\x1b[0m",
+            if icon.is_empty() {
+                line.trim_end()
+            } else {
+                line.trim().strip_prefix("- ").unwrap_or(line.trim())
+            }
+        ));
         if line.ends_with('\n') {
             output.push('\n');
         }

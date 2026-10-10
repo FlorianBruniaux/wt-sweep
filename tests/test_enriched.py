@@ -352,7 +352,7 @@ class EnrichedTests(unittest.TestCase):
         self.assertGreater(len(plan.stdout.splitlines()), 0)
         self.assertLessEqual(len(plan.stdout.splitlines()), 60)
         console = plan.stdout.decode()
-        for heading in ("RESULTS", "COVERAGE", "REPORT"):
+        for heading in ("DISK USAGE", "COMMIT HISTORY", "RESULTS", "CHECKS TO COMPLETE", "REPORT"):
             self.assertIn(heading, console)
         self.assertIn(str(plan_directory / "report.txt"), console)
         self.assertIn("Keep: 1", console)

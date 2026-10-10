@@ -12,10 +12,8 @@ Run from the built source checkout. Choose an absolute repository path and a ful
   IFS= read -r target_ref
   /usr/bin/git --no-optional-locks -c core.fsmonitor=false -C "$repo_path" \
     show-ref --verify --quiet "$target_ref"
-  report_dir="$(mktemp -d /private/tmp/wt-sweep-report.XXXXXX)"
   "$sweep_bin" review --repo "$repo_path" --target "$target_ref" \
-    --disk-usage --summary --html --run-dir "$report_dir"
-  open "$report_dir"/run-*/report.html
+    --disk-usage --summary --open
 )
 ```
 
@@ -23,9 +21,15 @@ Run from the built source checkout. Choose an absolute repository path and a ful
 
 ## Saved artifacts
 
-With `--html --run-dir`, a new `run-*` directory contains `inventory.json`, `review.json`, `report.txt`, `report.html` and `run.json`. Keep them together. The report directory must be outside every inspected root and Git family. Its parent directories must be ordinary directories.
+With `--html` or `--open`, a new `run-*` directory contains `inventory.json`, `review.json`, `report.txt`, `report.html` and `run.json`. Keep them together. The report directory must be outside every inspected root and Git family. Its parent directories must be ordinary directories.
 
-`--html` requires `--run-dir`. `scan --html` is an inventory, marked **not reviewed**, without invented verdicts.
+On macOS, HTML runs default to `~/Desktop/Worktree Sweep/run-*/`. The Desktop must exist. Add `--run-dir "/absolute/existing/folder"` to choose another destination outside the inspected scope. `--html` saves without opening; `--open` saves and asks macOS to open the HTML after publication. A failed opener leaves the files available and prints a warning. Human output includes a quoted command to reopen the report.
+
+`scan --html` is an inventory, marked **not reviewed**, without invented verdicts.
+
+## Read the console recap
+
+The English summary starts with observed disk allocation in KB/MB/GB when collected. It separates commit ancestry from cleanup verdicts, then lists up to five selected worktrees by observed size, their blockers and the collection limits. A focused retry uses that row’s recorded targets; confirm they are still suitable. Partial sizes may under-rank a worktree, and observed allocation is not recoverable space.
 
 ## Options by purpose
 
@@ -37,6 +41,7 @@ With `--html --run-dir`, a new `run-*` directory contains `inventory.json`, `rev
 | Measure disk | `--disk-usage`, independent `--disk-budget standard\|thorough` |
 | Limit expensive Git/local evidence | `--worktree EXACT_PATH`, `--budget standard\|thorough` |
 | Limit disk roots | repeated `--disk-root EXACT_PATH` with `--disk-usage` |
+| Save and open HTML | `--html`, `--open`, `--run-dir EXISTING_DIRECTORY` |
 | Presentation | `--summary`, `--verdict`, `--path-prefix`, `--group-by` |
 
 Display filters do not reduce collection. [Targets and filters](/docs/targets/) and [disk scope](/docs/disk/) explain the distinction.

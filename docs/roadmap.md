@@ -2,6 +2,19 @@
 
 [Index documentaire](README.md) · [Preuves du triage](finish-ledger.md#triage-t01-t09) · [Plan T01-T09](superpowers/plans/2026-10-05-worktree-triage-v2.md)
 
+## Finitions de lecture, 10/10/2026
+
+Le lot `60f0038` ajoute le récapitulatif console centré sur le disque, la sortie
+HTML sur le Bureau avec `--open`, les aides sur les intitulés et les liens de
+dépôt, branche, commit et PR/MR. Les guides CLI, HTML et forge ainsi que les pages
+anglaises et françaises du site décrivent ces comportements. La validation est
+consignée dans [les résultats d’implémentation](progress.md#liens-vers-les-forges-10102026).
+
+Ces finitions ne changent pas les verdicts ni les plafonds de collecte. Les liens
+s’appuient sur les données locales ou importées ; ils ne confirment pas l’état
+actuel de GitHub ou GitLab. L’évaluation native de #20 et les conditions de
+publication de l’alpha restent les prochaines étapes techniques.
+
 ## Travail restant au 09/10/2026
 
 L’audit et ses finitions sont fusionnés dans `main`. Les issues #16, #17, #19
@@ -171,8 +184,9 @@ une release binaire.
 ## Rapport HTML par projet
 
 Le [rendu HTML](html-report-plan.md) est raccordé à `scan`, `review` et `plan`
-avec `--html --run-dir`. Il affiche les familles, verdicts, tailles et lacunes
-sans modifier le jugement. Les preuves de validation et de livraison sont
+avec `--html`. Sur macOS, `--open` enregistre les rapports sur le Bureau et
+demande leur ouverture ; `--run-dir BASE` choisit un autre dossier existant.
+Le rapport affiche les familles, verdicts, tailles et lacunes sans modifier le jugement. Les preuves de validation et de livraison sont
 suivies dans #10 et #13 ; une implémentation locale ne vaut pas livraison distante.
 
 ## Espace disque

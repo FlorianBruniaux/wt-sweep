@@ -74,3 +74,22 @@ La relecture suit `~/.claude/ANTI_AI.md` : phrases complètes, termes usuels des
 Contrôles observés : 7 tests documentaires, de démo et de HTML réussis ; 34 tests navigateur réussis en français et anglais, avec thèmes clair/sombre, navigation au clavier, Axe, recherche et affichage mobile. Astro contrôle 41 fichiers sans erreur ni avertissement et construit 31 pages. Les captures françaises à 390 et 1440 px, ainsi que le menu documentaire, ont été relues. Les liens internes et leurs ancres résolvent dans le site construit.
 
 Une comparaison avec le commit précédent confirme que les blocs de code littéraux, chiffres et identifiants complets des observations dans la documentation n’ont pas changé. Seuls les prompts en texte libre sont révisés. Formatage Rust, Clippy et suite Cargo passent ; les 22 fichiers du harnais restent synchronisés. Ces contrôles locaux ne constituent pas une validation du déploiement distant.
+
+
+## Guides du rapport et intégration de main, 10/10/2026
+
+Les guides anglais et français reprennent la destination HTML sur le Bureau,
+`--open`, le récapitulatif disque et les liens GitHub/GitLab. Le manifeste des
+sources relues est actualisé ; les captures et la démo publiées gardent leurs
+provenances historiques. Aucun déploiement n’est lancé dans ce lot.
+
+`pnpm verify` réussit : 7 tests de documentation, démo, HTML et origine HTTPS,
+34 tests Chromium, contrôle Astro de 41 fichiers sans erreur ni avertissement,
+et compilation de 31 pages. Les dépendances verrouillées ont été installées
+depuis le cache avec les scripts d’installation désactivés.
+
+La première passe du navigateur échouait sur six attentes du bandeau : le
+commit `765a5d9` avait remplacé « Development version » par la version Cargo,
+sans adapter le test. L’assertion vérifie maintenant cette version tout en
+conservant les contrôles de disposition, de date et de navigation. La seconde
+passe complète réussit. Ces contrôles locaux ne prouvent pas un déploiement.

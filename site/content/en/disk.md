@@ -8,6 +8,8 @@ Use repeated `--disk-root EXACT_ABSOLUTE_PATH` to choose recorded roots. Include
 
 `--disk-budget standard|thorough` is separate from the Git/local `--budget`. Start with standard; higher limits can still leave gaps. `plan --inventory` retains captured sizes and observation dates without recounting them.
 
+The console recap uses decimal KB/MB/GB and lists the five largest selected worktrees by observed size. Partial measurements may under-rank them; rows without a size remain explicit.
+
 ## Read the values
 
 | Value | Meaning |

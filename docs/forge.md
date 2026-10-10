@@ -37,6 +37,53 @@ Without `--receipt`, the importer retains recognized requests but marks their
 capture provenance as incomplete. It does not turn a command transcript into
 capture evidence.
 
+## Links in review reports
+
+`review` and `plan` collect optional remote context by default. Their HTML and
+text reports show repository, branch and full-commit links for GitHub and GitLab.
+`scan` records inventory only; it does not collect this context. Old saved reviews
+without remote metadata display “not collected”. Rendering never reads Git.
+
+```sh
+wt-sweep review --repo /absolute/path/to/repo \
+  --target refs/heads/main --forge /absolute/path/to/capture/forge.json --open
+```
+
+Omit `--forge` when no capture is available: recognized public remotes still
+provide navigation. Use `--no-context` to skip remote, commit and changelog
+context. Existing imported PR/MR associations remain available with that option.
+
+| Report item | Meaning |
+| --- | --- |
+| Repository / Branch / Commit | URL constructed from local configuration. The page may be unavailable. |
+| HEAD matches the local tracking ref | The recorded HEAD equals the locally stored upstream OID. That ref can be stale. |
+| HEAD differs from the local tracking ref | The OIDs differ. This does not count unpushed commits or establish server state. |
+| Publication unknown | No usable configured upstream observation was collected. |
+| PR/MR and captured state | An imported request matched the source remote, branch and full HEAD. Its state belongs to the capture. |
+| No associated PR/MR | No matching request in the supplied evidence, not proof that none exists. |
+
+The branch link uses the configured upstream's remote branch when available;
+otherwise it uses the recorded local branch name as a proposed destination.
+Each remote is labeled separately. For a GitHub fork, source branch links point
+to the fork while the PR points to its target repository. GitLab fork association
+still requires source-path evidence the current importer does not provide; numeric
+project IDs alone do not attach an MR from another project.
+
+HTTPS and common SSH/SCP remote forms are recognized. Credentials are discarded.
+Ambiguous multi-URL remotes, invalid paths, unknown SSH aliases and unsupported
+hosts produce gaps instead of guessed destinations. Self-hosted GitHub/GitLab
+routes require an exactly associated imported request to identify the provider.
+No custom host configuration or live API adapter is installed.
+
+Collection uses the bounded optional-context budget and caches metadata per Git
+family. Local configuration and refs are separate observations, not an atomic
+snapshot. Context cannot change a cleanup verdict. Links are rebuilt and checked
+at render time, ref bytes are URL-encoded, and HTML labels are escaped. Clicking
+an external link opens a new tab; merely opening the report makes no network request.
+
+URL routes follow the [GitHub branch API examples](https://docs.github.com/en/rest/branches/branches)
+and [GitLab branch API examples](https://docs.gitlab.com/api/branches/).
+
 ## Executor receipt
 
 The client that actually executes and persists the capture should write

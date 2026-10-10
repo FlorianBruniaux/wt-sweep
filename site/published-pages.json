@@ -2,7 +2,7 @@
   {
     "slug": "index",
     "source": "docs/getting-started.md",
-    "sourceHash": "f79e075b6713cd67305f82bf70a41d04843bdc68f443174143cf4b4fd5aa1882",
+    "sourceHash": "b27db7a63231fea286736666f764ef820e76dd85f7d3aff3f1250df09819d817",
     "title": {
       "en": "Start with wt-sweep",
       "fr": "Démarrer avec wt-sweep"
@@ -15,7 +15,7 @@
   {
     "slug": "installation",
     "source": "docs/getting-started.md",
-    "sourceHash": "f79e075b6713cd67305f82bf70a41d04843bdc68f443174143cf4b4fd5aa1882",
+    "sourceHash": "b27db7a63231fea286736666f764ef820e76dd85f7d3aff3f1250df09819d817",
     "title": {
       "en": "Installation from source",
       "fr": "Installer depuis les sources"
@@ -28,7 +28,7 @@
   {
     "slug": "demo",
     "source": "docs/getting-started.md",
-    "sourceHash": "f79e075b6713cd67305f82bf70a41d04843bdc68f443174143cf4b4fd5aa1882",
+    "sourceHash": "b27db7a63231fea286736666f764ef820e76dd85f7d3aff3f1250df09819d817",
     "title": {
       "en": "Demo with a test repo",
       "fr": "Démo sur un repo de test"
@@ -41,7 +41,7 @@
   {
     "slug": "cli",
     "source": "docs/cli.md",
-    "sourceHash": "7b8f253d026311e766512a276605accecb878fa264da7fede1dded8048a57dc9",
+    "sourceHash": "d45b3a1faef162a7bf7b2335365db2f9e30700af364ba98c4f0562e864200929",
     "title": {
       "en": "CLI workflow",
       "fr": "Parcours CLI"
@@ -54,7 +54,7 @@
   {
     "slug": "disk",
     "source": "docs/disk-usage.md",
-    "sourceHash": "b1e12e22dfd2f746000183492096655559072b832956f0aeec0d03bf09cd012f",
+    "sourceHash": "1a8d49355b1815afe4b0696d3ad81e8d5652d6cf53135aecdb6c955e6d381ee2",
     "title": {
       "en": "Read disk measurements",
       "fr": "Comprendre les mesures disque"
@@ -67,7 +67,7 @@
   {
     "slug": "report",
     "source": "docs/html-report-plan.md",
-    "sourceHash": "d1e377ca65444eb4e7c5625877ad5037f513ad5a640d225d16f62fba8690050f",
+    "sourceHash": "476b70f5ad0b2f0016315c29eeb8877c1234319b63a002efca178a38c741cc63",
     "title": {
       "en": "Read the HTML report",
       "fr": "Lire le rapport HTML"
@@ -93,7 +93,7 @@
   {
     "slug": "assistant",
     "source": "docs/assistant-skill.md",
-    "sourceHash": "c2c520733292200ea1f579b55fb27439fee82900c791b09ad10ad5ea0eb86fef",
+    "sourceHash": "ed8e731da15cafabb9641499c288e001278d4bd2e9a82c096f9bb721ef61bcd2",
     "title": {
       "en": "Claude Code and Codex",
       "fr": "Claude Code et Codex"
@@ -106,7 +106,7 @@
   {
     "slug": "evidence",
     "source": "docs/contracts.md",
-    "sourceHash": "a2e2463e7f63719259fdc1a6c627d2ce9ef2d40102cc94aab6488bfdf3a9b45f",
+    "sourceHash": "149542c8468bb6c5eb46d45be3bef25f5c011b3cbc651f9135ca390f8d041f03",
     "title": {
       "en": "Evidence and limits",
       "fr": "Preuves et limites"
@@ -132,7 +132,7 @@
   {
     "slug": "changelog",
     "source": "CHANGELOG.md",
-    "sourceHash": "3158124e32685a85b705440ea9cdb84553a1bb610e8ea7ca57660f4bffe75e41",
+    "sourceHash": "9581e02ab81a72039b9e65acc610a94b71c14488257926abb5aa4cb1065f46fe",
     "title": {
       "en": "Changelog",
       "fr": "Historique des changements"

@@ -289,7 +289,7 @@ Private ancestry is shared within the same family. Cached immutable objects do
 not replace final checks of refs, administration, indexes or local files. No
 persistent cache or continuation from a previous report is implemented.
 
-## Optional commit and changelog context
+## Optional commit, changelog and remote context
 
 Version-2 reviews may contain top-level `context`, with its own interval, rows,
 `omitted_items` and gaps. Each row binds a worktree path, common-directory
@@ -327,6 +327,22 @@ records its size; `excerpt_truncated` records an excerpt limit. Excerpts use
 BytePath encoding and escaped human output. Output-budget omissions remain
 explicit, including when a whole row cannot fit. A statement such as “all work
 merged” in a changelog is descriptive text and has no role in C1-C5.
+
+### Remote metadata
+
+`context.items[].remote` is optional and omitted when absent, preserving older
+review digests. It records its own interval, remotes and gaps. Each remote keeps
+its byte-preserving name, provider, host, project, proposed remote branch,
+configured tracking ref and observed full tracking OID. `head_matches_tracking`
+is `null` without a comparison; `true` and `false` describe only equality with
+the recorded HEAD. Neither proves current server state or an actual push.
+
+The controlled collector reads remote URLs and a fixed `for-each-ref` format
+once per selected family, within the context attempt, byte, output and time caps.
+Credentials and unsupported destinations are not retained. The renderer derives
+and validates web URLs from these fields; it does not execute Git or contact a
+forge. `--no-context` omits remote metadata. `requests` keep their existing
+association rules and captured provenance independently of this field.
 
 ## Targeted evidence collection
 
@@ -580,7 +596,13 @@ backup contract. No receipt grants permission to delete a worktree.
 
 ## Offline HTML projection
 
-`scan`, `review` and `plan` accept `--html` only with `--run-dir BASE`.
+`scan`, `review` and `plan` accept `--html`. With no `--run-dir BASE`, the
+macOS destination is `~/Desktop/Worktree Sweep/`; Desktop must already exist.
+An explicit BASE must exist. Scope, symlink, exclusive-creation and receipt
+rules apply to both destinations. `--open` implies `--html` and invokes the
+native macOS opener only after the publisher returns successfully. This
+separate presentation step changes no artifact, digest or verdict. An opening
+failure is a warning, not a failed publication.
 The renderer reads an `Inventory` or a `ReviewView` already in memory, without
 Git calls, filesystem collection or new judgement. A scan is labelled
 `not reviewed`; a review retains its source coverage, selected rows, verdicts

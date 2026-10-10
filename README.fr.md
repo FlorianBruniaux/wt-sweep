@@ -94,16 +94,15 @@ Le bloc s’arrête si cette référence manque localement.
   IFS= read -r target_ref
   /usr/bin/git --no-optional-locks -c core.fsmonitor=false -C "$repo_path" \
     show-ref --verify --quiet "$target_ref"
-  report_dir="$(mktemp -d /private/tmp/wt-sweep-report.XXXXXX)"
   "$sweep_bin" review --repo "$repo_path" --target "$target_ref" \
-    --summary --disk-usage --html --run-dir "$report_dir"
-  printf 'Rapports : %s\n' "$report_dir"
-  open "$report_dir"/run-*/report.html
+    --summary --disk-usage --open
 )
 ```
 
-Gardez `XXXXXX` tel quel : `mktemp` le remplace par un suffixe unique. Les rapports
-doivent être hors des repos inspectés et de leurs administrations Git.
+`--open` enregistre HTML, texte et JSON dans `~/Desktop/Worktree Sweep/run-*/`
+puis demande à macOS d’ouvrir le HTML. Utilisez `--html` pour enregistrer sans
+ouvrir, ou ajoutez `--run-dir "/chemin/vers/rapports"` pour choisir un dossier
+existant. La sortie doit rester hors du périmètre inspecté et des dossiers Git.
 Pour essayer d’abord sur des worktrees synthétiques, suivez la
 [démo sur repo de test temporaire](docs/tutorial.fr.md#3-essayer-les-trois-verdicts-sur-un-repo-de-test-temporaire).
 
@@ -129,8 +128,16 @@ La découverte de racines explicites peut reprendre depuis un [checkpoint](docs/
 
 ### Lire le résultat
 
-`--summary` affiche verdicts, tailles et contrôles manquants. Ouvrez `report.html`
-pour la vue regroupée ou `report.txt` pour toutes les raisons.
+`--summary` affiche d’abord l’espace disque, puis sépare l’ascendance des commits
+des verdicts de nettoyage. Les cinq plus gros worktrees mesurés de la sélection
+apparaissent avec leurs blocages et une commande ciblée quand les chemins et
+cibles enregistrés peuvent être cités sans ambiguïté. La CLI reste en anglais,
+avec des tailles décimales KB/MB/GB. Ouvrez `report.html` pour la vue groupée ou
+`report.txt` pour les raisons détaillées.
+
+Une ascendance connue peut coexister avec un verdict « à vérifier » : les fichiers
+locaux, les objets Git ou l’histoire privée peuvent encore manquer de contrôles.
+Le bilan nomme les limites atteintes ; `--verbose` ajoute les durées techniques.
 
 | Verdict | Signification | Suite utile |
 | --- | --- | --- |
@@ -193,7 +200,11 @@ Capture du rapport généré sur un repo de test : quatre worktrees, trois `keep
 
 Le rapport fonctionne hors ligne ; ses sections de détail restent accessibles
 sans JavaScript.
-La recherche, le tri et la copie utilisent JavaScript. Le rapport est en anglais.
+La recherche, le tri et la copie utilisent JavaScript. Les revues proposent
+les liens GitHub/GitLab du dépôt, de la branche et du commit depuis les remotes
+locaux. `--forge FILE` ajoute les PR/MR associées et leur état capturé.
+Ces liens ne prouvent pas qu’un push a eu lieu ; la CLI ne contacte pas le serveur.
+[Liens et imports de forge](docs/forge.md#links-in-review-reports). Le rapport est en anglais.
 [Guide HTML](docs/html-report-plan.md) · [Provenance des illustrations et captures](docs/assets/README.md)
 
 ---
@@ -251,7 +262,7 @@ Sweep n’installe aucun skill global ni hook.
 | Preuves de forge hors ligne | Importer des données capturées depuis GitHub ou GitLab avec leur provenance, sans contacter de forge. | `forge ingerer` |
 | Rapports texte et JSON | Lire le rapport détaillé ou le bilan structuré dans la console ; conserver les octets complets des chemins et les identifiants d’objets Git dans le JSON. | `--summary`, `--format json` |
 | Espace disque | Mesurer les tailles logiques et allouées, fichiers ignorés inclus, avec résultats partiels et déduplication par inode. | `--disk-usage` |
-| HTML hors ligne | Parcourir les worktrees par famille, chercher, trier et consulter les preuves capturées. | `--html --run-dir BASE` |
+| HTML hors ligne | Parcourir les worktrees par famille, chercher, trier et consulter les preuves capturées. | `--open` ou `--html` |
 | Collecte ciblée | Consacrer le budget par worktree à un chemin choisi après lecture de ses lacunes. | `--worktree PATH --budget thorough` |
 | Exécutions séparées | Conserver les rapports concurrents dans des dossiers distincts, avec les empreintes des fichiers produits et les horodatages de publication. | `--run-dir BASE` |
 

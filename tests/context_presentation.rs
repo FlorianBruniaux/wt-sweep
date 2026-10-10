@@ -76,6 +76,7 @@ fn report() -> Review {
         started_unix_ms: 30,
         finished_unix_ms: 40,
         items: vec![WorktreeContext {
+            remote: None,
             path,
             common_dir: bp(b"/fixture/main/.git"),
             family_identity: Identity {
@@ -156,4 +157,21 @@ fn forge_renderer_exposes_recorded_provenance_without_calling_open_request_proce
     }
     assert!(detail.contains(&"c".repeat(64)));
     assert!(!detail.contains("process active"));
+}
+
+#[test]
+fn absent_remote_context_preserves_existing_json_and_digest() {
+    let report = report();
+    let before = serde_json::to_vec(&report).unwrap();
+    assert!(
+        !String::from_utf8(before.clone())
+            .unwrap()
+            .contains("\"remote\"")
+    );
+    let restored: Review = serde_json::from_slice(&before).unwrap();
+    assert_eq!(before, serde_json::to_vec(&restored).unwrap());
+    assert_eq!(
+        canonical_digest(&report).unwrap(),
+        canonical_digest(&restored).unwrap()
+    );
 }

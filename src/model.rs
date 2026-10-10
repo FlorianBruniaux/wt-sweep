@@ -812,6 +812,8 @@ pub struct ReviewContext {
 #[derive(Clone, Debug, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct WorktreeContext {
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub remote: Option<RemoteContext>,
     pub path: BytePath,
     pub common_dir: BytePath,
     pub family_identity: Identity,
@@ -855,4 +857,26 @@ pub struct ChangelogContext {
     pub excerpt: Option<BytePath>,
     pub excerpt_truncated: bool,
     pub gaps: Vec<String>,
+}
+
+/// Local remote metadata is descriptive only; the server was not contacted.
+#[derive(Clone, Debug, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct RemoteContext {
+    pub started_unix_ms: u64,
+    pub finished_unix_ms: u64,
+    pub remotes: Vec<RemoteLink>,
+    pub gaps: Vec<String>,
+}
+#[derive(Clone, Debug, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct RemoteLink {
+    pub name: BytePath,
+    pub provider: String,
+    pub host: String,
+    pub project: String,
+    pub branch: Option<BytePath>,
+    pub tracking_ref: Option<BytePath>,
+    pub tracking_oid: Option<String>,
+    pub head_matches_tracking: Option<bool>,
 }

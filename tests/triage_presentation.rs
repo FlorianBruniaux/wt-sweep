@@ -451,7 +451,7 @@ fn compact_view_keeps_source_gaps_and_partial_disk_but_counts_selected_checks()
         "Cleanup candidates: 0",
         "Needs verification: 0",
         "Source totals: 1 keep, 1 candidates, 1 to verify",
-        "1.00 KiB (INCOMPLETE)",
+        "1.02 KB observed allocated (INCOMPLETE)",
         "0/1 roots complete",
         "unaffected by review filters",
         "not reclaimable space",
@@ -492,18 +492,18 @@ fn compact_recap_exposes_unresolved_conditions_without_claiming_cleanliness()
         "{summary}"
     );
     assert!(
-        summary.contains("Collection limits reached: 1 types"),
+        summary.contains("Local collection budget reached"),
         "{summary}"
     );
     assert!(
-        summary.contains("--worktree PATH --budget thorough"),
+        summary.contains("No safe copyable command available"),
         "{summary}"
     );
     assert!(
         summary.contains("Usage by agents or terminals: not checked"),
         "{summary}"
     );
-    assert!(summary.lines().count() <= 32, "{summary}");
+    assert!(summary.lines().count() <= 80, "{summary}");
     Ok(())
 }
 
@@ -569,4 +569,186 @@ fn progress_local_retains_partial_and_unknown_counts() {
     assert!(output.contains("ignored=UNKNOWN"), "{output}");
     assert!(output.contains("provisional"));
     assert!(!output.contains("cleanup_candidate"));
+}
+
+fn history_fact(result: &str) -> HistoryObservation {
+    HistoryObservation {
+        source_oid: Some("a".repeat(40)),
+        target_ref: BytePath::from_bytes(b"refs/heads/main"),
+        target_oid: Some("b".repeat(40)),
+        result: result.into(),
+        observed_result: None,
+        started_unix_ms: 10,
+        finished_unix_ms: 20,
+        stop_reason: None,
+    }
+}
+
+fn recap_disk(rows: &[(&[u8], Option<u64>, bool)]) -> wt_sweep::disk::DiskUsage {
+    use wt_sweep::disk::*;
+    DiskUsage {
+        requested_paths: None,
+        started_unix_ms: 10,
+        finished_unix_ms: 20,
+        elapsed_ms: 10,
+        limits: Default::default(),
+        complete: false,
+        temporal_consistency: "not_guaranteed".into(),
+        // Deliberately not the sum of rows: their hardlinks can overlap.
+        unique_bytes: DiskBytes {
+            allocated: 2_500_000_000,
+            logical: 2_000_000_000,
+        },
+        measurements: rows
+            .iter()
+            .map(|(path, bytes, complete)| DiskMeasurement {
+                requested: true,
+                path: BytePath::from_bytes(path),
+                kind: DiskKind::Worktree,
+                identity: None,
+                bytes: bytes.map(|allocated| DiskBytes {
+                    allocated,
+                    logical: allocated,
+                }),
+                complete: *complete,
+                entries_checked: 1,
+                excluded_registered_roots: 0,
+                elapsed_ms: 1,
+                gaps: vec![],
+                gaps_omitted: 0,
+            })
+            .collect(),
+    }
+}
+
+#[test]
+fn actionable_recap_separates_commit_relations_from_cleanup_decisions()
+-> Result<(), Box<dyn std::error::Error>> {
+    let mut source = report()?;
+    source.items[0].history = vec![history_fact("ancestor"), history_fact("ancestor")];
+    source.items[1].history = vec![history_fact("not_ancestor")];
+    let mut provisional = history_fact("unknown");
+    provisional.observed_result = Some("ancestor".into());
+    source.items[2].history = vec![provisional];
+    let before = serde_json::to_vec(&source)?;
+    let text = wt_sweep::presentation::compact_summary(&source);
+    assert!(text.contains("HEAD matches or is an ancestor: 1"), "{text}");
+    assert!(
+        text.contains("Not an ancestor of any checked target: 1"),
+        "{text}"
+    );
+    assert!(text.contains("Relationship unknown: 1"), "{text}");
+    assert!(text.contains("Cleanup candidates: 1"), "{text}");
+    assert_eq!(before, serde_json::to_vec(&source)?);
+    source.items[1].history_omitted_targets = 1;
+    let text = wt_sweep::presentation::compact_summary(&source);
+    assert!(
+        text.contains("Relationship unknown: 2"),
+        "an omitted target cannot be counted negative: {text}"
+    );
+    Ok(())
+}
+
+#[test]
+fn actionable_recap_leads_with_observed_disk_and_ranks_only_selected_worktrees()
+-> Result<(), Box<dyn std::error::Error>> {
+    let mut source = report()?;
+    source.items[2].path = BytePath::from_bytes(b"/fixture/largest");
+    source.disk_usage = Some(recap_disk(&[
+        (b"/fixture/kept", Some(1_000_000_000), true),
+        (b"/fixture/largest", Some(2_000_000_000), false),
+        (b"/fixture/unselected", Some(9_000_000_000), true),
+        (b"/fixture/candidate", None, false),
+    ]));
+    let text = wt_sweep::presentation::compact_summary(&source);
+    assert!(
+        text.find("DISK USAGE").ok_or("missing DISK USAGE")?
+            < text.find("RESULTS").ok_or("missing RESULTS")?
+    );
+    assert!(
+        text.contains("2.50 GB observed allocated (INCOMPLETE)"),
+        "{text}"
+    );
+    assert!(
+        text.contains("Reclaimable space: not established"),
+        "{text}"
+    );
+    let largest = text
+        .split("LARGEST WORKTREES")
+        .nth(1)
+        .ok_or("missing ranked worktrees")?;
+    assert!(
+        largest
+            .find("/fixture/largest")
+            .ok_or("missing /fixture/largest")?
+            < largest
+                .find("/fixture/kept")
+                .ok_or("missing /fixture/kept")?
+    );
+    assert!(largest.contains("2.00 GB [partial]"), "{largest}");
+    assert!(!largest.contains("/fixture/unselected"));
+    assert!(
+        text.contains("1 selected worktree(s) without a size"),
+        "{text}"
+    );
+    assert!(!text.contains("0 B /fixture/candidate"));
+    Ok(())
+}
+
+#[test]
+fn actionable_recap_retry_round_trips_shell_arguments_and_never_guesses_a_target()
+-> Result<(), Box<dyn std::error::Error>> {
+    let mut source = report()?;
+    source.coverage.traversal_complete = true;
+    let path = b"/fixture/it's $(printf INJECTED) work";
+    source.items[2].path = BytePath::from_bytes(path);
+    source.items[2].history = vec![history_fact("unknown")];
+    let text = wt_sweep::presentation::compact_summary(&source);
+    let command = text
+        .lines()
+        .find(|line| line.trim_start().starts_with("'wt-sweep' review "))
+        .ok_or("missing exact focused command")?
+        .trim();
+    let output = std::process::Command::new("/bin/sh")
+        .arg("-c")
+        .arg(format!("set -- {command}; printf '%s\\n' \"$@\""))
+        .output()?;
+    assert!(
+        output.status.success(),
+        "{}",
+        String::from_utf8_lossy(&output.stderr)
+    );
+    let args = String::from_utf8(output.stdout)?;
+    assert_eq!(
+        args.lines().collect::<Vec<_>>(),
+        vec![
+            "wt-sweep",
+            "review",
+            "--repo",
+            std::str::from_utf8(path)?,
+            "--worktree",
+            std::str::from_utf8(path)?,
+            "--path-prefix",
+            std::str::from_utf8(path)?,
+            "--target",
+            "refs/heads/main",
+            "--budget",
+            "thorough",
+            "--summary",
+        ]
+    );
+    source.items[2].history.clear();
+    let text = wt_sweep::presentation::compact_summary(&source);
+    assert!(
+        !text.contains("'wt-sweep' review"),
+        "must not guess target: {text}"
+    );
+    source.items[2].history = vec![history_fact("unknown")];
+    source.items[2].path = BytePath::from_bytes(b"/fixture/unsafe\npath");
+    let text = wt_sweep::presentation::compact_summary(&source);
+    assert!(
+        !text.contains("'wt-sweep' review"),
+        "do not offer lossy/control-character command: {text}"
+    );
+    Ok(())
 }

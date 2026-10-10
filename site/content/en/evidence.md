@@ -23,3 +23,7 @@ Writer exclusion, durable backup and independent restoration gates have not pass
 ## Platform limits
 
 The CLI establishes a native macOS dataless materialization guard. Actual FileProvider placeholders and TCC refusals remain unverified. Kernel-blocked operations may exceed userspace deadlines. [Disk sizes](/docs/disk/) never promise recoverable APFS space.
+
+## Forge context
+
+Repository, branch and commit URLs are built from captured local metadata. They are not checked against the server. Only exactly associated imported PR/MR observations are shown as requests; remote links do not alter triage. [Report links and provenance](/docs/report/#github-and-gitlab-links).
