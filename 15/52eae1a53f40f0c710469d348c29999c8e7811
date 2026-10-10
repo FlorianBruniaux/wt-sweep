@@ -1,0 +1,21 @@
+docs/README.md
+  s_160b3107588443::t_81c027866e1c25 7-9
+docs/progress.md
+  s_160b3107588443::t_41069d5bae479d 42-43,56-61
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "1552eae1a53f40f0c710469d348c29999c8e7811",
+  "prompts": {},
+  "sessions": {
+    "s_160b3107588443": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a106f2-069b-7be2-aa09-88b1bbf2331e",
+        "model": "gpt-6-astra"
+      },
+      "human_author": "Florian BRUNIAUX <florian@bruniaux.com>"
+    }
+  }
+}
