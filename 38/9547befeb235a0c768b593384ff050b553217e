@@ -1,0 +1,213 @@
+CHANGELOG.md
+  s_488c1f2a8a73a2::t_31ccc480812951 10-21,32-38
+docs/README.md
+  s_8c08a1349a79e3::t_e40d59e88bbf99 51-59
+docs/superpowers/plans/2026-10-09-wt-sweep-site.md
+  s_8c08a1349a79e3::t_5866727fe6c595 1-25
+docs/superpowers/specs/2026-10-09-wt-sweep-site-design.md
+  s_ded836f56a6d83::t_deae3f829f8ffa 1-138
+site/.gitignore
+  s_ded836f56a6d83::t_d83836f03d228c 1-7
+site/README.md
+  s_8c08a1349a79e3::t_a651d6e75cffb4 1-27
+site/VERIFICATION.md
+  s_8c08a1349a79e3::t_554ff960a6b71e 1-58
+site/astro.config.mjs
+  s_8c08a1349a79e3::t_915d3c619a369c 1-4
+site/content/en/assistant.md
+  s_8c08a1349a79e3::t_7fef6dba76d9f6 1-35
+site/content/en/changelog.md
+  s_8c08a1349a79e3::t_7e5e8ddc0fd7ac 1-506
+site/content/en/cli.md
+  s_8c08a1349a79e3::t_d87f2539d2198a 1-44
+site/content/en/demo.md
+  s_8c08a1349a79e3::t_790de92db111b3 1-47
+site/content/en/disk.md
+  s_8c08a1349a79e3::t_3e4301d6c74413 1-32
+site/content/en/evidence.md
+  s_8c08a1349a79e3::t_d7242b80091b88 1-25
+site/content/en/index.md
+  s_8c08a1349a79e3::t_5c10d27b40ffbd 1-20
+site/content/en/installation.md
+  s_8c08a1349a79e3::t_220189eaabc434 1-26
+site/content/en/license.md
+  s_8c08a1349a79e3::t_aaccff38507491 1-106
+site/content/en/report.md
+  s_8c08a1349a79e3::t_059ea1bbd75d85 1-26
+site/content/en/resume.md
+  s_8c08a1349a79e3::t_d4c6ad66192ca8 1-24
+site/content/en/targets.md
+  s_8c08a1349a79e3::t_380b3c73043d56 1-27
+site/content/fr/assistant.md
+  s_8c08a1349a79e3::t_93246a1fc23200 1-35
+site/content/fr/changelog.md
+  s_8c08a1349a79e3::t_65e57ab8992ccc 1-506
+site/content/fr/cli.md
+  s_8c08a1349a79e3::t_6467ada9b7732d 1-44
+site/content/fr/demo.md
+  s_8c08a1349a79e3::t_b267c444b29ebb 1-47
+site/content/fr/disk.md
+  s_8c08a1349a79e3::t_a9737e7900611e 1-32
+site/content/fr/evidence.md
+  s_8c08a1349a79e3::t_1ed941962bc477 1-25
+site/content/fr/index.md
+  s_8c08a1349a79e3::t_d0c432e09ba96e 1-20
+site/content/fr/installation.md
+  s_8c08a1349a79e3::t_47683482168116 1-26
+site/content/fr/license.md
+  s_8c08a1349a79e3::t_a57a9fe7ff565e 1-106
+site/content/fr/report.md
+  s_8c08a1349a79e3::t_1ebb10edd060e2 1-26
+site/content/fr/resume.md
+  s_8c08a1349a79e3::t_373ee2ec6cade8 1-24
+site/content/fr/targets.md
+  s_8c08a1349a79e3::t_c658aac6ee2f61 1-27
+site/package.json
+  s_8c08a1349a79e3::t_a9ae5e72827c3a 1-29
+site/playwright.config.ts
+  s_ded836f56a6d83::t_b2c00304de519f 1-2
+site/pnpm-lock.yaml
+  s_ded836f56a6d83::t_dec853e3074760 1-5166
+site/public/assets/report-captures.json
+  s_ded836f56a6d83::t_1c29b4cc254cd4 1-57
+site/public/demo/inventory.json
+  s_ded836f56a6d83::t_8a17a9eb687850 1-254
+site/public/demo/provenance.json
+  s_ded836f56a6d83::t_40eb866a5cfc46 1-18
+site/public/demo/report.html
+  s_ded836f56a6d83::t_8419450582535f 1-3408
+site/public/demo/report.txt
+  s_ded836f56a6d83::t_3da7af062ae200 1-198
+site/public/demo/review.json
+  s_ded836f56a6d83::t_fc8f7b1da9ad15 1-2952
+site/public/demo/run.json
+  s_ded836f56a6d83::t_fe87ffa7125139 1-36
+site/public/favicon.svg
+  s_ded836f56a6d83::t_32accab5c7513c 1
+site/published-pages.json
+  s_8c08a1349a79e3::t_9b6e6d883ddaa1 1-158
+site/scripts/generate-demo.py
+  s_8c08a1349a79e3::t_85c8e6a83a7a32 1-74
+site/scripts/prepare-doc-content.mjs
+  s_8c08a1349a79e3::t_835122e282e992 1-49
+site/src/components/DiscoveryPage.astro
+  s_ded836f56a6d83::t_c7449a3be580b5 1-6
+site/src/components/EvidenceSafety.astro
+  s_ded836f56a6d83::t_13166adaaf13d1 1-8
+site/src/components/Faq.astro
+  s_ded836f56a6d83::t_92b66e7820bd57 1-8
+site/src/components/FinalCta.astro
+  s_ded836f56a6d83::t_0b96c3ecb7f811 1-8
+site/src/components/Hero.astro
+  s_ded836f56a6d83::t_2590671ccb9c49 1-8
+site/src/components/Install.astro
+  s_8c08a1349a79e3::t_661f848cecfb60 1-8
+site/src/components/LandingPage.astro
+  s_488c1f2a8a73a2::t_54b71ac2ed8fad 1-32
+site/src/components/Needs.astro
+  s_ded836f56a6d83::t_a7050cb4c4d1fc 1-8
+site/src/components/Report.astro
+  s_8c08a1349a79e3::t_d7c07d690d57b2 1-8
+site/src/components/SiteFooter.astro
+  s_ded836f56a6d83::t_61bb6aeec15fef 1-6
+site/src/components/SiteHeader.astro
+  s_8c08a1349a79e3::t_4367edb8ae05f3 1-104
+site/src/components/UpdatesBanner.astro
+  s_488c1f2a8a73a2::t_e0c2d8670034be 1-18
+site/src/components/Verdicts.astro
+  s_ded836f56a6d83::t_47259eb3afd1ec 1-8
+site/src/components/Workflow.astro
+  s_8c08a1349a79e3::t_755c43188bb4d6 1-8
+site/src/components/docs/DocsFooter.astro
+  s_ded836f56a6d83::t_c0412c46aca02d 1-27
+site/src/components/docs/Head.astro
+  s_8c08a1349a79e3::t_4d3e60dac43e0a 1-12
+site/src/components/docs/SiteTitle.astro
+  s_ded836f56a6d83::t_915842a1d4f198 1-52
+site/src/content.config.ts
+  s_ded836f56a6d83::t_61c0c4be7e4344 1-15
+site/src/data/content.ts
+  s_8c08a1349a79e3::t_6fc87a698492dc 1-7
+site/src/data/landing.ts
+  s_ded836f56a6d83::t_f9c502fe27e63c 1-11
+site/src/data/navigation.ts
+  s_8c08a1349a79e3::t_981a8881c546bb 1-11
+site/src/data/updates.mjs
+  s_488c1f2a8a73a2::t_80c338e72424d6 1-16
+site/src/layouts/BaseLayout.astro
+  s_8c08a1349a79e3::t_61519b66e475d4 1-78
+site/src/pages/404.astro
+  s_8c08a1349a79e3::t_8ed9d7f39cf642 1-4
+site/src/pages/fr/index.astro
+  s_ded836f56a6d83::t_d0644c2e46c08f 1-4
+site/src/pages/fr/sitemap.astro
+  s_ded836f56a6d83::t_29267a54eb8da6 1-4
+site/src/pages/fr/updates.astro
+  s_ded836f56a6d83::t_26e9cd2dd293c8 1-4
+site/src/pages/index.astro
+  s_ded836f56a6d83::t_fe11c9cc2275e2 1-4
+site/src/pages/robots.txt.ts
+  s_8c08a1349a79e3::t_42d214ef3f1573 1-2
+site/src/pages/sitemap.astro
+  s_ded836f56a6d83::t_090951cf55a8f1 1-4
+site/src/pages/updates.astro
+  s_ded836f56a6d83::t_9e135e391c25d9 1-4
+site/src/scripts/interactions.ts
+  s_8c08a1349a79e3::t_1df657ad11ca4b 1-168
+site/src/styles/global.css
+  s_488c1f2a8a73a2::t_289142063555e9 1-288
+site/src/styles/starlight-overrides.css
+  s_ded836f56a6d83::t_08d4a110d21633 1-164
+site/tests/browser/site.spec.ts
+  s_8c08a1349a79e3::t_ff2911961b8035 1-152
+site/tests/dist.test.mjs
+  s_8c08a1349a79e3::t_912f7961189f6f 1-42
+site/tests/doc-content.test.mjs
+  s_8c08a1349a79e3::t_0ef2e6dff7056f 1-52
+site/tests/public-build.test.mjs
+  s_8c08a1349a79e3::t_10b10df00310b8 1-26
+site/tests/updates.test.mjs
+  s_163da2ac010891::t_2245c7278e2ac6 1-15
+site/tsconfig.json
+  s_ded836f56a6d83::t_d8e7bed9f0bdbd 1-5
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "389547befeb235a0c768b593384ff050b553217e",
+  "prompts": {},
+  "sessions": {
+    "s_163da2ac010891": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "90ef5234-6b31-4b56-92aa-8f9e5acc5b62",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "Florian BRUNIAUX <florian@bruniaux.com>"
+    },
+    "s_488c1f2a8a73a2": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a07172-9765-7811-8998-5776ebeb40d9",
+        "model": "gpt-6-astra"
+      },
+      "human_author": "Florian BRUNIAUX <florian@bruniaux.com>"
+    },
+    "s_8c08a1349a79e3": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a121ae-89ef-72b1-b77b-263389db51a2",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "Florian BRUNIAUX <florian@bruniaux.com>"
+    },
+    "s_ded836f56a6d83": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "2411f16c-88e6-4622-9ccc-03c30968a7a1",
+        "model": "unknown"
+      },
+      "human_author": "Florian BRUNIAUX <florian@bruniaux.com>"
+    }
+  }
+}
