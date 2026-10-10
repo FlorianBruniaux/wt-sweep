@@ -67,6 +67,11 @@ Il lit ensuite les artefacts sauvegardés, vérifie le reçu et donne le chemin
 du HTML. Les messages de progression sont provisoires et ne remplacent pas le
 rapport final. Les tailles allouées ne prédisent pas un gain récupérable sur APFS.
 
+Sur macOS, `--html` sans destination enregistre dans
+`~/Desktop/Worktree Sweep/`. Un assistant peut garder une sortie explicite avec
+`--run-dir` ; ajoutez `--open` si vous souhaitez ouvrir le HTML après publication.
+L’[aide des sorties](cli.md#output-modes) précise les limites et les erreurs.
+
 ## Reprendre un rapport sans relancer l’analyse
 
 Le chemin attendu est le sous-dossier `run-*` qui contient `run.json`,
@@ -84,6 +89,20 @@ qui n’a pas été revérifié.
 Un ancien rapport peut expliquer une décision passée. Il ne suffit pas pour
 décider aujourd’hui d’une suppression. Un reçu cohérent ne prouve ni une
 sauvegarde restaurable, ni la réussite de la dernière synchronisation sur disque.
+
+## Lire les liens GitHub et GitLab
+
+Les revues avec contexte proposent des liens vers le dépôt, la branche et le
+commit à partir des remotes locaux. L’assistant doit distinguer ces destinations
+de l’état du serveur : même une égalité avec la ref locale de suivi ne confirme
+pas que le commit est encore publié. Un ancien rapport sans cette collecte ne
+permet pas de reconstruire ces liens à partir de nouvelles lectures silencieuses.
+
+Pour afficher une PR/MR et son état capturé, fournissez un import `--forge FILE`
+selon le [guide des forges](forge.md#links-in-review-reports). L’assistant conserve
+la date, la source et les lacunes de cet import. L’absence de demande associée
+ne prouve pas qu’aucune PR/MR n’existe. Le rapport ne consulte pas le serveur ;
+un lien permet au lecteur d’y poursuivre la vérification.
 
 ## Ce que signifie « par étapes »
 

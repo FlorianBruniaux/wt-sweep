@@ -2,10 +2,13 @@
 use super::text;
 use crate::{
     discover::{DiscoveryPhase, DiscoveryProgress},
-    model::{Coverage, LocalSummary, Review, ReviewItem, ReviewView},
+    model::{BytePath, Coverage, LocalSummary, Review, ReviewItem, ReviewView},
     review::{ProgressEvent, ProgressObservation},
 };
-use std::{collections::BTreeSet, fmt::Write};
+use std::{
+    collections::{BTreeMap, BTreeSet},
+    fmt::Write,
+};
 
 fn counts(rows: &[&ReviewItem]) -> (usize, usize, usize) {
     let keep = rows.iter().filter(|i| i.classification == "keep").count();
@@ -551,10 +554,18 @@ pub fn review_progress(event: &ProgressEvent) -> String {
 
 /// Short console recap. The saved report still uses the detailed rendering above.
 pub fn compact_summary(review: &Review) -> String {
-    compact(review, &review.items.iter().collect::<Vec<_>>())
+    compact_summary_with_executable(review, &BytePath::from_bytes(b"wt-sweep"))
+}
+
+pub fn compact_summary_with_executable(review: &Review, executable: &BytePath) -> String {
+    compact(review, &review.items.iter().collect::<Vec<_>>(), executable)
 }
 
 pub fn compact_view_summary(view: &ReviewView) -> String {
+    compact_view_summary_with_executable(view, &BytePath::from_bytes(b"wt-sweep"))
+}
+
+pub fn compact_view_summary_with_executable(view: &ReviewView, executable: &BytePath) -> String {
     let selected: BTreeSet<_> = view.selected_paths.iter().collect();
     compact(
         &view.source,
@@ -564,10 +575,134 @@ pub fn compact_view_summary(view: &ReviewView) -> String {
             .iter()
             .filter(|item| selected.contains(&item.path))
             .collect::<Vec<_>>(),
+        executable,
     )
 }
 
-fn compact(review: &Review, rows: &[&ReviewItem]) -> String {
+fn decimal_bytes(value: u64) -> String {
+    let units = ["B", "KB", "MB", "GB", "TB", "PB", "EB"];
+    let mut amount = value as f64;
+    let mut unit = 0;
+    while amount >= 1000.0 && unit + 1 < units.len() {
+        amount /= 1000.0;
+        unit += 1;
+    }
+    if unit == 0 {
+        format!("{value} B")
+    } else {
+        format!("{amount:.2} {}", units[unit])
+    }
+}
+
+fn missing_labels(item: &ReviewItem) -> String {
+    let Some(decision) = &item.decision else {
+        return "decision evidence".into();
+    };
+    decision
+        .missing_conditions
+        .iter()
+        .map(|condition| match condition.as_str() {
+            "C1" => "identity/protections",
+            "C2" => "integration",
+            "C3" => "local files",
+            "C4" => "private history",
+            "C5" => "final checks",
+            _ => "other evidence",
+        })
+        .collect::<Vec<_>>()
+        .join(", ")
+}
+
+/// A copyable command must preserve each argument, not the escaped display path.
+/// Control/non-UTF-8 paths remain in the report but get no shell suggestion.
+fn shell_argument(value: &BytePath) -> Option<String> {
+    let bytes = value.bytes().ok()?;
+    let value = std::str::from_utf8(&bytes).ok()?;
+    if value.is_empty()
+        || value.len() > 4096
+        || value.chars().any(|c| {
+            c.is_control()
+                || ('\u{202a}'..='\u{202e}').contains(&c)
+                || ('\u{2066}'..='\u{2069}').contains(&c)
+        })
+    {
+        return None;
+    }
+    Some(format!("'{}'", value.replace('\'', "'\\''")))
+}
+
+fn focused_command(item: &ReviewItem, executable: &BytePath) -> Option<String> {
+    let path = item.path.to_path().ok()?;
+    if !path.is_absolute()
+        || path
+            .components()
+            .any(|c| c == std::path::Component::ParentDir)
+        || item.history_omitted_targets > 0
+    {
+        return None;
+    }
+    let targets: BTreeSet<_> = item.history.iter().map(|h| &h.target_ref).collect();
+    if targets.is_empty() || targets.len() > 8 {
+        return None;
+    }
+    let path = shell_argument(&item.path)?;
+    let mut command = format!(
+        "{} review --repo {path} --worktree {path} --path-prefix {path}",
+        shell_argument(executable)?
+    );
+    for target in targets {
+        crate::review::full_ref(target).ok()?;
+        let _ = write!(command, " --target {}", shell_argument(target)?);
+    }
+    command.push_str(" --budget thorough --summary");
+    Some(command)
+}
+
+fn write_history(rows: &[&ReviewItem], out: &mut String) {
+    let mut positive = 0;
+    let mut negative = 0;
+    for item in rows {
+        let current = |h: &&crate::model::HistoryObservation| {
+            item.head.is_some()
+                && h.source_oid == item.head
+                && h.target_oid.is_some()
+                && h.stop_reason.is_none()
+        };
+        if item
+            .history
+            .iter()
+            .filter(current)
+            .any(|h| matches!(h.result.as_str(), "identical_commit" | "ancestor"))
+        {
+            positive += 1;
+        } else if !item.history.is_empty()
+            && item.history_omitted_targets == 0
+            && item
+                .history
+                .iter()
+                .all(|h| current(&h) && h.result == "not_ancestor")
+        {
+            negative += 1;
+        }
+    }
+    let _ = writeln!(
+        out,
+        "\nCOMMIT HISTORY (selected worktrees, against their recorded targets)"
+    );
+    let _ = writeln!(out, "  - HEAD matches or is an ancestor: {positive}");
+    let _ = writeln!(out, "  - Not an ancestor of any checked target: {negative}");
+    let _ = writeln!(
+        out,
+        "  - Relationship unknown: {}",
+        rows.len() - positive - negative
+    );
+    let _ = writeln!(
+        out,
+        "  Commit ancestry alone does not establish cleanup eligibility or squash/rebase integration."
+    );
+}
+
+fn compact(review: &Review, rows: &[&ReviewItem], executable: &BytePath) -> String {
     let total = review.items.len();
     let selected = rows.len();
     let (keep, candidates, verify) = counts(rows);
@@ -612,17 +747,7 @@ fn compact(review: &Review, rows: &[&ReviewItem]) -> String {
             total - not_requested
         );
     }
-    let _ = writeln!(
-        out,
-        "\nRESULTS (selected worktrees)\n  Keep: {keep}\n  Cleanup candidates: {candidates}\n  Needs verification: {verify}"
-    );
-    if selected != total {
-        let (k, c, v) = counts(&review.items.iter().collect::<Vec<_>>());
-        let _ = writeln!(
-            out,
-            "  Source totals: {k} keep, {c} candidates, {v} to verify"
-        );
-    }
+
     let _ = writeln!(
         out,
         "\nDISK USAGE ({}, unaffected by review filters)",
@@ -637,35 +762,115 @@ fn compact(review: &Review, rows: &[&ReviewItem]) -> String {
         }
     );
     if let Some(disk) = &review.disk_usage {
-        let _ = writeln!(out, "  Disk collection: {}", disk.scope_summary());
-        let complete = disk.measurements.iter().filter(|r| r.complete).count();
         let _ = writeln!(
             out,
-            "  Observed allocated, deduplicated: {}{}",
-            crate::disk::human_bytes(disk.unique_bytes.allocated),
+            "  - {} observed allocated{}",
+            decimal_bytes(disk.unique_bytes.allocated),
             if disk.complete { "" } else { " (INCOMPLETE)" }
         );
+        let complete = disk
+            .measurements
+            .iter()
+            .filter(|r| r.requested && r.complete)
+            .count();
+        let requested = disk.measurements.iter().filter(|r| r.requested).count();
         let _ = writeln!(
             out,
-            "  {complete}/{} roots complete; logical: {}; not reclaimable space.",
-            disk.measurements.len(),
-            crate::disk::human_bytes(disk.unique_bytes.logical)
+            "  - {complete}/{requested} roots complete; logical: {}",
+            decimal_bytes(disk.unique_bytes.logical)
+        );
+        let _ = writeln!(out, "  - Disk collection: {}", disk.scope_summary());
+        let _ = writeln!(
+            out,
+            "  - Reclaimable space: not established. Observed allocation is not reclaimable space."
         );
         let _ = writeln!(
             out,
-            "  Captured sizes; observation interval and APFS limits in report."
+            "  Captured sizes, deduplicated by inode; APFS sharing and snapshots remain unaccounted for."
         );
     } else {
-        let _ = writeln!(out, "  Not measured; use scan or review --disk-usage.");
+        let _ = writeln!(out, "  - Not measured; use scan or review --disk-usage.");
     }
+    write_history(rows, &mut out);
+    let _ = writeln!(
+        out,
+        "\nRESULTS (selected worktrees)\n  - Keep: {keep}\n  - Cleanup candidates: {candidates}\n  - Needs verification: {verify}"
+    );
+    if candidates == 0 && verify > 0 {
+        let _ = writeln!(
+            out,
+            "  No candidate established; incomplete checks do not prove that cleanup is impossible."
+        );
+    }
+    if selected != total {
+        let (k, c, v) = counts(&review.items.iter().collect::<Vec<_>>());
+        let _ = writeln!(
+            out,
+            "  Source totals: {k} keep, {c} candidates, {v} to verify"
+        );
+    }
+
+    // Rows are ranked by observed bytes only. Missing values never become zero,
+    // and overlapping per-row measurements are never added to the source total.
+    let mut ranked = Vec::new();
+    if let Some(disk) = &review.disk_usage {
+        let measurements: BTreeMap<_, _> = disk
+            .measurements
+            .iter()
+            .filter(|m| m.requested && m.kind == crate::disk::DiskKind::Worktree)
+            .map(|m| (&m.path, m))
+            .collect();
+        for row in rows {
+            if let Some(&measurement) = measurements.get(&row.path)
+                && let Some(bytes) = &measurement.bytes
+            {
+                ranked.push((*row, measurement, bytes.allocated));
+            }
+        }
+        ranked.sort_by(|a, b| b.2.cmp(&a.2).then_with(|| a.0.path.cmp(&b.0.path)));
+        let _ = writeln!(
+            out,
+            "\nLARGEST WORKTREES (selected, by observed size; partial sizes may under-rank)"
+        );
+        for (row, measurement, bytes) in ranked.iter().take(5) {
+            let _ = writeln!(
+                out,
+                "  - {} [{}] | {}",
+                decimal_bytes(*bytes),
+                if measurement.complete {
+                    "complete"
+                } else {
+                    "partial"
+                },
+                text(&row.classification, 40)
+            );
+            let _ = writeln!(out, "    {}", text(&row.path.display(), 300));
+            if row.classification == "keep" {
+                if let Some(reason) = row.decision.as_ref().and_then(|d| d.keep_reasons.first()) {
+                    let _ = writeln!(out, "    Keep reason: {}", super::keep_reason(reason));
+                }
+            } else if row.classification == "verify" {
+                let _ = writeln!(out, "    Missing: {}", missing_labels(row));
+            }
+        }
+        let missing = rows.len() - ranked.len();
+        if missing > 0 {
+            let _ = writeln!(
+                out,
+                "  - {missing} selected worktree(s) without a size; see report for unmeasured or unrequested roots."
+            );
+        }
+    }
+
     let coverage = &review.coverage;
     let discovery_complete = coverage.traversal_complete
         && coverage.gaps.is_empty()
         && coverage.remaining.is_none()
         && coverage.publication.is_none();
+    let _ = writeln!(out, "\nCHECKS TO COMPLETE");
     let _ = writeln!(
         out,
-        "\nCOVERAGE\n  Discovery: {}; {} source gaps",
+        "  - Discovery: {}; {} source gaps",
         if discovery_complete {
             "complete"
         } else {
@@ -676,7 +881,7 @@ fn compact(review: &Review, rows: &[&ReviewItem]) -> String {
     if let Some(remaining) = &coverage.remaining {
         let _ = writeln!(
             out,
-            "  Discovery remaining: {}; {} known pending paths",
+            "  - Discovery remaining: {}; {} known pending paths",
             remaining.reason.as_str(),
             remaining.known_pending_paths
         );
@@ -684,7 +889,7 @@ fn compact(review: &Review, rows: &[&ReviewItem]) -> String {
     if let Some(omitted) = &coverage.publication {
         let _ = writeln!(
             out,
-            "  Unpublished worktrees: {}; families: {}; local manifests: {}; markers: {}",
+            "  - Unpublished worktrees: {}; families: {}; local manifests: {}; markers: {}",
             omitted.worktrees, omitted.families, omitted.local_inventories, omitted.markers
         );
     }
@@ -698,7 +903,7 @@ fn compact(review: &Review, rows: &[&ReviewItem]) -> String {
         .count();
     let _ = writeln!(
         out,
-        "  Local checks (selected): {complete} complete, {} partial, {} not collected",
+        "  - Local checks (selected): {complete} complete, {} partial, {} not collected",
         collected.saturating_sub(complete),
         selected.saturating_sub(collected)
     );
@@ -727,55 +932,58 @@ fn compact(review: &Review, rows: &[&ReviewItem]) -> String {
         if !missing.is_empty() {
             let _ = writeln!(
                 out,
-                "  Missing checks (selected, unresolved): {}",
+                "  - Missing checks (selected, unresolved): {}",
                 missing.join(", ")
             );
         }
     }
     let hit_limits = limits(review);
     if !hit_limits.is_empty() {
-        let _ = writeln!(
-            out,
-            "  Collection limits reached: {} types (details in report or --verbose)",
-            hit_limits.len()
-        );
-    }
-    // These are separate recorded intervals, not an invented end-to-end duration.
-    let mut times = Vec::new();
-    if let Some(m) = &coverage.discovery_metrics {
-        times.push(format!("discovery {:.1}s", m.elapsed_ms as f64 / 1000.0));
-    }
-    if let Some(disk) = &review.disk_usage {
-        times.push(format!("disk {:.1}s", disk.elapsed_ms as f64 / 1000.0));
-    }
-    if let Some(m) = &review.collection_metrics {
-        let elapsed = m
-            .phases
-            .iter()
-            .fold(0u64, |sum, p| sum.saturating_add(p.elapsed_ms));
-        times.push(format!("review phases {:.1}s", elapsed as f64 / 1000.0));
-    }
-    if !times.is_empty() {
-        let _ = writeln!(
-            out,
-            "  Recorded time: {} (excludes publication)",
-            times.join("; ")
-        );
+        let _ = writeln!(out, "\nCOLLECTION LIMITS (source run)");
+        for limit in hit_limits {
+            let _ = writeln!(out, "  - {limit}");
+        }
     }
     if verify > 0 || !discovery_complete {
         let _ = writeln!(out, "\nNEXT CHECK");
-        let next = if !discovery_complete {
-            "Inspect discovery gaps in report.txt before treating the inventory as complete."
-        } else if not_requested > 0 {
-            "Inspect the selected worktree's gaps in report.txt; collection caps still apply."
-        } else {
-            "Inspect report.txt; retry a worktree with --worktree PATH --budget thorough."
-        };
-        let _ = writeln!(out, "  {next}");
+        if !discovery_complete {
+            let _ = writeln!(
+                out,
+                "  - Inspect discovery gaps in report.txt before treating the inventory as complete."
+            );
+        }
+        let next = ranked
+            .iter()
+            .map(|(row, _, _)| *row)
+            .find(|r| r.classification == "verify")
+            .or_else(|| {
+                rows.iter()
+                    .copied()
+                    .filter(|r| r.classification == "verify")
+                    .min_by_key(|r| &r.path)
+            });
+        if let Some(row) = next {
+            let _ = writeln!(out, "  - Focus on: {}", text(&row.path.display(), 300));
+            if let Some(command) = focused_command(row, executable) {
+                let _ = writeln!(
+                    out,
+                    "  Recorded targets; recheck their suitability before running:\n    {command}"
+                );
+                let _ = writeln!(
+                    out,
+                    "  Larger finite allowances; completion is not guaranteed. Disk sizing is a separate check."
+                );
+            } else {
+                let _ = writeln!(
+                    out,
+                    "  - Inspect its gaps and confirm the full target ref in the report. No safe copyable command available."
+                );
+            }
+        }
     }
     let _ = writeln!(
         out,
-        "\nUsage by agents or terminals: not checked. Read-only review; no removal authorized."
+        "\nUsage by agents or terminals: not checked. Read-only review; no removal authorized.\nDetailed evidence and timings: report.txt or --verbose."
     );
     out
 }

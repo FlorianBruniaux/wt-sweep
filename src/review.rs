@@ -976,6 +976,7 @@ fn family_timeout_reason(operation: &GitRead) -> String {
         GitRead::ResolveCommit { .. } => "ResolveCommit".into(),
         GitRead::LocalRefs => "LocalRefs".into(),
         GitRead::RemoteUrls => "RemoteUrls".into(),
+        GitRead::TrackingRefs => "TrackingRefs".into(),
         GitRead::IgnorePaths { .. } => "IgnorePaths".into(),
     };
     format!(

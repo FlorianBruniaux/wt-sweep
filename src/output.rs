@@ -69,6 +69,7 @@ pub fn inventory_json(inventory: &Inventory) -> Result<Vec<u8>, SweepError> {
 fn checked_destination(
     destination: &Path,
     inventory: &Inventory,
+    allow_existing: bool,
 ) -> Result<(PathBuf, std::ffi::OsString, fs::Metadata), SweepError> {
     crate::residency::ensure_no_materialization()?;
     let error =
@@ -147,10 +148,37 @@ fn checked_destination(
             ));
         }
     }
-    if fs::symlink_metadata(&target).is_ok() {
+    if !allow_existing && fs::symlink_metadata(&target).is_ok() {
         return Err(error("output already exists".into()));
     }
     Ok((parent, name.to_os_string(), parent_identity))
+}
+
+/// Create only the report container's final component, outside captured targets.
+/// Existing directories are reused; ancestors and the container are never followed
+/// through symlinks. Run creation rechecks these boundaries before writing files.
+pub fn ensure_run_base(base: &Path, inventory: &Inventory) -> Result<(), SweepError> {
+    use rustix::fs::{Mode, OFlags, mkdirat, openat};
+    let (parent, name, expected) = checked_destination(base, inventory, true)?;
+    let error = |e: String| SweepError::new("unsafe_output", "report_base", base, e);
+    let parent = fs::File::from(open_directory(&parent, &expected)?);
+    match mkdirat(&parent, &name, Mode::RUSR | Mode::WUSR | Mode::XUSR) {
+        Ok(()) | Err(rustix::io::Errno::EXIST) => {}
+        Err(e) => return Err(error(e.to_string())),
+    }
+    let directory = fs::File::from(
+        openat(
+            &parent,
+            &name,
+            OFlags::RDONLY | OFlags::DIRECTORY | OFlags::NOFOLLOW | OFlags::CLOEXEC,
+            Mode::empty(),
+        )
+        .map_err(|e| error(e.to_string()))?,
+    );
+    directory
+        .sync_all()
+        .and_then(|_| parent.sync_all())
+        .map_err(|e| error(e.to_string()))
 }
 
 pub fn write_new(
@@ -158,7 +186,7 @@ pub fn write_new(
     bytes: &[u8],
     inventory: &Inventory,
 ) -> Result<(), SweepError> {
-    let (parent, name, expected) = checked_destination(destination, inventory)?;
+    let (parent, name, expected) = checked_destination(destination, inventory, false)?;
     publish(&parent, &name, bytes, &expected)
 }
 
@@ -217,7 +245,7 @@ impl RunDirectory {
                 std::process::id(),
                 NEXT_RUN.fetch_add(1, Ordering::Relaxed)
             );
-            let (parent, name, expected) = checked_destination(&base.join(name), inventory)?;
+            let (parent, name, expected) = checked_destination(&base.join(name), inventory, false)?;
             let directory = open_directory(&parent, &expected)?;
             match mkdirat(&directory, &name, Mode::RUSR | Mode::WUSR | Mode::XUSR) {
                 Ok(()) => {}

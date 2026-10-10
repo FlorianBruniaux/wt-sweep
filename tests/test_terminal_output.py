@@ -2,6 +2,7 @@
 import errno
 import fcntl
 import re
+import shlex
 import struct
 import termios
 import json
@@ -44,15 +45,36 @@ class TerminalOutputTests(unittest.TestCase):
         self.assertIn(b"provisional", result.stderr)
         self.assertNotIn(b"\x1b", result.stdout + result.stderr)
         self.assertNotIn(b"\r", result.stdout + result.stderr)
-        self.assertLessEqual(len(result.stdout.splitlines()), 32)
+        self.assertLessEqual(len(result.stdout.splitlines()), 80)
         for label in (b"Keep: 1", b"Cleanup candidates: 1", b"Needs verification: 0",
                       b"not reclaimable space", b"no removal authorized", b"report.txt"):
             self.assertIn(label, result.stdout)
+        self.assertLess(result.stdout.index(b"DISK USAGE"), result.stdout.index(b"RESULTS"))
+        self.assertIn(b"HEAD matches or is an ancestor: 2", result.stdout)
+        self.assertIn(b"LARGEST WORKTREES", result.stdout)
         self.assertNotIn(b"Git commands", result.stdout)
         self.assertNotIn(b"DISCOVERY PERFORMANCE", result.stdout)
         report = next(Path(self.output.name).glob("run-*/report.txt")).read_bytes()
         self.assertIn(b"DISCOVERY PERFORMANCE", report)
         self.assertIn(os.fsencode(self.fixture.linked), report)
+
+    def test_suggested_command_runs_with_the_current_binary_and_focuses_one_worktree(self):
+        args = self.arguments("--summary")
+        args[args.index("refs/heads/main")] = "refs/heads/not-collected"
+        before = filesystem_manifest(self.fixture.root)
+        result = subprocess.run(args, env=self.env, capture_output=True, timeout=30)
+        self.assertEqual(result.returncode, 0, result.stderr)
+        command = next(line.strip() for line in result.stdout.decode().splitlines()
+                       if line.strip().startswith("'" + str(BINARY.resolve()) + "' review "))
+        retry = shlex.split(command)
+        self.assertEqual(retry[0], str(BINARY.resolve()))
+        self.assertEqual(retry[retry.index("--worktree") + 1], str(self.fixture.linked))
+        self.assertEqual(retry[retry.index("--target") + 1], "refs/heads/not-collected")
+        focused = subprocess.run(retry, env=self.env, capture_output=True, timeout=30)
+        self.assertEqual(focused.returncode, 0, focused.stderr)
+        self.assertIn(b"Worktrees selected: 1/2", focused.stdout)
+        self.assertIn(b"Relationship unknown: 1", focused.stdout)
+        self.assertEqual(before, filesystem_manifest(self.fixture.root))
 
     def test_verbose_restores_diagnostic_metrics_and_disk_paths(self):
         result = self.run_cli("--summary", "--disk-usage", "--verbose")

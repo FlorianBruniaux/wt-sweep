@@ -5,7 +5,8 @@ use std::fmt::Write;
 mod console;
 pub mod html;
 pub use console::{
-    compact_summary, compact_view_summary, discovery_progress, review_progress, summary,
+    compact_summary, compact_summary_with_executable, compact_view_summary,
+    compact_view_summary_with_executable, discovery_progress, review_progress, summary,
     view_summary, write_discovery_performance,
 };
 
@@ -320,6 +321,31 @@ fn detail_rows(
                 let _ = writeln!(output, "    Local detail truncated by output limits");
             }
         }
+        if let Some(remote) = contexts
+            .get(&item.path)
+            .filter(|c| c.head_oid == item.head)
+            .and_then(|c| c.remote.as_ref())
+        {
+            let _ = writeln!(
+                output,
+                "  Remote links (local capture {}..{}; server not checked):",
+                remote.started_unix_ms, remote.finished_unix_ms
+            );
+            for record in &remote.remotes {
+                for (label, url) in crate::forge_links::links(record, item.head.as_deref()) {
+                    let _ = writeln!(output, "    {} {label}: {url}", record.name.display());
+                }
+                let status = match record.head_matches_tracking {
+                    Some(true) => "HEAD matches the local tracking ref",
+                    Some(false) => "HEAD differs from the local tracking ref",
+                    None => "publication unknown",
+                };
+                let _ = writeln!(output, "    {status}; server not checked");
+            }
+            for gap in &remote.gaps {
+                let _ = writeln!(output, "    Remote gap: {}", text(gap, 500));
+            }
+        }
         for request in &item.requests {
             let _ = writeln!(
                 output,
@@ -530,7 +556,7 @@ fn detail_rows(
     if let Some(context) = &review.context {
         let _ = writeln!(
             output,
-            "Context collection interval: {}..{}; recorded Git OIDs only; no continuity after decision checks.",
+            "Context collection interval: {}..{}; recorded Git objects and local remote metadata; no continuity after decision checks.",
             context.started_unix_ms, context.finished_unix_ms
         );
         let _ = writeln!(output, "Context rows omitted: {}", context.omitted_items);

@@ -171,8 +171,9 @@ une release binaire.
 ## Rapport HTML par projet
 
 Le [rendu HTML](html-report-plan.md) est raccordé à `scan`, `review` et `plan`
-avec `--html --run-dir`. Il affiche les familles, verdicts, tailles et lacunes
-sans modifier le jugement. Les preuves de validation et de livraison sont
+avec `--html`. Sur macOS, `--open` enregistre les rapports sur le Bureau et
+demande leur ouverture ; `--run-dir BASE` choisit un autre dossier existant.
+Le rapport affiche les familles, verdicts, tailles et lacunes sans modifier le jugement. Les preuves de validation et de livraison sont
 suivies dans #10 et #13 ; une implémentation locale ne vaut pas livraison distante.
 
 ## Espace disque

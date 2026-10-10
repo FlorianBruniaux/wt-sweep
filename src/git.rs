@@ -39,6 +39,7 @@ pub enum GitRead {
     LocalRefs,
     Tree { oid: String },
     RemoteUrls,
+    TrackingRefs,
     Blob { oid: String },
 }
 
@@ -288,6 +289,14 @@ impl ControlledGit {
                 }
                 command.args(["cat-file", "commit", &oid]);
                 "git_commit"
+            }
+            GitRead::TrackingRefs => {
+                command.args([
+                    "for-each-ref",
+                    "--format=%(refname)%00%(objectname)%00%(upstream:remotename)%00%(upstream:remoteref)%00%(upstream)%00",
+                    "refs/heads/", "refs/remotes/",
+                ]);
+                "git_tracking_refs"
             }
             GitRead::LocalRefs => {
                 command.args([

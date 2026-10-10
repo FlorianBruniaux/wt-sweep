@@ -78,11 +78,12 @@
   });
   window.addEventListener('hashchange', () => revealFragment(location.hash));
   revealFragment(location.hash);
-  // Native popovers keep help outside the scrolling sidebar and work on tap without JS.
+  // The section label provides navigation and help; title remains the no-JS fallback.
   for (const item of document.querySelectorAll('.nav-item')) {
-    const link = item.querySelector('a'), button = item.querySelector('button');
+    const link = item.querySelector('a');
     const tip = item.querySelector('[popover]');
     if (typeof tip.showPopover !== 'function') continue;
+    link.removeAttribute('title');
     let pinned = false, timer;
     const isOpen = () => tip.matches(':popover-open');
     const position = () => {
@@ -99,20 +100,14 @@
     const leave = () => {
       clearTimeout(timer);
       timer = setTimeout(() => {
-        if (!pinned && document.activeElement !== link && document.activeElement !== button && !tip.matches(':hover')) hide();
+        if (!pinned && document.activeElement !== link && !tip.matches(':hover')) hide();
       }, 200);
     };
     link.addEventListener('mouseenter', show);
     link.addEventListener('mouseleave', leave);
     link.addEventListener('focus', show);
     link.addEventListener('blur', leave);
-    link.addEventListener('click', hide);
-    button.addEventListener('focus', show);
-    button.addEventListener('blur', leave);
-    button.addEventListener('click', event => {
-      event.preventDefault();
-      if (pinned && isOpen()) hide(); else { pinned = true; show(); }
-    });
+    link.addEventListener('click', () => { pinned = true; show(); });
     tip.addEventListener('mouseenter', () => clearTimeout(timer));
     tip.addEventListener('mouseleave', leave);
     tip.addEventListener('toggle', () => { if (!isOpen()) pinned = false; });

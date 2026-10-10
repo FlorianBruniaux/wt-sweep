@@ -2,6 +2,7 @@ pub mod cancel;
 pub mod discover;
 pub mod disk;
 pub mod forge;
+pub mod forge_links;
 pub mod git;
 pub mod local;
 pub mod model;

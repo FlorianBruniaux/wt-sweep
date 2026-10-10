@@ -92,16 +92,15 @@ The command stops if that ref is absent locally.
   IFS= read -r target_ref
   /usr/bin/git --no-optional-locks -c core.fsmonitor=false -C "$repo_path" \
     show-ref --verify --quiet "$target_ref"
-  report_dir="$(mktemp -d /private/tmp/wt-sweep-report.XXXXXX)"
   "$sweep_bin" review --repo "$repo_path" --target "$target_ref" \
-    --summary --disk-usage --html --run-dir "$report_dir"
-  printf 'Reports: %s\n' "$report_dir"
-  open "$report_dir"/run-*/report.html
+    --summary --disk-usage --open
 )
 ```
 
-Keep `XXXXXX` literally: `mktemp` replaces it with a unique suffix. Reports must
-be outside the inspected repositories and their Git directories.
+`--open` saves HTML, text and JSON under `~/Desktop/Worktree Sweep/run-*/`
+and asks macOS to open the HTML. Use `--html` to save without opening, or add
+`--run-dir "/absolute/path/to/reports"` to choose an existing directory.
+Reports must remain outside the inspected scope and Git directories.
 To try synthetic worktrees first, use the [disposable demo](docs/getting-started.md#disposable-demo).
 
 <details>
@@ -125,8 +124,15 @@ Interrupted explicit-root discovery can use [checkpoints](docs/discovery-resume.
 
 ### Read the result
 
-`--summary` prints verdicts, disk sizes and missing checks. Open `report.html`
-for the grouped view or `report.txt` for the full reasons.
+`--summary` starts with disk allocation, then separates commit ancestry from
+cleanup verdicts. It lists the five largest measured worktrees in the selected
+view, their blockers and a focused retry command when the recorded path and
+targets can be quoted safely. Output is in English; sizes use decimal KB/MB/GB.
+Open `report.html` for the grouped view or `report.txt` for the full reasons.
+
+An ancestor relationship can be known while a worktree still needs verification:
+local files, object availability or private history may remain unchecked.
+The compact recap names collection limits; `--verbose` adds technical timings.
 
 | Verdict | Meaning | Next step |
 | --- | --- | --- |
@@ -186,7 +192,11 @@ Native capture from a disposable four-worktree demo: three `keep`, one
 </details>
 
 The report and its expandable evidence work offline without JavaScript.
-Search, sorting and path copying use JavaScript.
+Search, sorting and path copying use JavaScript. Review reports also link to
+GitHub/GitLab repositories, branches and commits from local remotes. Add
+`--forge FILE` to show associated captured PR/MR links and states. These links
+do not confirm publication; the CLI does not contact the server.
+[Forge links and imports](docs/forge.md#links-in-review-reports).
 [HTML guide](docs/html-report-plan.md) · [Illustration and screenshot provenance](docs/assets/README.md)
 
 ---
@@ -242,7 +252,7 @@ installation is performed by Sweep.
 | Offline forge evidence | Import captured GitHub/GitLab data with provenance, without contacting a forge. | `forge ingerer` |
 | Human and machine output | Read the detailed report or structured console recap; retain full path bytes and OIDs in JSON. | `--summary`, `--format json` |
 | Disk usage | Measure logical and allocated sizes, including ignored files, with partial results and inode deduplication. | `--disk-usage` |
-| Offline HTML | Browse worktrees by family, search, sort and inspect captured evidence. | `--html --run-dir BASE` |
+| Offline HTML | Browse worktrees by family, search, sort and inspect captured evidence. | `--open` or `--html` |
 | Focused collection | Spend the per-worktree allowance on one selected path after reading its gaps. | `--worktree PATH --budget thorough` |
 | Separate runs | Keep concurrent reports in distinct directories with artifact hashes and publication timestamps. | `--run-dir BASE` |
 

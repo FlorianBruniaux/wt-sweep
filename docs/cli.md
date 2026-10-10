@@ -17,14 +17,14 @@ wt-sweep scan (--repo PATH | --root PATH... | --all | --resume FILE)
   [--checkpoint-out NEW_FILE] [--discovery-directories N]
   [--discovery-entries N] [--discovery-seconds N]
   [--workers 1..8] [--local] [--disk-usage] [--disk-budget standard|thorough] [--format json|table]
-  [--verbose] [--color auto|always|never] [--html] [--out FILE | --run-dir BASE]
+  [--verbose] [--color auto|always|never] [--html] [--open] [--out FILE | --run-dir BASE]
 
 wt-sweep plan --inventory FILE [--target FULL_REF... | --target-map FILE]
   [--budget standard|thorough] [--worktree ABSOLUTE_PATH] [--filter-repo PATH] [--path-prefix PATH] [--branch FULL_REF]
   [--local-state clean|dirty|unknown] [--verdict keep|cleanup_candidate|verify]
   [--group-by repo|directory] [--forge FILE]
   [--changelog-path RELATIVE... | --no-context] [--summary] [--format json|table]
-  [--verbose] [--color auto|always|never] [--html] [--out FILE | --run-dir BASE]
+  [--verbose] [--color auto|always|never] [--html] [--open] [--out FILE | --run-dir BASE]
 
 wt-sweep forge commandes
 wt-sweep forge ingerer --raw FILE [--receipt FILE]
@@ -175,11 +175,33 @@ fully local example. Raw inputs are limited to 16 MiB and receipts to 1 MiB.
 | `--format json` | JSON only | None, unless another output option is used |
 | `--out FILE` | Human-readable output, even with `--format json` | New JSON file |
 | `--run-dir BASE` | Selected format; human output also gives the run path | New run directory with JSON, `report.txt`, `run.json` |
-| `--html --run-dir BASE` | Same selected format; human output also gives the HTML path | Also saves a self-contained `report.html` |
+| `--html` | Selected format; human output gives the HTML path and reopen command | On macOS, creates `~/Desktop/Worktree Sweep/run-*/` with JSON, text, HTML and receipt |
+| `--html --run-dir BASE` | Same output | Uses the specified existing directory instead of Desktop |
+| `--open` | Same output; opening warnings go to stderr | Implies `--html`, then asks macOS to open the published report |
 | `plan --summary --run-dir BASE` | Structured recap, including the saved detail path | Full detail in `report.txt`, JSON and receipt |
 
-`--html` is supported by `scan`, `review` and `plan`, and requires `--run-dir`.
-It renders the saved observations without new collection or judgement. A scan
+`--html` and `--open` are supported by `scan`, `review` and `plan`.
+On macOS, omitting `--run-dir` uses `~/Desktop/Worktree Sweep/`. Desktop must
+already exist as a plain, accessible directory; only the `Worktree Sweep`
+container is created, with mode 0700. Existing container permissions are not
+changed. Each publication still creates a distinct `run-*` directory.
+Other platforms require an explicit `--run-dir` for HTML and reject `--open`.
+
+`--run-dir BASE` overrides the default and BASE must already exist. If Desktop
+is unavailable or inside an inspected `--root`, choose another destination.
+There is no silent fallback to a temporary directory. `--html` and `--open`
+are incompatible with `--out`, which saves a single JSON file.
+
+`--open` implies `--html`. After successful publication, it invokes the fixed
+`/usr/bin/open` executable with the absolute HTML path as one argument, without
+a shell. The launcher is bounded to five seconds. An opener failure is a warning
+on stderr, leaves the reports saved and does not change an otherwise successful
+exit status. Launcher success means macOS accepted the request, not that a page
+render was verified. The human output gives a safely quoted `Open HTML` command
+when the path is representable; JSON stdout stays JSON only. No application is
+opened without `--open`, or after a failed/interrupted publication.
+
+HTML renders the saved observations without new collection or judgement. A scan
 report says that worktrees have not been reviewed. CSS and JavaScript are embedded;
 all evidence remains readable without JavaScript. The HTML is capped at 32 MiB;
 an oversized report refuses publication before creating a run. A failed HTML
@@ -189,7 +211,8 @@ write or sync produces no successful receipt. See the [HTML guide](html-report-p
 `--summary` changes the human output, not the saved review. Forge ingestion keeps
 its default JSON stdout with `--run-dir`; add `--format table` to see the run path.
 
-Output parents must already exist. Files and run directories are created
+Explicit output parents and Desktop must already exist. The default container
+is the only automatically created parent. Files and run directories are created
 exclusively, outside protected scan/repository boundaries, without following
 symlink ancestors. Existing files are refused. Both `scan` and `plan` recheck current worktree
 registrations before publication to account for moved worktrees. These checks use
@@ -220,9 +243,33 @@ index can still leave evidence unknown with `thorough`.
 
 `review` and `plan` update a single progress line clipped to the terminal width. In a
 pipe, only a few milestones are printed, with no cursor controls. `--summary`
-shows selected verdicts and local checks, source discovery coverage, and source
-disk totals. Partial measurements are marked `INCOMPLETE`; they are not an
-estimate of reclaimable space. Missing checks count selected unresolved rows.
+uses English sections and bullets, in this order:
+
+1. Source disk allocation in decimal KB/MB/GB, measurement coverage and the
+   explicit statement that reclaimable space has not been established.
+2. Commit relationships for selected worktrees: HEAD equal to or an ancestor of
+   any recorded target, not an ancestor of any checked target, or unknown.
+   Each worktree counts once. Provisional or invalidated positives are excluded;
+   omitted targets prevent a negative conclusion. This is not a merge proposal
+   or the full integration/object check required for a cleanup candidate.
+3. Selected cleanup verdicts, independently of those commit relationships.
+4. Up to five selected worktrees ranked by observed allocation, with paths and
+   retention reasons or missing checks. Partial sizes can under-rank a directory;
+   absent measurements remain unknown. Overlapping row sizes are never summed.
+5. Discovery/local coverage, named source collection limits and a focused retry
+   for the largest measured unresolved row (path order when no size is available).
+
+The suggested command uses the running executable, the selected worktree path
+and only that row's recorded targets. It includes `--worktree`, `--path-prefix`,
+`--budget thorough` and `--summary`. Confirm those targets still match your
+intent. It performs a fresh read-only review; it does not repeat disk sizing or
+save a report unless you add output options. No command is offered for missing
+or omitted targets, non-UTF-8/control-character arguments or oversized arguments.
+The tool never executes its suggestion.
+
+Partial measurements are marked `INCOMPLETE`; they are not an estimate of
+reclaimable space. Missing checks count selected unresolved rows. Disk totals
+retain their separately labeled source scope.
 `--summary --verbose` restores the detailed recap, with source-wide counters,
 phase timings, Git process counts and named collection limits. `report.txt`
 always retains the full detail, regardless of these display options.
@@ -446,3 +493,15 @@ reports without recounting sizes. Old inventories remain readable. When sizes
 were not collected, review and plan say so explicitly; no zero total is invented.
 Rendering is deterministic from captured data and requires no LLM. See the
 [disk usage guide](disk-usage.md) for examples and JSON.
+
+## GitHub and GitLab links
+
+`review` and `plan` include repository, branch and full-commit links from local
+remote metadata in HTML and detailed text output. The summary stays compact.
+`--no-context` skips this collection along with commit/changelog context.
+`scan` does not collect these links. No fetch or network request is added.
+
+With `--forge FILE`, associated imported PR/MR links, titles and captured states
+appear beside each worktree. Self-hosted forge routes require a matching import
+to establish the provider. Local upstream equality is not a live publication
+check. See [link meanings and limits](forge.md#links-in-review-reports).

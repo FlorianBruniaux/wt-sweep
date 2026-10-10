@@ -7,6 +7,146 @@ réelle. Le [lot de collecte](#sessions-git-et-reprise-de-découverte-08102026)
 conserve les tests du code livré ; les sections plus anciennes sont des observations
 datées, pas une description des tâches encore ouvertes.
 
+## Liens vers les forges, 10/10/2026
+
+`review` et `plan` capturent les remotes reconnus et les refs locales de suivi
+pendant la collecte de contexte. Les rapports HTML et texte proposent des liens
+vers le dépôt, la branche et le commit GitHub/GitLab. Le HTML garde les liens de
+remotes dans un bloc replié et laisse le lien PR/MR directement visible. Titre,
+état capturé et provenance de la demande restent consultables dans ses détails.
+
+Le collecteur ne fait aucun appel réseau. L’égalité entre HEAD et une ref locale
+de suivi ne prouve pas un push actuel. Les PR/MR exigent toujours une association
+exacte avec un import `--forge`. Les instances auto-hébergées exigent cet import
+pour identifier leur fournisseur ; les forks GitLab restent limités par les
+identités disponibles dans l’import. `scan` ne collecte pas ces métadonnées.
+`--no-context` les omet sans retirer les PR/MR déjà associées. Les verdicts de
+triage ne dépendent pas de ces liens.
+
+Les URL sont reconstruites sans identifiants, puis validées au rendu. Les noms
+de branches sont encodés ; les libellés sont échappés. Une ambiguïté ou une limite
+de collecte reste explicite. L’ajout facultatif au JSON conserve la sérialisation
+et les empreintes des anciens rapports sans ce champ. Une copie de l’ancien
+rapport de 67 worktrees a été rendue depuis ses données validées, sans collecte.
+
+Validation locale : la suite Rust complète a passé 419 tests avec 3 ignorés.
+Après la dernière correction de cadrage des clés de remote, les 6 tests du module
+URL, 14 tests HTML et 3 tests de présentation du contexte passent. Formatage,
+Clippy, builds debug/release et synchronisation des 22 fichiers d’instructions
+passent.
+
+La passe Python complète exécute 316 cas : 309 réussis, 6 ignorés et une erreur
+dans le nouveau test d’upstream. Ce test utilisait un attribut `detached` absent
+de sa fixture. Il crée désormais un vrai worktree détaché, inclus dans le
+manifeste de conservation. Les 5 tests du module passent après cette correction,
+sans modification du binaire. La suite complète n’a pas été rejouée après cette
+correction limitée au test. Aucun autre échec n’est apparu.
+
+Les 8 cas Chromium passent : clair/sombre, 1440/390 px, avec/sans JavaScript.
+Ils vérifient le repli natif, la destination du lien PR d’un fork, l’absence de
+débordement, de chargement réseau et d’accès à la fenêtre d’origine. La requête
+issue du clic est interceptée avant le réseau. Safari, Firefox et la disponibilité
+des pages sur les serveurs ne sont pas vérifiés. Le rapport d’exemple utilise
+uniquement une famille Git jetable et une PR synthétique.
+
+README anglais/français, aide CLI, contrats, guides forge/HTML/assistant et
+changelog sont mis à jour. Les changements restent locaux ; aucun commit,
+push ou contrôle de CI distante n’est effectué pour ce lot.
+
+## Aides de navigation sur les intitulés, 10/10/2026
+
+Les quatre boutons « ? » sont retirés du menu HTML. Les intitulés conservent
+leur ancre et leur description accessible ; survol, focus et clic affichent
+l’aide. Sans JavaScript, l’attribut `title` conserve l’explication native.
+Le générateur, la documentation HTML et le changelog sont mis à jour.
+
+Les 14 tests Rust de rendu HTML et les 10 tests CLI HTML passent, ainsi que
+formatage, Clippy et contrôle de synchronisation des instructions. Le test
+navigateur passe sur huit rendus Chromium : clair/sombre, 1440/390 px, avec
+et sans JavaScript. Un premier essai a expiré pendant la navigation animée ;
+le test utilise ensuite la préférence de mouvement réduit pour vérifier les
+ancres sans animation. Le rendu reste configuré selon la préférence du lecteur.
+Le test sans JavaScript vérifie l’attribut d’aide, pas son affichage natif.
+
+Une copie du rapport de 67 worktrees est régénérée depuis ses JSON validés,
+sans collecte. Les empreintes des cinq fichiers du run source sont inchangées.
+Ces changements sont locaux ; aucun commit ni push n’est effectué pour ce lot.
+
+## Destination et ouverture du HTML, 10/10/2026
+
+`scan`, `review` et `plan` acceptent `--html` sans `--run-dir` sur macOS :
+la sortie devient `~/Desktop/Worktree Sweep/run-*/`. Le Bureau doit exister ;
+Sweep crée seulement le conteneur final, avec accès privé. Un `--run-dir`
+explicite garde sa priorité et doit désigner un dossier existant. Les refus
+pour cible protégée, lien symbolique ou écrasement restent appliqués.
+
+`--open` implique le HTML. L’appel natif à `/usr/bin/open` suit la publication
+réussie et son attente est bornée à cinq secondes. Un échec d’ouverture laisse
+le rapport enregistré et affiche un avertissement avec son chemin. La console
+propose aussi une commande de réouverture correctement citée pour le shell.
+Les flux JSON et les commandes sans HTML conservent leur comportement.
+
+Les tests ajoutés ont d’abord échoué sur le défaut de destination et l’absence
+de `--open`. Les 10 tests CLI HTML passent ensuite sur des familles jetables :
+destination par défaut ou explicite, exécutions répétées, reçus et empreintes,
+absence d’écriture dans les sources et JSON sur stdout. Les tests du lanceur
+utilisent un exécutable temporaire pour vérifier arguments, code de sortie et
+timeout ; ceux de publication vérifient l’ordre de l’ouverture et son absence
+après un refus. Ils ne prouvent pas à eux seuls un rendu dans un navigateur.
+Les aides générale, scan, review et plan sont relues depuis le binaire release.
+
+Le build release, le formatage et Clippy passent. La suite Rust complète réussit
+avec 413 tests et 3 ignorés. Un essai natif avec trois worktrees synthétiques
+publie sur le Bureau, conserve les sources et vérifie les empreintes du reçu :
+2 `keep`, 1 `cleanup_candidate`, 0 `verify`. Le lanceur macOS retourne un succès ;
+le rendu de la page dans l’application ouverte n’a pas été inspecté.
+
+La suite Python complète termine avec 311 cas : 305 réussis et 6 ignorés.
+Le contrôle `scripts/sync-ai.py --check` passe. Les empreintes des sources et
+tests sont inchangées entre le début et la fin de cette validation. Les
+modifications restent locales sur `codex/actionable-cli-recap` ; aucune CI
+distante ni publication GitHub n’a été exécutée pour ce lot.
+
+## Récap CLI orienté espace disque, 10/10/2026
+
+Le récap `--summary` reste en anglais et commence par l’allocation observée en
+unités décimales KB/MB/GB. Il distingue les relations entre commits des verdicts
+C1-C5, affiche jusqu’à cinq worktrees sélectionnés par taille observée, leurs
+raisons de conservation ou contrôles manquants, puis les limites atteintes.
+Le total disque garde son périmètre source. Les tailles partielles ne deviennent
+ni tailles complètes ni estimations d’espace récupérable.
+
+La suggestion de reprise utilise le binaire courant et uniquement les cibles
+enregistrées pour la ligne choisie. Les arguments sont cités pour le shell ;
+chemins non UTF-8, caractères de contrôle et cibles absentes ou omises empêchent
+la suggestion. Le produit ne lance pas cette commande. Aucun plafond de collecte,
+schéma JSON ou verdict n’est modifié par ce lot.
+
+Trois nouveaux tests de présentation ont échoué avant l’implémentation, puis
+réussi. Ils couvrent le décompte par worktree malgré plusieurs cibles,
+l’exclusion des résultats provisoires, les tailles absentes/partielles, le
+périmètre des lignes et les arguments shell. Les 18 tests de présentation
+réussissent. Les 9 tests de terminal passent, dont une commande suggérée
+réellement exécutée sur un dépôt jetable, sans modification de son manifeste.
+
+Le formatage, Clippy sur toutes les cibles et les builds debug/release passent.
+La première suite Rust complète rencontre un échec dans
+`old_reflog_root_covered_only_by_lightweight_tag_can_qualify_linked` : `verify`
+au lieu de `cleanup_candidate`. Le test passe seul, puis la seconde suite complète
+passe avec **408 tests réussis et 3 ignorés**, sans modification du test ni du
+collecteur entre les deux passes. La cause de l’échec initial reste indéterminée.
+
+La passe Python complète exécute 306 cas : 299 réussissent, 6 sont ignorés et
+un échoue car il attend encore le titre `COVERAGE`. Après remplacement de
+cette assertion par les sections du nouveau récap, les 14 tests du module
+`test_enriched.py` passent. La suite Python complète n’est pas rejouée après
+cette correction de test ; le code produit est inchangé. Les projections
+Claude/Codex et `git diff --check` passent.
+
+Une projection du rapport réel déjà sauvegardé expose 51,87 Go observés,
+6 HEAD égaux ou ancêtres des cibles et les mêmes verdicts 18 / 49 / 0.
+C’est une relecture de faits existants, pas un nouveau scan ni un gain de collecte.
+
 ## Préparation de la première alpha, 09/10/2026
 
 La version préparée est `0.1.0-alpha.1` ; le [guide de publication](release.md)

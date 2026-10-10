@@ -166,7 +166,14 @@ class ContextCliTests(unittest.TestCase):
         self.assertEqual(len(rows), len(context["items"]), "duplicate context worktree")
         self.assertEqual(set(rows), {os.fsencode(path) for path in self.f.expected_heads})
         row = rows[os.fsencode(repo or self.f.linked)]
-        self.assertEqual(set(row), {"path", "common_dir", "family_identity", "head_oid", "uncovered", "changelogs", "gaps"})
+        self.assertEqual(set(row), {"path", "common_dir", "family_identity", "head_oid", "uncovered", "changelogs", "gaps", "remote"})
+        remote = row["remote"]
+        self.assertEqual(set(remote), {"started_unix_ms", "finished_unix_ms", "remotes", "gaps"})
+        self.assertLessEqual(context["started_unix_ms"], remote["started_unix_ms"])
+        self.assertLessEqual(remote["started_unix_ms"], remote["finished_unix_ms"])
+        self.assertLessEqual(remote["finished_unix_ms"], context["finished_unix_ms"])
+        self.assertEqual(remote["remotes"], [], "fixture has no configured remotes")
+        self.assertEqual(remote["gaps"], [])
         metadata = (self.f.repo / ".git").stat()
         self.assertEqual(decode_path(row["common_dir"]), os.fsencode(self.f.repo / ".git"))
         self.assertEqual(row["family_identity"], {"device": metadata.st_dev, "inode": metadata.st_ino})
