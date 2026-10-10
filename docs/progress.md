@@ -7,6 +7,14 @@ réelle. Le [lot de collecte](#sessions-git-et-reprise-de-découverte-08102026)
 conserve les tests du code livré ; les sections plus anciennes sont des observations
 datées, pas une description des tâches encore ouvertes.
 
+## Publication de la première alpha, 10/10/2026
+
+La livraison de `v0.1.0-alpha.1` conserve la licence FSL-1.1-ALv2 et le périmètre macOS Apple Silicon en lecture seule. [#31](https://github.com/FlorianBruniaux/wt-sweep/issues/31) et la [page de release](https://github.com/FlorianBruniaux/wt-sweep/releases/tag/v0.1.0-alpha.1) portent les résultats du commit à taguer, de la CI et de la recette après téléchargement. Les anciens échecs de démarrage Actions ci-dessous restent des observations datées.
+
+Les scripts `scripts/release/package.py` et `scripts/release/accept-archive.py` reprennent la recette d’archive du 9 octobre : clone propre, notices, manifeste, extraction, aide CLI, démo temporaire avec 2 `keep` et 1 `cleanup_candidate`, puis vérification des reçus. La réexécution sur le paquet courant est exigée avant publication et après téléchargement ; la recette ancienne ne suffit pas.
+
+Les guides d’installation, README anglais/français, changelog et roadmap distinguent le paquet alpha des sources. Le site tire le statut de release et sa date du changelog, avec des cas de test pour l’absence de release et les dates invalides. `apply`, sauvegarde et restauration restent indisponibles.
+
 ## Liens vers les forges, 10/10/2026
 
 `review` et `plan` capturent les remotes reconnus et les refs locales de suivi

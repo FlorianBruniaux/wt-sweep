@@ -12,26 +12,23 @@ consignée dans [les résultats d’implémentation](progress.md#liens-vers-les-
 
 Ces finitions ne changent pas les verdicts ni les plafonds de collecte. Les liens
 s’appuient sur les données locales ou importées ; ils ne confirment pas l’état
-actuel de GitHub ou GitLab. L’évaluation native de #20 et les conditions de
-publication de l’alpha restent les prochaines étapes techniques.
+actuel de GitHub ou GitLab. L’évaluation native de #20 reste facultative après la publication de l’alpha.
 
-## Travail restant au 09/10/2026
+## Suite de la première alpha, 10/10/2026
 
-L’audit et ses finitions sont fusionnés dans `main`. Les issues #16, #17, #19
-et #21 sont closes ; les issues ouvertes sont #20 et la vision #14.
-La [PR #23](https://github.com/FlorianBruniaux/wt-sweep/pull/23) a livré #19 et
-#21 au commit `bc054af0c75ae3299fa69e094ca9d6d33e813db2` le 08/10 à 22:02 UTC
-(le 09/10 à Paris). Sa CI avant fusion a réussi. La CI de ce commit sur main
-est bloquée avant démarrage par le paiement ou le plafond du compte ; il faut
-corriger le compte puis relancer les contrôles. [Preuves de livraison](progress.md#état-publié-et-suite-au-09102026).
+[v0.1.0-alpha.1](https://github.com/FlorianBruniaux/wt-sweep/releases/tag/v0.1.0-alpha.1) distribue l’audit en lecture seule sur macOS Apple Silicon. [#31](https://github.com/FlorianBruniaux/wt-sweep/issues/31) suit le commit validé, le paquet, son téléchargement et sa recette ; le [guide de release](release.md) donne les commandes reproductibles.
 
-### Première alpha
+La licence FSL-1.1-ALv2 est conservée. La publication ne qualifie ni les autres plateformes, ni la notarisation Apple, ni la suppression de worktrees. Le site et les guides anglais/français distinguent le paquet et la compilation depuis les sources.
 
-La [préparation de `v0.1.0-alpha.1`](release.md) porte sur l’installation,
-la documentation, le correctif de fermeture des sessions Git et la validation
-d’un paquet Apple Silicon. La licence, la visibilité et la CI du commit final
-restent des conditions de publication. L’évaluation native ci-dessous peut
-suivre cette alpha ; elle ne change pas le périmètre de lecture seule.
+Le travail restant se répartit ainsi :
+
+- [#20](https://github.com/FlorianBruniaux/wt-sweep/issues/20) : évaluation facultative du collecteur disque natif, sans promesse de gain sur le parcours complet.
+- [#27](https://github.com/FlorianBruniaux/wt-sweep/issues/27) : accès facultatif depuis Worktrunk.
+- [#28](https://github.com/FlorianBruniaux/wt-sweep/issues/28) : import passif de provenance des sessions.
+- [#29](https://github.com/FlorianBruniaux/wt-sweep/issues/29) : démonstration d’exclusion des écritures avant toute récupération ou tout retrait.
+- [#30](https://github.com/FlorianBruniaux/wt-sweep/issues/30) : expérience de création par clone APFS, seulement si le besoin est reproduit.
+
+[#14](https://github.com/FlorianBruniaux/wt-sweep/issues/14) indexe les quatre dernières options. Elles ne bloquent pas l’alpha. Homebrew reste une distribution à évaluer après la validation du paquet ; aucune installation via un tap n’est annoncée.
 
 ### Prochain lot : terminer l’évaluation native de #20
 

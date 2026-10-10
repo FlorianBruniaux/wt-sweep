@@ -1,14 +1,16 @@
-L’historique canonique ci-dessous conserve sa langue d’origine et ses dates d’observation. **Unreleased n’est pas une release publiée.**
+# Changelog
 
-
-No release has been published. `Unreleased` covers the current source checkout;
-the Cargo package version is a development version.
+[v0.1.0-alpha.1](https://github.com/FlorianBruniaux/wt-sweep/releases/tag/v0.1.0-alpha.1) is the first macOS Apple Silicon pre-release. `Unreleased` tracks subsequent changes.
 
 [Project overview](README.md) · [Documentation](docs/README.md) · [Contributing](CONTRIBUTING.md)
 
 ## [Unreleased]
 
-<!-- unreleased-updated: 2026-10-10 -->
+## [0.1.0-alpha.1] - 2026-10-10
+
+First read-only alpha, distributed as an Apple Silicon archive with SHA-256 checksums, dependency licenses and a source manifest. The FSL-1.1-ALv2 license is unchanged. Intel, Linux, Windows and Apple notarization are not included.
+
+[Installation and verification](docs/release.md).
 
 ### Changed
 

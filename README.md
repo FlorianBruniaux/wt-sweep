@@ -54,6 +54,31 @@ files, uncommitted changes or local notes.
 
 ## Quick start
 
+### Download the Apple Silicon alpha
+
+Use [v0.1.0-alpha.1](https://github.com/FlorianBruniaux/wt-sweep/releases/tag/v0.1.0-alpha.1) on macOS Apple Silicon with `/usr/bin/git`. Rust is not required for the downloaded binary. The `Downloads` directory must exist; each installation uses a new folder.
+
+```sh
+(
+  set -eu
+  test "$(uname -s)" = Darwin
+  test "$(uname -m)" = arm64
+  install_dir="$(mktemp -d "$HOME/Downloads/wt-sweep-alpha.XXXXXX")"
+  cd "$install_dir"
+  release_url="https://github.com/FlorianBruniaux/wt-sweep/releases/download/v0.1.0-alpha.1"
+  curl --fail --location --proto '=https' --tlsv1.2 -O "$release_url/SHA256SUMS"
+  curl --fail --location --proto '=https' --tlsv1.2 -O "$release_url/wt-sweep-v0.1.0-alpha.1-aarch64-apple-darwin.tar.gz"
+  shasum -a 256 -c SHA256SUMS
+  tar -xzf wt-sweep-v0.1.0-alpha.1-aarch64-apple-darwin.tar.gz
+  cd wt-sweep-v0.1.0-alpha.1-aarch64-apple-darwin
+  ./wt-sweep --version
+  ./wt-sweep review --help
+  printf '\nBinary: %s/wt-sweep\n' "$PWD"
+)
+```
+
+Use the printed binary path in place of `./target/release/wt-sweep` in the commands below. No global installation or permissions change is made. The archive includes licenses and `MANIFEST.json` with its source commit and file hashes. It is not Apple-notarized; browser-downloaded Gatekeeper behavior and older macOS versions remain unqualified. If macOS blocks execution, keep the protection and use the source-build instructions. Intel, Linux and Windows binaries are not provided.
+
 ### Build from source
 
 Use macOS and Rust. The repository is public; clone it over HTTPS.
@@ -369,13 +394,7 @@ covers one real family with 71 registered worktrees. The first review returned
 that partial review into a complete snapshot. Five prioritized worktrees have
 complete disk measurements; the family-wide total remains partial.
 
-The source tree merged by [#23](https://github.com/FlorianBruniaux/wt-sweep/pull/23)
-passed 404 Rust tests (3 ignored) and 305 Python cases (299 passed, 6 skipped)
-locally. These are dated source-tree checks, not new results from this README
-edit. The [validation record](docs/progress.md) records an intermittent Rust test
-failure and its successful reruns, and separates local checks from remote CI.
-The recorded main CI job did not start because of an account payment or spending
-limit. The CI badge links to the latest workflow state.
+Release validation and installation evidence are linked from the [release guide](docs/release.md). Historical test counts remain in the [validation record](docs/progress.md).
 
 Concurrent-writer exclusion, durable backup and independent restore remain
 unproven. Removal is unavailable. Real FileProvider placeholders, actual TCC
@@ -387,13 +406,9 @@ denials and a machine-wide snapshot have not been verified.
 
 ## Development and project status
 
-The first alpha targets `v0.1.0-alpha.1`. See the [release preparation](docs/release.md)
-for its scope, installation checks and publication status.
+[v0.1.0-alpha.1](https://github.com/FlorianBruniaux/wt-sweep/releases/tag/v0.1.0-alpha.1) is the first read-only macOS Apple Silicon pre-release. See the [release guide](docs/release.md) for installation, checksums and scope.
 
-See [CONTRIBUTING.md](CONTRIBUTING.md) for local checks and disposable fixtures,
-and [CHANGELOG.md](CHANGELOG.md) for changes. The project name is provisional;
-the source checkout is the current distribution. No package release has been
-published, and Cargo publishing is disabled.
+[CONTRIBUTING.md](CONTRIBUTING.md) covers local checks and disposable fixtures; [CHANGELOG.md](CHANGELOG.md) records changes. Cargo publishing remains disabled.
 
 ---
 

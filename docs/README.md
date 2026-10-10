@@ -13,8 +13,7 @@ The project overview is available in English and French. The tutorial, assistant
 and disk guides are in French; other user guides are in English. Design and
 validation records retain their original language and observation dates.
 
-La [préparation de la première alpha](release.md) décrit le périmètre,
-les conditions de publication et le paquet macOS prévu.
+Le [guide de v0.1.0-alpha.1](release.md) décrit le paquet Apple Silicon, son téléchargement, la vérification SHA-256 et les scripts de recette.
 
 ## Use the CLI
 

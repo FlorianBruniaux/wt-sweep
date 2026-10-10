@@ -4,7 +4,7 @@ Astro 5 + Starlight, EN/FR, local-first delivery. Product base: c3e38f7810424ae5
 
 [Observed validation and reference status](VERIFICATION.md).
 
-The header, source-updates banner and hero share the Search Console 90rem envelope. Standard sections retain a 75rem container and prose keeps its own width limit. The banner reads the reviewed canonical changelog; maintain its `unreleased-updated` marker when adding source changes. It never substitutes the build date or advertises a published release.
+The header, source-updates banner and hero share the Search Console 90rem envelope. Standard sections retain a 75rem container and prose keeps its own width limit. The banner reads the reviewed canonical changelog; maintain its `unreleased-updated` marker when adding source changes. When Unreleased is empty, the banner uses the dated release heading. Publication links follow the matching Cargo version in the changelog; deploy this state only after the GitHub release exists. It never substitutes the build date.
 
 ## Run
 

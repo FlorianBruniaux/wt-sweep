@@ -2,7 +2,7 @@
   {
     "slug": "index",
     "source": "docs/getting-started.md",
-    "sourceHash": "b27db7a63231fea286736666f764ef820e76dd85f7d3aff3f1250df09819d817",
+    "sourceHash": "9b68f9ef70c5b1c4e7440664bab38e72031df88932fd2bc7b9171788f6301a70",
     "title": {
       "en": "Start with wt-sweep",
       "fr": "Démarrer avec wt-sweep"
@@ -15,20 +15,20 @@
   {
     "slug": "installation",
     "source": "docs/getting-started.md",
-    "sourceHash": "b27db7a63231fea286736666f764ef820e76dd85f7d3aff3f1250df09819d817",
+    "sourceHash": "9b68f9ef70c5b1c4e7440664bab38e72031df88932fd2bc7b9171788f6301a70",
     "title": {
-      "en": "Installation from source",
-      "fr": "Installer depuis les sources"
+      "en": "Install wt-sweep",
+      "fr": "Installer wt-sweep"
     },
     "description": {
-      "en": "Build the macOS CLI from source and check the prerequisites before your first scan.",
-      "fr": "Compiler la CLI sur macOS et vérifier les prérequis avant le premier scan."
+      "en": "Download the Apple Silicon alpha, verify its checksum, or build from source.",
+      "fr": "Télécharger l’alpha Apple Silicon, vérifier sa somme de contrôle ou compiler les sources."
     }
   },
   {
     "slug": "demo",
     "source": "docs/getting-started.md",
-    "sourceHash": "b27db7a63231fea286736666f764ef820e76dd85f7d3aff3f1250df09819d817",
+    "sourceHash": "9b68f9ef70c5b1c4e7440664bab38e72031df88932fd2bc7b9171788f6301a70",
     "title": {
       "en": "Demo with a test repo",
       "fr": "Démo sur un repo de test"
@@ -132,7 +132,7 @@
   {
     "slug": "changelog",
     "source": "CHANGELOG.md",
-    "sourceHash": "9581e02ab81a72039b9e65acc610a94b71c14488257926abb5aa4cb1065f46fe",
+    "sourceHash": "a3adc1321660beb786949be0a632e04da667887af062cd31ce8b3be694792e03",
     "title": {
       "en": "Changelog",
       "fr": "Historique des changements"

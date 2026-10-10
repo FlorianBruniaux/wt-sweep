@@ -2,7 +2,7 @@ Find worktrees, measure their footprint and read the evidence behind each verdic
 
 ## Your first run
 
-1. [Build from source](/docs/installation/).
+1. [Install the alpha or build from source](/docs/installation/).
 2. [Try a disposable Git demo](/docs/demo/).
 3. [Read the offline HTML report](/docs/report/).
 4. [Choose roots and integration targets](/docs/targets/) for your own review.

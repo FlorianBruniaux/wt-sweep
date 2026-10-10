@@ -2,7 +2,7 @@ Repérez les worktrees, mesurez leur taille et consultez les preuves qui justifi
 
 ## Premier essai
 
-1. [Compiler les sources](/fr/docs/installation/).
+1. [Installer l’alpha ou compiler les sources](/fr/docs/installation/).
 2. [Essayer sur un repo de test](/fr/docs/demo/).
 3. [Lire le rapport HTML hors ligne](/fr/docs/report/).
 4. [Choisir les dossiers et les cibles d’intégration](/fr/docs/targets/) pour votre propre analyse.

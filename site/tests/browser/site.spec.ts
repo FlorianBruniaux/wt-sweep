@@ -2,7 +2,8 @@ import { test, expect } from '@playwright/test';
 import AxeBuilder from '@axe-core/playwright';
 import {readFileSync} from 'node:fs';
 const packageVersion = readFileSync(new URL('../../../Cargo.toml', import.meta.url), 'utf8').match(/^version\s*=\s*"([^"]+)"/m)?.[1];
-const sourceUpdateDate = readFileSync(new URL('../../../CHANGELOG.md', import.meta.url), 'utf8').match(/<!-- unreleased-updated: (\d{4}-\d{2}-\d{2}) -->/)?.[1];
+import {sourceUpdateDate as readSourceUpdateDate} from '../../src/data/updates.mjs';
+const sourceUpdateDate = readSourceUpdateDate(readFileSync(new URL('../../../CHANGELOG.md', import.meta.url), 'utf8'));
 for(const lang of ['en','fr']) for(const theme of ['light','dark']) for(const width of [390,768,1024,1440]) {
  test(`${lang} ${theme} ${width}: accessible report journey and working navigation`,async({page,context})=>{
   const path=lang==='fr'?'/fr/':'/';

@@ -5,6 +5,31 @@
 For a French walkthrough with expected results, local test commands and an
 assistant prompt, read the [hands-on tutorial](tutorial.fr.md).
 
+## Download the Apple Silicon alpha
+
+Use [v0.1.0-alpha.1](https://github.com/FlorianBruniaux/wt-sweep/releases/tag/v0.1.0-alpha.1) on macOS Apple Silicon with `/usr/bin/git`. Rust is not required for the downloaded binary. The `Downloads` directory must exist; each installation uses a new folder.
+
+```sh
+(
+  set -eu
+  test "$(uname -s)" = Darwin
+  test "$(uname -m)" = arm64
+  install_dir="$(mktemp -d "$HOME/Downloads/wt-sweep-alpha.XXXXXX")"
+  cd "$install_dir"
+  release_url="https://github.com/FlorianBruniaux/wt-sweep/releases/download/v0.1.0-alpha.1"
+  curl --fail --location --proto '=https' --tlsv1.2 -O "$release_url/SHA256SUMS"
+  curl --fail --location --proto '=https' --tlsv1.2 -O "$release_url/wt-sweep-v0.1.0-alpha.1-aarch64-apple-darwin.tar.gz"
+  shasum -a 256 -c SHA256SUMS
+  tar -xzf wt-sweep-v0.1.0-alpha.1-aarch64-apple-darwin.tar.gz
+  cd wt-sweep-v0.1.0-alpha.1-aarch64-apple-darwin
+  ./wt-sweep --version
+  ./wt-sweep review --help
+  printf '\nBinary: %s/wt-sweep\n' "$PWD"
+)
+```
+
+Use the printed binary path in place of `./target/release/wt-sweep` in the commands below. No global installation or permissions change is made. The archive includes licenses and `MANIFEST.json` with its source commit and file hashes. It is not Apple-notarized; browser-downloaded Gatekeeper behavior and older macOS versions remain unqualified. If macOS blocks execution, keep the protection and use the source-build instructions. Intel, Linux and Windows binaries are not provided.
+
 ## Prerequisites
 
 Run the CLI on macOS with `/usr/bin/git` available. Before protected reads, the

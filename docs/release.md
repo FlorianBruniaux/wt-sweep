@@ -1,83 +1,44 @@
-# Première alpha de Worktree Sweep
+# Worktree Sweep v0.1.0-alpha.1
 
 [Index documentaire](README.md) · [Changelog](../CHANGELOG.md) · [Feuille de route](roadmap.md)
 
-Version préparée : `0.1.0-alpha.1`. Tag prévu : `v0.1.0-alpha.1`, avec le statut
-GitHub **Pre-release**. Cette préparation ne prouve pas qu’un tag ou une release
-existe. Le statut de publication doit être vérifié sur GitHub.
+Pré-release GitHub : [v0.1.0-alpha.1](https://github.com/FlorianBruniaux/wt-sweep/releases/tag/v0.1.0-alpha.1).
+Le paquet vise macOS Apple Silicon (`aarch64-apple-darwin`) et conserve la licence FSL-1.1-ALv2. Il s’agit de Fair Source. La visibilité publique du repo ne change pas cette licence.
+
+## Installer et vérifier
+
+La [procédure de téléchargement](getting-started.md#download-the-apple-silicon-alpha) crée un dossier neuf, télécharge l’archive et `SHA256SUMS`, vérifie la somme puis exécute `--version` et `review --help`. Le binaire ne demande pas Rust. `/usr/bin/git` doit être disponible.
+
+L’archive `wt-sweep-v0.1.0-alpha.1-aarch64-apple-darwin.tar.gz` contient le binaire, sa licence, les notices des dépendances et `MANIFEST.json`. Le manifeste identifie le commit source, le compilateur et les empreintes des fichiers. Gardez `SHA256SUMS` avec l’archive.
+
+Utilisez le chemin absolu du binaire dans la [démo temporaire](getting-started.md#disposable-demo), à la place de `./target/release/wt-sweep`. Le résultat attendu est 2 `keep`, 1 `cleanup_candidate`, 0 `verify`. Les skills Claude/Codex restent dans le repo source.
+
+Le binaire n’est pas notarisé par Apple. Le téléchargement par CLI et le lancement local ne qualifient pas Gatekeeper après téléchargement par navigateur. Aucun contournement de cette protection n’est demandé. Intel, Linux, Windows et une version minimale de macOS ne sont pas qualifiés. La recette précédente utilisait macOS 26.5.1 ; chaque nouvelle recette doit conserver son environnement exact.
 
 ## Périmètre de l’alpha
 
-La CLI macOS inventorie les familles Git dans un périmètre choisi, mesure leur
-occupation disque et produit une revue avec les verdicts `keep`, `verify` et
-`cleanup_candidate`. Les rapports texte, JSON et HTML gardent les lacunes de
-collecte. Le skill Claude/Codex et son prompt d’installation sont livrés avec
-les sources.
+La CLI inventorie les familles Git choisies, mesure leur occupation disque et produit les verdicts `keep`, `verify` et `cleanup_candidate`. Les rapports texte, JSON et HTML conservent les lacunes de collecte. `--open` enregistre le rapport et demande son ouverture dans le navigateur par défaut ; sur macOS, le dossier par défaut est `~/Desktop/Worktree Sweep/`.
 
-La version reste en lecture seule. `apply` refuse les demandes. Une taille
-allouée ne prédit pas les octets récupérables sur APFS ; un candidat ne prouve
-pas l’absence d’utilisation par un agent ou un terminal. Les grandes familles
-peuvent demander des reprises ciblées, même avec le budget `thorough`.
+La version reste en lecture seule. `apply` refuse les demandes. Une taille allouée ne prédit pas les octets récupérables sur APFS ; un candidat ne prouve pas l’absence d’utilisation par un agent ou un terminal. Les grandes familles peuvent demander des reprises ciblées, même avec le budget `thorough`.
 
-L’évaluation du collecteur natif [#20](https://github.com/FlorianBruniaux/wt-sweep/issues/20)
-et la vision de gestion [#14](https://github.com/FlorianBruniaux/wt-sweep/issues/14)
-restent séparées de cette publication.
+Les liens GitHub/GitLab proviennent des remotes locaux et des exports PR/MR associés. La CLI ne vérifie pas l’état actuel du serveur. L’évaluation du collecteur natif [#20](https://github.com/FlorianBruniaux/wt-sweep/issues/20) et les extensions [#14](https://github.com/FlorianBruniaux/wt-sweep/issues/14) sont hors de cette release.
 
-## Conditions de publication
+## Reproduire le paquet
 
-1. Fixer la licence avec le mainteneur. La FSL actuelle est une [licence Fair
-   Source](https://fair.io/licenses/) ; une sortie open source immédiate demande un autre choix.
-2. Vérifier le contenu suivi et son historique avant de rendre le repo public.
-   Un détecteur de secrets ne remplace pas l’examen des résultats qu’il signale.
-3. Publier le correctif de session Git, le prompt d’installation et les notes
-   de version. Aligner Cargo, le changelog et le tag.
-4. Exécuter les contrôles de [CONTRIBUTING.md](../CONTRIBUTING.md), puis obtenir
-   une CI réussie sur le commit exact à taguer. Un job qui ne démarre pas ne
-   valide aucun test.
-5. Construire depuis un clone neuf, empaqueter le binaire et ses licences,
-   vérifier l’archive extraite sur le repo de test temporaire, puis publier les sommes
-   SHA-256 avec l’archive. Ne proposer que l’architecture effectivement testée.
-
-## Archive macOS
-
-La compilation utilise Rust 1.95, également déclaré comme minimum du paquet.
-Les versions antérieures ne sont pas qualifiées pour cette alpha.
-
-Le premier paquet testé localement est
-`wt-sweep-v0.1.0-alpha.1-aarch64-apple-darwin.tar.gz`, pour Apple Silicon.
-Il contient le binaire, sa licence, les notices des dépendances, le commit
-source et une notice d’utilisation. `SHA256SUMS` accompagne le téléchargement.
-Les skills restent disponibles dans le repo source.
-
-Une archive locale testée ne prouve ni le téléchargement public ni son passage
-dans Gatekeeper. La notarisation Apple et le support Intel/Linux ne sont pas
-annoncés par cette préparation.
-
-Après téléchargement des deux fichiers dans le même dossier, la vérification
-et l’extraction prévues sont :
+Les scripts de [packaging](../scripts/release/package.py) et de [recette](../scripts/release/accept-archive.py) sont versionnés. Ils ne publient rien et n’installent rien globalement. Lancez-les sur Apple Silicon depuis un clone neuf, propre, au commit retenu. Python 3.12+ est requis pour la recette de l’archive ; Rust 1.95.0 est utilisé pour compiler.
 
 ```sh
-shasum -a 256 -c SHA256SUMS
-tar -xzf wt-sweep-v0.1.0-alpha.1-aarch64-apple-darwin.tar.gz
-cd wt-sweep-v0.1.0-alpha.1-aarch64-apple-darwin
-./wt-sweep --version
-./wt-sweep review --help
+cargo fetch --locked
+cargo build --release --locked --offline
+release_check="$(mktemp -d /private/tmp/wt-sweep-package.XXXXXX)"
+python3 -B scripts/release/package.py "$PWD" "$release_check/package"
+python3 -B scripts/release/accept-archive.py "$PWD" "$release_check/package"
 ```
 
-Ces commandes n’installent rien globalement. Utiliser ensuite le chemin absolu
-du binaire à la place de `./target/release/wt-sweep` dans le
-[tutoriel CLI](tutorial.fr.md).
+La recette vérifie les empreintes de l’archive et de ses fichiers, exécute l’aide et la démo documentaire, compare les verdicts attendus et vérifie les artefacts contre `run.json`. Ses fixtures restent dans des dossiers temporaires possédés ; aucun scan global n’est lancé.
 
-## Vérification avant le tag
+## Contrôles de publication
 
-Le correctif de fermeture est testé en forçant la sortie du processus avant
-la finalisation. Une sortie 0 doit conserver une session valide ; une sortie 7
-doit produire `git_exit`. Avant correction, le nouveau test échoue avec
-`input_io`. Les erreurs de protocole, dépassements et sorties en échec restent
-des refus de preuve.
+Le mainteneur publie seulement après la CI produit réussie sur le commit exact à taguer, la compilation propre et la recette de l’archive. Il publie ensuite l’archive et `SHA256SUMS`, retélécharge les fichiers publics et rejoue leur recette avant de clore [#31](https://github.com/FlorianBruniaux/wt-sweep/issues/31).
 
-Les [résultats de validation locale](progress.md#préparation-de-la-première-alpha-09102026)
-et la [recette de l’archive](progress.md#recette-de-larchive-apple-silicon)
-sont consignés séparément de la CI. Le manifeste identifie le commit du paquet
-candidat. Après le choix de licence et une CI réussie, reconstruire et vérifier
-le paquet depuis le commit exact à taguer avant de publier.
+La page de release et #31 portent les résultats de livraison, le commit et le lien CI. Le [registre](progress.md) conserve les observations historiques sans les transformer en validation du paquet courant. Aucun tap Homebrew n’est annoncé ; son évaluation reste facultative après cette publication.

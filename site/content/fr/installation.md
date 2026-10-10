@@ -1,6 +1,31 @@
+## Télécharger l’alpha Apple Silicon
+
+Utilisez [v0.1.0-alpha.1](https://github.com/FlorianBruniaux/wt-sweep/releases/tag/v0.1.0-alpha.1) sur macOS Apple Silicon avec `/usr/bin/git`. Le binaire téléchargé ne demande pas Rust. Le dossier `Downloads` doit exister ; chaque installation crée un nouveau dossier.
+
+```sh
+(
+  set -eu
+  test "$(uname -s)" = Darwin
+  test "$(uname -m)" = arm64
+  install_dir="$(mktemp -d "$HOME/Downloads/wt-sweep-alpha.XXXXXX")"
+  cd "$install_dir"
+  release_url="https://github.com/FlorianBruniaux/wt-sweep/releases/download/v0.1.0-alpha.1"
+  curl --fail --location --proto '=https' --tlsv1.2 -O "$release_url/SHA256SUMS"
+  curl --fail --location --proto '=https' --tlsv1.2 -O "$release_url/wt-sweep-v0.1.0-alpha.1-aarch64-apple-darwin.tar.gz"
+  shasum -a 256 -c SHA256SUMS
+  tar -xzf wt-sweep-v0.1.0-alpha.1-aarch64-apple-darwin.tar.gz
+  cd wt-sweep-v0.1.0-alpha.1-aarch64-apple-darwin
+  ./wt-sweep --version
+  ./wt-sweep review --help
+  printf '\nBinary: %s/wt-sweep\n' "$PWD"
+)
+```
+
+Utilisez le chemin du binaire affiché à la place de `./target/release/wt-sweep` dans les commandes. Aucun changement global de configuration ou de permissions. L’archive contient les licences et `MANIFEST.json`, avec le commit source et les empreintes des fichiers. Le binaire n’est pas notarisé par Apple ; Gatekeeper après téléchargement par navigateur et les anciennes versions de macOS restent non qualifiés. Si macOS bloque son exécution, conservez cette protection et compilez depuis les sources. Aucun binaire Intel, Linux ou Windows n’est proposé.
+
 ## Prérequis
 
-Utilisez macOS avec `/usr/bin/git`. Compilez avec la version de Rust indiquée dans `rust-toolchain.toml` (1.95). La version dans Cargo est `0.1.0-alpha.1` ; ce numéro n’annonce pas une release publiée.
+Utilisez macOS avec `/usr/bin/git`. Compilez avec la version de Rust indiquée dans `rust-toolchain.toml` (1.95). La version des sources est `0.1.0-alpha.1`.
 
 Clonez le repo public en HTTPS. Si vous avez déjà un checkout, omettez le clonage et le `cd` ci-dessous.
 

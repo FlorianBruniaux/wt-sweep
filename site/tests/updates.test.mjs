@@ -13,3 +13,9 @@ test('source banner uses the canonical update date and refuses missing or imposs
  }
  assert.throws(() => sourceUpdateDate('## [Unreleased]\n## [1.0] - 2026-10-09\n<!-- unreleased-updated: 2026-10-09 -->\n- Published elsewhere.\n'), /nonempty Unreleased/);
 });
+
+test('release banner uses the dated version when Unreleased is empty', async () => {
+ const {sourceUpdateDate} = await import(moduleUrl);
+ assert.equal(sourceUpdateDate('## [Unreleased]\n\n## [0.1.0-alpha.1] - 2026-10-10\n\n### Added\n- First alpha.\n'), '2026-10-10');
+ assert.throws(() => sourceUpdateDate('## [Unreleased]\n\n## [0.1.0-alpha.1] - 2026-02-30\n- First alpha.\n'), /valid source update date/);
+});

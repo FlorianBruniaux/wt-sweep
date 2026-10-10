@@ -42,8 +42,10 @@ export async function prepareDocs({root = resolve(dirname(fileURLToPath(import.m
   const version=cargo.match(/^version = "([^"]+)"/m)?.[1];
   const rust=cargo.match(/^rust-version = "([^"]+)"/m)?.[1];
   if(!version || !rust) throw new Error('Missing Cargo metadata');
+  const changelog = await readFile(resolve(root,'CHANGELOG.md'),'utf8').catch(error => { if (error.code === 'ENOENT') return ''; throw error; });
+  const published = changelog.split('\n').some(line => line.startsWith(`## [${version}] - `));
   await mkdir(resolve(site,'src/data'),{recursive:true});
-  await writeFile(resolve(site,'src/data/product.json'),JSON.stringify({version,rust,license:'FSL-1.1-ALv2',published:false},null,2)+'\n');
+  await writeFile(resolve(site,'src/data/product.json'),JSON.stringify({version,rust,license:'FSL-1.1-ALv2',published,releaseUrl:`https://github.com/FlorianBruniaux/wt-sweep/releases/tag/v${version}`},null,2)+'\n');
   return docs.length;
 }
 if(process.argv[1] && resolve(process.argv[1])===fileURLToPath(import.meta.url)) console.log(`Prepared ${await prepareDocs()} reviewed pages.`);

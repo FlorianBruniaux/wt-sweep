@@ -30,6 +30,10 @@ test('publishes reviewed bilingual pages and refuses stale sources before writin
     assert.match(output,/\]\(https:\/\/github.com\/FlorianBruniaux\/wt-sweep\/blob\/main\/docs\/guide.md#known\)/);
     assert.match(output,/https:\/\/github.com\/FlorianBruniaux\/wt-sweep\/blob\/main\/docs\/private.md/);
     assert.match(await readFile(join(root,'site/src/content/docs/fr/docs/guide.md'),'utf8'),/title: "Guide français"/);
+    assert.equal(JSON.parse(await readFile(join(root,'site/src/data/product.json'),'utf8')).published,false);
+    await writeFile(join(root,'CHANGELOG.md'),'## [Unreleased]\n\n## [0.1.0-test] - 2026-10-10\n- First package.\n');
+    await prepareDocs({root});
+    assert.equal(JSON.parse(await readFile(join(root,'site/src/data/product.json'),'utf8')).published,true);
     await writeFile(join(root,'site/content/en/guide.md'),'Read [missing](missing.md).');
     await assert.rejects(prepareDocs({root}),/Missing relative link/);
     assert.equal(await readFile(join(root,'site/src/content/docs/docs/guide.md'),'utf8'),output);
