@@ -1,6 +1,16 @@
 `report.html` is self-contained: styles and script are embedded, with no model or network resource. Open it directly in a browser. The summary and evidence remain readable without JavaScript.
 
-[Open the synthetic example](/demo/report.html).
+[Open the captured synthetic example](/demo/report.html). This example predates the volume dashboard described below.
+
+## Disk dashboard and worktree list
+
+These additions are available in source builds after `v0.1.0-alpha.1`; the published alpha archive does not contain them.
+
+With `--disk-usage`, the dashboard shows captured capacity, available space and measured allocation for each volume. Volumes stay separate, including APFS volumes sharing a container. Old inventories keep their sizes and explicitly report missing capacity; rendering never queries the current machine.
+
+Inventory reports open the worktree list directly. Filter present, bare, absent or unverified entries, or sort the entire list. Review reports retain Git-family grouping and verdict filters. Cmd+K / Ctrl+K opens a local search over sections and recorded worktrees. The reading guide works offline, including its diagram; technical scan limits remain expandable.
+
+Filters do not change source counts, volume gauges or recorded evidence. Partial measurements stay partial, and measured allocation does not predict freed disk space.
 
 ## Save and open a report
 
@@ -25,7 +35,7 @@ Search, verdict filters and sort change visible rows without recalculating sourc
 
 ## Disk figures
 
-**Observed disk footprint** is the deduplicated allocation of requested measured roots. **Recoverable space** remains unestablished. **Cleanup review** describes the source review, or says that no review was performed for an inventory-only report.
+**Observed disk allocation** is the deduplicated allocation of measured roots. Volume capacity and availability are independent captured values. Cleanup counts appear only for a review; an inventory alone has no cleanup verdict. Recoverable space remains unestablished.
 
 Sizes use decimal units and are rounded for display; exact bytes stay in tooltips and JSON. The largest observed worktrees list excludes shared Git and can omit larger, unmeasured roots. Do not add its overlapping sizes.
 

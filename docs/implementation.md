@@ -8,6 +8,23 @@ définit les lots et responsabilités ; leur validation exige les preuves du
 registre. Garder la comparaison des alternatives ouverte avant de développer le
 moteur de nettoyage.
 
+## Dashboard et CI automatique, 11/10/2026
+
+Les sources après l’alpha ajoutent les jauges par volume, la liste d’inventaire
+ouverte et filtrable, le guide de lecture et la recherche Cmd+K / Ctrl+K.
+Le bloc facultatif `disk_usage.storage` conserve la capacité observée pendant
+la collecte ; le rendu reste hors ligne. Ces ajouts ne modifient ni C1-C5 ni
+l’archive `v0.1.0-alpha.1` déjà publiée.
+
+La politique Actions du dépôt refusait les événements `push` et `pull_request`.
+Elle les autorise désormais pour le seul compte propriétaire, avec les lancements
+manuels conservés. Le workflow exécute aussi les tests navigateur du rapport.
+Le [registre de validation](progress.md#dashboard-et-ci-automatique-11102026)
+distingue les vérifications locales des exécutions automatiques distantes.
+
+La suite reste l’évaluation facultative de #20 et les extensions #27 à #30
+regroupées sous #14. Ni nouvelle release ni suppression réelle dans ce lot.
+
 ## État de livraison et prochain lot
 
 La publication de `v0.1.0-alpha.1` est suivie dans [#31](https://github.com/FlorianBruniaux/wt-sweep/issues/31). Le [guide de release](release.md) définit les contrôles du commit, du paquet et du téléchargement. Les scripts de packaging et de recette sont versionnés sous `scripts/release/`.

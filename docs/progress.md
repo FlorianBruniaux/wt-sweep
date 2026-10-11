@@ -2,10 +2,70 @@
 
 [Index documentaire](README.md) · [Contrats des artefacts](contracts.md) · [Feuille de route](roadmap.md)
 
-L’[état publié](#état-publié-et-suite-au-09102026) sépare livraison, CI et recette
-réelle. Le [lot de collecte](#sessions-git-et-reprise-de-découverte-08102026)
-conserve les tests du code livré ; les sections plus anciennes sont des observations
-datées, pas une description des tâches encore ouvertes.
+La [publication alpha](#publication-de-la-première-alpha-10102026) et le
+[lot dashboard/CI](#dashboard-et-ci-automatique-11102026) séparent livraison,
+validation locale et contrôles distants. Les sections plus anciennes conservent
+des observations datées, pas une liste des tâches encore ouvertes.
+
+## Dashboard et CI automatique, 11/10/2026
+
+Le lot A1 ajoute les capacités et disponibilités capturées par volume, les
+jauges d’allocation observée, une liste d’inventaire ouverte et filtrable, un
+guide de lecture hors ligne et la recherche Cmd+K / Ctrl+K. Le champ optionnel
+`disk_usage.storage` conserve les anciens inventaires et leurs empreintes.
+Le rendu ne relit pas la machine ; les filtres ne modifient pas les totaux
+source. Les capacités de volumes APFS restent séparées et ne prédisent pas
+l’espace récupérable. Les conditions C1-C5 restent inchangées.
+
+Le lot A2 corrige une politique Actions extérieure au dépôt : la règle 7082
+n’autorisait que `workflow_dispatch`, ce qui empêchait le démarrage de la CI
+sur `push`. La relecture après modification confirme `push`, `pull_request`
+et `workflow_dispatch`, avec le seul compte propriétaire, le périmètre et
+l’enforcement conservés. Le workflow ajoute les contrôles navigateur sur un
+rapport synthétique. Le [guide CI](ci.md) donne les vérifications reproductibles.
+La réussite d’un lancement manuel ne prouve pas le fonctionnement automatique :
+le verdict de livraison exige le run `push` du SHA final de `main` dans
+[GitHub Actions](https://github.com/FlorianBruniaux/wt-sweep/actions/workflows/ci.yml?query=branch%3Amain).
+
+Validation locale du lot : formatage, Clippy et compilation réussis ; 450 tests
+Rust passent, trois sont ignorés. Après les corrections CSS finales, les 29 tests
+HTML repassent. Les scripts navigateur passent 8 variantes de dashboard,
+8 de recherche/guide, 8 de sections et 12 de thèmes, plus les préférences et
+l’impression. Les captures clair/sombre à 390 et 1440 px sont relues. Un test
+reproduisait le titre décalé sous sa flèche ; le contrôle sans JavaScript a
+également détecté un bouton de recherche visible à tort. Les deux sont corrigés.
+
+La suite Python 3.14 complète exécute 316 tests : 309 réussis, 6 ignorés et
+un échec. Ce dernier est le contrôle « CLI binary changed during collection » :
+une reconstruction du rendu a remplacé le binaire pendant le cas 4 200 fichiers /
+600 commits / 32 racines privées. Après gel du binaire final, ce cas et les
+10 tests CLI HTML repassent ; son empreinte reste inchangée. La première passe
+reste une suite échouée, le rejeu une preuve distincte. Les six cas ignorés
+incluent quatre fixtures historiques et deux chemins non UTF-8 refusés par le
+système de fichiers. La CI rejoue la suite complète sans compilation concurrente.
+
+Une recette après installation dans un préfixe temporaire produit un rapport
+natif sur quatre worktrees synthétiques : trois `keep`, un `cleanup_candidate`,
+capacité capturée, fixture conservée et reçus vérifiés. Le test visuel de cette
+revue sélectionnait initialement « Repository links » au lieu des preuves ;
+son sélecteur vise maintenant les détails de preuve de la cellule. Les thèmes
+et sections passent sur la fixture de revue ajoutée à la CI, puis sur la revue
+installée : 12 variantes de thèmes et 8 de sections pour chacune. La fixture
+d’inventaire repasse aussi ses 12 variantes de thèmes. Le produit n’a pas été
+modifié pour satisfaire ce sélecteur.
+
+Les 6 expériences d’exclusion, 2 tests du harness de comparaison et 22 fichiers
+générés du harness passent. Le site passe 8 tests documentaires/de compilation,
+34 tests navigateur et Astro sans erreur ni avertissement. Ces observations
+locales restent distinctes des résultats CI et d’un déploiement. Safari, Firefox,
+les comptes de volumes sur d’autres machines et un scan global ne sont pas
+qualifiés par ces contrôles.
+
+Les changements locaux ont été réconciliés dans un clone isolé depuis le commit
+alpha `da34ebb99fa386fa8c3331238eb6d485b0faadfa`. Le checkout principal et ses
+modifications concurrentes sont conservés. README anglais/français, contrats,
+guides disque/HTML/CI, changelog, roadmap et pages bilingues du site sont mis à
+jour. L’archive `v0.1.0-alpha.1` reste inchangée ; ces ajouts sont dans `Unreleased`.
 
 ## Publication de la première alpha, 10/10/2026
 

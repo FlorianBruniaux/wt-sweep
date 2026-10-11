@@ -144,6 +144,24 @@ fn global_totals_deduplicate_hardlinks_and_nested_registered_worktrees() {
     let disk = inv.disk_usage.expect("disk usage");
     assert!(disk.complete);
     assert_eq!(disk.measurements.len(), 3);
+    let storage = disk.storage.as_ref().expect("per-device bytes captured");
+    assert_eq!(storage.devices.len(), 1, "fixture lives on one device");
+    assert_eq!(
+        storage.devices[0].device,
+        fs::metadata(&p).expect("fixture").dev()
+    );
+    assert_eq!(
+        storage
+            .devices
+            .iter()
+            .map(|d| d.bytes.allocated)
+            .sum::<u64>(),
+        disk.unique_bytes.allocated
+    );
+    assert_eq!(
+        storage.devices.iter().map(|d| d.bytes.logical).sum::<u64>(),
+        disk.unique_bytes.logical
+    );
     let sum: u64 = disk
         .measurements
         .iter()
@@ -432,6 +450,10 @@ fn plan_keeps_captured_disk_sizes_after_files_change_and_reports_missing_measure
     .expect("disk");
     let captured = serde_json::to_value(inventory.disk_usage.as_ref().expect("disk usage"))
         .expect("disk JSON");
+    let captured_inventory = inventory.clone();
+    let captured_html =
+        wt_sweep::presentation::html::inventory(&captured_inventory, 4 * 1024 * 1024)
+            .expect("captured HTML");
     fs::write(&payload, vec![1; 32768]).expect("change payload after capture");
     for has_disk in [true, false] {
         if !has_disk {
@@ -491,6 +513,22 @@ fn plan_keeps_captured_disk_sizes_after_files_change_and_reports_missing_measure
             }
         }
     }
+    fs::remove_dir_all(&repo).expect("remove uniquely owned fixture source after replay");
+    assert_eq!(
+        wt_sweep::presentation::html::inventory(&captured_inventory, 4 * 1024 * 1024)
+            .expect("offline HTML"),
+        captured_html
+    );
+    assert_eq!(
+        serde_json::to_value(
+            captured_inventory
+                .disk_usage
+                .as_ref()
+                .expect("captured disk")
+        )
+        .expect("JSON"),
+        captured
+    );
 }
 
 // Regression: a large first root must not starve the later small worktree.
@@ -664,9 +702,72 @@ fn historical_disk_format_keeps_its_canonical_digest() {
     let restored: wt_sweep::disk::DiskUsage =
         serde_json::from_str(historical).expect("historical disk fixture");
     assert!(restored.requested_paths.is_none());
+    assert!(restored.storage.is_none());
+    assert!(
+        serde_json::to_value(&restored)
+            .expect("historical JSON")
+            .get("storage")
+            .is_none()
+    );
     assert!(restored.measurements.iter().all(|r| r.requested));
     assert_eq!(
         wt_sweep::output::canonical_digest(&restored).expect("historical digest"),
         "aaadf76145bd8a9eb216b8c6d9a11225ac527af60d98a56d4740c84876419038"
     );
+}
+
+#[test]
+fn enriched_disk_format_roundtrips_without_dropping_storage() {
+    let value = serde_json::json!({
+        "started_unix_ms": 1, "finished_unix_ms": 2, "elapsed_ms": 1,
+        "limits": {"max_entries": 10, "max_entries_per_root": 10, "max_depth": 128,
+                   "timeout": {"secs": 600, "nanos": 0}, "timeout_per_root": {"secs": 30, "nanos": 0}},
+        "complete": false, "temporal_consistency": "not_guaranteed",
+        "unique_bytes": {"logical": 8, "allocated": 4096}, "measurements": [],
+        "storage": {"schema": "wt-sweep.storage/1", "started_unix_ms": 1,
+                    "finished_unix_ms": 2, "temporal_consistency": "not_guaranteed",
+                    "devices": [{"device": 7, "bytes": {"logical": 8, "allocated": 4096},
+                                 "volume": null, "unavailable_reason": "capacity_not_observed"}]}
+    });
+    let restored = serde_json::from_value::<wt_sweep::disk::DiskUsage>(value.clone());
+    assert!(
+        restored.is_ok(),
+        "optional captured storage must be accepted: {restored:?}"
+    );
+    assert_eq!(
+        serde_json::to_value(restored.expect("captured storage")).expect("JSON"),
+        value
+    );
+}
+
+#[test]
+fn native_volume_capacity_is_bound_to_the_measured_device() {
+    let f = Fixture::new();
+    let p = f.repo();
+    let mut inv = scan_scope(&ScanScope::Repo {
+        path: BytePath::from_path(&p),
+    })
+    .expect("scan");
+    assert!(
+        inv.disk_usage.is_none(),
+        "capacity collection remains opt-in"
+    );
+    wt_sweep::disk::collect(&mut inv, &Default::default(), &mut |_| {}).expect("disk");
+    let storage = inv
+        .disk_usage
+        .as_ref()
+        .expect("disk")
+        .storage
+        .as_ref()
+        .expect("storage");
+    assert_eq!(storage.devices.len(), 1);
+    let device = &storage.devices[0];
+    let volume = device.volume.as_ref().expect("native volume observation");
+    assert!(volume.identity_verified);
+    assert_eq!(volume.anchor.device, device.device);
+    assert_eq!(device.device, fs::metadata(&p).expect("fixture").dev());
+    let capacity = volume.capacity_bytes.expect("native capacity");
+    assert!(capacity > 0);
+    assert!(volume.available_bytes.expect("native available") <= capacity);
+    assert_eq!(volume.method, "fstatfs");
 }

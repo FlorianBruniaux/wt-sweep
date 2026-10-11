@@ -151,6 +151,12 @@ class HtmlCliTests(unittest.TestCase):
                     for family in inventory["families"] for tree in family["worktrees"]}
         self.assertEqual(Rows(html).rows, expected)
 
+        storage = inventory["disk_usage"]["storage"]
+        self.assertEqual(sum(row["bytes"]["allocated"] for row in storage["devices"]),
+                         inventory["disk_usage"]["unique_bytes"]["allocated"])
+        for row in storage["devices"]:
+            self.assertIn(f'data-device="{row["device"]}"', html)
+
     def test_review_and_filtered_plan_html_preserve_verdicts_and_receipts(self):
         base = self.output("review")
         result = self.invoke("review", "--repo", self.fixture.principal,
@@ -171,6 +177,7 @@ class HtmlCliTests(unittest.TestCase):
         self.assertEqual(Rows(html).rows, {os.fsencode(self.fixture.linked).hex(): "cleanup_candidate"})
         self.assertIn(view["source"]["digest_sha256"], html)
         self.assertIn(view["digest_sha256"], html)
+        self.assertEqual(view["source"]["disk_usage"], review["disk_usage"])
 
     def test_multiple_roots_retain_external_registrations_and_inaccessible_scope(self):
         other = HistoryFixture()

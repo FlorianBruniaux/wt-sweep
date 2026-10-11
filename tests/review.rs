@@ -171,6 +171,7 @@ fn disk_observations_are_digested_and_rendered_without_changing_verdicts() {
     let mut facts = observations();
     let without_disk = wt_sweep::review::judge(&facts).unwrap();
     facts.inventory.disk_usage = Some(DiskUsage {
+        storage: None,
         requested_paths: None,
         started_unix_ms: 10,
         finished_unix_ms: 20,

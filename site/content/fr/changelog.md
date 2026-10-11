@@ -6,6 +6,36 @@
 
 ## [Unreleased]
 
+<!-- unreleased-updated: 2026-10-11 -->
+
+### Added
+
+- HTML disk dashboard with per-volume capacity, available space and measured
+  allocation gauges. Capture volume statistics from verified directory descriptors
+  with `--disk-usage`; preserve inode deduplication and source totals after filtering.
+  Old inventories retain their sizes with an explicit missing-capacity message.
+  Allocation is not an estimate of reclaimable space.
+- Offline reading guide, static Mermaid diagram and Cmd+K / Ctrl+K search for
+  report sections and recorded worktrees, with keyboard focus restoration.
+- Browser checks in CI for dashboard gauges, command search, sections, themes,
+  mobile layout, JavaScript-disabled reading and unchanged source counts,
+  covering both inventory and review reports.
+
+### Changed
+
+- Lead HTML inventories with present working-directory counts and an open list.
+  Distinguish bare repositories, absent paths and unverified entries; filter by
+  directory state and sort globally. Fold technical diagnostics while retaining
+  all recorded paths, reasons, byte totals and collection omissions.
+- Authorize owner-triggered `push` and `pull_request` events in this repository's
+  Actions policy, alongside manual runs. Preserve the owner-only actor rule and
+  read-only CI token; website publication remains manual.
+
+### Fixed
+
+- Keep report section titles on the disclosure line and space the command-search
+  shortcut without exposing its button when JavaScript is disabled.
+
 ## [0.1.0-alpha.1] - 2026-10-10
 
 First read-only alpha, distributed as an Apple Silicon archive with SHA-256 checksums, dependency licenses and a source manifest. The FSL-1.1-ALv2 license is unchanged. Intel, Linux, Windows and Apple notarization are not included.

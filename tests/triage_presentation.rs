@@ -404,6 +404,7 @@ fn compact_view_keeps_source_gaps_and_partial_disk_but_counts_selected_checks()
         cover: RemainingCover::RequestedScope,
     });
     source.disk_usage = Some(wt_sweep::disk::DiskUsage {
+        storage: None,
         requested_paths: None,
         started_unix_ms: 10,
         finished_unix_ms: 20,
@@ -587,6 +588,7 @@ fn history_fact(result: &str) -> HistoryObservation {
 fn recap_disk(rows: &[(&[u8], Option<u64>, bool)]) -> wt_sweep::disk::DiskUsage {
     use wt_sweep::disk::*;
     DiskUsage {
+        storage: None,
         requested_paths: None,
         started_unix_ms: 10,
         finished_unix_ms: 20,

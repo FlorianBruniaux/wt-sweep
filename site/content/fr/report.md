@@ -1,6 +1,16 @@
 `report.html` est autonome : styles et script embarqués, sans modèle ni ressource réseau. Ouvrez-le directement dans le navigateur. Le bilan et les sections de détail restent lisibles sans JavaScript.
 
-[Ouvrir l’exemple synthétique](/demo/report.html).
+[Ouvrir l’exemple synthétique enregistré](/demo/report.html). Cet exemple précède le tableau de bord par volume décrit ci-dessous.
+
+## Tableau de bord disque et liste
+
+Ces ajouts sont disponibles dans les sources après `v0.1.0-alpha.1` ; l’archive alpha publiée ne les contient pas.
+
+Avec `--disk-usage`, le tableau de bord affiche la capacité capturée, l’espace disponible et l’allocation mesurée pour chaque volume. Les volumes restent séparés, y compris les volumes APFS partageant un conteneur. Un ancien inventaire conserve ses tailles et indique la capacité manquante ; le rendu n’interroge jamais la machine actuelle.
+
+L’inventaire ouvre directement la liste des worktrees. Filtrez les entrées présentes, bare, absentes ou non vérifiées, ou triez toute la liste. L’analyse conserve les familles Git et les filtres de verdict. Cmd+K / Ctrl+K ouvre une recherche locale parmi les sections et les worktrees enregistrés. Le guide de lecture et son diagramme fonctionnent hors ligne ; les limites techniques du scan restent dépliables.
+
+Les filtres ne changent ni les comptes source, ni les jauges, ni les preuves. Une mesure partielle reste partielle ; l’allocation mesurée ne prédit pas l’espace libéré.
 
 ## Enregistrer et ouvrir un rapport
 
@@ -25,7 +35,7 @@ Recherche, filtres de verdict et tri changent les lignes visibles, sans recalcul
 
 ## Chiffres disque
 
-**Observed disk footprint** est l’allocation dédupliquée des racines demandées et mesurées. **Recoverable space** indique que l’espace récupérable n’a pas été établi. **Cleanup review** décrit l’analyse complète, ou indique qu’elle n’a pas été effectuée pour un simple inventaire.
+**Observed disk allocation** est l’allocation dédupliquée des racines mesurées. Capacité et disponibilité du volume sont des valeurs capturées séparément. Les comptes de nettoyage apparaissent uniquement pour une analyse ; un inventaire seul n’a aucun verdict de nettoyage. L’espace récupérable reste inconnu.
 
 Les unités sont décimales et l’affichage est arrondi ; les octets exacts restent au survol et dans le JSON. La liste des plus gros worktrees observés exclut le Git partagé et peut omettre de plus grosses racines non mesurées. N’additionnez pas ses tailles susceptibles de se recouvrir.
 

@@ -20,6 +20,10 @@ fs.mkdirSync(output, {recursive:false});
       await page.goto(pathToFileURL(report).href);
       const rows=await page.locator('[data-worktree]').count();
       assert.ok(rows>0); assert.equal(await page.locator('[data-worktree]:visible').count(),rows);
+      for (const heading of await page.locator('.report-section > summary h2').all()) {
+        const offset = await heading.evaluate(e => e.getBoundingClientRect().top - e.parentElement.getBoundingClientRect().top);
+        assert.ok(offset <= 16, 'section heading wraps below its disclosure marker');
+      }
       const metrics=await page.evaluate(()=>{
         const color=v=>v.match(/[\d.]+/g).map(Number);
         const bg=el=>{const chain=[];for(let e=el;e;e=e.parentElement)chain.unshift(e);let result=[255,255,255];for(const e of chain){const c=color(getComputedStyle(e).backgroundColor),a=c[3]??1;result=result.map((v,i)=>c[i]*a+v*(1-a));}return result;};
@@ -42,8 +46,8 @@ fs.mkdirSync(output, {recursive:false});
       await page.keyboard.press('Tab');
       assert.equal(await page.locator('.skip').evaluate(e=>e===document.activeElement),true);
       const focus=await page.locator('.skip').evaluate(e=>({width:getComputedStyle(e).outlineWidth,style:getComputedStyle(e).outlineStyle,color:getComputedStyle(e).outlineColor}));
-      assert.equal(focus.width,'2px');assert.notEqual(focus.style,'none');assert.equal(focus.color,theme==='light'?'rgb(194, 65, 12)':'rgb(249, 115, 22)');
-      const summary=page.locator('tbody details summary').first();
+      assert.ok(parseFloat(focus.width)>=2,'keyboard focus outline must be at least 2px');assert.notEqual(focus.style,'none');assert.equal(focus.color,theme==='light'?'rgb(194, 65, 12)':'rgb(249, 115, 22)');
+      const summary=page.locator('tbody > tr > td:last-child > details > summary').first();
       const evidenceWidth=await summary.evaluate(e=>e.parentElement.parentElement.getBoundingClientRect().width);
       await summary.focus();await page.keyboard.press('Enter');assert.equal(await summary.evaluate(e=>e.parentElement.open),true);
       if(width>=1440) {
@@ -57,7 +61,18 @@ fs.mkdirSync(output, {recursive:false});
         assert.ok(expanded>=evidenceWidth*1.8,'expanded evidence remains too narrow');
       }
       assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth)<=width+1,'expanded document overflow');
-      if(js){await page.locator('#search').fill('no-such-worktree-theme-test');assert.equal(await page.locator('[data-worktree]:visible').count(),0);await page.locator('#search').fill('');const keep=await page.locator('[data-worktree][data-verdict="keep"]').count();await page.locator('#verdict').selectOption('keep');assert.equal(await page.locator('[data-worktree]:visible').count(),keep);await page.locator('#verdict').selectOption('');await page.locator('#sort').selectOption('allocated');}
+      if(js) {
+        await page.locator('#search').fill('no-such-worktree-theme-test');
+        assert.equal(await page.locator('[data-worktree]:visible').count(),0);
+        await page.locator('#search').fill('');
+        const inventory=await page.locator('[data-flat-list]').count()>0;
+        const filter=inventory?'present':'keep';
+        const selected=await page.locator(inventory?'[data-worktree][data-state="present"]':'[data-worktree][data-verdict="keep"]').count();
+        await page.locator('#verdict').selectOption(filter);
+        assert.equal(await page.locator('[data-worktree]:visible').count(),selected);
+        await page.locator('#verdict').selectOption('');
+        await page.locator('#sort').selectOption('allocated');
+      }
       await page.evaluate(()=>window.scrollTo(0,0));await page.screenshot({path:path.join(output,theme+'-'+width+'-'+(js?'js':'nojs')+'.png')});
       assert.deepEqual(errors,[]);assert.deepEqual(requests,[]);checks.push({theme,width,js,rows,...metrics,focus});await context.close();
     }

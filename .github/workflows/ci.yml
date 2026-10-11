@@ -30,4 +30,29 @@ jobs:
       - run: python3 -B -m unittest discover -s experiments/exclusion -p 'test_*.py' -v
       - run: python3 -B scripts/comparison/test_harness.py
       - run: python3 -B scripts/sync-ai.py --check
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 9.15.9
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: pnpm
+          cache-dependency-path: site/pnpm-lock.yaml
+      - name: Install locked browser test dependencies
+        run: |
+          pnpm --dir site install --frozen-lockfile
+          pnpm --dir site exec playwright install chromium
+      - name: Verify offline report interactions and rendering
+        env:
+          PLAYWRIGHT_MODULE: ${{ github.workspace }}/site/node_modules/@playwright/test
+        run: |
+          node tests/html-list.cjs
+          fixture_dir="$(mktemp -d)"
+          WT_SWEEP_DASHBOARD_FIXTURE_DIR="$fixture_dir" cargo test --locked --offline --test html_report dashboard_fixture_export -- --exact
+          node tests/html-dashboard.cjs "$fixture_dir/report.html" "$fixture_dir/dashboard"
+          node tests/html-command.cjs "$fixture_dir/report.html" "$fixture_dir/commands"
+          node tests/html-sections.cjs "$fixture_dir/report.html" "$fixture_dir/sections"
+          node tests/html-theme.cjs "$fixture_dir/report.html" "$fixture_dir/themes"
+          node tests/html-sections.cjs "$fixture_dir/review.html" "$fixture_dir/review-sections"
+          node tests/html-theme.cjs "$fixture_dir/review.html" "$fixture_dir/review-themes"
       - run: git diff --exit-code

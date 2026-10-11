@@ -32,3 +32,7 @@ La taille allouée n’est pas l’espace récupérable. Clones APFS, snapshots 
 Le collecteur actuel lit les métadonnées entrée par entrée. L’évaluation native `getattrlistbulk` n’est pas intégrée. Aucune ventilation par catégorie de cache ni suppression automatique de caches.
 
 [Choisissez une analyse ciblée](/fr/docs/targets/) et conservez le périmètre et les dates de chaque exécution.
+
+## Capacité capturée des volumes
+
+Les sources après `v0.1.0-alpha.1` capturent les statistiques de volume depuis les descripteurs de répertoire vérifiés pendant `--disk-usage`. Le HTML affiche capacité, espace disponible et allocation mesurée par volume, avec une couverture distincte pour les dossiers de travail et le Git partagé. Les capacités des volumes APFS ne sont jamais additionnées. Le bloc facultatif `disk_usage.storage` reste disponible au rejeu hors ligne ; les anciens inventaires gardent leurs tailles sans pourcentage inventé. Les anciens lecteurs stricts peuvent refuser ces artefacts enrichis. Les verdicts restent inchangés.

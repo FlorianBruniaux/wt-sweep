@@ -188,6 +188,12 @@ contain terminal decoration.
 
 ## HTML report
 
+Source builds after `v0.1.0-alpha.1` add a disk dashboard: captured capacity,
+available space and measured allocation per volume. The worktree list opens
+directly; inventory reports distinguish present, bare, absent and unverified
+entries. Cmd+K / Ctrl+K jumps to a section or recorded worktree. These additions
+are not in the published alpha archive. [Disk dashboard](docs/disk-usage.md).
+
 Search by path or branch, filter verdicts, sort by size and copy paths. Worktrees
 are grouped by Git family, with light/dark themes, sizes in Ko/Mo/Go and expandable
 sections. Source totals, selected rows and browser-filtered rows remain distinct.

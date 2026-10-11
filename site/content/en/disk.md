@@ -32,3 +32,7 @@ Allocated size is not recoverable space. APFS clones, snapshots and shared exten
 The current collector reads metadata one entry at a time. The native `getattrlistbulk` evaluation is not integrated. There is no cache-category breakdown or automatic cache deletion.
 
 [Choose a focused review](/docs/targets/) and preserve each run’s scope and dates.
+
+## Captured volume capacity
+
+Source builds after `v0.1.0-alpha.1` capture volume statistics on verified directory descriptors during `--disk-usage`. HTML shows per-volume capacity, available space and measured allocation, with separate coverage for working directories and shared Git storage. Capacity is never summed across APFS volumes. The optional `disk_usage.storage` data survives offline replay; older inventories retain sizes with no invented percentage. Older strict readers may reject these enriched artifacts. No cleanup verdict changes.

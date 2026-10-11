@@ -2,6 +2,8 @@
   'use strict';
   const root = document.documentElement;
   const families = Array.from(document.querySelectorAll('.family'));
+  const flatList = document.querySelector('[data-flat-list]');
+  const groups = Array.from(document.querySelectorAll('.family tbody, tbody[data-row-group]'));
   const rows = Array.from(document.querySelectorAll('[data-worktree]'));
   const search = document.getElementById('search');
   const verdict = document.getElementById('verdict');
@@ -21,21 +23,23 @@
     const counts = new Map();
     for (const row of rows) {
       const matches = (!query || searchable.get(row).includes(query)) &&
-        (!verdict.value || row.dataset.verdict === verdict.value);
+        (!verdict.value || (flatList ? row.dataset.state : row.dataset.verdict) === verdict.value);
       row.hidden = !matches;
       if (matches) {
         visible += 1;
         counts.set(row.dataset.verdict, (counts.get(row.dataset.verdict) || 0) + 1);
       }
     }
-    for (const family of families) {
-      const tbody = family.querySelector('tbody');
+    for (const tbody of groups) {
       const children = Array.from(tbody.querySelectorAll('[data-worktree]'));
       children.sort((a, b) => {
         let result = 0;
         if (sort.value === 'allocated') {
           const av = a.dataset.allocated, bv = b.dataset.allocated;
           result = !av && !bv ? 0 : !av ? 1 : !bv ? -1 : compare(BigInt(bv), BigInt(av));
+        } else if (sort.value === 'state') {
+          const order = {present: 0, bare: 1, absent: 2, unknown: 3};
+          result = compare(order[a.dataset.state] ?? 3, order[b.dataset.state] ?? 3);
         } else if (sort.value === 'verdict') {
           result = compare(a.dataset.verdict, b.dataset.verdict);
         } else if (sort.value === 'branch') {
@@ -44,12 +48,17 @@
         return result || compare(a.dataset.pathHex, b.dataset.pathHex);
       });
       for (const row of children) tbody.append(row);
+    }
+    for (const family of families) {
+      const children = Array.from(family.querySelectorAll('[data-worktree]'));
       const count = children.filter(row => !row.hidden).length;
       family.querySelector('.visible-count').textContent = String(count);
       family.hidden = count === 0 && children.length > 0;
     }
     const totals = Array.from(counts, ([name, count]) => `${count} ${name}`).join(', ');
-    status.textContent = `Visible ${visible} of ${rows.length} selected worktrees${totals ? ': ' + totals : ''}. Source totals and disk measurements are unchanged.`;
+    status.textContent = flatList
+      ? `Showing ${visible} of ${rows.length} recorded entries. The counts above cover the saved inventory.`
+      : `Visible ${visible} of ${rows.length} selected worktrees${totals ? ': ' + totals : ''}. Source totals and disk measurements are unchanged.`;
     document.getElementById('no-matches').hidden = visible !== 0 || rows.length === 0;
   };
   search.addEventListener('input', update);
@@ -78,6 +87,99 @@
   });
   window.addEventListener('hashchange', () => revealFragment(location.hash));
   revealFragment(location.hash);
+  // A local index over captured rows and report headings, never filesystem diagnostics.
+  const commandDialog = document.getElementById('command-dialog');
+  const commandInput = document.getElementById('command-query');
+  const commandResults = document.getElementById('command-results');
+  const commandStatus = document.getElementById('command-status');
+  const commandOpen = document.getElementById('command-open');
+  const commandEntries = [...sections, document.getElementById('reading-guide')].filter(Boolean).map(section => ({
+    target: section, label: section.querySelector('h2, summary').textContent.trim(), kind: 'Section',
+    search: section.querySelector('h2, summary').textContent.toLowerCase(),
+  }));
+  for (const [index, row] of rows.entries()) {
+    row.id = `recorded-worktree-${index}`;
+    commandEntries.push({target: row, label: row.querySelector('.path').textContent.trim(),
+      detail: row.querySelector('[data-label="Branch"]')?.textContent.trim() || '', kind: 'Worktree',
+      search: searchable.get(row)});
+  }
+  let commandMatches = [], commandSelected = 0, commandReturnFocus, commandTarget;
+  const markCommand = () => {
+    const buttons = Array.from(commandResults.children);
+    for (const [index, button] of buttons.entries()) button.setAttribute('aria-selected', String(index === commandSelected));
+    if (buttons[commandSelected]) {
+      commandInput.setAttribute('aria-activedescendant', buttons[commandSelected].id);
+      buttons[commandSelected].scrollIntoView({block: 'nearest'});
+    } else commandInput.removeAttribute('aria-activedescendant');
+  };
+  const activateCommand = entry => {
+    commandTarget = entry.target;
+    commandDialog.close();
+    commandInput.setAttribute('aria-expanded', 'false');
+    if (entry.kind === 'Worktree') {
+      search.value = ''; verdict.value = ''; update();
+      const evidence = commandTarget.querySelector('details');
+      if (evidence) evidence.open = true;
+    }
+    revealFragment(`#${commandTarget.id}`);
+    commandTarget.tabIndex = -1;
+    commandTarget.scrollIntoView({block: 'center'});
+    commandTarget.focus({preventScroll: true});
+  };
+  const findCommands = () => {
+    const query = commandInput.value.trim().toLowerCase();
+    const all = commandEntries.filter(entry => !query || entry.search.includes(query));
+    commandMatches = all.slice(0, 30); commandSelected = 0;
+    commandResults.replaceChildren();
+    for (const [index, entry] of commandMatches.entries()) {
+      const button = document.createElement('button');
+      button.type = 'button'; button.id = `command-option-${index}`; button.tabIndex = -1;
+      button.setAttribute('role', 'option');
+      const kind = document.createElement('span'); kind.className = 'command-kind'; kind.textContent = entry.kind;
+      const label = document.createElement('span'); label.className = 'command-label'; label.textContent = entry.label;
+      button.append(kind, label);
+      if (entry.detail) {
+        const detail = document.createElement('small'); detail.textContent = entry.detail; button.append(detail);
+      }
+      button.addEventListener('click', () => activateCommand(entry));
+      commandResults.append(button);
+    }
+    commandStatus.textContent = all.length === 0 ? 'No matches. Try another repository, branch or path.'
+      : `Showing ${commandMatches.length} of ${all.length} matches.${all.length > 30 ? ' Refine your search to see other results.' : ''}`;
+    markCommand();
+  };
+  const openCommands = () => {
+    if (commandDialog.open || document.querySelector('dialog[open]')) return;
+    commandReturnFocus = document.activeElement; commandTarget = null;
+    commandDialog.showModal(); commandInput.value = ''; commandInput.setAttribute('aria-expanded', 'true');
+    findCommands(); commandInput.focus();
+  };
+  commandOpen.addEventListener('click', openCommands);
+  document.getElementById('command-close').addEventListener('click', () => commandDialog.close());
+  commandDialog.addEventListener('close', () => {
+    commandInput.setAttribute('aria-expanded', 'false');
+    if (!commandTarget && commandReturnFocus?.isConnected) commandReturnFocus.focus();
+  });
+  commandInput.addEventListener('input', findCommands);
+  commandDialog.addEventListener('keydown', event => {
+    if (event.key === 'ArrowDown' || event.key === 'ArrowUp') {
+      event.preventDefault();
+      if (commandMatches.length) {
+        commandSelected = (commandSelected + (event.key === 'ArrowDown' ? 1 : -1) + commandMatches.length) % commandMatches.length;
+        commandInput.focus(); markCommand();
+      }
+    } else if (event.key === 'Enter' && event.target === commandInput) {
+      event.preventDefault(); if (commandMatches[commandSelected]) activateCommand(commandMatches[commandSelected]);
+    }
+  });
+  document.addEventListener('keydown', event => {
+    if ((event.metaKey || event.ctrlKey) && !event.altKey && event.key.toLowerCase() === 'k') {
+      if (!commandDialog.open && document.querySelector('dialog[open]')) return;
+      event.preventDefault();
+      if (commandDialog.open) commandDialog.close(); else openCommands();
+    }
+  });
+
   // The section label provides navigation and help; title remains the no-JS fallback.
   for (const item of document.querySelectorAll('.nav-item')) {
     const link = item.querySelector('a');

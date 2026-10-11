@@ -20,15 +20,19 @@ fs.mkdirSync(output, {recursive: false});
       page.on('request', r => { if (!r.url().startsWith('file:')) requests.push(r.url()); });
       await page.goto(url);
       const sections = page.locator('details.report-section');
-      const ids = ['disk-priority', 'overview', 'worktree-families', 'disk', 'coverage'];
+      const inventory = await page.locator('[data-flat-list]').count() > 0;
+      const ids = inventory
+        ? ['overview', 'worktree-families', 'disk-priority', 'disk', 'coverage']
+        : ['disk-priority', 'overview', 'worktree-families', 'disk', 'coverage'];
       assert.deepEqual(await sections.evaluateAll(es => es.map(e => e.id)), ids);
       const states = () => sections.evaluateAll(es => es.map(e => e.open));
-      assert.deepEqual(await states(), ids.map(() => true));
+      assert.deepEqual(await states(), inventory ? [true, true, false, false, false] : ids.map(() => true));
       const snapshot = () => page.evaluate(() => ({
         rows: Array.from(document.querySelectorAll('[data-worktree]'), e => ({...e.dataset})),
         evidence: Array.from(document.querySelectorAll('pre'), e => e.textContent),
       }));
       const before = await snapshot();
+      await sections.evaluateAll(es => es.forEach(e => { e.open = true; }));
       for (const id of ids) {
         const section = page.locator('#' + id), summary = section.locator(':scope > summary');
         await summary.focus();
