@@ -58,7 +58,7 @@ encore contenir des fichiers ignorés, des modifications non commitées ou des n
 
 ### Télécharger l’alpha Apple Silicon
 
-Utilisez [v0.1.0-alpha.1](https://github.com/FlorianBruniaux/wt-sweep/releases/tag/v0.1.0-alpha.1) sur macOS Apple Silicon avec `/usr/bin/git`. Le binaire téléchargé ne demande pas Rust. Le dossier `Downloads` doit exister ; chaque installation crée un nouveau dossier.
+Utilisez [v0.1.0-alpha.2](https://github.com/FlorianBruniaux/wt-sweep/releases/tag/v0.1.0-alpha.2) sur macOS Apple Silicon avec `/usr/bin/git`. Le binaire téléchargé ne demande pas Rust. Le dossier `Downloads` doit exister ; chaque installation crée un nouveau dossier.
 
 ```sh
 (
@@ -67,12 +67,12 @@ Utilisez [v0.1.0-alpha.1](https://github.com/FlorianBruniaux/wt-sweep/releases/t
   test "$(uname -m)" = arm64
   install_dir="$(mktemp -d "$HOME/Downloads/wt-sweep-alpha.XXXXXX")"
   cd "$install_dir"
-  release_url="https://github.com/FlorianBruniaux/wt-sweep/releases/download/v0.1.0-alpha.1"
+  release_url="https://github.com/FlorianBruniaux/wt-sweep/releases/download/v0.1.0-alpha.2"
   curl --fail --location --proto '=https' --tlsv1.2 -O "$release_url/SHA256SUMS"
-  curl --fail --location --proto '=https' --tlsv1.2 -O "$release_url/wt-sweep-v0.1.0-alpha.1-aarch64-apple-darwin.tar.gz"
+  curl --fail --location --proto '=https' --tlsv1.2 -O "$release_url/wt-sweep-v0.1.0-alpha.2-aarch64-apple-darwin.tar.gz"
   shasum -a 256 -c SHA256SUMS
-  tar -xzf wt-sweep-v0.1.0-alpha.1-aarch64-apple-darwin.tar.gz
-  cd wt-sweep-v0.1.0-alpha.1-aarch64-apple-darwin
+  tar -xzf wt-sweep-v0.1.0-alpha.2-aarch64-apple-darwin.tar.gz
+  cd wt-sweep-v0.1.0-alpha.2-aarch64-apple-darwin
   ./wt-sweep --version
   ./wt-sweep review --help
   printf '\nBinary: %s/wt-sweep\n' "$PWD"
@@ -194,11 +194,15 @@ fichiers enregistrés et le JSON ne contiennent pas de décoration terminal.
 
 ## Rapport HTML
 
-Les sources après `v0.1.0-alpha.1` ajoutent un tableau de bord disque : capacité
-capturée, espace disponible et allocation mesurée par volume. La liste reste
-ouverte ; un inventaire distingue dossiers présents, dépôts bare, chemins
-absents et non vérifiés. Cmd+K / Ctrl+K rejoint une section ou un worktree.
-Ces ajouts ne sont pas dans l’archive alpha publiée. [Guide disque](docs/disk-usage.md).
+`v0.1.0-alpha.2` ouvre un bilan compact, les prochaines vérifications conseillées
+et la liste des worktrees. Les filtres rapides sélectionnent un statut ; le
+raccourci de taille montre les plus gros dossiers mesurés. **Show all** rétablit la vue
+initiale. Chaque ligne analysée affiche son statut et son motif principal ; les
+preuves complètes restent dépliables.
+
+Dépliez **Disk observations** pour lire capacité capturée, espace disponible et
+allocation mesurée par volume. Les mesures partielles restent signalées.
+Cmd+K / Ctrl+K rejoint une section ou un worktree. [Guide disque](docs/disk-usage.md).
 
 Le guide de lecture hors ligne contient un diagramme cliquable. Chaque bloc
 rejoint sa section du rapport, aussi avec Tab et Entrée. Un inventaire explique
@@ -431,7 +435,7 @@ placeholders FileProvider, refus TCC et instantanés machine restent non vérifi
 
 ## Développement et état du projet
 
-[v0.1.0-alpha.1](https://github.com/FlorianBruniaux/wt-sweep/releases/tag/v0.1.0-alpha.1) est la première pré-release macOS Apple Silicon en lecture seule. Le [guide de release](docs/release.md) décrit l’installation, les sommes de contrôle et les limites.
+[v0.1.0-alpha.2](https://github.com/FlorianBruniaux/wt-sweep/releases/tag/v0.1.0-alpha.2) est la pré-release actuelle, en lecture seule, pour macOS Apple Silicon. Le [guide de release](docs/release.md) décrit l’installation, les sommes de contrôle et les limites.
 
 [CONTRIBUTING.md](CONTRIBUTING.md) décrit les contrôles locaux et les repos de test temporaires ; [CHANGELOG.md](CHANGELOG.md) conserve les changements. La publication Cargo reste désactivée.
 

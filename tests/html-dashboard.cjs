@@ -17,6 +17,7 @@ fs.mkdirSync(output, {recursive: false});
       page.on('pageerror', e => errors.push(e.message));
       page.on('request', r => { if (!r.url().startsWith('file:')) requests.push(r.url()); });
       await page.goto(pathToFileURL(report).href);
+      await page.locator('#disk > summary').focus(); await page.keyboard.press('Enter');
       const dashboard = page.locator('[data-disk-dashboard]');
       assert.equal(await dashboard.isVisible(), true);
       assert.equal(await dashboard.locator('meter:visible').count(), 2);

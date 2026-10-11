@@ -2,10 +2,50 @@
 
 [Index documentaire](README.md) · [Contrats des artefacts](contracts.md) · [Feuille de route](roadmap.md)
 
-La [publication alpha](#publication-de-la-première-alpha-10102026) et le
+La [préparation alpha.2](#préparation-alpha2-11102026), la
+[publication alpha.1](#publication-de-la-première-alpha-10102026) et le
 [lot dashboard/CI](#dashboard-et-ci-automatique-11102026) séparent livraison,
 validation locale et contrôles distants. Les sections plus anciennes conservent
 des observations datées, pas une liste des tâches encore ouvertes.
+
+## Préparation alpha.2, 11/10/2026
+
+Les changements UI sont réconciliés dans le clone isolé de livraison depuis
+`fde4db6bfba6afbc7846098f506eda8811d5f6bc`. Le checkout principal conserve ses
+modifications. Le bilan et la liste précèdent les détails disque repliés ; les
+recommandations suivent les verdicts de la sélection sauvegardée. Les filtres,
+le tri, les chemins et les preuves restent des vues des observations capturées.
+
+Les tests échouent d'abord sur l'ancienne présentation : raccourcis absents et
+ordre des sections différent. Les 33 tests Rust HTML passent après intégration.
+La relecture repère ensuite un libellé trop affirmatif pour une non-ascendance :
+le motif principal réutilise maintenant le texte exact de la CLI. Son test
+échoue avant correction ; les 34 tests HTML passent ensuite et conservent les
+verdicts et données source.
+La vérification de position mobile a révélé un contrôle pris après défilement :
+la mesure porte maintenant sur l'arrivée réelle, avant les interactions.
+L'espacement mobile est réduit sans abaisser les cibles tactiles de 44 px.
+
+Validation locale : formatage, Clippy et compilation réussis. La suite Rust
+sérialisée passe 454 tests, avec 3 ignorés ; après les derniers ajustements de
+présentation, les 34 tests HTML et Clippy repassent. Le binaire final reste gelé
+pendant la suite Python : 316 cas, 310 réussis et 6 ignorés. Les expériences
+d'exclusion passent 6 cas, le comparateur 2 ; les 22 fichiers du harnais sont
+synchronisés. Les quatre fixtures de forge historiques et les deux chemins
+non UTF-8 refusés par le système expliquent les six cas ignorés.
+
+Les contrôles navigateur couvrent 16 états du parcours compact, les filtres,
+la recherche, les liens du diagramme, les sections et les thèmes, avec conservation
+des données et aucun accès réseau. Les captures finales clair/sombre sont relues.
+Le site passe 8 contrôles de source/compilation et 34 tests navigateur ; Astro
+contrôle 41 fichiers sans erreur ni avertissement et construit 31 pages.
+
+Les numéros de version, scripts de paquet, commandes de téléchargement, README,
+roadmap et pages EN/FR sont préparés pour `0.1.0-alpha.2`. La publication exige
+encore la CI du commit exact, la recette de l'archive et son téléchargement public.
+Les résultats de livraison sont consignés sur la
+[page alpha.2](https://github.com/FlorianBruniaux/wt-sweep/releases/tag/v0.1.0-alpha.2).
+Cette préparation ne remplace ni l'archive alpha.1 ni ses preuves historiques.
 
 ## Dashboard et CI automatique, 11/10/2026
 

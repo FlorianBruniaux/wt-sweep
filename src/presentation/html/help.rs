@@ -22,6 +22,55 @@ pub(super) fn icon(h: &mut Html, kind: &str) -> fmt::Result {
     h.raw("\"/></svg>")
 }
 
+pub(super) fn recommendations(
+    h: &mut Html,
+    review_counts: Option<(usize, usize, usize, usize)>,
+    coverage: &Coverage,
+) -> fmt::Result {
+    h.raw("<aside id=\"recommended-actions\" class=\"recommended-actions\" aria-labelledby=\"recommended-actions-title\"><h3 id=\"recommended-actions-title\">In brief: recommended actions</h3><ol>")?;
+    if let Some((total, keep, verify, candidates)) = review_counts {
+        if total == 0 {
+            h.raw("<li><strong>No reviewed entry in this saved view.</strong> Broaden the saved selection, or review a repository with a confirmed integration ref.</li>")?;
+        } else {
+            if candidates > 0 {
+                write!(
+                    h.out,
+                    "<li><strong>Confirm usage of {candidates} possible cleanup {}.</strong> <a href=\"#worktree-families\">Open the list</a>; confirm folders are no longer used. This report does not authorize removal.</li>",
+                    if candidates == 1 { "entry" } else { "entries" }
+                )?;
+            } else {
+                h.raw("<li><strong>No entry is marked Possible cleanup in this saved view.</strong> Inspect the recorded reasons before planning cleanup.</li>")?;
+            }
+            if verify > 0 {
+                write!(
+                    h.out,
+                    "<li><strong>Resolve missing checks for {verify} {}.</strong> In the <a href=\"#worktree-families\">list</a>, read Needs checking gaps before a focused review.</li>",
+                    if verify == 1 { "entry" } else { "entries" }
+                )?;
+            }
+            if keep > 0 {
+                write!(
+                    h.out,
+                    "<li><strong>Preserve {keep} {} marked Keep.</strong> Read their retention reasons in the <a href=\"#worktree-families\">list</a>.</li>",
+                    if keep == 1 { "entry" } else { "entries" }
+                )?;
+            }
+        }
+    } else {
+        h.raw("<li><strong>Inspect the largest folders.</strong> Open the <a href=\"#worktree-families\">list</a> and sort by measured size to choose where to start.</li><li><strong>Review one repository.</strong> Copy a folder path from the list and choose the branch it should be integrated into. <strong>Cleanup analysis not performed.</strong></li>")?;
+        if coverage.remaining.is_some() {
+            h.raw("<li><strong>Complete missing discovery.</strong> Read <a href=\"#coverage\">Scan limits</a>, then retry a scan limited to your project folders. More worktrees may remain undiscovered.</li>")?;
+        } else {
+            h.raw("<li><strong>Understand size limits.</strong> Open <a href=\"#disk\">Disk observations</a> to check which sizes are partial or unavailable. Measured size is not space guaranteed to be freed.</li>")?;
+        }
+    }
+    h.raw("</ol></aside>")
+}
+
+pub(super) fn review_command(h: &mut Html) -> fmt::Result {
+    h.raw("<details class=\"review-command\"><summary>Example: run a Git review</summary><p>Replace the example path and target with your repository and its confirmed integration ref. The command collects current Git evidence and measured sizes, then creates a new HTML report.</p><p class=\"mono\"><code>wt-sweep review --repo &quot;/path/to/repository&quot; --target refs/heads/main --disk-usage --html</code></p></details>")
+}
+
 pub(super) fn guide(h: &mut Html, reviewed: bool) -> fmt::Result {
     h.raw("<details class=\"reading-guide\" id=\"reading-guide\"><summary>")?;
     icon(h, "guide")?;

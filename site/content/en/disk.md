@@ -35,4 +35,4 @@ The current collector reads metadata one entry at a time. The native `getattrlis
 
 ## Captured volume capacity
 
-Source builds after `v0.1.0-alpha.1` capture volume statistics on verified directory descriptors during `--disk-usage`. HTML shows per-volume capacity, available space and measured allocation, with separate coverage for working directories and shared Git storage. Capacity is never summed across APFS volumes. The optional `disk_usage.storage` data survives offline replay; older inventories retain sizes with no invented percentage. Older strict readers may reject these enriched artifacts. No cleanup verdict changes.
+Starting with `v0.1.0-alpha.2`, builds capture volume statistics on verified directory descriptors during `--disk-usage`. HTML shows per-volume capacity, available space and measured allocation, with separate coverage for working directories and shared Git storage. Capacity is never summed across APFS volumes. The optional `disk_usage.storage` data survives offline replay; older inventories retain sizes with no invented percentage. Older strict readers may reject these enriched artifacts. No cleanup verdict changes.

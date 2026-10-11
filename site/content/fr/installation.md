@@ -1,6 +1,6 @@
 ## Télécharger l’alpha Apple Silicon
 
-Utilisez [v0.1.0-alpha.1](https://github.com/FlorianBruniaux/wt-sweep/releases/tag/v0.1.0-alpha.1) sur macOS Apple Silicon avec `/usr/bin/git`. Le binaire téléchargé ne demande pas Rust. Le dossier `Downloads` doit exister ; chaque installation crée un nouveau dossier.
+Utilisez [v0.1.0-alpha.2](https://github.com/FlorianBruniaux/wt-sweep/releases/tag/v0.1.0-alpha.2) sur macOS Apple Silicon avec `/usr/bin/git`. Le binaire téléchargé ne demande pas Rust. Le dossier `Downloads` doit exister ; chaque installation crée un nouveau dossier.
 
 ```sh
 (
@@ -9,12 +9,12 @@ Utilisez [v0.1.0-alpha.1](https://github.com/FlorianBruniaux/wt-sweep/releases/t
   test "$(uname -m)" = arm64
   install_dir="$(mktemp -d "$HOME/Downloads/wt-sweep-alpha.XXXXXX")"
   cd "$install_dir"
-  release_url="https://github.com/FlorianBruniaux/wt-sweep/releases/download/v0.1.0-alpha.1"
+  release_url="https://github.com/FlorianBruniaux/wt-sweep/releases/download/v0.1.0-alpha.2"
   curl --fail --location --proto '=https' --tlsv1.2 -O "$release_url/SHA256SUMS"
-  curl --fail --location --proto '=https' --tlsv1.2 -O "$release_url/wt-sweep-v0.1.0-alpha.1-aarch64-apple-darwin.tar.gz"
+  curl --fail --location --proto '=https' --tlsv1.2 -O "$release_url/wt-sweep-v0.1.0-alpha.2-aarch64-apple-darwin.tar.gz"
   shasum -a 256 -c SHA256SUMS
-  tar -xzf wt-sweep-v0.1.0-alpha.1-aarch64-apple-darwin.tar.gz
-  cd wt-sweep-v0.1.0-alpha.1-aarch64-apple-darwin
+  tar -xzf wt-sweep-v0.1.0-alpha.2-aarch64-apple-darwin.tar.gz
+  cd wt-sweep-v0.1.0-alpha.2-aarch64-apple-darwin
   ./wt-sweep --version
   ./wt-sweep review --help
   printf '\nBinary: %s/wt-sweep\n' "$PWD"
@@ -25,7 +25,7 @@ Utilisez le chemin du binaire affiché à la place de `./target/release/wt-sweep
 
 ## Prérequis
 
-Utilisez macOS avec `/usr/bin/git`. Compilez avec la version de Rust indiquée dans `rust-toolchain.toml` (1.95). La version des sources est `0.1.0-alpha.1`.
+Utilisez macOS avec `/usr/bin/git`. Compilez avec la version de Rust indiquée dans `rust-toolchain.toml` (1.95). La version des sources est `0.1.0-alpha.2`.
 
 Clonez le repo public en HTTPS. Si vous avez déjà un checkout, omettez le clonage et le `cd` ci-dessous.
 

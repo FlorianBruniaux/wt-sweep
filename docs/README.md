@@ -13,7 +13,7 @@ The project overview is available in English and French. The tutorial, assistant
 and disk guides are in French; other user guides are in English. Design and
 validation records retain their original language and observation dates.
 
-Le [guide de v0.1.0-alpha.1](release.md) décrit le paquet Apple Silicon, son téléchargement, la vérification SHA-256 et les scripts de recette.
+Le [guide de v0.1.0-alpha.2](release.md) décrit le paquet Apple Silicon, son téléchargement, la vérification SHA-256 et les scripts de recette.
 
 ## Use the CLI
 

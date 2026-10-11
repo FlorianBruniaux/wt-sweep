@@ -15,7 +15,7 @@ assert not run('git', 'status', '--porcelain'), 'release checkout must be clean'
 metadata = json.loads(run('cargo', 'metadata', '--format-version=1', '--locked', '--offline'))
 package = next(p for p in metadata['packages'] if p['name'] == 'wt-sweep')
 version = package['version']
-assert version == '0.1.0-alpha.1'
+assert version == '0.1.0-alpha.2'
 binary = source / 'target/release/wt-sweep'
 assert run(str(binary), '--version') == 'wt-sweep ' + version
 assert run('uname', '-m') == 'arm64'

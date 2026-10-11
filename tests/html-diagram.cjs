@@ -40,7 +40,7 @@ if(process.argv[4])cases.push({file:process.argv[4],reviewed:true});
    for(const keyboard of [false,true]){
     const target=page.locator(href);assert.equal(await target.count(),1);
     const owner=await target.evaluate(e=>e.closest('details.report-section')?.id);
-    if(owner!=='overview'){
+    if(owner && owner!=='overview'){
      const section=page.locator(`#${owner}`);
      if(await section.evaluate(e=>e.open))await section.locator(':scope > summary').click();
     }

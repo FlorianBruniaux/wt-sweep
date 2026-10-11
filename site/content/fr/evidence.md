@@ -30,4 +30,4 @@ Les URL de dépôt, branche et commit viennent de métadonnées locales capturé
 
 ## Compatibilité du format disque
 
-Les sources après `v0.1.0-alpha.1` peuvent enregistrer le bloc facultatif `disk_usage.storage`. Le nouveau lecteur accepte les anciens inventaires sans changer leur empreinte canonique. Les anciens lecteurs stricts peuvent refuser les fichiers enrichis. Des données de volume inconnues ou incohérentes empêchent le calcul des pourcentages, sans effacer tailles ni lignes. La capacité ne change pas C1–C5.
+Depuis `v0.1.0-alpha.2`, les sources peuvent enregistrer le bloc facultatif `disk_usage.storage`. Le nouveau lecteur accepte les anciens inventaires sans changer leur empreinte canonique. Les anciens lecteurs stricts peuvent refuser les fichiers enrichis. Des données de volume inconnues ou incohérentes empêchent le calcul des pourcentages, sans effacer tailles ni lignes. La capacité ne change pas C1–C5.

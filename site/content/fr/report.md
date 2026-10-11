@@ -4,7 +4,17 @@
 
 ## Tableau de bord disque et liste
 
-Ces ajouts sont disponibles dans les sources après `v0.1.0-alpha.1` ; l’archive alpha publiée ne les contient pas.
+Disponible dans `v0.1.0-alpha.2`. Les deux rapports ouvrent un bilan compact,
+**In brief: recommended actions** et la liste des worktrees. Les recommandations
+suivent le périmètre et les verdicts enregistrés. Les mesures disque et les
+détails de couverture sont repliés sous la liste.
+
+Les lignes analysées affichent **Keep**, **Needs checking** ou **Possible cleanup**
+et le motif principal. Dépliez une ligne pour retrouver le verdict original,
+les identifiants complets et les preuves. Les filtres rapides sélectionnent un
+statut, le raccourci de taille trie les dossiers mesurés et **Show all** rétablit la vue
+initiale. **Possible cleanup** exige encore une vérification d’usage et n’autorise
+aucune suppression.
 
 Avec `--disk-usage`, le tableau de bord affiche la capacité capturée, l’espace disponible et l’allocation mesurée pour chaque volume. Les volumes restent séparés, y compris les volumes APFS partageant un conteneur. Un ancien inventaire conserve ses tailles et indique la capacité manquante ; le rendu n’interroge jamais la machine actuelle.
 
@@ -20,7 +30,7 @@ Ajoutez `--open` à `review`, `scan` ou `plan` pour enregistrer le HTML et deman
 
 ## Liens GitHub et GitLab
 
-Dans une analyse, dépliez **Repository links** pour ouvrir le dépôt, la branche ou le commit enregistré. Ces URL viennent des remotes locaux reconnus. Une ref locale de suivi identique à HEAD ne prouve ni un push ni l’état actuel du serveur. La CLI ne contacte pas la forge.
+Dans une analyse, dépliez **Inspect evidence**, puis **Repository links** pour ouvrir le dépôt, la branche ou le commit enregistré. Ces URL viennent des remotes locaux reconnus. Une ref locale de suivi identique à HEAD ne prouve ni un push ni l’état actuel du serveur. La CLI ne contacte pas la forge.
 
 Les liens PR/MR associés sont visibles avec leur état capturé ; leurs détails donnent le titre et la provenance. Ils exigent un import `--forge FILE` correspondant. Les instances auto-hébergées exigent aussi un import associé pour identifier leur fournisseur. Les remotes inconnus ou ambigus restent signalés. `--no-context` omet leurs métadonnées mais conserve les PR/MR déjà associées. Un simple inventaire ne collecte pas ces liens.
 

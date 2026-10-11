@@ -29,7 +29,7 @@ for args in (['--version'], ['--help'], ['review', '--help']):
     result = subprocess.run([str(binary), *args], capture_output=True, text=True, timeout=10)
     assert result.returncode == 0, result.stderr
     if args == ['--version']:
-        assert result.stdout.strip() == 'wt-sweep 0.1.0-alpha.1'
+        assert result.stdout.strip() == 'wt-sweep 0.1.0-alpha.2'
 section = (source / 'docs/getting-started.md').read_text().split('## Disposable demo\n',1)[1].split('## Review your repository',1)[0]
 script = re.search(r'```sh\n(.*?)```', section, re.S).group(1)
 assert script.count('./target/release/wt-sweep') == 1

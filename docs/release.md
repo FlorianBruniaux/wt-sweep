@@ -1,19 +1,31 @@
-# Worktree Sweep v0.1.0-alpha.1
+# Worktree Sweep v0.1.0-alpha.2
 
 [Index documentaire](README.md) · [Changelog](../CHANGELOG.md) · [Feuille de route](roadmap.md)
 
-Pré-release GitHub : [v0.1.0-alpha.1](https://github.com/FlorianBruniaux/wt-sweep/releases/tag/v0.1.0-alpha.1).
+Pré-release GitHub : [v0.1.0-alpha.2](https://github.com/FlorianBruniaux/wt-sweep/releases/tag/v0.1.0-alpha.2).
 Le paquet vise macOS Apple Silicon (`aarch64-apple-darwin`) et conserve la licence FSL-1.1-ALv2. Il s’agit de Fair Source. La visibilité publique du repo ne change pas cette licence.
 
 ## Installer et vérifier
 
 La [procédure de téléchargement](getting-started.md#download-the-apple-silicon-alpha) crée un dossier neuf, télécharge l’archive et `SHA256SUMS`, vérifie la somme puis exécute `--version` et `review --help`. Le binaire ne demande pas Rust. `/usr/bin/git` doit être disponible.
 
-L’archive `wt-sweep-v0.1.0-alpha.1-aarch64-apple-darwin.tar.gz` contient le binaire, sa licence, les notices des dépendances et `MANIFEST.json`. Le manifeste identifie le commit source, le compilateur et les empreintes des fichiers. Gardez `SHA256SUMS` avec l’archive.
+L’archive `wt-sweep-v0.1.0-alpha.2-aarch64-apple-darwin.tar.gz` contient le binaire, sa licence, les notices des dépendances et `MANIFEST.json`. Le manifeste identifie le commit source, le compilateur et les empreintes des fichiers. Gardez `SHA256SUMS` avec l’archive.
 
 Utilisez le chemin absolu du binaire dans la [démo temporaire](getting-started.md#disposable-demo), à la place de `./target/release/wt-sweep`. Le résultat attendu est 2 `keep`, 1 `cleanup_candidate`, 0 `verify`. Les skills Claude/Codex restent dans le repo source.
 
 Le binaire n’est pas notarisé par Apple. Le téléchargement par CLI et le lancement local ne qualifient pas Gatekeeper après téléchargement par navigateur. Aucun contournement de cette protection n’est demandé. Intel, Linux, Windows et une version minimale de macOS ne sont pas qualifiés. La recette précédente utilisait macOS 26.5.1 ; chaque nouvelle recette doit conserver son environnement exact.
+
+## Changements depuis alpha.1
+
+Alpha.2 distribue les jauges disque par volume, la recherche Cmd+K / Ctrl+K,
+le diagramme de lecture cliquable et le parcours HTML compact. Le bilan et la
+liste sont ouverts ; disque et couverture sont repliés. Les filtres rapides,
+le tri par taille et **Show all** changent la vue sans modifier les preuves capturées.
+La CI automatique vérifie aussi les interactions des rapports.
+
+L’archive alpha.1 reste inchangée. Les anciens inventaires peuvent être relus
+sans capacité de volume inventée ; les anciens lecteurs stricts peuvent refuser
+le nouveau bloc facultatif `disk_usage.storage`.
 
 ## Périmètre de l’alpha
 
@@ -39,6 +51,6 @@ La recette vérifie les empreintes de l’archive et de ses fichiers, exécute l
 
 ## Contrôles de publication
 
-Le mainteneur publie seulement après la CI produit réussie sur le commit exact à taguer, la compilation propre et la recette de l’archive. Il publie ensuite l’archive et `SHA256SUMS`, retélécharge les fichiers publics et rejoue leur recette avant de clore [#31](https://github.com/FlorianBruniaux/wt-sweep/issues/31).
+Le mainteneur publie seulement après la CI produit réussie sur le commit exact à taguer, la compilation propre et la recette de l’archive. Il publie ensuite l’archive et `SHA256SUMS`, retélécharge les fichiers publics et rejoue leur recette avant de confirmer la livraison.
 
-La page de release et #31 portent les résultats de livraison, le commit et le lien CI. Le [registre](progress.md) conserve les observations historiques sans les transformer en validation du paquet courant. Aucun tap Homebrew n’est annoncé ; son évaluation reste facultative après cette publication.
+La page de chaque release porte les résultats de livraison, le commit et le lien CI. [#31](https://github.com/FlorianBruniaux/wt-sweep/issues/31) conserve la recette de la première alpha. Le [registre](progress.md) conserve les observations historiques sans les transformer en validation du paquet courant. Aucun tap Homebrew n’est annoncé ; son évaluation reste facultative après cette publication.

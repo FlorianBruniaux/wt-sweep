@@ -263,17 +263,18 @@ fn start(h: &mut Html, title: &str, started: u64, finished: u64) -> fmt::Result 
     h.raw(THEME_INIT)?;
     h.raw("</script></head><body><a class=\"skip\" href=\"#content\">Skip to report</a><div class=\"layout\"><aside class=\"sidebar\" aria-label=\"Report navigation\"><div class=\"brand\"><span class=\"mark\" aria-hidden=\"true\"></span>wt-sweep</div><p class=\"eyebrow\">Read-only report</p>")?;
     navigation(h)?;
-    h.raw("<p class=\"boundary\">Captured facts, deterministic verdicts.<br>No removal authorized.<br>Offline; no external resources.</p></aside><main class=\"main\" id=\"content\"><header class=\"top\"><div><p class=\"eyebrow\">Worktree Sweep / captured observations</p><h1>")?;
+    h.raw("<p class=\"boundary\">Explore the saved report.<br>No files are removed.<br>Works offline.</p></aside><main class=\"main\" id=\"content\"><header class=\"top\"><div><p class=\"eyebrow\">Worktree Sweep / your Git folders</p><h1>")?;
     h.text(title)?;
-    h.raw("</h1><p class=\"meta\">Observation interval: ")?;
+    h.raw("</h1><p class=\"meta\">Captured ")?;
+    date(h, finished)?;
+    h.raw(" · Read-only</p><details class=\"capture-details\"><summary>Capture timestamps</summary><p>Observation interval: ")?;
     date(h, started)?;
     h.raw(" to ")?;
     date(h, finished)?;
     write!(
         h.out,
-        "<br>Unix ms: {started}..{finished}</p></div><div class=\"header-actions\"><button class=\"command-open js-only\" id=\"command-open\" type=\"button\">Search report <kbd>⌘K</kbd></button><button class=\"theme js-only\" id=\"theme\" type=\"button\">Switch theme</button></div></header>"
-    )?;
-    h.raw("<div class=\"section-controls js-only\" role=\"group\" aria-label=\"Report sections\"><span>Report sections</span><button type=\"button\" id=\"collapse-sections\">Collapse all sections</button><button type=\"button\" id=\"expand-sections\">Expand all sections</button></div>")
+        "<br>Unix ms: {started}..{finished}</p></details></div><div class=\"header-actions\"><button class=\"command-open js-only\" id=\"command-open\" type=\"button\">Search report <kbd>⌘K</kbd></button><button class=\"theme js-only\" id=\"theme\" type=\"button\">Switch theme</button><details class=\"display-options js-only\"><summary>Display options</summary><div class=\"section-controls\" role=\"group\" aria-label=\"Report sections\"><button type=\"button\" id=\"collapse-sections\">Collapse all sections</button><button type=\"button\" id=\"expand-sections\">Expand all sections</button></div></details></div></header>"
+    )
 }
 fn section_start(h: &mut Html, id: &str, title: &str, class: &str) -> fmt::Result {
     section_start_state(h, id, title, class, true)
@@ -375,18 +376,63 @@ fn end(h: &mut Html) -> fmt::Result {
     h.raw("</script></body></html>\n")
 }
 fn controls(h: &mut Html, triaged: bool, selected: usize) -> fmt::Result {
-    h.raw("<div class=\"toolbar js-only\"><label class=\"field search\">Search recorded rows<input id=\"search\" type=\"search\" placeholder=\"Path, branch, reason, full OID…\" aria-controls=\"worktree-families\"></label><label class=\"field\">Verdict<select id=\"verdict\" aria-controls=\"worktree-families\"><option value=\"\">All verdicts</option>")?;
+    h.raw("<div class=\"toolbar js-only\"><label class=\"field search\">Search the list<input id=\"search\" type=\"search\" placeholder=\"Repository, branch, path or reason\" aria-controls=\"worktree-families\"></label><label class=\"field\">Status<select id=\"verdict\" aria-controls=\"worktree-families\"><option value=\"\">All statuses</option>")?;
     if triaged {
-        h.raw("<option value=\"keep\">keep</option><option value=\"verify\">verify</option><option value=\"cleanup_candidate\">cleanup_candidate</option>")?;
+        h.raw("<option value=\"keep\">Keep</option><option value=\"verify\">Needs checking</option><option value=\"cleanup_candidate\">Possible cleanup</option>")?;
     } else {
         h.raw("<option value=\"not_reviewed\">Not triaged</option>")?;
     }
-    h.raw("</select></label><label class=\"field\">Sort within families<select id=\"sort\" aria-controls=\"worktree-families\"><option value=\"path\">Path bytes</option><option value=\"branch\">Branch bytes</option><option value=\"verdict\">Verdict</option><option value=\"allocated\">Allocated bytes, largest first</option></select></label></div>")?;
+    h.raw("</select></label><label class=\"field\">Sort each repository<select id=\"sort\" aria-controls=\"worktree-families\"><option value=\"path\">Path</option><option value=\"branch\">Branch</option><option value=\"verdict\">Status</option><option value=\"allocated\">Size, largest first</option></select></label></div>")?;
     write!(
         h.out,
         "<p class=\"view-status\" id=\"visible-status\" role=\"status\" aria-live=\"polite\">Visible {selected} selected worktrees. Source totals and disk measurements are unchanged.</p>"
     )?;
-    h.raw("<noscript><p class=\"notice\">JavaScript is disabled. All selected rows and recorded evidence remain readable; family links and expandable details work. Search, sorting, path copying and the theme button require JavaScript.</p></noscript><p id=\"no-matches\" class=\"empty\" hidden>No rows match. Clear the search or verdict filter.</p>")
+    h.raw("<noscript><p class=\"muted\">Search, sorting and copying need JavaScript. All entries and expandable details remain readable.</p></noscript><p id=\"no-matches\" class=\"empty\" hidden>No rows match. Clear the search or verdict filter.</p>")
+}
+fn verdict_label(verdict: &str) -> &str {
+    match verdict {
+        "keep" => "Keep",
+        "verify" => "Needs checking",
+        "cleanup_candidate" => "Possible cleanup",
+        _ => "Unknown status",
+    }
+}
+fn overview_actions(h: &mut Html, reviewed: bool) -> fmt::Result {
+    h.raw("<div class=\"overview-actions\"><a class=\"primary-action\" href=\"#worktree-families\">Browse worktrees</a><button class=\"js-only\" type=\"button\" data-list-sort=\"allocated\">")?;
+    h.raw(if reviewed {
+        "Sort each repository by size"
+    } else {
+        "Largest measured first"
+    })?;
+    h.raw("</button>")?;
+    if !reviewed {
+        help::review_command(h)?;
+    }
+    h.raw("</div>")
+}
+fn list_shortcuts(h: &mut Html, reviewed: bool) -> fmt::Result {
+    h.raw("<details class=\"list-shortcuts-disclosure js-only\"><summary>Quick filters</summary><div class=\"list-shortcuts\" role=\"group\" aria-label=\"List shortcuts\"><span>Show:</span>")?;
+    let filters: &[(&str, &str)] = if reviewed {
+        &[
+            ("keep", "Keep"),
+            ("verify", "Needs checking"),
+            ("cleanup_candidate", "Possible cleanup"),
+        ]
+    } else {
+        &[
+            ("present", "Working folders"),
+            ("bare", "Bare repositories"),
+            ("absent", "Absent paths"),
+            ("unknown", "Not verified"),
+        ]
+    };
+    for (value, label) in filters {
+        write!(
+            h.out,
+            "<button type=\"button\" data-list-filter=\"{value}\">{label}</button>"
+        )?;
+    }
+    h.raw("<button type=\"button\" data-list-reset>Show all</button></div></details>")
 }
 fn counts<'a>(h: &mut Html, rows: impl Iterator<Item = &'a ReviewItem>) -> fmt::Result {
     let (mut keep, mut verify, mut candidates, mut other) = (0, 0, 0, 0);
@@ -408,12 +454,12 @@ fn counts<'a>(h: &mut Html, rows: impl Iterator<Item = &'a ReviewItem>) -> fmt::
     Ok(())
 }
 fn inventory_controls(h: &mut Html, total: usize) -> fmt::Result {
-    h.raw("<div class=\"toolbar js-only\"><label class=\"field search\">Search the list<input id=\"search\" type=\"search\" placeholder=\"Repository, branch or full path\" aria-controls=\"worktree-families\"></label><label class=\"field\">Directory state<select id=\"verdict\" aria-controls=\"worktree-families\"><option value=\"\">All entries</option><option value=\"present\">Present working folders</option><option value=\"bare\">Bare repositories</option><option value=\"absent\">Absent folders</option><option value=\"unknown\">Not verified</option></select></label><label class=\"field\">Sort the list<select id=\"sort\" aria-controls=\"worktree-families\"><option value=\"state\">Present folders first</option><option value=\"path\">Path</option><option value=\"branch\">Branch</option><option value=\"allocated\">Largest measured size first</option></select></label></div>")?;
+    h.raw("<div class=\"toolbar js-only\"><label class=\"field search\">Search the list<input id=\"search\" type=\"search\" placeholder=\"Repository, branch or full path\" aria-controls=\"worktree-families\"></label><label class=\"field\">Directory state<select id=\"verdict\" aria-controls=\"worktree-families\"><option value=\"\">All entries</option><option value=\"present\">Present working folders</option><option value=\"bare\">Bare repositories</option><option value=\"absent\">Absent folders</option><option value=\"unknown\">Not verified</option></select></label><label class=\"field\">Sort the list<select id=\"sort\" aria-controls=\"worktree-families\"><option value=\"state\">Present first</option><option value=\"path\">Path</option><option value=\"branch\">Branch</option><option value=\"allocated\">Size, largest first</option></select></label></div>")?;
     write!(
         h.out,
         "<p class=\"view-status\" id=\"visible-status\" role=\"status\" aria-live=\"polite\">Showing {total} of {total} recorded entries. The counts above cover the saved inventory.</p>"
     )?;
-    h.raw("<noscript><p class=\"notice\">JavaScript is disabled. The complete list and expandable evidence remain readable. Search, sorting and path copying require JavaScript.</p></noscript><p id=\"no-matches\" class=\"empty\" hidden>No entries match. Clear the search or directory state filter.</p>")
+    h.raw("<noscript><p class=\"muted\">Search, sorting and copying need JavaScript. All entries and expandable details remain readable.</p></noscript><p id=\"no-matches\" class=\"empty\" hidden>No entries match. Clear the search or directory state filter.</p>")
 }
 fn inventory_state(row: &Worktree) -> (u8, &'static str, &'static str) {
     if row.bare {
@@ -448,35 +494,20 @@ fn discovery_summary(h: &mut Html, coverage: &Coverage) -> fmt::Result {
         h.raw(
             "<strong>Discovery interrupted: additional worktrees may remain undiscovered.</strong>",
         )?;
-        if let Some(remaining) = &coverage.remaining {
-            h.raw(" Stop reason: ")?;
-            h.text(remaining.reason.as_str())?;
-            write!(
-                h.out,
-                "; {} known pending paths.",
-                remaining.known_pending_paths
-            )?;
-        }
+        h.raw(" <a href=\"#coverage\">See scan limits</a>.")?;
     } else if !coverage.traversal_complete {
-        h.raw("<strong>Recorded scan is incomplete: discovery or local evidence may be missing.</strong> See Scan limits for the recorded gaps.")?;
+        h.raw("<strong>Scan or evidence incomplete.</strong> <a href=\"#coverage\">See scan limits</a>.")?;
     } else {
         h.raw("Recorded discovery traversal completed within the requested scope. This does not certify the entire machine.")?;
     }
-    if let Some(omitted) = &coverage.publication {
-        if omitted.worktrees > 0 || omitted.families > 0 {
-            write!(
-                h.out,
-                " <strong>Publication omitted {} worktree observations and {} repository families.</strong> These are not included in the displayed counts.",
-                omitted.worktrees, omitted.families
-            )?;
-        }
-        if omitted.local_inventories > 0 || omitted.markers > 0 {
-            write!(
-                h.out,
-                " Publication omitted {} local manifests and {} discovery markers.",
-                omitted.local_inventories, omitted.markers
-            )?;
-        }
+    if let Some(omitted) = &coverage.publication
+        && (omitted.worktrees > 0 || omitted.families > 0)
+    {
+        write!(
+            h.out,
+            " <strong>Published list excludes {} worktree observations and {} repository families.</strong>",
+            omitted.worktrees, omitted.families
+        )?;
     }
     h.raw("</p>")
 }
@@ -508,37 +539,12 @@ fn inventory_into(h: &mut Html, source: &Inventory) -> fmt::Result {
     let unavailable = absent + unknown;
     write!(
         h.out,
-        "<div class=\"metrics\"><div class=\"metric\"><span class=\"eyebrow\">Working folders found</span><strong data-inventory-count=\"present\">{present}</strong><span class=\"breakdown\">Present folders, including main checkouts and linked worktrees.</span></div><div class=\"metric\"><span class=\"eyebrow\">Bare repositories</span><strong data-inventory-count=\"bare\">{bare}</strong><span class=\"breakdown\">Git repositories without a working folder.</span></div><div class=\"metric\"><span class=\"eyebrow\">Absent or unverified paths</span><strong data-inventory-count=\"unavailable\">{unavailable}</strong><span class=\"breakdown\">{absent} absent; {unknown} not verified.</span></div></div><p class=\"view-status\">{total} Git registrations across {} repository families in the published inventory. Includes main checkouts; this is not a count of extra linked worktrees.</p>",
+        "<div class=\"metrics metrics4\"><div class=\"metric\"><span class=\"eyebrow\">Recorded Git entries</span><strong>{total}</strong><span class=\"breakdown\">{} repositories. All recorded entries.</span></div><div class=\"metric\"><span class=\"eyebrow\">Working folders found</span><strong data-inventory-count=\"present\">{present}</strong><span class=\"breakdown\">Main and linked checkouts.</span></div><div class=\"metric\"><span class=\"eyebrow\">Bare repositories</span><strong data-inventory-count=\"bare\">{bare}</strong><span class=\"breakdown\">No working folder.</span></div><div class=\"metric\"><span class=\"eyebrow\">Absent or unverified paths</span><strong data-inventory-count=\"unavailable\">{unavailable}</strong><span class=\"breakdown\">{absent} absent; {unknown} not verified.</span></div></div>",
         source.families.len()
     )?;
     discovery_summary(h, &source.coverage)?;
-    h.raw("<p class=\"inventory-note\"><strong>Cleanup analysis not performed.</strong> This inventory lists what was found; it does not identify what can be removed.</p>")?;
-    dashboard::render(h, source.disk_usage.as_ref(), None)?;
-    help::guide(h, false)?;
-    h.raw("<details class=\"panel\"><summary>Requested scan scope</summary><div id=\"requested-scan-scope\">")?;
-    match &source.scope {
-        ScanScope::Repo { path } => {
-            h.raw("Repository: <code>")?;
-            h.path(path)?;
-            h.raw("</code>")?;
-            h.copy_button(path)?;
-        }
-        ScanScope::Roots { paths } => {
-            h.raw("Explicit roots:<ul class=\"coverage-list\">")?;
-            for path in paths {
-                h.raw("<li><code>")?;
-                h.path(path)?;
-                h.raw("</code>")?;
-                h.copy_button(path)?;
-                h.raw("</li>")?;
-            }
-            h.raw("</ul>")?;
-        }
-        ScanScope::AllMounted => h.raw(
-            "All visible mounted volumes; unavailable and non-visible data are not certified.",
-        )?,
-    }
-    h.raw("</div></details>")?;
+    help::recommendations(h, None, &source.coverage)?;
+    overview_actions(h, false)?;
     section_end(h)?;
     section_start(
         h,
@@ -547,6 +553,7 @@ fn inventory_into(h: &mut Html, source: &Inventory) -> fmt::Result {
         "families-section inventory-list",
     )?;
     inventory_controls(h, total)?;
+    list_shortcuts(h, false)?;
     let sizes = measurements(source.disk_usage.as_ref());
     let mut families: Vec<_> = source.families.iter().collect();
     families.sort_by_key(|f| (&f.common_dir, f.identity.device, f.identity.inode));
@@ -634,10 +641,33 @@ fn inventory_into(h: &mut Html, source: &Inventory) -> fmt::Result {
     }
     h.raw("</details>")?;
     section_end(h)?;
-    boundary_notice(h)?;
-    disk_priority(h, source.disk_usage.as_ref(), None)?;
-    disk_overview(h, source.disk_usage.as_ref(), false)?;
+    help::guide(h, false)?;
+    disk_overview(h, source.disk_usage.as_ref(), None)?;
     section_start_state(h, "coverage", "Scan limits", "panel", false)?;
+    h.raw("<details class=\"panel\"><summary>Requested scan scope</summary><div id=\"requested-scan-scope\"><p>Git registrations include main checkouts, linked worktrees and bare repositories. This is not a count of extra linked worktrees.</p>")?;
+    match &source.scope {
+        ScanScope::Repo { path } => {
+            h.raw("Repository: <code>")?;
+            h.path(path)?;
+            h.raw("</code>")?;
+            h.copy_button(path)?;
+        }
+        ScanScope::Roots { paths } => {
+            h.raw("Explicit roots:<ul class=\"coverage-list\">")?;
+            for path in paths {
+                h.raw("<li><code>")?;
+                h.path(path)?;
+                h.raw("</code>")?;
+                h.copy_button(path)?;
+                h.raw("</li>")?;
+            }
+            h.raw("</ul>")?;
+        }
+        ScanScope::AllMounted => h.raw(
+            "All visible mounted volumes; unavailable and non-visible data are not certified.",
+        )?,
+    }
+    h.raw("</div></details>")?;
     coverage(h, &source.coverage, &source.not_collected)?;
     h.raw("<details class=\"panel\"><summary>Additional inventory evidence</summary>")?;
     h.json(&source.markers)?;
@@ -698,59 +728,89 @@ fn review_into(
     families: &BTreeMap<FamilyKey<'_>, Vec<&ReviewItem>>,
 ) -> fmt::Result {
     let source = &view.source;
-    disk_priority(h, source.disk_usage.as_ref(), Some(&source.items))?;
-    boundary_notice(h)?;
-    section_start(h, "overview", "Overview", "overview-section")?;
+    section_start(h, "overview", "What to inspect", "overview-section")?;
+    let keep = source
+        .items
+        .iter()
+        .filter(|i| i.classification == "keep")
+        .count();
+    let verify = source
+        .items
+        .iter()
+        .filter(|i| i.classification == "verify")
+        .count();
+    let candidates = source
+        .items
+        .iter()
+        .filter(|i| i.classification == "cleanup_candidate")
+        .count();
     write!(
         h.out,
-        "<div class=\"metrics\"><div class=\"metric\"><span class=\"eyebrow\">Source totals</span><strong>{} worktrees</strong><span class=\"breakdown\">",
+        "<div class=\"metrics metrics4\"><div class=\"metric\"><span class=\"eyebrow\">Entries reviewed</span><strong>{}</strong><span class=\"breakdown\">In the saved Git review</span></div>",
         source.items.len()
     )?;
-    counts(h, source.items.iter())?;
-    write!(
-        h.out,
-        "</span></div><div class=\"metric\"><span class=\"eyebrow\">Selected totals</span><strong>{} worktrees</strong><span class=\"breakdown\">",
-        view.selected_paths.len()
-    )?;
-    counts(h, families.values().flat_map(|rows| rows.iter().copied()))?;
-    write!(
-        h.out,
-        "</span></div><div class=\"metric\"><span class=\"eyebrow\">Policy</span><strong>"
-    )?;
-    h.text(&source.policy_version)?;
-    h.raw("</strong><span class=\"breakdown\">Deterministic verdicts, no model decision</span></div></div>")?;
-    h.raw("<div class=\"legend\"><span><span class=\"badge keep\">keep</span> Positive retention reason observed.</span><span><span class=\"badge verify\">verify</span> Required evidence is missing or inconsistent.</span><span><span class=\"badge cleanup_candidate\">cleanup_candidate</span> Current C1-C5 checks satisfied; usage remains unverified.</span></div>")?;
-    dashboard::render(h, source.disk_usage.as_ref(), Some(&source.items))?;
-    help::guide(h, true)?;
-    h.raw("<details class=\"panel\"><summary>View filters and source identity</summary><p>HTML groups rows by historical Git family. The saved view grouping is <code>")?;
-    h.text(&view.group_by)?;
-    h.raw(
-        "</code>. Filters select rows only; coverage and disk totals retain the source scope.</p>",
-    )?;
-    h.json(&view.filters)?;
-    for (label, digest) in [
-        ("Inventory SHA-256", &source.inventory_sha256),
-        ("Review SHA-256", &source.digest_sha256),
-        ("View SHA-256", &view.digest_sha256),
+    for (class, label, count, explanation) in [
+        (
+            "keep",
+            "Keep",
+            keep,
+            "A reason to preserve this work was found.",
+        ),
+        (
+            "verify",
+            "Needs checking",
+            verify,
+            "Some required checks are missing.",
+        ),
+        (
+            "cleanup_candidate",
+            "Possible cleanup",
+            candidates,
+            "Git checks passed; confirm usage first.",
+        ),
     ] {
-        h.raw("<p class=\"digest\">")?;
-        h.text(label)?;
-        h.raw(": <code>")?;
-        h.text(digest)?;
-        h.raw("</code></p>")?;
+        write!(
+            h.out,
+            "<div class=\"metric {class}\"><span class=\"eyebrow\">{label}</span><strong>{count}</strong><span class=\"breakdown\">{explanation}</span></div>"
+        )?;
     }
-    h.raw("</details>")?;
-    section_end(h)?;
-    section_start(h, "worktree-families", "Git families", "families-section")?;
-    controls(h, true, view.selected_paths.len())?;
-    family_index(
+    h.raw("</div>")?;
+    if view.selected_paths.len() != source.items.len() {
+        write!(
+            h.out,
+            "<p class=\"view-status\">The saved view includes {} of {} reviewed entries. The summary covers the full review.</p>",
+            view.selected_paths.len(),
+            source.items.len()
+        )?;
+    }
+    discovery_summary(h, &source.coverage)?;
+    help::recommendations(
         h,
-        families
-            .iter()
-            .enumerate()
-            .filter(|(_, (_, rows))| !rows.is_empty())
-            .map(|(index, ((common, _, _), _))| (index, *common)),
+        Some((
+            families.values().map(Vec::len).sum(),
+            families
+                .values()
+                .flatten()
+                .filter(|row| row.classification == "keep")
+                .count(),
+            families
+                .values()
+                .flatten()
+                .filter(|row| row.classification == "verify")
+                .count(),
+            families
+                .values()
+                .flatten()
+                .filter(|row| row.classification == "cleanup_candidate")
+                .count(),
+        )),
+        &source.coverage,
     )?;
+    overview_actions(h, true)?;
+    section_end(h)?;
+    section_start(h, "worktree-families", "Worktree list", "families-section")?;
+    controls(h, true, view.selected_paths.len())?;
+    list_shortcuts(h, true)?;
     let contexts: BTreeMap<_, _> = source
         .context
         .as_ref()
@@ -796,7 +856,7 @@ fn review_into(
                     .as_ref()
                     .and_then(|s| s.observed.as_ref()),
             )?;
-            h.raw("<td data-label=\"Verdict and reasons\"><span class=\"badge ")?;
+            h.raw("<td data-label=\"Status\"><span class=\"badge ")?;
             h.raw(match row.classification.as_str() {
                 "keep" => "keep",
                 "verify" => "verify",
@@ -805,8 +865,17 @@ fn review_into(
             })?;
             h.raw("\">")?;
             help::icon(h, &row.classification)?;
+            h.text(verdict_label(&row.classification))?;
+            h.raw("</span><p class=\"primary-reason\">")?;
+            match row.classification.as_str() {
+                "keep" => h.text(row.decision.as_ref().and_then(|d| d.keep_reasons.first()).map_or("A retention reason was observed.", |r| super::keep_reason(r)))?,
+                "verify" => h.raw("Required checks are missing or inconsistent. Open the details before deciding.")?,
+                "cleanup_candidate" => h.raw("Git checks passed. Confirm this folder is no longer in use.")?,
+                _ => h.raw("The status is unknown. Inspect the recorded evidence.")?,
+            }
+            h.raw("</p><details class=\"row-details\"><summary>Why this status?</summary><p>Recorded verdict: <code>")?;
             h.text(&row.classification)?;
-            h.raw("</span>")?;
+            h.raw("</code></p>")?;
             if let Some(decision) = &row.decision {
                 h.raw("<ul class=\"reasons\">")?;
                 for reason in &decision.keep_reasons {
@@ -830,7 +899,7 @@ fn review_into(
             if row.classification == "cleanup_candidate" {
                 h.raw("<p class=\"evidence\">Usage UNKNOWN. Confirm before removal.</p>")?;
             }
-            h.raw("</td>")?;
+            h.raw("</details></td>")?;
             disk_cell(h, &row.path, &sizes)?;
             review_evidence(
                 h,
@@ -845,12 +914,54 @@ fn review_into(
         }
         family_end(h)?;
     }
+    family_index(
+        h,
+        families
+            .iter()
+            .enumerate()
+            .filter(|(_, (_, rows))| !rows.is_empty())
+            .map(|(index, ((common, _, _), _))| (index, *common)),
+    )?;
     if view.selected_paths.is_empty() {
         h.raw("<p class=\"empty\">No worktrees selected. Source totals, coverage and disk observations are retained.</p>")?;
     }
     section_end(h)?;
-    disk_overview(h, source.disk_usage.as_ref(), true)?;
-    section_start(h, "coverage", "Scan limits", "panel")?;
+    help::guide(h, true)?;
+    disk_overview(h, source.disk_usage.as_ref(), Some(&source.items))?;
+    section_start_state(h, "coverage", "Scan limits", "panel", false)?;
+    h.raw("<details class=\"panel\"><summary>Report provenance and saved filters</summary><p>HTML groups rows by historical Git family. The saved view grouping is <code>")?;
+    h.text(&view.group_by)?;
+    h.raw(
+        "</code>. Filters select rows only; coverage and disk totals retain the source scope.</p>",
+    )?;
+    write!(
+        h.out,
+        "<p>Source totals: {} worktrees. ",
+        source.items.len()
+    )?;
+    counts(h, source.items.iter())?;
+    write!(
+        h.out,
+        "</p><p>Selected totals: {} worktrees. ",
+        view.selected_paths.len()
+    )?;
+    counts(h, families.values().flat_map(|rows| rows.iter().copied()))?;
+    h.raw("</p><p>Policy: ")?;
+    h.text(&source.policy_version)?;
+    h.raw(". Deterministic verdicts; no model decision.</p>")?;
+    h.json(&view.filters)?;
+    for (label, digest) in [
+        ("Inventory SHA-256", &source.inventory_sha256),
+        ("Review SHA-256", &source.digest_sha256),
+        ("View SHA-256", &view.digest_sha256),
+    ] {
+        h.raw("<p class=\"digest\">")?;
+        h.text(label)?;
+        h.raw(": <code>")?;
+        h.text(digest)?;
+        h.raw("</code></p>")?;
+    }
+    h.raw("</details>")?;
     coverage(h, &source.coverage, &source.not_collected)?;
     h.raw("<details class=\"panel\"><summary>Shared and descriptive evidence</summary><p>Shared stashes and descriptive context are source observations; they do not change a verdict or prove integration.</p>")?;
     h.json(&source.shared_stashes)?;
@@ -885,15 +996,16 @@ fn family_start(
 ) -> fmt::Result {
     write!(
         h.out,
-        "<section class=\"family\" id=\"family-{index}\" aria-labelledby=\"family-title-{index}\"><header class=\"family-header\"><div><p class=\"eyebrow\">Git family {:02}</p><h2 id=\"family-title-{index}\" class=\"mono\">",
-        index + 1
+        "<section class=\"family\" id=\"family-{index}\" aria-labelledby=\"family-title-{index}\"><header class=\"family-header\"><div><h2 id=\"family-title-{index}\" class=\"mono\">",
     )?;
+    repository_label(h, common)?;
+    h.raw("</h2><details class=\"family-details\"><summary>Repository details</summary><p class=\"mono\">")?;
     h.path(common)?;
-    h.raw("</h2>")?;
+    h.raw("</p>")?;
     h.copy_button(common)?;
     write!(
         h.out,
-        "<p class=\"identity muted\">Historical device {} / inode {}. Current identity is not established by grouping.</p></div><div class=\"family-summary\"><span class=\"visible-count\">{selected}</span> visible / {selected} selected / {source_count} source rows",
+        "<p class=\"identity muted\">Historical device {} / inode {}. Current identity is not established by grouping.</p></details></div><div class=\"family-summary\"><span class=\"visible-count\">{selected}</span> visible / {selected} selected / {source_count} source rows",
         identity.device, identity.inode
     )?;
     if let Some(rows) = sizes.get(&(common, true)) {
@@ -903,7 +1015,7 @@ fn family_start(
             h.raw("</p>")?;
         }
     }
-    h.raw("</div></header><div class=\"table-wrap\"><table><caption>Recorded worktrees. Row sizes may overlap; only the source disk total deduplicates.</caption><thead><tr><th scope=\"col\">Worktree / HEAD</th><th scope=\"col\">Branch</th><th scope=\"col\">Verdict / reasons</th><th scope=\"col\">Disk observations</th><th scope=\"col\">Evidence / gaps</th></tr></thead><tbody>")
+    h.raw("</div></header><div class=\"table-wrap\"><table class=\"review-table\"><caption>Recorded entries. Sizes may overlap.</caption><thead><tr><th scope=\"col\">Folder</th><th scope=\"col\">Branch</th><th scope=\"col\">Status</th><th scope=\"col\">Disk observations</th><th scope=\"col\">Checks and details</th></tr></thead><tbody>")
 }
 fn family_end(h: &mut Html) -> fmt::Result {
     h.raw("</tbody></table></div></section>")
@@ -963,13 +1075,13 @@ fn row_start_state(
     h.raw(">")
 }
 fn path_cell(h: &mut Html, path: &BytePath, head: Option<&str>) -> fmt::Result {
-    h.raw("<td data-label=\"Worktree and full HEAD\"><span class=\"path mono\">")?;
+    h.raw("<td data-label=\"Folder\"><span class=\"path mono\">")?;
     h.path(path)?;
     h.raw("</span>")?;
     h.copy_button(path)?;
-    h.raw("<span class=\"head mono\">HEAD ")?;
+    h.raw("<details class=\"row-details\"><summary>Commit identity</summary><span class=\"head mono\">HEAD ")?;
     h.text(head.unwrap_or("UNKNOWN"))?;
-    h.raw("</span></td>")
+    h.raw("</span></details></td>")
 }
 fn branch_cell(h: &mut Html, branch: Option<&BytePath>, tree: Option<&Worktree>) -> fmt::Result {
     h.raw("<td data-label=\"Branch\"><span class=\"mono\">")?;
@@ -1038,7 +1150,7 @@ fn disk_size(h: &mut Html, row: Option<&DiskMeasurement>) -> fmt::Result {
     Ok(())
 }
 fn disk_cell(h: &mut Html, path: &BytePath, sizes: &MeasurementIndex<'_>) -> fmt::Result {
-    h.raw("<td class=\"size\" data-label=\"Allocated and logical bytes\">")?;
+    h.raw("<td class=\"size\" data-label=\"Measured size\">")?;
     disk_size(h, measurement(sizes, path))?;
     h.raw("</td>")
 }
@@ -1201,14 +1313,15 @@ fn review_evidence(
     context: Option<&WorktreeContext>,
     forge: Option<&ForgeExport>,
 ) -> fmt::Result {
-    h.raw("<td data-label=\"Evidence and gaps\">")?;
-    forge_navigation(h, row, context, forge)?;
-    h.raw("<details><summary>Inspect evidence")?;
+    h.raw("<td data-label=\"Checks and details\">")?;
+    h.raw("<details class=\"row-details\"><summary>Inspect evidence")?;
     let gaps = row.unknowns.len() + row.worktree_state.as_ref().map_or(0, |s| s.gaps.len());
     if gaps > 0 {
         write!(h.out, " ({gaps} gaps)")?;
     }
-    h.raw("</summary><dl class=\"evidence\"><dt>Commit subject</dt><dd class=\"mono\">")?;
+    h.raw("</summary>")?;
+    forge_navigation(h, row, context, forge)?;
+    h.raw("<dl class=\"evidence\"><dt>Commit subject</dt><dd class=\"mono\">")?;
     if let Some(subject) = &row.subject {
         h.path(subject)?;
     } else {
@@ -1262,88 +1375,8 @@ fn review_evidence(
     h.json(row)?;
     h.raw("</details></td>")
 }
-fn disk_priority(
-    h: &mut Html,
-    usage: Option<&DiskUsage>,
-    items: Option<&[ReviewItem]>,
-) -> fmt::Result {
-    section_start_state(
-        h,
-        "disk-priority",
-        if items.is_some() {
-            "Disk space review"
-        } else {
-            "Disk space details"
-        },
-        "disk-priority",
-        items.is_some(),
-    )?;
-    h.raw("<p class=\"muted\">Captured disk collection; unaffected by filters (review and browser).</p><div class=\"space-metrics\"><div class=\"space-primary\"><span class=\"eyebrow\">")?;
-    h.raw(if usage.is_some_and(|u| !u.complete) {
-        "Partial measured allocation"
-    } else {
-        "Measured allocation"
-    })?;
-    h.raw("</span><strong>")?;
-    if let Some(usage) = usage.filter(|u| u.measurements.iter().any(|m| m.bytes.is_some())) {
-        byte_size(h, usage.unique_bytes.allocated)?;
-        h.raw("</strong><span class=\"space-caption\">")?;
-        h.raw(if usage.complete {
-            "All recorded directories measured. Shared Git storage included; inode-deduplicated."
-        } else {
-            "<b>Inventory total unknown.</b> Observed bytes only, including shared Git storage; inode-deduplicated. This is not the size of your entire disk."
-        })?;
-    } else {
-        h.raw(
-            "Not measured</strong><span class=\"space-caption\">Use --disk-usage to collect sizes",
-        )?;
-    }
-    h.raw("</span></div><div><span class=\"eyebrow\">Space freed by cleanup</span><span class=\"space-caption\">Unknown: APFS clones and snapshots can share blocks. Allocation does not predict freed space.</span></div><div><span class=\"eyebrow\">Cleanup review</span><strong>")?;
-    if let Some(items) = items {
-        let candidates = items
-            .iter()
-            .filter(|i| i.classification == "cleanup_candidate")
-            .count();
-        let verify = items
-            .iter()
-            .filter(|i| i.classification == "verify")
-            .count();
-        write!(
-            h.out,
-            "{candidates} candidate{}",
-            if candidates == 1 { "" } else { "s" }
-        )?;
-        write!(
-            h.out,
-            "</strong><span class=\"space-caption\">{verify} still need verification across {} recorded worktrees. Candidates still need a usage check.",
-            items.len()
-        )?;
-    } else {
-        h.raw("Inventory only</strong><span class=\"space-caption\">Cleanup analysis not performed. Run review or plan to inspect cleanup evidence.")?;
-    }
-    h.raw("</span></div></div>")?;
+fn measurement_summary(h: &mut Html, usage: Option<&DiskUsage>) -> fmt::Result {
     if let Some(usage) = usage {
-        for (kind, label) in [
-            (DiskKind::Worktree, "Working directories"),
-            (DiskKind::GitCommon, "Shared Git directories"),
-        ] {
-            let (mut complete, mut partial, mut missing, mut unrequested) = (0, 0, 0, 0);
-            for row in usage.measurements.iter().filter(|row| row.kind == kind) {
-                if !row.requested {
-                    unrequested += 1;
-                } else if row.bytes.is_none() {
-                    missing += 1;
-                } else if row.complete {
-                    complete += 1;
-                } else {
-                    partial += 1;
-                }
-            }
-            write!(
-                h.out,
-                "<p class=\"space-coverage\">{label}: {complete} complete; {partial} partial; {missing} not measured; {unrequested} not requested.</p>"
-            )?;
-        }
         h.raw("<details class=\"panel\"><summary>Measurement scope and totals</summary><p>Measurement roots combine working directories and shared Git directories. They are not a count of worktrees.</p>")?;
         h.raw("<p class=\"space-coverage\">")?;
         h.text(&usage.scope_summary())?;
@@ -1393,14 +1426,21 @@ fn disk_priority(
             }
             h.raw("</ol></details>")?;
         }
-    } else {
-        h.raw("<p class=\"space-coverage\">Disk coverage: not collected.</p>")?;
     }
-    h.raw("<a class=\"space-details-link\" href=\"#disk\">See disk measurements and limits &#8594;</a>")?;
-    section_end(h)
+    Ok(())
 }
-fn disk_overview(h: &mut Html, usage: Option<&DiskUsage>, open: bool) -> fmt::Result {
-    section_start_state(h, "disk", "Disk observations", "panel", open)?;
+fn disk_overview(
+    h: &mut Html,
+    usage: Option<&DiskUsage>,
+    items: Option<&[ReviewItem]>,
+) -> fmt::Result {
+    section_start_state(h, "disk", "Disk observations", "panel", false)?;
+    dashboard::render(h, usage, items)?;
+    h.raw("<p class=\"muted\">Space freed by cleanup is unknown. APFS clones and snapshots can share blocks; measured allocation does not predict freed space.</p>")?;
+    measurement_summary(h, usage)?;
+    h.raw("<details class=\"cleanup-boundaries\"><summary>Before planning cleanup</summary>")?;
+    boundary_notice(h)?;
+    h.raw("</details>")?;
     h.raw("<p class=\"muted\">All recorded source roots are listed. Review and browser filters do not narrow the disk collection selection.</p>")?;
     if let Some(usage) = usage {
         h.raw("<p>")?;

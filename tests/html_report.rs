@@ -447,7 +447,7 @@ fn inventory_puts_counts_and_one_visible_flat_list_before_closed_technical_detai
     let report = html::inventory(&inventory, 1_000_000).unwrap();
     let overview = report.find("id=\"overview\"").unwrap();
     let list = report.find("id=\"worktree-families\"").unwrap();
-    let disk = report.find("id=\"disk-priority\"").unwrap();
+    let disk = report.find("id=\"disk\"").unwrap();
     assert!(
         overview < list && list < disk,
         "counts and list must lead the report"
@@ -480,7 +480,7 @@ fn inventory_puts_counts_and_one_visible_flat_list_before_closed_technical_detai
     assert!(table.contains("Recorded evidence"));
     assert!(report[..list].contains("Cleanup analysis not performed"));
     assert!(!report[..list].contains("Not established"));
-    for id in ["disk-priority", "disk", "coverage"] {
+    for id in ["disk", "coverage"] {
         let opening = report
             .split_once(&format!("id=\"{id}\""))
             .unwrap()
@@ -547,7 +547,8 @@ fn inventory_summary_separates_present_directories_bare_and_unavailable_entries(
         .unwrap()
         .0;
     for expected in [
-        "8 Git registrations across 2 repository families",
+        "Recorded Git entries</span><strong>8</strong>",
+        "2 repositories. All recorded entries.",
         "data-inventory-count=\"present\">2</strong>",
         "data-inventory-count=\"bare\">1</strong>",
         "data-inventory-count=\"unavailable\">5</strong>",
@@ -879,8 +880,8 @@ fn disk_sizes_use_decimal_units_and_preserve_exact_counts() {
         let value = format!("<span class=\"byte-size\" title=\"{bytes} octets\">{label}</span>");
         assert_eq!(
             report.matches(&value).count(),
-            12,
-            "overview, shortlist, totals, worktree and shared Git measurements: {label}"
+            11,
+            "dashboard, shortlist, totals, worktree and shared Git measurements: {label}"
         );
         assert!(report.contains(&format!("data-allocated=\"{bytes}\"")));
         assert!(report.contains("Exact totals (octets)"));
@@ -937,9 +938,9 @@ fn copy_controls_preserve_path_bytes_and_exclude_branches_and_subjects() {
     assert_eq!(serde_json::to_vec(&selected).unwrap(), before);
 }
 
-fn disk_priority_section(report: &str) -> &str {
+fn disk_details_section(report: &str) -> &str {
     report
-        .split_once("id=\"disk-priority\"")
+        .split_once("id=\"disk\"")
         .unwrap()
         .1
         .split_once("<details class=\"report-section ")
@@ -948,7 +949,7 @@ fn disk_priority_section(report: &str) -> &str {
 }
 
 #[test]
-fn disk_priority_retains_source_scope_without_claiming_reclaimable_bytes() {
+fn folded_disk_details_retain_source_scope_without_claiming_reclaimable_bytes() {
     let (mut inventory, mut review) = fixture();
     let usage = inventory.disk_usage.as_mut().unwrap();
     let original = usage.measurements[0].clone();
@@ -1005,7 +1006,7 @@ fn disk_priority_retains_source_scope_without_claiming_reclaimable_bytes() {
     assert!(selected.selected_paths.is_empty());
     let before = serde_json::to_vec(&selected).unwrap();
     let report = html::review(&selected, 1_000_000).unwrap();
-    let section = disk_priority_section(&report);
+    let section = disk_details_section(&report);
     assert!(
         section.contains("8,19 Ko"),
         "retain deduplicated source total"
@@ -1015,15 +1016,15 @@ fn disk_priority_retains_source_scope_without_claiming_reclaimable_bytes() {
         "never sum overlapping row allocations"
     );
     assert!(section.contains("Space freed by cleanup"));
-    assert!(section.contains("Unknown: APFS"));
+    assert!(section.contains("is unknown. APFS"));
     assert!(
-        section.contains("1 candidate"),
+        section.contains("data-cleanup-count=\"cleanup_candidate\">1"),
         "source count survives empty view"
     );
     assert!(section.contains("2/5 roots fully measured"));
     assert!(section.contains("2 partial; 1 not measured"));
-    assert!(section.contains("Partial measured allocation"));
-    assert!(section.contains("Inventory total unknown"));
+    assert!(section.contains("Partial measurement"));
+    assert!(section.contains("the inventory total remains unknown"));
     assert!(
         section.contains(
             "Working directories: 1 complete; 2 partial; 1 not measured; 0 not requested"
@@ -1033,31 +1034,40 @@ fn disk_priority_retains_source_scope_without_claiming_reclaimable_bytes() {
         "Shared Git directories: 1 complete; 0 partial; 0 not measured; 0 not requested"
     ));
     assert!(section.contains("APFS"));
-    assert!(section.contains("unaffected by filters"));
+    assert!(section.contains("filters do not narrow the disk collection"));
+    let shortlist = section
+        .split_once("class=\"space-largest\"")
+        .unwrap()
+        .1
+        .split_once("</ol></details>")
+        .unwrap()
+        .0;
     assert!(
-        !section.contains("/synthetic/shared"),
+        !shortlist.contains("/synthetic/shared"),
         "shared Git excluded from worktree shortlist"
     );
     assert!(
-        !section.contains("/synthetic/unknown"),
+        !shortlist.contains("/synthetic/unknown"),
         "unknown size is not ranked as zero"
     );
     assert!(
-        section.find("/synthetic/large-a").unwrap() < section.find("/synthetic/large-b").unwrap()
+        shortlist.find("/synthetic/large-a").unwrap()
+            < shortlist.find("/synthetic/large-b").unwrap()
     );
     assert!(
-        section.find("/synthetic/large-b").unwrap() < section.find("/synthetic/a/project").unwrap()
+        shortlist.find("/synthetic/large-b").unwrap()
+            < shortlist.find("/synthetic/a/project").unwrap()
     );
     assert!(section.contains("Partial observation"));
     assert!(
-        report.find("id=\"disk-priority\"").unwrap()
+        report.find("id=\"disk\"").unwrap()
             < report.find("No removal authorized.</strong>").unwrap()
     );
     assert_eq!(serde_json::to_vec(&selected).unwrap(), before);
 }
 
 #[test]
-fn disk_priority_distinguishes_absent_measurements_from_measured_zero() {
+fn folded_disk_details_distinguish_absent_measurements_from_measured_zero() {
     let (mut inventory, _) = fixture();
     for empty in [false, true] {
         let mut source = inventory.clone();
@@ -1067,9 +1077,9 @@ fn disk_priority_distinguishes_absent_measurements_from_measured_zero() {
             source.disk_usage = None;
         }
         let report = html::inventory(&source, 1_000_000).unwrap();
-        let section = disk_priority_section(&report);
+        let section = disk_details_section(&report);
         assert!(section.contains("Not measured"));
-        assert!(section.contains("Cleanup analysis not performed"));
+        assert!(report.contains("Cleanup analysis not performed"));
         assert!(!section.contains("0 o</span>"));
     }
     let usage = inventory.disk_usage.as_mut().unwrap();
@@ -1078,13 +1088,13 @@ fn disk_priority_distinguishes_absent_measurements_from_measured_zero() {
     usage.measurements[0].complete = true;
     usage.complete = true;
     let report = html::inventory(&inventory, 1_000_000).unwrap();
-    let section = disk_priority_section(&report);
+    let section = disk_details_section(&report);
     assert!(section.contains("0 o</span>"));
     assert!(section.contains("1/1 roots fully measured"));
-    assert!(!section.contains("Partial measured allocation"));
-    assert!(!section.contains("Inventory total unknown"));
+    assert!(!section.contains("Partial measurement"));
+    assert!(!section.contains("the inventory total remains unknown"));
     assert!(section.contains("Space freed by cleanup"));
-    assert!(section.contains("Unknown: APFS"));
+    assert!(section.contains("is unknown. APFS"));
 }
 
 #[test]
@@ -1132,7 +1142,8 @@ fn discovery_status_is_explicit_next_to_inventory_counts() {
     let report = html::inventory(&inventory, 4 * 1024 * 1024).unwrap();
     let overview = report.split("id=\"worktree-families\"").next().unwrap();
     assert!(
-        overview.contains("Publication omitted 3 worktree observations and 2 repository families")
+        overview
+            .contains("Published list excludes 3 worktree observations and 2 repository families")
     );
     inventory.coverage.publication = None;
     inventory.coverage.remaining = Some(DiscoveryRemainder {
@@ -1233,12 +1244,190 @@ fn scan_limits_do_not_mislabel_local_collection_gaps_as_a_stopped_filesystem_wal
     ];
     let report = html::inventory(&source, 4 * 1024 * 1024).unwrap();
     let limits = report.split("data-scan-limits").nth(1).unwrap();
-    assert!(
-        report.contains("Recorded scan is incomplete: discovery or local evidence may be missing")
-    );
+    assert!(report.contains("Scan or evidence incomplete"));
     assert!(!report.contains("Discovery interrupted:"));
     assert!(limits.contains("Discovery or local collection is incomplete"));
     assert!(!limits.contains("filesystem scan stopped"));
     assert!(limits.contains("Git reports an unborn or unknown HEAD"));
     assert!(limits.contains("local inventory is incomplete"));
+}
+
+#[test]
+fn review_exposes_list_before_measurements_with_preserved_decisions() {
+    let (inventory, review) = fixture();
+    let before = serde_json::to_value(&review).unwrap();
+    let view = view::build(&inventory, &review, ReviewFilters::default(), "repo").unwrap();
+    let report = html::review(&view, 1_000_000).unwrap();
+    let list = report.find("id=\"worktree-families\" open").unwrap();
+    let disk = report.find("id=\"disk\">").unwrap();
+    assert!(list < disk, "the worktree list must precede disk details");
+    assert_eq!(report.matches("data-disk-dashboard").count(), 1);
+    assert_eq!(report.matches("data-worktree=\"").count(), 2);
+    assert!(report.matches("class=\"row-details\"").count() >= 6);
+    assert_eq!(
+        report
+            .matches("data-list-filter=\"cleanup_candidate\"")
+            .count(),
+        1
+    );
+    assert!(report.contains("data-verdict=\"cleanup_candidate\""));
+    assert_eq!(serde_json::to_value(&view.source).unwrap(), before);
+}
+
+fn recommended_actions(report: &str) -> &str {
+    assert!(
+        report.contains("id=\"recommended-actions\""),
+        "a visible action summary must lead the list"
+    );
+    report
+        .split_once("id=\"recommended-actions\"")
+        .unwrap()
+        .1
+        .split_once("</aside>")
+        .unwrap()
+        .0
+}
+
+#[test]
+fn inventory_recommends_review_and_a_scope_retry_only_when_discovery_is_incomplete() {
+    let (mut inventory, _) = fixture();
+    inventory.coverage.traversal_complete = true;
+    inventory.coverage.remaining = None;
+    let before = serde_json::to_value(&inventory).unwrap();
+    let report = html::inventory(&inventory, 1_000_000).unwrap();
+    let actions = recommended_actions(&report);
+    assert!(actions.contains("Inspect the largest folders"));
+    assert!(actions.contains("Review one repository"));
+    let overview = report.split_once("id=\"worktree-families\"").unwrap().0;
+    assert!(overview.contains("wt-sweep review --repo"));
+    assert!(overview.contains("--target refs/heads/main --disk-usage --html"));
+    assert!(overview.contains("Replace the example path and target"));
+    assert!(!actions.contains("Complete missing discovery"));
+    assert!(!actions.contains("Confirm usage of"));
+    assert!(
+        report.find("id=\"recommended-actions\"").unwrap()
+            < report.find("id=\"worktree-families\"").unwrap()
+    );
+    assert_eq!(serde_json::to_value(&inventory).unwrap(), before);
+
+    inventory.coverage.remaining = Some(DiscoveryRemainder {
+        reason: DiscoveryStop::DirectoryBudget,
+        known_pending_paths: 12,
+        cover: RemainingCover::RequestedScope,
+    });
+    let report = html::inventory(&inventory, 1_000_000).unwrap();
+    let actions = recommended_actions(&report);
+    assert!(actions.contains("Complete missing discovery"));
+    assert!(actions.contains("href=\"#coverage\""));
+
+    // Local collection gaps are not proof that filesystem discovery stopped.
+    inventory.coverage.remaining = None;
+    inventory.coverage.traversal_complete = false;
+    let report = html::inventory(&inventory, 1_000_000).unwrap();
+    assert!(!recommended_actions(&report).contains("Complete missing discovery"));
+}
+
+#[test]
+fn review_recommendations_follow_recorded_verdicts_including_no_candidates() {
+    let (mut inventory, mut review) = fixture();
+    for classifications in [
+        ["cleanup_candidate", "keep"],
+        ["verify", "verify"],
+        ["keep", "keep"],
+    ] {
+        for (row, classification) in review.items.iter_mut().zip(classifications) {
+            row.classification = classification.into();
+        }
+        review.digest_sha256.clear();
+        review.digest_sha256 = canonical_digest(&review).unwrap();
+        let before = serde_json::to_value(&review).unwrap();
+        let view = view::build(&inventory, &review, ReviewFilters::default(), "repo").unwrap();
+        let report = html::review(&view, 1_000_000).unwrap();
+        let actions = recommended_actions(&report);
+        if classifications.contains(&"cleanup_candidate") {
+            assert!(actions.contains("Confirm usage of 1 possible cleanup entry"));
+            assert!(actions.contains("does not authorize removal"));
+        } else {
+            assert!(!actions.contains("Confirm usage of"));
+            assert!(actions.contains("No entry is marked Possible cleanup"));
+        }
+        assert_eq!(
+            actions.contains("Resolve missing checks for"),
+            classifications.contains(&"verify")
+        );
+        assert_eq!(
+            actions.contains("Preserve"),
+            classifications.contains(&"keep")
+        );
+        assert_eq!(serde_json::to_value(&view.source).unwrap(), before);
+    }
+    review.items.clear();
+    inventory.families.clear();
+    review.inventory_sha256 = canonical_digest(&inventory).unwrap();
+    review.digest_sha256.clear();
+    review.digest_sha256 = canonical_digest(&review).unwrap();
+    let view = view::build(&inventory, &review, ReviewFilters::default(), "repo").unwrap();
+    let report = html::review(&view, 1_000_000).unwrap();
+    assert!(recommended_actions(&report).contains("No reviewed entry in this saved view"));
+}
+
+#[test]
+fn recommended_actions_do_not_direct_a_filtered_view_to_excluded_candidates() {
+    let (inventory, review) = fixture();
+    for verdict in ["keep", "verify"] {
+        let view = view::build(
+            &inventory,
+            &review,
+            ReviewFilters {
+                verdict: Some(verdict.into()),
+                ..Default::default()
+            },
+            "repo",
+        )
+        .unwrap();
+        let report = html::review(&view, 1_000_000).unwrap();
+        let actions = recommended_actions(&report);
+        assert!(!actions.contains("Confirm usage of"));
+        if verdict == "keep" {
+            assert!(actions.contains("Preserve 1 entry marked Keep"));
+        } else {
+            assert!(actions.contains("No reviewed entry in this saved view"));
+        }
+        assert_eq!(
+            report.matches("data-worktree=\"").count(),
+            view.selected_paths.len()
+        );
+        assert_eq!(view.source.items.len(), 2);
+    }
+}
+
+#[test]
+fn primary_retention_reason_preserves_the_ancestry_evidence_boundary() {
+    let (inventory, mut review) = fixture();
+    let row = review
+        .items
+        .iter_mut()
+        .find(|row| row.classification == "keep")
+        .unwrap();
+    row.decision.as_mut().unwrap().keep_reasons = vec!["head_not_integrated".into()];
+    review.digest_sha256.clear();
+    review.digest_sha256 = canonical_digest(&review).unwrap();
+    let before = serde_json::to_value(&review).unwrap();
+    let view = view::build(&inventory, &review, ReviewFilters::default(), "repo").unwrap();
+    let report = html::review(&view, 1_000_000).unwrap();
+    let primary_reasons: Vec<_> = report
+        .split("<p class=\"primary-reason\">")
+        .skip(1)
+        .map(|part| part.split("</p>").next().unwrap())
+        .collect();
+    assert!(
+        primary_reasons
+            .contains(&"HEAD is not an ancestor of any completely examined accepted target")
+    );
+    assert!(
+        !primary_reasons
+            .iter()
+            .any(|text| text.contains("commits not integrated"))
+    );
+    assert_eq!(serde_json::to_value(&view.source).unwrap(), before);
 }

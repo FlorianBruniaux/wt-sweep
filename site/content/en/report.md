@@ -4,7 +4,16 @@
 
 ## Disk dashboard and worktree list
 
-These additions are available in source builds after `v0.1.0-alpha.1`; the published alpha archive does not contain them.
+Available in `v0.1.0-alpha.2`. Both report types open with a compact summary,
+**In brief: recommended actions** and the worktree list. The recommendations
+follow the recorded scope and verdicts. Disk measurements and coverage details
+start folded, below the list.
+
+Review rows show **Keep**, **Needs checking** or **Possible cleanup** and the main
+reason. Expand a row for the original verdict, complete object IDs and evidence.
+Quick filters select a status, the size shortcut sorts measured entries, and
+**Show all** restores the initial view. **Possible cleanup** still requires a usage
+check and does not authorize removal.
 
 With `--disk-usage`, the dashboard shows captured capacity, available space and measured allocation for each volume. Volumes stay separate, including APFS volumes sharing a container. Old inventories keep their sizes and explicitly report missing capacity; rendering never queries the current machine.
 
@@ -20,7 +29,7 @@ Add `--open` to `review`, `scan` or `plan` to save HTML and ask macOS to open it
 
 ## GitHub and GitLab links
 
-In a review, expand **Repository links** to open the recorded repository, branch or commit. These URLs come from recognized local remotes. A local tracking ref and its equality with HEAD do not establish the current server state or prove a push. The CLI does not contact the forge.
+In a review, expand **Inspect evidence**, then **Repository links** to open the recorded repository, branch or commit. These URLs come from recognized local remotes. A local tracking ref and its equality with HEAD do not establish the current server state or prove a push. The CLI does not contact the forge.
 
 Associated PR/MR links are visible alongside their captured state; expand their details for title and provenance. They require a matching `--forge FILE` import. Self-hosted providers also need an associated import to identify them. Unknown or ambiguous remotes remain explicit. `--no-context` skips remote metadata; existing imported PR/MR associations still appear. Inventory-only scans do not collect these links.
 

@@ -2,35 +2,36 @@
 
 [Index documentaire](README.md) · [Preuves du triage](finish-ledger.md#triage-t01-t09) · [Plan T01-T09](superpowers/plans/2026-10-05-worktree-triage-v2.md)
 
-## Dashboard et CI automatique, 11/10/2026
+## Alpha.2 : interface et distribution, 11/10/2026
 
-La [PR #32](https://github.com/FlorianBruniaux/wt-sweep/pull/32) est fusionnée à
-`02dd1099ea32c879dce4661a09a9f5d792d5bb83` ; sa
-[CI automatique sur main](https://github.com/FlorianBruniaux/wt-sweep/actions/runs/38126000063)
-et le déploiement du site ont réussi. La finition suivante ajoute les liens
-du diagramme et leur test navigateur dans la CI.
+[v0.1.0-alpha.2](https://github.com/FlorianBruniaux/wt-sweep/releases/tag/v0.1.0-alpha.2)
+regroupe les finitions HTML et disque : bilan compact, liste ouverte, actions
+conseillées, filtres rapides, guide cliquable, recherche clavier et jauges par
+volume. Les détails techniques restent accessibles. Les verdicts C1-C5,
+les données source et les limites APFS sont conservés.
 
-Les sources après l’alpha ajoutent les jauges par volume, la liste d’inventaire
-ouverte et filtrable, le guide de lecture et la recherche Cmd+K / Ctrl+K.
-Le bloc facultatif `disk_usage.storage` conserve la capacité observée pendant
-la collecte ; le rendu reste hors ligne. Ces ajouts ne modifient ni C1-C5 ni
-l’archive `v0.1.0-alpha.1` déjà publiée.
+La [PR #32](https://github.com/FlorianBruniaux/wt-sweep/pull/32) a livré le dashboard
+et le rétablissement de la CI automatique pour le propriétaire. Les contrôles
+navigateur couvrent aussi les deux rapports à 390 et 1440 px, en clair/sombre,
+avec et sans JavaScript. La publication du site reste manuelle.
 
-La politique Actions du dépôt refusait les événements `push` et `pull_request`.
-Elle les autorise désormais pour le seul compte propriétaire, avec les lancements
-manuels conservés. Le workflow exécute aussi les tests navigateur du rapport.
-Le [registre de validation](progress.md#dashboard-et-ci-automatique-11102026)
-distingue les vérifications locales des exécutions automatiques distantes.
+Le [guide de release](release.md) donne la recette du nouveau paquet Apple
+Silicon : commit propre, CI exacte, archive et téléchargement public vérifiés.
+Le [registre](progress.md) distingue validation locale et livraison distante.
+L’archive alpha.1 reste inchangée.
 
-La suite reste l’évaluation facultative de #20 et les extensions #27 à #30
-regroupées sous #14. Ni nouvelle release ni suppression réelle dans ce lot.
+## Travail restant
 
-Pour distribuer les ajouts de `main`, le prochain jalon de publication serait
-`v0.1.0-alpha.2`, avec une nouvelle archive et la recette du
-[guide de release](release.md). `v0.1.0-alpha.1` est conservée telle quelle.
-#20 reste une évaluation de performance facultative. #27 (Worktrunk),
-#28 (provenance), #29 (exclusion des écritures) et #30 (clones APFS)
-sont des options de #14, sans engagement de les implémenter toutes.
+- [#20](https://github.com/FlorianBruniaux/wt-sweep/issues/20) : évaluer le collecteur
+  natif sur des corpus identiques. L’intégration dépend d’un gain mesuré et de
+  preuves conservées ; cette expérience ne bloque pas alpha.2.
+- [#14](https://github.com/FlorianBruniaux/wt-sweep/issues/14) : vision facultative,
+  avec Worktrunk (#27), provenance (#28), exclusion des écritures avant sauvegarde
+  et retrait (#29), puis expérimentation de clones APFS (#30).
+- Distribution : Intel, autres systèmes et notarisation Apple restent non
+  qualifiés. Aucun tap Homebrew n’est annoncé.
+
+Aucun moteur de suppression n’est livré. `apply` reste indisponible.
 
 ## Finitions de lecture, 10/10/2026
 

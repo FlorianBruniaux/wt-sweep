@@ -5,7 +5,7 @@
 Statut : spec approuvée le 11 octobre 2026. Le
 [plan d'implémentation](../plans/2026-10-11-disk-dashboard.md) est exécuté
 localement avec revue indépendante et corrections. Son bilan distingue les
-contrôles réussis, les replays et les cas non vérifiés. Ces ajouts sont postérieurs à l’archive `v0.1.0-alpha.1` ; ils restent dans `Unreleased`.
+contrôles réussis, les replays et les cas non vérifiés. Ces ajouts, postérieurs à l’archive `v0.1.0-alpha.1`, sont regroupés dans `v0.1.0-alpha.2`. Le [guide de release](../../release.md) définit la recette du nouveau paquet.
 
 ## Résultat attendu
 

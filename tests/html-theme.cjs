@@ -29,7 +29,7 @@ fs.mkdirSync(output, {recursive:false});
         const bg=el=>{const chain=[];for(let e=el;e;e=e.parentElement)chain.unshift(e);let result=[255,255,255];for(const e of chain){const c=color(getComputedStyle(e).backgroundColor),a=c[3]??1;result=result.map((v,i)=>c[i]*a+v*(1-a));}return result;};
         const lum=c=>c.slice(0,3).map(v=>v/255).map(v=>v<=.04045?v/12.92:((v+.055)/1.055)**2.4).reduce((s,v,i)=>s+v*[.2126,.7152,.0722][i],0);
         const samples=[];
-        for(const selector of ['body','.meta','.eyebrow','.sidebar a','.sidebar .boundary','.notice','.badge.keep','.badge.verify','.badge.cleanup_candidate','.view-status','input','button']) {
+        for(const selector of ['body','.meta','.eyebrow','.sidebar a','.sidebar .boundary','.notice','.badge.keep','.badge.verify','.badge.cleanup_candidate','.view-status','a.primary-action','.row-details > summary','input','button']) {
           const el=document.querySelector(selector);if(!el||!el.getClientRects().length)continue;
           const a=lum(color(getComputedStyle(el).color)),b=lum(bg(el));samples.push({selector,ratio:(Math.max(a,b)+.05)/(Math.min(a,b)+.05)});
         }

@@ -21,12 +21,10 @@ fs.mkdirSync(output, {recursive: false});
       await page.goto(url);
       const sections = page.locator('details.report-section');
       const inventory = await page.locator('[data-flat-list]').count() > 0;
-      const ids = inventory
-        ? ['overview', 'worktree-families', 'disk-priority', 'disk', 'coverage']
-        : ['disk-priority', 'overview', 'worktree-families', 'disk', 'coverage'];
+      const ids = ['overview', 'worktree-families', 'disk', 'coverage'];
       assert.deepEqual(await sections.evaluateAll(es => es.map(e => e.id)), ids);
       const states = () => sections.evaluateAll(es => es.map(e => e.open));
-      assert.deepEqual(await states(), inventory ? [true, true, false, false, false] : ids.map(() => true));
+      assert.deepEqual(await states(), [true, true, false, false]);
       const snapshot = () => page.evaluate(() => ({
         rows: Array.from(document.querySelectorAll('[data-worktree]'), e => ({...e.dataset})),
         evidence: Array.from(document.querySelectorAll('pre'), e => e.textContent),
@@ -53,11 +51,12 @@ fs.mkdirSync(output, {recursive: false});
       }
       const nested = page.locator('tbody details').first();
       if (await nested.count()) await nested.locator(':scope > summary').click();
+      if (js) await page.locator('.display-options > summary').click();
       const nestedBefore = await page.locator('details:not(.report-section)').evaluateAll(es => es.map(e => e.open));
       if (js) {
         await page.locator('#collapse-sections').click();
         assert.deepEqual(await states(), ids.map(() => false));
-        assert.equal(await page.locator('.notice').first().isVisible(), true);
+        assert.equal(await page.locator('[data-worktree]:visible').count(), 0, 'collapsed list hides rows without removing evidence');
         for (const id of ['overview', 'worktree-families', 'disk', 'coverage']) {
           await page.locator(`.sidebar a[href="#${id}"]`).click();
           assert.equal(await page.locator('#' + id).evaluate(e => e.open), true);

@@ -2,7 +2,7 @@
   {
     "slug": "index",
     "source": "docs/getting-started.md",
-    "sourceHash": "9b68f9ef70c5b1c4e7440664bab38e72031df88932fd2bc7b9171788f6301a70",
+    "sourceHash": "2aed5ee098deb12a48cec50a63934c801eb3842f6f4a64dd81d8fc78ac6ea251",
     "title": {
       "en": "Start with wt-sweep",
       "fr": "Démarrer avec wt-sweep"
@@ -15,7 +15,7 @@
   {
     "slug": "installation",
     "source": "docs/getting-started.md",
-    "sourceHash": "9b68f9ef70c5b1c4e7440664bab38e72031df88932fd2bc7b9171788f6301a70",
+    "sourceHash": "2aed5ee098deb12a48cec50a63934c801eb3842f6f4a64dd81d8fc78ac6ea251",
     "title": {
       "en": "Install wt-sweep",
       "fr": "Installer wt-sweep"
@@ -28,7 +28,7 @@
   {
     "slug": "demo",
     "source": "docs/getting-started.md",
-    "sourceHash": "9b68f9ef70c5b1c4e7440664bab38e72031df88932fd2bc7b9171788f6301a70",
+    "sourceHash": "2aed5ee098deb12a48cec50a63934c801eb3842f6f4a64dd81d8fc78ac6ea251",
     "title": {
       "en": "Demo with a test repo",
       "fr": "Démo sur un repo de test"
@@ -67,7 +67,7 @@
   {
     "slug": "report",
     "source": "docs/html-report-plan.md",
-    "sourceHash": "074034ef26cb6994643eac6090f1fce687f9763b1d6adf5ac018af9f413a663a",
+    "sourceHash": "6c3fd017619d3edc1bc163eba012d8b4d48953d25d041cd9dc630df89f5e2696",
     "title": {
       "en": "Read the HTML report",
       "fr": "Lire le rapport HTML"
@@ -132,7 +132,7 @@
   {
     "slug": "changelog",
     "source": "CHANGELOG.md",
-    "sourceHash": "b5ac3d931ce15d69de28d336f313f3a016657098f30151e8d9ff98c0b690dcc7",
+    "sourceHash": "6a58935618d463eaab92435e7658d73b5286d39d7ab4498a331fba787aa70e70",
     "title": {
       "en": "Changelog",
       "fr": "Historique des changements"

@@ -11,10 +11,17 @@
   const status = document.getElementById('visible-status');
   const theme = document.getElementById('theme');
   // Control labels and transient copy feedback must not become search terms.
+  const repositorySearch = new Map();
   const searchable = new Map(rows.map(row => {
     const content = row.cloneNode(true);
     content.querySelectorAll('[data-copy-path]').forEach(button => button.remove());
-    return [row, content.textContent.toLowerCase()];
+    const family = row.closest?.('.family');
+    if (family && !repositorySearch.has(family)) {
+      const header = family.querySelector('.family-header')?.cloneNode?.(true);
+      header?.querySelectorAll('[data-copy-path]').forEach(button => button.remove());
+      repositorySearch.set(family, header?.textContent.toLowerCase() || '');
+    }
+    return [row, `${repositorySearch.get(family) || ''} ${content.textContent}`.toLowerCase()];
   }));
   const compare = (a, b) => a < b ? -1 : a > b ? 1 : 0;
   const update = () => {
@@ -55,10 +62,11 @@
       family.querySelector('.visible-count').textContent = String(count);
       family.hidden = count === 0 && children.length > 0;
     }
-    const totals = Array.from(counts, ([name, count]) => `${count} ${name}`).join(', ');
+    const verdictLabels = {keep: 'to keep', verify: 'need checking', cleanup_candidate: 'possible cleanup', not_reviewed: 'not reviewed'};
+    const totals = Array.from(counts, ([name, count]) => `${count} ${verdictLabels[name] || name}`).join(', ');
     status.textContent = flatList
       ? `Showing ${visible} of ${rows.length} recorded entries. The counts above cover the saved inventory.`
-      : `Visible ${visible} of ${rows.length} selected worktrees${totals ? ': ' + totals : ''}. Source totals and disk measurements are unchanged.`;
+      : `Showing ${visible} of ${rows.length} selected worktrees${totals ? ': ' + totals : ''}. The summary above covers the saved review.`;
     document.getElementById('no-matches').hidden = visible !== 0 || rows.length === 0;
   };
   search.addEventListener('input', update);
@@ -87,6 +95,42 @@
   });
   window.addEventListener('hashchange', () => revealFragment(location.hash));
   revealFragment(location.hash);
+  // Shortcuts change this saved view only. They never collect or change evidence.
+  const defaultSort = sort.value;
+  const listFilters = Array.from(document.querySelectorAll('[data-list-filter]'));
+  const syncListShortcuts = () => {
+    for (const button of listFilters) {
+      button.setAttribute('aria-pressed', String(verdict.value === button.dataset.listFilter));
+    }
+  };
+  const showList = () => {
+    revealFragment('#worktree-families');
+    const list = document.getElementById('worktree-families');
+    list.tabIndex = -1;
+    list.scrollIntoView({block: 'start'});
+    list.focus({preventScroll: true});
+  };
+  for (const button of listFilters) {
+    button.addEventListener('click', () => {
+      search.value = '';
+      verdict.value = button.dataset.listFilter;
+      update(); syncListShortcuts(); showList();
+    });
+  }
+  for (const button of document.querySelectorAll('[data-list-sort]')) {
+    button.addEventListener('click', () => {
+      search.value = ''; verdict.value = ''; sort.value = button.dataset.listSort;
+      update(); syncListShortcuts(); showList();
+    });
+  }
+  for (const button of document.querySelectorAll('[data-list-reset]')) {
+    button.addEventListener('click', () => {
+      search.value = ''; verdict.value = ''; sort.value = defaultSort;
+      update(); syncListShortcuts();
+    });
+  }
+  verdict.addEventListener('change', syncListShortcuts);
+  syncListShortcuts();
   // A local index over captured rows and report headings, never filesystem diagnostics.
   const commandDialog = document.getElementById('command-dialog');
   const commandInput = document.getElementById('command-query');
@@ -117,7 +161,7 @@
     commandDialog.close();
     commandInput.setAttribute('aria-expanded', 'false');
     if (entry.kind === 'Worktree') {
-      search.value = ''; verdict.value = ''; update();
+      search.value = ''; verdict.value = ''; update(); syncListShortcuts();
       const evidence = commandTarget.querySelector('details');
       if (evidence) evidence.open = true;
     }
@@ -162,7 +206,10 @@
   });
   commandInput.addEventListener('input', findCommands);
   commandDialog.addEventListener('keydown', event => {
-    if (event.key === 'ArrowDown' || event.key === 'ArrowUp') {
+    if (event.key === 'Escape') {
+      event.preventDefault();
+      commandDialog.close();
+    } else if (event.key === 'ArrowDown' || event.key === 'ArrowUp') {
       event.preventDefault();
       if (commandMatches.length) {
         commandSelected = (commandSelected + (event.key === 'ArrowDown' ? 1 : -1) + commandMatches.length) % commandMatches.length;

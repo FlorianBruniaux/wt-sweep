@@ -7,7 +7,7 @@ assistant prompt, read the [hands-on tutorial](tutorial.fr.md).
 
 ## Download the Apple Silicon alpha
 
-Use [v0.1.0-alpha.1](https://github.com/FlorianBruniaux/wt-sweep/releases/tag/v0.1.0-alpha.1) on macOS Apple Silicon with `/usr/bin/git`. Rust is not required for the downloaded binary. The `Downloads` directory must exist; each installation uses a new folder.
+Use [v0.1.0-alpha.2](https://github.com/FlorianBruniaux/wt-sweep/releases/tag/v0.1.0-alpha.2) on macOS Apple Silicon with `/usr/bin/git`. Rust is not required for the downloaded binary. The `Downloads` directory must exist; each installation uses a new folder.
 
 ```sh
 (
@@ -16,12 +16,12 @@ Use [v0.1.0-alpha.1](https://github.com/FlorianBruniaux/wt-sweep/releases/tag/v0
   test "$(uname -m)" = arm64
   install_dir="$(mktemp -d "$HOME/Downloads/wt-sweep-alpha.XXXXXX")"
   cd "$install_dir"
-  release_url="https://github.com/FlorianBruniaux/wt-sweep/releases/download/v0.1.0-alpha.1"
+  release_url="https://github.com/FlorianBruniaux/wt-sweep/releases/download/v0.1.0-alpha.2"
   curl --fail --location --proto '=https' --tlsv1.2 -O "$release_url/SHA256SUMS"
-  curl --fail --location --proto '=https' --tlsv1.2 -O "$release_url/wt-sweep-v0.1.0-alpha.1-aarch64-apple-darwin.tar.gz"
+  curl --fail --location --proto '=https' --tlsv1.2 -O "$release_url/wt-sweep-v0.1.0-alpha.2-aarch64-apple-darwin.tar.gz"
   shasum -a 256 -c SHA256SUMS
-  tar -xzf wt-sweep-v0.1.0-alpha.1-aarch64-apple-darwin.tar.gz
-  cd wt-sweep-v0.1.0-alpha.1-aarch64-apple-darwin
+  tar -xzf wt-sweep-v0.1.0-alpha.2-aarch64-apple-darwin.tar.gz
+  cd wt-sweep-v0.1.0-alpha.2-aarch64-apple-darwin
   ./wt-sweep --version
   ./wt-sweep review --help
   printf '\nBinary: %s/wt-sweep\n' "$PWD"

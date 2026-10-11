@@ -1,10 +1,23 @@
 # Vérifications du site wt-sweep, 09/10/2026
 
-État courant : le déploiement du commit `02dd1099` a réussi le 11/10/2026.
-Les pages publiques rapport et changelog EN/FR contiennent le dashboard attendu.
-Les observations du 9 et du 10 octobre ci-dessous restent historiques ; le
-[registre de livraison](../docs/progress.md#dashboard-et-ci-automatique-11102026)
-porte les preuves distantes et les résultats des suites.
+## Préparation alpha.2, 11/10/2026
+
+Les pages EN/FR d'installation et les liens de téléchargement ciblent alpha.2.
+Le guide HTML décrit la liste prioritaire, les actions conseillées et les filtres
+rapides. Les pages disque et contrat attribuent le dashboard au nouveau paquet.
+Le changelog canonique reste la source de la date et de la version du bandeau.
+
+Validation locale : 8 contrôles de source/compilation et 34 tests navigateur
+réussissent. Astro contrôle 41 fichiers sans erreur ni avertissement et construit
+31 pages. Après les dernières corrections de texte, la préparation documentaire,
+la compilation et les contrôles du HTML construit repassent. Les deux changelogs
+publiés sont identiques à la source canonique ; son manifeste est actualisé.
+
+Le workflow de publication de ces pages se lance après publication et
+vérification de l'archive alpha.2. Les anciennes captures et la démo synthétique du site gardent
+leur provenance datée ; elles ne représentent pas ces derniers ajustements.
+Les résultats de publication et leur commit sont consignés dans GitHub Actions.
+Les entrées ci-dessous conservent leurs observations historiques.
 
 Livraison locale du 9 octobre dans le worktree `wt-sweep-site`, base produit `c3e38f7810424ae57f58d6ea10c4db996e9122fb`. Les entrées conservent l’état de livraison au moment des contrôles décrits. À cette date, le site n’était pas encore déployé.
 

@@ -41,18 +41,23 @@ Le JSON sur stdout et les verdicts restent inchangés.
 
 ## Lire le bilan
 
-Le dashboard ajoute deux jauges par volume : capacité moins espace disponible,
-et allocation mesurée divisée par capacité. Les volumes sont séparés, les
-pourcentages partiels restent signalés et les capacités inconnues expliquées.
-Les [mesures disque](disk-usage.md#lire-les-jauges-html) donnent les formules et
-les limites APFS. Les statistiques capturées restent inspectables dans la section
-technique ; le rendu ne consulte pas la machine pour compléter un ancien fichier.
-L'analyse de nettoyage affiche des comptes source uniquement lorsqu'une revue
-existe, sans score arbitraire.
+Le résumé précède immédiatement la liste. **Browse worktrees** rejoint les
+entrées enregistrées. **Largest measured first** trie globalement l'inventaire ;
+dans une revue, **Sort each repository by size** trie à l'intérieur de chaque
+repo, en conservant les familles Git.
 
-- Le haut du rapport indique le périmètre, les dates d’observation, la couverture
-  et les totaux source/sélection. Ce sont des observations passées, pas un état
-  courant vérifié au moment de l’ouverture.
+**Quick filters** propose des raccourcis par état ou verdict. Un raccourci efface
+la recherche incompatible ; **Show all** rétablit la liste et son tri initial.
+Ces actions ne réintroduisent pas les lignes exclues d'une vue CLI sauvegardée.
+Le résumé porte toujours sur la source, avec le nombre sélectionné indiqué
+lorsqu'il diffère. Les dates et la provenance restent dans les détails.
+
+La revue affiche **Keep**, **Needs checking** et **Possible cleanup**, avec une
+raison principale lisible par ligne. **Why this status?**, **Commit identity** et
+**Inspect evidence** conservent les verdicts CLI, tous les motifs, conditions,
+OID, liens forge et JSON. Un candidat nécessite encore une vérification d'usage.
+L'inventaire indique explicitement l'absence de revue Git.
+
 - Pour un inventaire, le nombre d’inscriptions Git inclut les dossiers principaux,
   les worktrees liés, les dépôts sans dossier de travail et les chemins manquants.
   Le résumé distingue dossiers de travail présents, dépôts sans dossier de travail
@@ -86,22 +91,18 @@ suppression ; `apply` reste indisponible. Un reçu n’est pas une sauvegarde.
 
 ## Lire le bilan disque
 
-Dans un inventaire, une ligne près des décomptes donne l’allocation mesurée,
-avec la mention partielle si nécessaire. **Cleanup analysis not performed**
-signale l’absence de verdicts. Les détails disque viennent après la liste et
-sont fermés au chargement. Dans une revue, le bloc **Disk space review** conserve
-sa place en tête. Le bloc distingue :
+Le dashboard apparaît une seule fois, dans **Disk observations**, après la
+liste et replié au chargement. Il présente l'allocation observée, la mention
+partielle si nécessaire et les mesures source, indépendamment des filtres.
+Une mesure partielle laisse le total de l'inventaire inconnu. Avec `--disk-root`,
+les mesures portent sur la sélection explicite.
 
-- **Measured allocation** ou **Partial measured allocation** : allocation
-  dédupliquée des racines mesurées. Une mesure partielle indique explicitement
-  que le total de l’inventaire est inconnu ; ce chiffre n’est pas la taille du disque.
-  Par défaut, toutes les racines enregistrées sont demandées, Git commun compris.
-  Avec `--disk-root`, le total porte sur cette sélection explicite. Le libellé
-  conserve la couverture partielle du périmètre source.
-- **Space freed by cleanup** : gain non établi. Les clones et snapshots APFS peuvent
-  partager des blocs ; une taille allouée ne prédit pas l’espace libéré.
-- **Cleanup review** : candidats et worktrees restant à vérifier dans le rapport
-  source. Un inventaire seul indique que cette revue n’a pas été effectuée.
+Deux jauges par volume montrent la capacité moins l'espace disponible, puis
+l'allocation mesurée divisée par la capacité. Les volumes sont séparés ; une
+capacité absente ne devient pas un pourcentage. Le rendu ne consulte pas la
+machine pour compléter un ancien fichier. Les [mesures disque](disk-usage.md#lire-les-jauges-html)
+donnent les formules et les limites APFS. Aucun chiffre ne promet l'espace libéré
+par un nettoyage ; les clones et snapshots peuvent partager des blocs.
 
 La couverture distingue les racines demandées et non demandées, puis les mesures
 complètes, partielles et absentes, séparément pour les dossiers de travail et le
@@ -115,7 +116,17 @@ nettoyage. Les filtres du rapport ne changent ni ces chiffres ni ce classement.
 
 ## Guide de lecture et recherche rapide
 
-L'aide « How to use this report » distingue inventaire et revue Git. Son
+Le bloc visible « In brief: recommended actions » précède la liste. Dans un
+inventaire, il propose d'inspecter les gros dossiers, de lancer une revue Git
+avec dépôt et cible explicites, puis de compléter la découverte si une
+frontière de parcours est enregistrée. Un exemple de commande reste replié.
+Dans une revue, les actions dépendent des verdicts enregistrés : confirmer
+l'usage des candidats, résoudre les preuves manquantes et préserver les
+entrées `keep`. L'absence de candidats et une revue vide sont explicites.
+Ces conseils n'ajoutent aucune preuve ni autorisation de suppression.
+
+L'aide facultative « How to use this report », placée après la liste, distingue
+inventaire et revue Git. Son
 schéma Mermaid est fourni en SVG statique dans le HTML : il fonctionne hors
 ligne, sans JavaScript ni chargement de Mermaid. Il décrit le parcours,
 pas des étapes toutes réalisées dans le rapport courant. Les icônes SVG du
@@ -193,22 +204,17 @@ sont réduits selon la préférence du système.
 
 ## Replier les grandes sections
 
-Le bilan disque, la synthèse, les familles Git, les mesures disque et la
-couverture s’ouvrent et se ferment en cliquant sur leur titre. Au clavier,
-utilisez Tab puis Entrée ou Espace. Ces contrôles natifs fonctionnent sans
-JavaScript. Dans un inventaire, seuls les décomptes et la liste sont ouverts au
-chargement ; les détails disque et la couverture sont fermés. Dans une revue,
-les cinq sections sont ouvertes. Elles partagent le même fond,
-les mêmes bordures et les mêmes marges internes dans les deux thèmes. Seul le
-bilan disque conserve une bordure supérieure orange pour le repérer rapidement.
+La synthèse, la liste, les mesures disque et les limites s'ouvrent et se
+ferment avec leur titre, ou Tab puis Entrée/Espace. Dans les deux modes, seuls
+le résumé et la liste sont ouverts au chargement. Les contrôles natifs et les
+preuves restent utilisables sans JavaScript.
 
-**Collapse all sections** et **Expand all sections** agissent uniquement sur
-ces grandes parties : les preuves et autres détails gardent leur état. Ces
-deux boutons nécessitent JavaScript, comme la réouverture automatique d’une
-section depuis le menu ou un lien interne. Sans JavaScript, cliquez sur son
-titre pour l’ouvrir. Le message de lecture seule reste visible, même lorsque
-toutes les sections sont fermées. L’impression conserve le contenu des grandes
-sections repliées. Aucune donnée ni sélection n’est supprimée par le repli.
+Dans **Display options**, **Collapse all sections** et **Expand all sections**
+agissent sur ces quatre parties ; les preuves et autres replis gardent leur
+état. Ces boutons et la réouverture depuis un lien nécessitent JavaScript.
+Sans JavaScript, le titre permet d'ouvrir la section. La mention de lecture
+seule reste dans l'en-tête. L'impression conserve les grandes sections
+repliées. Aucune donnée ni sélection n'est supprimée.
 
 Le contrôle navigateur facultatif accepte un rapport existant et un nouveau
 dossier de captures, avec Playwright et Chromium déjà installés :
@@ -336,8 +342,8 @@ la présence de l’attribut `title`, sans observer l’infobulle native elle-m�
 
 ## Liens GitHub et GitLab
 
-Dans une revue, chaque ligne propose les liens du dépôt, de la branche et du
-commit pour les remotes identifiés. Les remotes sont nommés séparément ; le lien
+Dans une revue, dépliez **Inspect evidence**, puis **Repository links**, pour
+ouvrir le dépôt, la branche ou le commit des remotes identifiés. Les remotes sont nommés séparément ; le lien
 de branche utilise l’upstream configuré quand il est connu. Une égalité avec la
 ref locale de suivi reste une observation locale, sans preuve de push actuel.
 
@@ -350,3 +356,20 @@ un nouvel onglet. Les routes et libellés sont validés et échappés.
 Les anciens rapports et `scan --html` ne reçoivent pas de données inventées.
 Voir [le contrat des liens](forge.md#links-in-review-reports), notamment les
 limites sur les forks GitLab et les instances auto-hébergées.
+
+## Vérifier le parcours de lecture
+
+Les fixtures exportées par les tests Rust restent synthétiques. Le contrôle
+suivant ouvre les deux modes à 1440 et 390 px, en clair et sombre, avec et sans
+JavaScript. Il vérifie la position de la liste, l'ouverture au clavier, les
+raccourcis, le reset et la conservation des données après filtrage.
+
+```sh
+node tests/html-shortcuts.cjs
+node tests/html-ux.cjs /chemin/vers/inventaire-synthetique.html \
+  /chemin/vers/revue-synthetique.html /chemin/vers/nouvelles-captures
+```
+
+Ces scripts utilisent un navigateur déjà installé ; ils ne déclenchent aucune
+collecte ni suppression. Les captures synthétiques ne prouvent pas le rendu de
+chaque inventaire personnel.

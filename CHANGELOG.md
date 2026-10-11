@@ -1,14 +1,26 @@
 # Changelog
 
-[v0.1.0-alpha.1](https://github.com/FlorianBruniaux/wt-sweep/releases/tag/v0.1.0-alpha.1) is the first macOS Apple Silicon pre-release. `Unreleased` tracks subsequent changes.
+[v0.1.0-alpha.2](https://github.com/FlorianBruniaux/wt-sweep/releases/tag/v0.1.0-alpha.2) is the current macOS Apple Silicon pre-release. `Unreleased` tracks subsequent changes.
 
 [Project overview](README.md) · [Documentation](docs/README.md) · [Contributing](CONTRIBUTING.md)
 
 ## [Unreleased]
 
-<!-- unreleased-updated: 2026-10-11 -->
+## [0.1.0-alpha.2] - 2026-10-11
+
+Second read-only Apple Silicon alpha. The CLI verdicts and FSL-1.1-ALv2 license
+are unchanged. Download a new archive; alpha.1 remains available unchanged.
+
+[Installation and verification](docs/release.md).
 
 ### Added
+
+- Visible recommended next checks in inventory and review reports, derived from
+  captured coverage and selected verdicts. No model decision or removal authority.
+- Quick status filters, largest-size shortcut and reset. Search includes the
+  recorded repository path; Escape closes command search and restores focus.
+- Browser regression coverage for 16 report layouts, including keyboard access,
+  JavaScript-disabled reading, filters and unchanged captured evidence.
 
 - Navigate the report workflow diagram through seven internal links, with
   keyboard access and visible hover/focus outlines. Inventory review blocks
@@ -28,6 +40,14 @@
 
 ### Changed
 
+- Put the compact summary and open worktree list before folded disk and coverage
+  sections in both report types. Show readable statuses and the primary reason;
+  retain raw verdicts, complete object IDs and all evidence in expandable details.
+- Show the volume dashboard once, inside Disk observations. Its gauges and source
+  coverage remain independent of browser filters; allocation is not freed space.
+- Update installation commands, release scripts and English/French guides for
+  `0.1.0-alpha.2`.
+
 - Lead HTML inventories with present working-directory counts and an open list.
   Distinguish bare repositories, absent paths and unverified entries; filter by
   directory state and sort globally. Fold technical diagnostics while retaining
@@ -37,6 +57,9 @@
   read-only CI token; website publication remains manual.
 
 ### Fixed
+
+- Use the CLI retention wording in HTML primary reasons. A negative ancestry
+  result does not rule out squash or rebase integration.
 
 - Keep report section titles on the disclosure line and space the command-search
   shortcut without exposing its button when JavaScript is disabled.
