@@ -17,7 +17,13 @@ Changing an actor, enforcement or workflow scope is separate from editing YAML.
 ## What CI checks
 
 The macOS job runs formatting, Clippy, Rust tests and build, Python fixtures,
-writer-exclusion experiments, the comparison harness and instruction generation.
+writer-exclusion, passive-provenance and APFS correctness experiments, the
+native disk decoder/walk checks, the comparison harness and instruction generation.
+Native experiment checks compile with ASan/UBSan and compare selected observations
+with the built Sweep binary. Timing campaigns are manual and excluded from CI.
+The external Worktrunk binary is optional: its compatibility tests require an
+explicit path, and the APFS alternative case skips without that path. A skip
+never qualifies a Worktrunk version.
 It installs the locked website development dependencies to run the HTML browser
 checks against synthetic inventory and review reports. These cover volume gauges, command search,
 sections, themes, diagram navigation, quick filters, reset, initial list position

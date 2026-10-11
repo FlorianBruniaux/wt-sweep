@@ -1,0 +1,25 @@
+{
+  "decision": "NON_DEMONTREE",
+  "effective_uid": 501,
+  "exclusion_proven": false,
+  "existing_fd_remains_writable": true,
+  "existing_fd_write_after_revoke": {
+    "errno": null,
+    "result": 6
+  },
+  "lease_readback": {
+    "errno": null,
+    "result": 2
+  },
+  "platform": "macOS-26.5.1-arm64-arm-64bit-Mach-O",
+  "revoke_regular": {
+    "errno": 45,
+    "error_name": "ENOTSUP",
+    "result": null
+  },
+  "write_lease": {
+    "errno": 1,
+    "error_name": "EPERM",
+    "result": null
+  }
+}

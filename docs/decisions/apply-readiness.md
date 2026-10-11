@@ -2,6 +2,10 @@
 
 [Index des décisions](README.md) · [Architecture](../architecture.md)
 
+L’[évaluation du 11 octobre](../research/writer-exclusion-evaluation-2026-10-11.md)
+rejoue ces témoins et ajoute mappings, alias et interruptions. Elle conclut
+l’essai #29 sans établir E1 ; les observations du 04/10 ci-dessous restent datées.
+
 **NON_DEMONTREE. Aucun mécanisme d'exclusion conforme n'a été établi avec les
 droits et contraintes de cette session. U5 reste bloquée, puis U6 et U7 par
 dépendance.** Cette conclusion porte sur les mécanismes examinés et les preuves

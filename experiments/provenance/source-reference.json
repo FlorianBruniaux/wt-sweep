@@ -1,0 +1,14 @@
+{
+  "repository": "methode-aristote/app",
+  "head": "84120a7980e30341f6ccd52a0980d621cba8b428",
+  "inspectedOn": "2026-10-11",
+  "dirtyInspectedPaths": [],
+  "sha256": {
+    "scripts/worktrees/card-schema.mjs": "76beabbf1fc4027736699e5654deaaf66911935901a635285d7983b63890c2d0",
+    "scripts/worktrees/registry.mjs": "25047f1b2cec1144a6676c39e6862aec04536d990529628cdd2d553fafbcd785",
+    "scripts/worktrees/registry-index.mjs": "66429bd86400fe5bc5f6c5a1876738105b114dd0eb9b0343cf7e4174dac79ec2",
+    "doc/guides/tech/developer-tools/worktree-registry.md": "2fe2c233b4b4599fbdc0944c913a6bb6b76c4da65dfa8ae836720d7d7247900b"
+  },
+  "readPersonalCards": false,
+  "readPersonalSessions": false
+}

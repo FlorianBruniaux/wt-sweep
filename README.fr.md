@@ -407,12 +407,30 @@ assistant et disque sont en français ; les autres guides gardent leur langue d�
 
 ---
 
+<details>
+<summary>Utiliser avec Worktrunk</summary>
+
+Worktrunk `v0.80.0` lance déjà `wt-sweep` présent dans le PATH avec `wt sweep`.
+Aucun adaptateur ni hook à installer. La [qualification](docs/research/worktrunk-integration-2026-10-11.md)
+couvre les arguments, le répertoire courant, les codes de sortie et de vraies
+revues. Un alias `sweep` est prioritaire ; un chemin explicite vers Sweep évite
+une résolution ambiguë.
+
+```sh
+wt sweep --version
+wt sweep review --help
+```
+
+</details>
+
 ## Feuille de route et validation
 
 L’audit en lecture seule est livré : HTML, disque ciblé, lectures Git groupées et
-découverte reprenable. La suite porte sur l’évaluation du collecteur disque natif
-macOS dans [#20](https://github.com/FlorianBruniaux/wt-sweep/issues/20).
-La gestion des worktrees reste une [vision séparée dans #14](https://github.com/FlorianBruniaux/wt-sweep/issues/14).
+découverte reprenable. Les [évaluations des extensions](docs/research/extension-decisions-2026-10-11.md)
+précisent les réutilisations retenues et les arrêts. Worktrunk lance déjà
+`wt sweep` ; provenance et création APFS restent expérimentales. L’exclusion
+des écritures n’est pas démontrée : sauvegarde, restauration et retrait restent
+indisponibles.
 
 <details>
 <summary>Ce qui a été validé et ce qui reste ouvert</summary>

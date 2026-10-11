@@ -2,11 +2,70 @@
 
 [Index documentaire](README.md) · [Contrats des artefacts](contracts.md) · [Feuille de route](roadmap.md)
 
-La [préparation alpha.2](#préparation-alpha2-11102026), la
+Les [évaluations des extensions](#évaluations-des-extensions-11102026),
+la [préparation alpha.2](#préparation-alpha2-11102026), la
 [publication alpha.1](#publication-de-la-première-alpha-10102026) et le
 [lot dashboard/CI](#dashboard-et-ci-automatique-11102026) séparent livraison,
 validation locale et contrôles distants. Les sections plus anciennes conservent
 des observations datées, pas une liste des tâches encore ouvertes.
+
+## Évaluations des extensions, 11/10/2026
+
+Les [cinq décisions](research/extension-decisions-2026-10-11.md) concluent #20
+et #27–30 ; l’épique #14 regroupe les quatre dernières options. Worktrunk utilise
+son dispatch existant. Le lecteur de provenance, la recette APFS et le parcours
+natif restent expérimentaux. E1 n’est pas démontrée ; `apply` reste indisponible.
+Le moteur Rust, Cargo, les schémas, C1-C5 et l’archive alpha.2 sont inchangés.
+Le checkout principal conserve ses modifications concurrentes.
+
+Validation du clone isolé, depuis `671e77fc6e8d54f7f76ee99f94cc8eba9ad38315` :
+
+- Formatage, Clippy et compilation réussissent. La suite Rust sérialisée passe
+  455 tests, avec 3 ignorés. La première passe parallèle échoue sur le délai du
+  transfert de 32 Mio ; le même cas passe isolément, puis la suite sérialisée
+  complète réussit. La cause exacte de l’écart de durée n’est pas établie.
+- La suite Python complète exécute 316 cas : trois échecs d’assertion dans les
+  précontrôles de deux tests d’interruption, et sept cas ignorés. `pgrep` est
+  refusé dans le bac à sable avant le lancement des scénarios bloquants.
+  Les deux tests concernés et le test de revue ignoré pour le même précontrôle
+  passent ensuite, sans changement de code, avec l’accès à leurs processus
+  enfants. Ce rejeu de trois tests reste distinct de la première suite échouée.
+  Les six autres cas ignorés concernent quatre fixtures de forge historiques
+  et deux noms non UTF-8 refusés par le système de fichiers.
+- Les expériences repassent : exclusion 9 tests, provenance 22, création APFS 3
+  et dispatch Worktrunk 10. Le comparateur passe 2 tests ; les 22 fichiers générés
+  du harnais sont synchronisés. Leur activation native n’est pas démontrée par
+  cette synchronisation.
+- Le parcours natif passe les assertions C sous ASan/UBSan et 11 cas Python ;
+  deux autres sont ignorés, car le bac à sable refuse la fixture socket Unix
+  et APFS refuse son nom non UTF-8. La comparaison produit utilise le binaire
+  courant compilé avant la suite.
+
+Le site passe 8 contrôles de source/compilation et 34 tests navigateur. Astro
+contrôle 41 fichiers sans erreur ni avertissement. Les pages EN/FR sont préparées
+depuis les empreintes documentaires revues. Les 375 destinations Markdown locales
+des documents du dépôt contrôlés existent ; le site vérifie séparément ses routes.
+
+La campagne native valide est séparée des suites : trois corpus, six racines,
+un échauffement puis cinq échantillons alternés, caches non vidés. Les ratios
+0,837 / 0,607 / 0,425 concernent les parcours C expérimentaux. Les compteurs
+confirment cette fois l’usage du groupement ; la campagne antérieure, entièrement
+retombée sur la voie scalaire, est rejetée et conservée avec ses empreintes.
+Les [preuves et limites](research/native-disk-evaluation-2026-10-11.md) ne qualifient
+pas un gain du collecteur Rust livré.
+
+La revue indépendante ne conserve aucun constat ouvert. Elle a vérifié code,
+empreintes, résultats enregistrés et décisions d’arrêt ; elle n’a pas rejoué
+les campagnes. Son constat sur l’attente non bornée d’un processus de test a
+été corrigé avec délai, nettoyage des enfants et trois cas de régression.
+Les critères de préservation système et de retrait après perte du garde restent
+non démontrés, même si leurs évaluations sont closes avec un arrêt.
+
+Les reçus locaux sont dans `/private/tmp/wt-sweep-evaluations-20261011/` ; les
+recettes et résultats synthétiques conservés sont dans `experiments/` et les
+rapports liés. La PR de livraison et les issues portent les identifiants de
+commit, la CI du SHA exact et le déploiement. Une vérification locale seule
+ne vaut pas preuve de publication.
 
 ## Préparation alpha.2, 11/10/2026
 
@@ -40,12 +99,13 @@ des données et aucun accès réseau. Les captures finales clair/sombre sont rel
 Le site passe 8 contrôles de source/compilation et 34 tests navigateur ; Astro
 contrôle 41 fichiers sans erreur ni avertissement et construit 31 pages.
 
-Les numéros de version, scripts de paquet, commandes de téléchargement, README,
-roadmap et pages EN/FR sont préparés pour `0.1.0-alpha.2`. La publication exige
-encore la CI du commit exact, la recette de l'archive et son téléchargement public.
-Les résultats de livraison sont consignés sur la
-[page alpha.2](https://github.com/FlorianBruniaux/wt-sweep/releases/tag/v0.1.0-alpha.2).
-Cette préparation ne remplace ni l'archive alpha.1 ni ses preuves historiques.
+Livraison alpha.2 : commit `671e77fc6e8d54f7f76ee99f94cc8eba9ad38315`,
+[CI de main réussie](https://github.com/FlorianBruniaux/wt-sweep/actions/runs/38142597309),
+recette de l’archive et téléchargement public vérifiés. Le
+[déploiement du site](https://github.com/FlorianBruniaux/wt-sweep/actions/runs/38144624591)
+a réussi sur ce commit. La [page alpha.2](https://github.com/FlorianBruniaux/wt-sweep/releases/tag/v0.1.0-alpha.2)
+conserve les notes et le paquet Apple Silicon. L’archive alpha.1 et ses preuves
+historiques restent inchangées.
 
 ## Dashboard et CI automatique, 11/10/2026
 
@@ -391,7 +451,7 @@ leurs reçus ; leur rendu navigateur n’a pas été revérifié lors de ces cam
 Aucun worktree ni cache n’a été supprimé.
 
 Le prochain lot est l’évaluation du collecteur natif de [#20](https://github.com/FlorianBruniaux/wt-sweep/issues/20),
-avec les [critères d’arrêt et de validation](roadmap.md#prochain-lot--terminer-lévaluation-native-de-20).
+avec les [critères d’arrêt et de validation](roadmap.md#plan-initial-de-lévaluation-native-de-20).
 La vision #14 reste séparée. Aucun changement des verdicts, d’activation de
 `apply`, de configuration Claude/Codex ou de hook n’est inclus dans cette
 synchronisation documentaire.

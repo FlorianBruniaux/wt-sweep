@@ -20,18 +20,34 @@ Silicon : commit propre, CI exacte, archive et téléchargement public vérifié
 Le [registre](progress.md) distingue validation locale et livraison distante.
 L’archive alpha.1 reste inchangée.
 
-## Travail restant
+## Évaluations conclues, 11/10/2026
 
-- [#20](https://github.com/FlorianBruniaux/wt-sweep/issues/20) : évaluer le collecteur
-  natif sur des corpus identiques. L’intégration dépend d’un gain mesuré et de
-  preuves conservées ; cette expérience ne bloque pas alpha.2.
-- [#14](https://github.com/FlorianBruniaux/wt-sweep/issues/14) : vision facultative,
-  avec Worktrunk (#27), provenance (#28), exclusion des écritures avant sauvegarde
-  et retrait (#29), puis expérimentation de clones APFS (#30).
-- Distribution : Intel, autres systèmes et notarisation Apple restent non
-  qualifiés. Aucun tap Homebrew n’est annoncé.
+Les [décisions et recettes](research/extension-decisions-2026-10-11.md) couvrent
+les cinq essais identifiés. Un arrêt d’option termine son évaluation sans
+annoncer une fonctionnalité livrée.
 
-Aucun moteur de suppression n’est livré. `apply` reste indisponible.
+| Issue | Décision | Condition pour rouvrir |
+| --- | --- | --- |
+| [#20](https://github.com/FlorianBruniaux/wt-sweep/issues/20) | Garder le collecteur scalaire. Le prototype natif gagne sur les fixtures, mais son intégration produit reste non qualifiée. | Adaptation aux protections du produit et qualification des frontières système. |
+| [#27](https://github.com/FlorianBruniaux/wt-sweep/issues/27) | Utiliser le dispatch `wt sweep` existant, testé sur Worktrunk v0.80.0. | Régression ou nouveau besoin d’intégration reproduit. |
+| [#28](https://github.com/FlorianBruniaux/wt-sweep/issues/28) | Garder le lecteur de provenance expérimental, hors CLI. | Besoin d’afficher les déclarations avec leurs limites d’identité acceptées. |
+| [#29](https://github.com/FlorianBruniaux/wt-sweep/issues/29) | E1 non démontrée ; `apply` reste bloqué. | Autorité indépendante couvrant FD, mappings, nouveaux opens et perte du garde. |
+| [#30](https://github.com/FlorianBruniaux/wt-sweep/issues/30) | Garder la recette APFS expérimentale ; création confiée aux outils existants. | Besoin non couvert, avec contrat de création et preuves propres. |
+
+L’épique [#14](https://github.com/FlorianBruniaux/wt-sweep/issues/14) regroupe ces
+quatre dernières décisions. Aucune option n’active sauvegarde, restauration ou
+retrait. Les tests et la livraison ont leur [registre](progress.md).
+
+## Suite possible, non engagée
+
+- Qualifier Intel, d’autres systèmes, la notarisation Apple ou un tap Homebrew
+  si la distribution actuelle ne couvre pas un besoin reproduit.
+- Reprendre les audits réels par worktree et par budget selon les lacunes du
+  rapport. Les dernières mesures restent des observations datées.
+- Réouvrir une extension uniquement selon les conditions ci-dessus. Aucune
+  nouvelle fonction de gestion n’est nécessaire pour utiliser l’audit alpha.2.
+
+Les sections suivantes conservent l’historique des lots et leurs plans d’origine.
 
 ## Finitions de lecture, 10/10/2026
 
@@ -51,7 +67,8 @@ actuel de GitHub ou GitLab. L’évaluation native de #20 reste facultative apr�
 
 La licence FSL-1.1-ALv2 est conservée. La publication ne qualifie ni les autres plateformes, ni la notarisation Apple, ni la suppression de worktrees. Le site et les guides anglais/français distinguent le paquet et la compilation depuis les sources.
 
-Le travail restant se répartit ainsi :
+À la publication de la première alpha, les options suivantes restaient à évaluer.
+Leurs décisions du 11 octobre sont consignées plus haut :
 
 - [#20](https://github.com/FlorianBruniaux/wt-sweep/issues/20) : évaluation facultative du collecteur disque natif, sans promesse de gain sur le parcours complet.
 - [#27](https://github.com/FlorianBruniaux/wt-sweep/issues/27) : accès facultatif depuis Worktrunk.
@@ -61,7 +78,10 @@ Le travail restant se répartit ainsi :
 
 [#14](https://github.com/FlorianBruniaux/wt-sweep/issues/14) indexe les quatre dernières options. Elles ne bloquent pas l’alpha. Homebrew reste une distribution à évaluer après la validation du paquet ; aucune installation via un tap n’est annoncée.
 
-### Prochain lot : terminer l’évaluation native de #20
+### Plan initial de l’évaluation native de #20
+
+Ce plan est conclu par la [campagne du 11 octobre](research/native-disk-evaluation-2026-10-11.md).
+Les critères d’origine sont conservés ci-dessous.
 
 Le ciblage disque, les totaux de sélection, le partage du budget et la progression
 sont livrés par #22. Le travail restant concerne `getattrlistbulk`, encore absent
@@ -95,8 +115,8 @@ La [recette du 9 octobre](research/real-family-acceptance-2026-10-09.md) laisse
 59 inscriptions à vérifier après deux reprises ciblées. Poursuivre la revue
 par dossiers prioritaires ; une mesure disque complète ne termine pas leurs
 preuves Git ou locales. Aucun candidat n’a été établi dans cette campagne.
-La vision #14 reste hors du lot : intégrations, provenance, sauvegarde,
-restauration et retrait demandent leurs propres essais et décisions.
+Les essais facultatifs ont depuis leurs [décisions du 11 octobre](research/extension-decisions-2026-10-11.md).
+Sauvegarde, restauration et retrait restent indisponibles.
 
 ## Jalon d’audit livré le 08/10/2026
 
@@ -167,7 +187,10 @@ a réussi. La voie native `getattrlistbulk` reste expérimentale.
 Chaque correctif doit garder les verdicts et la conservation sur fixtures,
 puis fournir une mesure à données constantes avant une nouvelle recette réelle.
 
-## Vision après ce jalon
+## Vision initiale après le jalon du 08/10
+
+Les options ci-dessous sont désormais évaluées ; leurs conclusions figurent
+dans les [décisions du 11 octobre](research/extension-decisions-2026-10-11.md).
 
 L'[épique de vision #14](https://github.com/FlorianBruniaux/wt-sweep/issues/14)
 reste hors du milestone. Elle conserve D3 (raccordement facultatif à Worktrunk),

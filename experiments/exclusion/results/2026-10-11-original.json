@@ -1,0 +1,57 @@
+{
+  "decision": "NON_DEMONTREE",
+  "durability": "UNKNOWN",
+  "fd_after_rename": {
+    "cooperative_lock_refused": true,
+    "outside_cwd": true,
+    "write_succeeded": true
+  },
+  "late_detached_commit": {
+    "branch_unchanged": true,
+    "captured_oid": "aabd20a7e4068d6f944ba8a99fbe0705f29f9878",
+    "head_changed": true,
+    "late_oid": "2154f6c548fd68d086521c2dc88c9624bc09aee0",
+    "object_readable": true
+  },
+  "metadata": {
+    "acl": {
+      "inspection": "UNKNOWN",
+      "reason": "No ACL capture/restore implemented",
+      "restoration": "UNKNOWN"
+    },
+    "hardlinks": {
+      "nlink": 2,
+      "observed_same_inode": true,
+      "restoration": "UNKNOWN"
+    },
+    "modes": {
+      "observed": "0o644",
+      "restoration": "UNKNOWN"
+    },
+    "special_types": {
+      "fifo_observed": true,
+      "others": "UNKNOWN",
+      "restoration": "UNKNOWN"
+    },
+    "symlinks": {
+      "observed": "metadata-file",
+      "restoration": "UNKNOWN"
+    },
+    "xattrs": {
+      "inspection": "UNKNOWN",
+      "reason": "AttributeError",
+      "restoration": "UNKNOWN"
+    }
+  },
+  "partial_process_view": {
+    "empty_view_despite_write": true,
+    "injected_visible_pids": [],
+    "writer_observed_by_handshake": true
+  },
+  "platform": "macOS-26.5.1-arm64-arm-64bit-Mach-O",
+  "process_visibility": "UNKNOWN",
+  "same_stat": {
+    "different_bytes": true,
+    "same_size_and_mtime": true
+  }
+}

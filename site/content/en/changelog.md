@@ -6,6 +6,35 @@
 
 ## [Unreleased]
 
+<!-- unreleased-updated: 2026-10-11 -->
+
+### Added
+
+- Reproducible optional-extension evaluations for #20 and #27–30, with bounded
+  synthetic fixtures and explicit adoption/stop decisions.
+- Worktrunk v0.80.0 compatibility tests for existing `wt sweep` dispatch:
+  arguments, streams, status, precedence and real Sweep scan/review results.
+- Experimental card/index provenance reader with source/date/freshness output,
+  invalid-input refusals and a real recreated-path identity counterexample.
+- Writer-exclusion witnesses for mappings, new opens, aliases and guard loss.
+  E1 remains unproven; `apply` remains unavailable.
+- APFS clone/copy creation recipe and existing-tool comparisons, preserving
+  tested index/filter/ignored-file behavior on owned fixtures. No creation
+  command or reclaimable-space claim is added.
+- Native disk decoder and complete experimental walks with an independent
+  oracle, scalar product comparison, conservation and refusal tests. The
+  corrected native experiment is faster on all three fixed corpora, with fewer
+  scalar metadata calls. Retain the scalar product collector until its residency,
+  cancellation and system-boundary integration is qualified. Reject the earlier
+  all-fallback timing campaign; no shipped product speedup is claimed.
+
+### Changed
+
+- Record extension decisions and reopening conditions in both READMEs, roadmap
+  and documentation index. Alpha.2 remains the current published archive.
+- Add native correctness/sanitizer, provenance and APFS fixture checks to CI;
+  keep performance campaigns separate from CI timing.
+
 ## [0.1.0-alpha.2] - 2026-10-11
 
 Second read-only Apple Silicon alpha. The CLI verdicts and FSL-1.1-ALv2 license

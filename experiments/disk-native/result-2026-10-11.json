@@ -1,0 +1,448 @@
+{
+  "schema": "wt-sweep.disk-native-experiment/1",
+  "decision": "retain_product_scalar_native_experiment_has_measured_benefit",
+  "product_sha256": "30f4fb01361adf49216197410f5d3508fc317d724293267d0671bea8a16dd16b",
+  "probe_sha256": "4a5ee0b2b009cc27d72da209d5189ecb41a4b8cd76fc07e4f6f6c4238d69bf99",
+  "sources_sha256": {
+    "benchmark.py": "0c70d0eaa4e8002017aec425d4538aaa0988338de7570bc30931bbf1eeb42b89",
+    "test_decoder.c": "063be5934f55b88510e43ceb6a2c97fc85965f51d88476c637b77bfede846d87",
+    "decoder.h": "900a30c00799b8c10fc99bfbd1b9e1a8ac1de176c9c5b8096fd3bb01d023ad7c",
+    "walk.c": "f8a987ed69851de94d3a959baa710853e74677ae136bee2e48fa3928503c2d69",
+    "test_product.py": "ab728dd66b051fed5be9bbe64185ee017f2f113436ad8e85fe353207288fd86f",
+    "test_walk.py": "a5054d6c59e9c5af5f06c1bf425ba2999eb9ad2c0a6759ca72e2cd75d06f5641",
+    "run-tests.py": "acb68eb917edbf23112030b34bd933f698ab4c6782f0a6029cb95e06c79264a0",
+    "decoder.c": "bc6695b9a0b9ae95233d823c481458ea42ab56ba6434a257aadfc68f34ca42a7",
+    "test_entry.c": "f5b03189ec9e97aa866f019c79adee3b4ed3d4cb42c56da760afa61c29be4b1a"
+  },
+  "environment": {
+    "system": "Darwin",
+    "release": "25.5.0",
+    "macos": "26.5.1",
+    "machine": "arm64",
+    "python": "3.14.8",
+    "clang": "Apple clang version 21.0.0 (clang-2100.1.1.101)",
+    "sdk": "26.5"
+  },
+  "protocol": "Owned fixed Git families; discovery/product scalar correctness checked separately; full C scalar/native fd walks timed internally; one warmup, alternating order; caches not cleared; fixture creation, oracle and JSON serialization excluded; API call counters are not kernel syscall tracing",
+  "samples": [
+    {
+      "files_per_linked_worktree": 32,
+      "roots": 6,
+      "nonutf8_creation": [
+        {
+          "state": "UNKNOWN",
+          "errno": 92,
+          "reason": "owned APFS fixture rejects non-UTF8 name"
+        },
+        {
+          "state": "UNKNOWN",
+          "errno": 92,
+          "reason": "owned APFS fixture rejects non-UTF8 name"
+        },
+        {
+          "state": "UNKNOWN",
+          "errno": 92,
+          "reason": "owned APFS fixture rejects non-UTF8 name"
+        },
+        {
+          "state": "UNKNOWN",
+          "errno": 92,
+          "reason": "owned APFS fixture rejects non-UTF8 name"
+        }
+      ],
+      "oracle_and_product_match": true,
+      "conservation_before_timing": true,
+      "native_metadata_elimination_verified": true,
+      "product_scalar_elapsed_ms": 4,
+      "product_cli_wall_ns": 222651000,
+      "scalar": [
+        {
+          "elapsed_ns": 2871000,
+          "calls": {
+            "stat": 377,
+            "bulk": 0,
+            "readdir": 421,
+            "open": 50
+          },
+          "entries_checked": 277
+        },
+        {
+          "elapsed_ns": 7242000,
+          "calls": {
+            "stat": 377,
+            "bulk": 0,
+            "readdir": 421,
+            "open": 50
+          },
+          "entries_checked": 277
+        },
+        {
+          "elapsed_ns": 3305000,
+          "calls": {
+            "stat": 377,
+            "bulk": 0,
+            "readdir": 421,
+            "open": 50
+          },
+          "entries_checked": 277
+        },
+        {
+          "elapsed_ns": 3191000,
+          "calls": {
+            "stat": 377,
+            "bulk": 0,
+            "readdir": 421,
+            "open": 50
+          },
+          "entries_checked": 277
+        },
+        {
+          "elapsed_ns": 4811000,
+          "calls": {
+            "stat": 377,
+            "bulk": 0,
+            "readdir": 421,
+            "open": 50
+          },
+          "entries_checked": 277
+        }
+      ],
+      "native": [
+        {
+          "elapsed_ns": 5990000,
+          "calls": {
+            "stat": 155,
+            "bulk": 93,
+            "readdir": 0,
+            "open": 50
+          },
+          "entries_checked": 277
+        },
+        {
+          "elapsed_ns": 2767000,
+          "calls": {
+            "stat": 155,
+            "bulk": 93,
+            "readdir": 0,
+            "open": 50
+          },
+          "entries_checked": 277
+        },
+        {
+          "elapsed_ns": 2597000,
+          "calls": {
+            "stat": 155,
+            "bulk": 93,
+            "readdir": 0,
+            "open": 50
+          },
+          "entries_checked": 277
+        },
+        {
+          "elapsed_ns": 2997000,
+          "calls": {
+            "stat": 155,
+            "bulk": 93,
+            "readdir": 0,
+            "open": 50
+          },
+          "entries_checked": 277
+        },
+        {
+          "elapsed_ns": 2057000,
+          "calls": {
+            "stat": 155,
+            "bulk": 93,
+            "readdir": 0,
+            "open": 50
+          },
+          "entries_checked": 277
+        }
+      ],
+      "conservation_after_timing": true,
+      "scalar_median_ns": 3305000,
+      "native_median_ns": 2767000,
+      "native_scalar_ratio": 0.8372163388804841
+    },
+    {
+      "files_per_linked_worktree": 512,
+      "roots": 6,
+      "nonutf8_creation": [
+        {
+          "state": "UNKNOWN",
+          "errno": 92,
+          "reason": "owned APFS fixture rejects non-UTF8 name"
+        },
+        {
+          "state": "UNKNOWN",
+          "errno": 92,
+          "reason": "owned APFS fixture rejects non-UTF8 name"
+        },
+        {
+          "state": "UNKNOWN",
+          "errno": 92,
+          "reason": "owned APFS fixture rejects non-UTF8 name"
+        },
+        {
+          "state": "UNKNOWN",
+          "errno": 92,
+          "reason": "owned APFS fixture rejects non-UTF8 name"
+        }
+      ],
+      "oracle_and_product_match": true,
+      "conservation_before_timing": true,
+      "native_metadata_elimination_verified": true,
+      "product_scalar_elapsed_ms": 18,
+      "product_cli_wall_ns": 441710334,
+      "scalar": [
+        {
+          "elapsed_ns": 17812000,
+          "calls": {
+            "stat": 2297,
+            "bulk": 0,
+            "readdir": 2341,
+            "open": 50
+          },
+          "entries_checked": 2197
+        },
+        {
+          "elapsed_ns": 14466000,
+          "calls": {
+            "stat": 2297,
+            "bulk": 0,
+            "readdir": 2341,
+            "open": 50
+          },
+          "entries_checked": 2197
+        },
+        {
+          "elapsed_ns": 18791000,
+          "calls": {
+            "stat": 2297,
+            "bulk": 0,
+            "readdir": 2341,
+            "open": 50
+          },
+          "entries_checked": 2197
+        },
+        {
+          "elapsed_ns": 36310000,
+          "calls": {
+            "stat": 2297,
+            "bulk": 0,
+            "readdir": 2341,
+            "open": 50
+          },
+          "entries_checked": 2197
+        },
+        {
+          "elapsed_ns": 14928000,
+          "calls": {
+            "stat": 2297,
+            "bulk": 0,
+            "readdir": 2341,
+            "open": 50
+          },
+          "entries_checked": 2197
+        }
+      ],
+      "native": [
+        {
+          "elapsed_ns": 7629000,
+          "calls": {
+            "stat": 155,
+            "bulk": 93,
+            "readdir": 0,
+            "open": 50
+          },
+          "entries_checked": 2197
+        },
+        {
+          "elapsed_ns": 10818000,
+          "calls": {
+            "stat": 155,
+            "bulk": 93,
+            "readdir": 0,
+            "open": 50
+          },
+          "entries_checked": 2197
+        },
+        {
+          "elapsed_ns": 13422000,
+          "calls": {
+            "stat": 155,
+            "bulk": 93,
+            "readdir": 0,
+            "open": 50
+          },
+          "entries_checked": 2197
+        },
+        {
+          "elapsed_ns": 19209000,
+          "calls": {
+            "stat": 155,
+            "bulk": 93,
+            "readdir": 0,
+            "open": 50
+          },
+          "entries_checked": 2197
+        },
+        {
+          "elapsed_ns": 5825000,
+          "calls": {
+            "stat": 155,
+            "bulk": 93,
+            "readdir": 0,
+            "open": 50
+          },
+          "entries_checked": 2197
+        }
+      ],
+      "conservation_after_timing": true,
+      "scalar_median_ns": 17812000,
+      "native_median_ns": 10818000,
+      "native_scalar_ratio": 0.6073433640242533
+    },
+    {
+      "files_per_linked_worktree": 4096,
+      "roots": 6,
+      "nonutf8_creation": [
+        {
+          "state": "UNKNOWN",
+          "errno": 92,
+          "reason": "owned APFS fixture rejects non-UTF8 name"
+        },
+        {
+          "state": "UNKNOWN",
+          "errno": 92,
+          "reason": "owned APFS fixture rejects non-UTF8 name"
+        },
+        {
+          "state": "UNKNOWN",
+          "errno": 92,
+          "reason": "owned APFS fixture rejects non-UTF8 name"
+        },
+        {
+          "state": "UNKNOWN",
+          "errno": 92,
+          "reason": "owned APFS fixture rejects non-UTF8 name"
+        }
+      ],
+      "oracle_and_product_match": true,
+      "conservation_before_timing": true,
+      "native_metadata_elimination_verified": true,
+      "product_scalar_elapsed_ms": 157,
+      "product_cli_wall_ns": 442782208,
+      "scalar": [
+        {
+          "elapsed_ns": 148303000,
+          "calls": {
+            "stat": 16633,
+            "bulk": 0,
+            "readdir": 16677,
+            "open": 50
+          },
+          "entries_checked": 16533
+        },
+        {
+          "elapsed_ns": 97991000,
+          "calls": {
+            "stat": 16633,
+            "bulk": 0,
+            "readdir": 16677,
+            "open": 50
+          },
+          "entries_checked": 16533
+        },
+        {
+          "elapsed_ns": 83787000,
+          "calls": {
+            "stat": 16633,
+            "bulk": 0,
+            "readdir": 16677,
+            "open": 50
+          },
+          "entries_checked": 16533
+        },
+        {
+          "elapsed_ns": 77460000,
+          "calls": {
+            "stat": 16633,
+            "bulk": 0,
+            "readdir": 16677,
+            "open": 50
+          },
+          "entries_checked": 16533
+        },
+        {
+          "elapsed_ns": 84126000,
+          "calls": {
+            "stat": 16633,
+            "bulk": 0,
+            "readdir": 16677,
+            "open": 50
+          },
+          "entries_checked": 16533
+        }
+      ],
+      "native": [
+        {
+          "elapsed_ns": 37240000,
+          "calls": {
+            "stat": 155,
+            "bulk": 105,
+            "readdir": 0,
+            "open": 50
+          },
+          "entries_checked": 16533
+        },
+        {
+          "elapsed_ns": 35722000,
+          "calls": {
+            "stat": 155,
+            "bulk": 105,
+            "readdir": 0,
+            "open": 50
+          },
+          "entries_checked": 16533
+        },
+        {
+          "elapsed_ns": 31139000,
+          "calls": {
+            "stat": 155,
+            "bulk": 105,
+            "readdir": 0,
+            "open": 50
+          },
+          "entries_checked": 16533
+        },
+        {
+          "elapsed_ns": 35623000,
+          "calls": {
+            "stat": 155,
+            "bulk": 105,
+            "readdir": 0,
+            "open": 50
+          },
+          "entries_checked": 16533
+        },
+        {
+          "elapsed_ns": 36419000,
+          "calls": {
+            "stat": 155,
+            "bulk": 105,
+            "readdir": 0,
+            "open": 50
+          },
+          "entries_checked": 16533
+        }
+      ],
+      "conservation_after_timing": true,
+      "scalar_median_ns": 84126000,
+      "native_median_ns": 35722000,
+      "native_scalar_ratio": 0.42462496731093835
+    }
+  ],
+  "adoption_limit": "Correctness and gains apply to full resident-fixture C walks; product residency/cancellation/storage/reporting adapter and real provider/mount/firmlink cases are not qualified.",
+  "raw_result_sha256": "ef8a4af029508b640802efc7d27235d2ea3f30c1970788063b493d08f963ab3b"
+}

@@ -1,0 +1,31 @@
+{
+  "date": "2026-10-11",
+  "platform": "macOS-26.5.1-arm64-arm-64bit-Mach-O",
+  "worktrunk_tag": "v0.80.0",
+  "worktrunk_source": "b49ca7eea9b03145791a5b94eccaf9c59412ed37",
+  "worktrunk_archive_sha256": "8a2bb053c4bc80dea7d9ce6c221ff038d10a3d2dca2dc8f60d1b1a094fa783a9",
+  "worktrunk_binary_sha256": "0708ca37fc39f9fa48edc1af500a2ff3664ec0155f63909425b02994f29f0fd1",
+  "sweep_source": "671e77fc6e8d54f7f76ee99f94cc8eba9ad38315",
+  "sweep_binary_sha256": "30f4fb01361adf49216197410f5d3508fc317d724293267d0671bea8a16dd16b",
+  "tests_passed": 10,
+  "tests_skipped": 0,
+  "test_names": [
+    "test_alias_collision_takes_precedence",
+    "test_builtin_collision_and_missing_command",
+    "test_first_path_binary_wins",
+    "test_inherited_and_explicit_cwd",
+    "test_literal_arguments_and_streams",
+    "test_nonzero_exit_is_preserved",
+    "test_raw_non_utf8_argument",
+    "test_real_review_retains_local_work",
+    "test_real_scan_nonempty_and_read_only",
+    "test_real_sweep_help_and_invalid_argument"
+  ],
+  "decision": "use existing dispatch; no adapter",
+  "limits": [
+    "Worktrunk v0.80.0 only",
+    "explicit isolated config and PATH",
+    "no general no-write guarantee for arbitrary Worktrunk configuration",
+    "Sweep apply remains unavailable"
+  ]
+}

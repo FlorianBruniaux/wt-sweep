@@ -8,7 +8,7 @@ définit les lots et responsabilités ; leur validation exige les preuves du
 registre. Garder la comparaison des alternatives ouverte avant de développer le
 moteur de nettoyage.
 
-## Alpha.2 et prochain lot, 11/10/2026
+## Alpha.2 et évaluations, 11/10/2026
 
 La version `0.1.0-alpha.2` regroupe le dashboard par volume, les liens du diagramme,
 la recherche clavier et les dernières finitions : bilan compact, liste prioritaire,
@@ -21,10 +21,15 @@ Le [guide de release](release.md) définit les contrôles du commit, du paquet e
 du téléchargement. Le [registre](progress.md) sépare chaque niveau de preuve.
 La première alpha et ses résultats dans #31 restent historiques.
 
-Le prochain lot facultatif est l’évaluation native de #20, selon les
-[critères de la roadmap](roadmap.md#prochain-lot--terminer-lévaluation-native-de-20).
-Le ciblage disque et le partage du budget sont déjà livrés par #22. Les tableaux
-ci-dessous décrivent des exécutions passées, pas des délégations actives.
+Les [décisions d’extension](research/extension-decisions-2026-10-11.md) concluent
+les essais #20 et #27–30. Le [plan](superpowers/plans/2026-10-11-remaining-evaluations.md)
+attribue les modules expérimentaux : Rust/native à GPT-6.1 Sol `xhigh`, provenance
+à GPT-6.1 Sol `high`, exclusion/APFS à GPT-6 Astra `high`. La revue indépendante
+utilise GPT-6 Astra `high`. Le coordinateur possède Worktrunk, documentation,
+CI et livraison. Les mesures et suites lourdes sont sérialisées.
+Ces paramètres décrivent les lancements, pas un classement mesuré des modèles.
+Aucune modification de C1-C5, de Cargo ou du moteur produit n’en découle.
+Les tableaux ci-dessous décrivent des exécutions passées.
 
 ## Collecte et reprise du 08/10/2026
 
