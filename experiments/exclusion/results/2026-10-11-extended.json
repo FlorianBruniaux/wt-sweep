@@ -1,0 +1,57 @@
+{
+  "apply": "BLOCKED",
+  "guard_loss": [
+    {
+      "acquired_after_interrupt": true,
+      "checkpoint": "acquired",
+      "locked_before_interrupt": true,
+      "source_retained": true,
+      "write_observed": true
+    },
+    {
+      "acquired_after_interrupt": true,
+      "checkpoint": "captured",
+      "locked_before_interrupt": true,
+      "source_retained": true,
+      "write_observed": true
+    },
+    {
+      "acquired_after_interrupt": true,
+      "checkpoint": "published",
+      "locked_before_interrupt": true,
+      "source_retained": true,
+      "write_observed": true
+    },
+    {
+      "acquired_after_interrupt": true,
+      "checkpoint": "before_retirement",
+      "locked_before_interrupt": true,
+      "source_retained": true,
+      "write_observed": true
+    }
+  ],
+  "independent_authority": "NOT_ESTABLISHED",
+  "platform": "macOS-26.5.1-arm64-arm-64bit-Mach-O",
+  "writers": {
+    "hard_alias": {
+      "outside_cwd": true,
+      "same_inode": true,
+      "write_observed": true
+    },
+    "mapping": {
+      "outside_cwd": true,
+      "same_inode": true,
+      "write_observed": true
+    },
+    "new_open": {
+      "outside_cwd": true,
+      "same_inode": true,
+      "write_observed": true
+    },
+    "symlink_alias": {
+      "outside_cwd": true,
+      "same_inode": true,
+      "write_observed": true
+    }
+  }
+}

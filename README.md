@@ -391,12 +391,28 @@ disk guides are in French; other guides retain their original language.
 
 ---
 
+<details>
+<summary>Use with Worktrunk</summary>
+
+Worktrunk `v0.80.0` already dispatches `wt sweep` to `wt-sweep` on your PATH. No
+adapter or hook is needed. The [tested integration](docs/research/worktrunk-integration-2026-10-11.md)
+covers arguments, cwd, exit status and real scan/review results. An alias named
+`sweep` takes precedence; use an explicit Sweep path if resolution is ambiguous.
+
+```sh
+wt sweep --version
+wt sweep review --help
+```
+
+</details>
+
 ## Roadmap and validation
 
 The read-only audit is delivered: HTML reports, targeted disk measurement,
-grouped Git reads and resumable discovery. The next task is the native macOS
-disk collector evaluation in [#20](https://github.com/FlorianBruniaux/wt-sweep/issues/20).
-Worktree management remains a separate [vision in #14](https://github.com/FlorianBruniaux/wt-sweep/issues/14).
+grouped Git reads and resumable discovery. The [extension evaluations](docs/research/extension-decisions-2026-10-11.md)
+record what to reuse and where to stop. Worktrunk already runs `wt sweep`;
+provenance and APFS recipes remain experiments. Writer exclusion is unproven,
+so backup, restoration and removal remain unavailable.
 
 <details>
 <summary>What has been validated, and what remains open</summary>

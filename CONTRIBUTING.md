@@ -31,6 +31,10 @@ Run the local checks from the repository root:
   cargo build --locked --offline
   python3 -B -m unittest discover -s tests -p 'test_*.py' -v
   python3 -B -m unittest discover -s experiments/exclusion -p 'test_*.py' -v
+  python3 -B -m unittest discover -s experiments/provenance -p 'test_*.py' -v
+  python3 -B -m unittest discover -s experiments/apfs-create -p 'test_*.py' -v
+  python3 -B experiments/disk-native/run-tests.py --product "$PWD/target/debug/wt-sweep"
+  python3 -B scripts/comparison/test_harness.py
   python3 -B scripts/sync-ai.py --check
 )
 ```
@@ -43,6 +47,13 @@ The Python product tests execute `target/debug/wt-sweep`, so rebuild it after
 changing Rust code. The repository's [CI workflow](.github/workflows/ci.yml)
 defines the same checks. Record local results, skipped tests and the source
 revision tested; check the remote run separately before claiming CI passed.
+
+The extension experiments use owned fixtures. Native disk checks require the
+macOS SDK and run with address/undefined-behavior sanitizers. They qualify an
+experimental candidate, not an enabled product collector. Timed campaigns stay
+manual; replay commands and evidence limits are in the [extension decisions](docs/research/extension-decisions-2026-10-11.md).
+The optional Worktrunk tests need an explicit tested binary path; a skipped
+external-tool case does not qualify that version.
 
 The HTML dashboard checks also run in CI. To repeat them with an installed
 Playwright/Chromium (the locked `site` dependencies provide Playwright):

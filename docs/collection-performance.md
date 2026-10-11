@@ -10,7 +10,7 @@ les SHA et la CI. La [recette réelle du 9 octobre](research/real-family-accepta
 consigne des durées sur une famille active ; ses scopes et budgets différents
 ne permettent pas de déduire une accélération entre ces passages.
 
-Le prochain travail de performance est l’[évaluation disque native de #20](roadmap.md#prochain-lot--terminer-lévaluation-native-de-20).
+L’[évaluation disque native de #20](research/native-disk-evaluation-2026-10-11.md) conserve ses corpus, mesures et limites.
 Le ciblage et le partage de budget sont déjà dans le produit. Le résultat de
 la sonde de métadonnées ne constitue pas un benchmark du collecteur récursif.
 

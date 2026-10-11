@@ -33,8 +33,8 @@ ni E1/U5-U7.
 
 La PR #18 a livré les finitions HTML, #22 la mesure disque ciblée et le partage
 des plafonds, puis #23 les lectures Git groupées et la découverte reprenable.
-La [suite de #20](roadmap.md#prochain-lot--terminer-lévaluation-native-de-20)
-évalue uniquement le coût du collecteur disque natif. La [recette du 9 octobre](research/real-family-acceptance-2026-10-09.md)
+L’[évaluation #20](research/native-disk-evaluation-2026-10-11.md) porte uniquement
+sur le coût et les frontières du collecteur disque natif. La [recette du 9 octobre](research/real-family-acceptance-2026-10-09.md)
 conserve les limites d’usage observées ; elle ne franchit aucune condition E1/U5-U7.
 
 ## Choisir ce qu'il faut construire

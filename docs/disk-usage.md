@@ -209,10 +209,15 @@ donnent ensuite cinq tailles complètes. Le ciblage aide à obtenir une mesure
 utilisable ; il ne rend pas complet le total du scan précédent.
 
 Le collecteur produit utilise encore les lectures scalaires de métadonnées.
-L’[évaluation native de #20](roadmap.md#prochain-lot--terminer-lévaluation-native-de-20)
-doit comparer le parcours complet, y compris ses refus, à cette référence.
-La sonde `getattrlistbulk` n’est pas intégrée. Sweep ne ventile pas actuellement
-le volume par catégorie de cache et ne propose pas d’effacement automatique.
+L’[évaluation native de #20](research/native-disk-evaluation-2026-10-11.md)
+conclut le 11 octobre à sa conservation dans le produit. Le prototype natif
+donne les mêmes totaux sur les fixtures et des ratios de durée de 0,837, 0,607
+et 0,425 face au parcours C scalaire. La campagne vérifie la réduction effective
+des lectures scalaires ; un premier essai utilisant toujours le repli scalaire
+est écarté. Ces timings ne mesurent pas une optimisation intégrée dans Sweep.
+L’adaptation aux protections de matérialisation, d’annulation et de publication,
+ainsi que certains cas système réels, restent non qualifiés. `getattrlistbulk` n’est pas intégré. Sweep ne ventile
+pas le volume par catégorie de cache et ne propose pas d’effacement automatique.
 
 ## Coût et limites
 

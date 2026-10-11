@@ -1,0 +1,443 @@
+{
+  "schema": "wt-sweep.disk-native-experiment/1",
+  "decision": "rejected_measurement_all_metadata_fell_back",
+  "product_sha256": "30f4fb01361adf49216197410f5d3508fc317d724293267d0671bea8a16dd16b",
+  "probe_sha256": "fce05ce340bb5a0481f8d681489b972d5cee7c0c12ca156b1c6e5cf78191f3f3",
+  "sources_sha256": {
+    "benchmark.py": "406413eb085ae633bbc25fdb927b62609529ec264a9a622a15369df986ad74c8",
+    "test_decoder.c": "cd236878ab1e00daf490a571310e4ec7e6d42d80cdd5c209c836e4d647baf07e",
+    "decoder.h": "900a30c00799b8c10fc99bfbd1b9e1a8ac1de176c9c5b8096fd3bb01d023ad7c",
+    "walk.c": "f8a987ed69851de94d3a959baa710853e74677ae136bee2e48fa3928503c2d69",
+    "test_product.py": "ab728dd66b051fed5be9bbe64185ee017f2f113436ad8e85fe353207288fd86f",
+    "test_walk.py": "f07c70ca7ffdaf9851d7a596ee877b8cbee4b6ad0d5dd510accbb116876175f9",
+    "run-tests.py": "e58c038c2d32a8e76186855879ce0d41f57549495d81478057c908b9a8cb8046",
+    "decoder.c": "330657a8638847da51c18b805a9f9ea2c49ad8285cd34ac60a44027c4c435066"
+  },
+  "environment": {
+    "system": "Darwin",
+    "release": "25.5.0",
+    "macos": "26.5.1",
+    "machine": "arm64",
+    "python": "3.14.8",
+    "clang": "Apple clang version 21.0.0 (clang-2100.1.1.101)",
+    "sdk": "26.5"
+  },
+  "protocol": "Owned fixed Git families; discovery/product scalar correctness checked separately; full C scalar/native fd walks timed internally; one warmup, alternating order; caches not cleared; fixture creation, oracle and JSON serialization excluded; API call counters are not kernel syscall tracing",
+  "samples": [
+    {
+      "files_per_linked_worktree": 32,
+      "roots": 6,
+      "nonutf8_creation": [
+        {
+          "state": "UNKNOWN",
+          "errno": 92,
+          "reason": "owned APFS fixture rejects non-UTF8 name"
+        },
+        {
+          "state": "UNKNOWN",
+          "errno": 92,
+          "reason": "owned APFS fixture rejects non-UTF8 name"
+        },
+        {
+          "state": "UNKNOWN",
+          "errno": 92,
+          "reason": "owned APFS fixture rejects non-UTF8 name"
+        },
+        {
+          "state": "UNKNOWN",
+          "errno": 92,
+          "reason": "owned APFS fixture rejects non-UTF8 name"
+        }
+      ],
+      "oracle_and_product_match": true,
+      "conservation_before_timing": true,
+      "product_scalar_elapsed_ms": 3,
+      "product_cli_wall_ns": 268330500,
+      "scalar": [
+        {
+          "elapsed_ns": 4290000,
+          "calls": {
+            "stat": 377,
+            "bulk": 0,
+            "readdir": 421,
+            "open": 50
+          },
+          "entries_checked": 277
+        },
+        {
+          "elapsed_ns": 3141000,
+          "calls": {
+            "stat": 377,
+            "bulk": 0,
+            "readdir": 421,
+            "open": 50
+          },
+          "entries_checked": 277
+        },
+        {
+          "elapsed_ns": 3681000,
+          "calls": {
+            "stat": 377,
+            "bulk": 0,
+            "readdir": 421,
+            "open": 50
+          },
+          "entries_checked": 277
+        },
+        {
+          "elapsed_ns": 4559000,
+          "calls": {
+            "stat": 377,
+            "bulk": 0,
+            "readdir": 421,
+            "open": 50
+          },
+          "entries_checked": 277
+        },
+        {
+          "elapsed_ns": 4328000,
+          "calls": {
+            "stat": 377,
+            "bulk": 0,
+            "readdir": 421,
+            "open": 50
+          },
+          "entries_checked": 277
+        }
+      ],
+      "native": [
+        {
+          "elapsed_ns": 3117000,
+          "calls": {
+            "stat": 377,
+            "bulk": 93,
+            "readdir": 0,
+            "open": 50
+          },
+          "entries_checked": 277
+        },
+        {
+          "elapsed_ns": 2859000,
+          "calls": {
+            "stat": 377,
+            "bulk": 93,
+            "readdir": 0,
+            "open": 50
+          },
+          "entries_checked": 277
+        },
+        {
+          "elapsed_ns": 4359000,
+          "calls": {
+            "stat": 377,
+            "bulk": 93,
+            "readdir": 0,
+            "open": 50
+          },
+          "entries_checked": 277
+        },
+        {
+          "elapsed_ns": 4544000,
+          "calls": {
+            "stat": 377,
+            "bulk": 93,
+            "readdir": 0,
+            "open": 50
+          },
+          "entries_checked": 277
+        },
+        {
+          "elapsed_ns": 3111000,
+          "calls": {
+            "stat": 377,
+            "bulk": 93,
+            "readdir": 0,
+            "open": 50
+          },
+          "entries_checked": 277
+        }
+      ],
+      "conservation_after_timing": true,
+      "scalar_median_ns": 4290000,
+      "native_median_ns": 3117000,
+      "native_scalar_ratio": 0.7265734265734266
+    },
+    {
+      "files_per_linked_worktree": 512,
+      "roots": 6,
+      "nonutf8_creation": [
+        {
+          "state": "UNKNOWN",
+          "errno": 92,
+          "reason": "owned APFS fixture rejects non-UTF8 name"
+        },
+        {
+          "state": "UNKNOWN",
+          "errno": 92,
+          "reason": "owned APFS fixture rejects non-UTF8 name"
+        },
+        {
+          "state": "UNKNOWN",
+          "errno": 92,
+          "reason": "owned APFS fixture rejects non-UTF8 name"
+        },
+        {
+          "state": "UNKNOWN",
+          "errno": 92,
+          "reason": "owned APFS fixture rejects non-UTF8 name"
+        }
+      ],
+      "oracle_and_product_match": true,
+      "conservation_before_timing": true,
+      "product_scalar_elapsed_ms": 52,
+      "product_cli_wall_ns": 737452167,
+      "scalar": [
+        {
+          "elapsed_ns": 13450000,
+          "calls": {
+            "stat": 2297,
+            "bulk": 0,
+            "readdir": 2341,
+            "open": 50
+          },
+          "entries_checked": 2197
+        },
+        {
+          "elapsed_ns": 11600000,
+          "calls": {
+            "stat": 2297,
+            "bulk": 0,
+            "readdir": 2341,
+            "open": 50
+          },
+          "entries_checked": 2197
+        },
+        {
+          "elapsed_ns": 11924000,
+          "calls": {
+            "stat": 2297,
+            "bulk": 0,
+            "readdir": 2341,
+            "open": 50
+          },
+          "entries_checked": 2197
+        },
+        {
+          "elapsed_ns": 14889000,
+          "calls": {
+            "stat": 2297,
+            "bulk": 0,
+            "readdir": 2341,
+            "open": 50
+          },
+          "entries_checked": 2197
+        },
+        {
+          "elapsed_ns": 11356000,
+          "calls": {
+            "stat": 2297,
+            "bulk": 0,
+            "readdir": 2341,
+            "open": 50
+          },
+          "entries_checked": 2197
+        }
+      ],
+      "native": [
+        {
+          "elapsed_ns": 14978000,
+          "calls": {
+            "stat": 2297,
+            "bulk": 93,
+            "readdir": 0,
+            "open": 50
+          },
+          "entries_checked": 2197
+        },
+        {
+          "elapsed_ns": 14677000,
+          "calls": {
+            "stat": 2297,
+            "bulk": 93,
+            "readdir": 0,
+            "open": 50
+          },
+          "entries_checked": 2197
+        },
+        {
+          "elapsed_ns": 11889000,
+          "calls": {
+            "stat": 2297,
+            "bulk": 93,
+            "readdir": 0,
+            "open": 50
+          },
+          "entries_checked": 2197
+        },
+        {
+          "elapsed_ns": 13332000,
+          "calls": {
+            "stat": 2297,
+            "bulk": 93,
+            "readdir": 0,
+            "open": 50
+          },
+          "entries_checked": 2197
+        },
+        {
+          "elapsed_ns": 12917000,
+          "calls": {
+            "stat": 2297,
+            "bulk": 93,
+            "readdir": 0,
+            "open": 50
+          },
+          "entries_checked": 2197
+        }
+      ],
+      "conservation_after_timing": true,
+      "scalar_median_ns": 11924000,
+      "native_median_ns": 13332000,
+      "native_scalar_ratio": 1.118081180811808
+    },
+    {
+      "files_per_linked_worktree": 4096,
+      "roots": 6,
+      "nonutf8_creation": [
+        {
+          "state": "UNKNOWN",
+          "errno": 92,
+          "reason": "owned APFS fixture rejects non-UTF8 name"
+        },
+        {
+          "state": "UNKNOWN",
+          "errno": 92,
+          "reason": "owned APFS fixture rejects non-UTF8 name"
+        },
+        {
+          "state": "UNKNOWN",
+          "errno": 92,
+          "reason": "owned APFS fixture rejects non-UTF8 name"
+        },
+        {
+          "state": "UNKNOWN",
+          "errno": 92,
+          "reason": "owned APFS fixture rejects non-UTF8 name"
+        }
+      ],
+      "oracle_and_product_match": true,
+      "conservation_before_timing": true,
+      "product_scalar_elapsed_ms": 320,
+      "product_cli_wall_ns": 1807957833,
+      "scalar": [
+        {
+          "elapsed_ns": 221982000,
+          "calls": {
+            "stat": 16633,
+            "bulk": 0,
+            "readdir": 16677,
+            "open": 50
+          },
+          "entries_checked": 16533
+        },
+        {
+          "elapsed_ns": 218603000,
+          "calls": {
+            "stat": 16633,
+            "bulk": 0,
+            "readdir": 16677,
+            "open": 50
+          },
+          "entries_checked": 16533
+        },
+        {
+          "elapsed_ns": 218561000,
+          "calls": {
+            "stat": 16633,
+            "bulk": 0,
+            "readdir": 16677,
+            "open": 50
+          },
+          "entries_checked": 16533
+        },
+        {
+          "elapsed_ns": 427500000,
+          "calls": {
+            "stat": 16633,
+            "bulk": 0,
+            "readdir": 16677,
+            "open": 50
+          },
+          "entries_checked": 16533
+        },
+        {
+          "elapsed_ns": 600336000,
+          "calls": {
+            "stat": 16633,
+            "bulk": 0,
+            "readdir": 16677,
+            "open": 50
+          },
+          "entries_checked": 16533
+        }
+      ],
+      "native": [
+        {
+          "elapsed_ns": 222695000,
+          "calls": {
+            "stat": 16633,
+            "bulk": 105,
+            "readdir": 0,
+            "open": 50
+          },
+          "entries_checked": 16533
+        },
+        {
+          "elapsed_ns": 248505000,
+          "calls": {
+            "stat": 16633,
+            "bulk": 105,
+            "readdir": 0,
+            "open": 50
+          },
+          "entries_checked": 16533
+        },
+        {
+          "elapsed_ns": 487994000,
+          "calls": {
+            "stat": 16633,
+            "bulk": 105,
+            "readdir": 0,
+            "open": 50
+          },
+          "entries_checked": 16533
+        },
+        {
+          "elapsed_ns": 792451000,
+          "calls": {
+            "stat": 16633,
+            "bulk": 105,
+            "readdir": 0,
+            "open": 50
+          },
+          "entries_checked": 16533
+        },
+        {
+          "elapsed_ns": 206873000,
+          "calls": {
+            "stat": 16633,
+            "bulk": 105,
+            "readdir": 0,
+            "open": 50
+          },
+          "entries_checked": 16533
+        }
+      ],
+      "conservation_after_timing": true,
+      "scalar_median_ns": 221982000,
+      "native_median_ns": 248505000,
+      "native_scalar_ratio": 1.1194826607562776
+    }
+  ],
+  "measurement_status": "Bulk enumeration only; not the corrected metadata-eliminating candidate. Raw hashes and samples preserved."
+}

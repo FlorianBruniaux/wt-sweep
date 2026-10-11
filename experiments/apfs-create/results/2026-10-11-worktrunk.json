@@ -1,0 +1,12 @@
+{
+  "binary_sha256": "0708ca37fc39f9fa48edc1af500a2ff3664ec0155f63909425b02994f29f0fd1",
+  "copied_dependency": true,
+  "excluded_env": true,
+  "isolated_write": true,
+  "output": "{\n  \"bytes\": 18,\n  \"dry_run\": false,\n  \"entries\": [\n    {\n      \"kind\": \"dir\",\n      \"path\": \"node_modules\"\n    }\n  ],\n  \"files\": 1,\n  \"from\": \"<fixture>/repo\",\n  \"outcome\": \"copied\",\n  \"reflinked\": 1,\n  \"to\": \"<fixture>/destination\",\n  \"written\": 0\n}\n",
+  "repeat_preserves_destination": true,
+  "source_unchanged": true,
+  "stderr": "",
+  "target_index_clean": true,
+  "version": "wt v0.80.0"
+}

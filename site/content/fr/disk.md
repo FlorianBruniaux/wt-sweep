@@ -29,7 +29,7 @@ Fichiers cachés et ignorés restent inclus. Les cibles des liens symboliques ne
 
 La taille allouée n’est pas l’espace récupérable. Clones APFS, snapshots et extents partagés peuvent changer le volume libéré. Alternates et dépendances externes aux racines mesurées ne sont pas comptés.
 
-Le collecteur actuel lit les métadonnées entrée par entrée. L’évaluation native `getattrlistbulk` n’est pas intégrée. Aucune ventilation par catégorie de cache ni suppression automatique de caches.
+Le collecteur actuel lit les métadonnées entrée par entrée. L’[évaluation du 11 octobre](https://github.com/FlorianBruniaux/wt-sweep/blob/main/docs/research/native-disk-evaluation-2026-10-11.md) conserve cette voie scalaire dans le produit. Le prototype natif corrigé donne les mêmes totaux sur les fixtures et gagne sur les trois corpus fixes ; son adaptation aux protections du produit et aux frontières système reste non qualifiée. Ces timings C ne démontrent pas une accélération du produit Rust. `getattrlistbulk` n’est pas intégré. Aucune ventilation par catégorie de cache ni suppression automatique de caches.
 
 [Choisissez une analyse ciblée](/fr/docs/targets/) et conservez le périmètre et les dates de chaque exécution.
 

@@ -2,12 +2,11 @@
 
 [Project overview](../README.md) · [Présentation en français](../README.fr.md) · [Changelog](../CHANGELOG.md) · [Contributing](../CONTRIBUTING.md)
 
-These guides cover the read-only macOS MVP and the T01-T09 triage workflow.
-The [current delivery record](progress.md#état-publié-et-suite-au-09102026)
-separates merged code, CI and real-world observations. The [report delivery,
-10 October](https://github.com/FlorianBruniaux/wt-sweep/pull/26) tracks forge links,
-HTML opening, the console recap and their final checks. The [roadmap](roadmap.md)
-names the remaining #20 evaluation and the separate #14 vision; the
+These guides cover the read-only macOS CLI and the T01-T09 triage workflow.
+The [current delivery record](progress.md) separates alpha.2 publication,
+subsequent evaluations, local checks and real-world observations. The
+[roadmap](roadmap.md) records the [extension decisions](research/extension-decisions-2026-10-11.md),
+including stopped options and their reopening conditions. The
 [validation ledger](finish-ledger.md#triage-t01-t09) retains historical checks.
 The project overview is available in English and French. The tutorial, assistant
 and disk guides are in French; other user guides are in English. Design and
@@ -26,6 +25,7 @@ Le [guide de v0.1.0-alpha.2](release.md) décrit le paquet Apple Silicon, son t�
 | [Espace disque](disk-usage.md) | Taille par worktree, Git partagé, total dédupliqué et limites de la mesure. |
 | [Rapport HTML par projet](html-report-plan.md) | HTML hors ligne, ouverture sur macOS, lecture par famille, liens GitHub/GitLab, copie des chemins et reçus. |
 | [Resume discovery](discovery-resume.md) | Save an explicit-root traversal, continue it and interpret separate observation intervals. |
+| [Worktrunk integration](research/worktrunk-integration-2026-10-11.md) | Existing `wt sweep` dispatch, qualified version and command-name precedence. |
 | [CLI reference](cli.md) | Implemented commands, output rules, exit codes and collection limits. |
 | [Targets and filters](targets-and-filters.md) | Select refs per repository and inspect a subset while retaining source evidence. |
 | [Forge links and offline imports](forge.md) | Repository, branch and commit links, captured PR/MR states, import receipts and association limits. |
@@ -65,6 +65,11 @@ Le [guide de v0.1.0-alpha.2](release.md) décrit le paquet Apple Silicon, son t�
 | --- | --- |
 | [Tableau de bord disque](superpowers/specs/2026-10-11-disk-dashboard-design.md) | Approved volume gauges, measured allocation percentages, coverage and offline compatibility design. |
 | [Plan du tableau de bord disque](superpowers/plans/2026-10-11-disk-dashboard.md) | Approved implementation tasks, contracts, native observations, HTML gauges and conservation checks. |
+| [Extension decisions, 11/10](research/extension-decisions-2026-10-11.md) | Outcomes of #20 and #27–30, evidence and reopening conditions. |
+| [Native disk evaluation](research/native-disk-evaluation-2026-10-11.md) | Complete experimental walks, scalar product comparison, refusal cases and measured limits. |
+| [Passive provenance evaluation](research/provenance-evaluation-2026-10-11.md) | Bounded card/index reader, stale identity witness and context-only decision. |
+| [Writer exclusion evaluation](research/writer-exclusion-evaluation-2026-10-11.md) | Mapping/alias writes, guard loss and the decision to keep E1 unproven. |
+| [APFS creation evaluation](research/apfs-creation-evaluation-2026-10-11.md) | Clone/copy fixtures, existing tool alternatives and no Sweep creation command. |
 | [Roadmap](roadmap.md) | Delivered scope, large-repository collection limits, next validation steps and separate removal gates. |
 | [Plan de tri des worktrees, v2](superpowers/plans/2026-10-05-worktree-triage-v2.md) | Completed T01-T09 plan, decision conditions, acceptance checks and conditional extensions. |
 | [Critique du plan et de l'architecture](superpowers/plans/2026-10-05-worktree-triage-review.md) | Findings against the first proposal and current code, alternatives, failure modes and corrections adopted in v2. |

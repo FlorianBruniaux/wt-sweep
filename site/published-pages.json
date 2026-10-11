@@ -54,7 +54,7 @@
   {
     "slug": "disk",
     "source": "docs/disk-usage.md",
-    "sourceHash": "f1a12437020e30e25eab019edd16ba9a2957ac1fd89aa1f34b32b9136fab7a56",
+    "sourceHash": "fdf3fb3068b82140f4c8134eeb05eafb98394f3e9849566f9d14043ce1d4c8a5",
     "title": {
       "en": "Read disk measurements",
       "fr": "Comprendre les mesures disque"
@@ -132,7 +132,7 @@
   {
     "slug": "changelog",
     "source": "CHANGELOG.md",
-    "sourceHash": "6a58935618d463eaab92435e7658d73b5286d39d7ab4498a331fba787aa70e70",
+    "sourceHash": "e7d9ab92603f19531534489401d6b42522c877156484996eab5a2c97556e9a09",
     "title": {
       "en": "Changelog",
       "fr": "Historique des changements"

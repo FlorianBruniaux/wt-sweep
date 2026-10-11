@@ -29,7 +29,7 @@ Hidden and ignored files remain in scope. Symlink targets are not followed. Nest
 
 Allocated size is not recoverable space. APFS clones, snapshots and shared extents can change what a deletion would free. External alternates and dependencies outside measured roots are not counted.
 
-The current collector reads metadata one entry at a time. The native `getattrlistbulk` evaluation is not integrated. There is no cache-category breakdown or automatic cache deletion.
+The current collector reads metadata one entry at a time. The [11 October evaluation](https://github.com/FlorianBruniaux/wt-sweep/blob/main/docs/research/native-disk-evaluation-2026-10-11.md) keeps this scalar product collector. The corrected native prototype matches fixture totals and is faster on three fixed corpora, but its product protections and system boundaries remain unqualified. These are experimental C measurements, not a shipped Rust speedup. `getattrlistbulk` is not integrated. There is no cache-category breakdown or automatic cache deletion.
 
 [Choose a focused review](/docs/targets/) and preserve each run’s scope and dates.
 

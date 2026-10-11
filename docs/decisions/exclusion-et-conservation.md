@@ -2,6 +2,10 @@
 
 [Index des décisions](README.md) · [Architecture](../architecture.md)
 
+L’[évaluation du 11 octobre](../research/writer-exclusion-evaluation-2026-10-11.md)
+rejoue ces témoins et ajoute mappings, alias et interruptions. Elle conclut
+l’essai #29 sans établir E1 ; les observations du 04/10 ci-dessous restent datées.
+
 Décision du 04/10/2026 : **NON_DEMONTREE**. Les témoins exécutés sur
 macOS 26.5.1 arm64 réfutent les mécanismes particuliers ci-dessous. Ils ne
 démontrent pas l'impossibilité de tout mécanisme futur. `apply` reste indisponible ;

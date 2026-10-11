@@ -28,6 +28,11 @@ jobs:
       - run: cargo build --locked --offline
       - run: python3 -B -m unittest discover -s tests -p 'test_*.py' -v
       - run: python3 -B -m unittest discover -s experiments/exclusion -p 'test_*.py' -v
+      - name: Verify optional extension experiments on owned fixtures
+        run: |
+          python3 -B -m unittest discover -s experiments/provenance -p 'test_*.py' -v
+          python3 -B -m unittest discover -s experiments/apfs-create -p 'test_*.py' -v
+          python3 -B experiments/disk-native/run-tests.py --product "$PWD/target/debug/wt-sweep"
       - run: python3 -B scripts/comparison/test_harness.py
       - run: python3 -B scripts/sync-ai.py --check
       - uses: pnpm/action-setup@v4
