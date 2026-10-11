@@ -1,6 +1,12 @@
 # Vérifications du site wt-sweep, 09/10/2026
 
-Livraison locale dans le worktree `wt-sweep-site`, base produit `c3e38f7810424ae57f58d6ea10c4db996e9122fb`. Les entrées conservent l’état de livraison au moment des contrôles décrits. Le site n’a pas été déployé.
+État courant : le déploiement du commit `02dd1099` a réussi le 11/10/2026.
+Les pages publiques rapport et changelog EN/FR contiennent le dashboard attendu.
+Les observations du 9 et du 10 octobre ci-dessous restent historiques ; le
+[registre de livraison](../docs/progress.md#dashboard-et-ci-automatique-11102026)
+porte les preuves distantes et les résultats des suites.
+
+Livraison locale du 9 octobre dans le worktree `wt-sweep-site`, base produit `c3e38f7810424ae57f58d6ea10c4db996e9122fb`. Les entrées conservent l’état de livraison au moment des contrôles décrits. À cette date, le site n’était pas encore déployé.
 
 ## Référence relue
 

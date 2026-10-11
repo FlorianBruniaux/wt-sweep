@@ -25,7 +25,7 @@ pub(super) fn icon(h: &mut Html, kind: &str) -> fmt::Result {
 pub(super) fn guide(h: &mut Html, reviewed: bool) -> fmt::Result {
     h.raw("<details class=\"reading-guide\" id=\"reading-guide\"><summary>")?;
     icon(h, "guide")?;
-    h.raw("How to use this report</summary><div class=\"guide-body\"><p>")?;
+    h.raw("How to use this report</summary><div class=\"guide-body\"><p id=\"review-guidance\">")?;
     h.raw(if reviewed {
         "<strong>This report includes a Git review.</strong> Read the reasons for each verdict. keep means work or a retention reason was observed; verify means required checks are missing; cleanup_candidate means the current checks passed, with usage still to confirm."
     } else {
@@ -36,8 +36,18 @@ pub(super) fn guide(h: &mut Html, reviewed: bool) -> fmt::Result {
     h.raw("</li></ol><p><a href=\"#coverage\">Scan limits</a> explains what could not be explored or collected. Application frameworks can appear there even when they contain no Git repository.</p><figure class=\"guide-diagram\">")?;
     // The generated asset contains only fixed teaching labels, never captured paths.
     // Its own title/role bind the image; no Mermaid runtime or external asset is loaded.
-    h.raw(include_str!("report-flow.svg"))?;
-    h.raw("<figcaption>Discovery finds registrations; a separate Git review establishes verdicts. This diagram explains the workflow, not completion of every step in this report.</figcaption></figure><p>Filters and search change the view only. Source counts and recorded disk measurements remain unchanged. Sweep does not delete anything.</p></div></details>")
+    let diagram = include_str!("report-flow.svg");
+    if reviewed {
+        // Fixed fragment substitutions only; review views do not carry scan scope.
+        h.raw(
+            &diagram
+                .replace("#review-guidance", "#worktree-families")
+                .replace("#requested-scan-scope", "#overview"),
+        )?;
+    } else {
+        h.raw(diagram)?;
+    }
+    h.raw("<figcaption>Click a block to open its report section. Discovery finds registrations; a separate Git review establishes verdicts. This diagram explains the workflow, not completion of every step in this report.</figcaption></figure><p>Filters and search change the view only. Source counts and recorded disk measurements remain unchanged. Sweep does not delete anything.</p></div></details>")
 }
 
 fn group(gap: &Gap) -> usize {

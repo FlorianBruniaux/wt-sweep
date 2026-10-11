@@ -4,6 +4,12 @@
 
 ## Dashboard et CI automatique, 11/10/2026
 
+La [PR #32](https://github.com/FlorianBruniaux/wt-sweep/pull/32) est fusionnée à
+`02dd1099ea32c879dce4661a09a9f5d792d5bb83` ; sa
+[CI automatique sur main](https://github.com/FlorianBruniaux/wt-sweep/actions/runs/38126000063)
+et le déploiement du site ont réussi. La finition suivante ajoute les liens
+du diagramme et leur test navigateur dans la CI.
+
 Les sources après l’alpha ajoutent les jauges par volume, la liste d’inventaire
 ouverte et filtrable, le guide de lecture et la recherche Cmd+K / Ctrl+K.
 Le bloc facultatif `disk_usage.storage` conserve la capacité observée pendant
@@ -18,6 +24,13 @@ distingue les vérifications locales des exécutions automatiques distantes.
 
 La suite reste l’évaluation facultative de #20 et les extensions #27 à #30
 regroupées sous #14. Ni nouvelle release ni suppression réelle dans ce lot.
+
+Pour distribuer les ajouts de `main`, le prochain jalon de publication serait
+`v0.1.0-alpha.2`, avec une nouvelle archive et la recette du
+[guide de release](release.md). `v0.1.0-alpha.1` est conservée telle quelle.
+#20 reste une évaluation de performance facultative. #27 (Worktrunk),
+#28 (provenance), #29 (exclusion des écritures) et #30 (clones APFS)
+sont des options de #14, sans engagement de les implémenter toutes.
 
 ## Finitions de lecture, 10/10/2026
 

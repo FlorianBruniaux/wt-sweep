@@ -5,3 +5,10 @@ flowchart TD
     worktrees --> inventory[Inventory: paths and measured sizes]
     inventory -. Run a Git review .-> review[Check current Git and local evidence]
     review --> verdicts[Keep / Verify / Cleanup candidate]
+    click disk href "#requested-scan-scope" "Requested scan scope" _self
+    click git href "#worktree-families" "Recorded Git families" _self
+    click worktrees href "#worktree-families" "Worktree list" _self
+    click limits href "#coverage" "Scan limits" _self
+    click inventory href "#disk" "Disk observations" _self
+    click review href "#review-guidance" "Git review guidance" _self
+    click verdicts href "#review-guidance" "Git review guidance" _self

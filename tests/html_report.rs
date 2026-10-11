@@ -1200,6 +1200,10 @@ fn reading_guide_explains_inventory_and_embeds_an_offline_diagram() {
     assert!(report.contains("This report is an inventory"));
     assert!(report.contains("class=\"guide-diagram\""));
     assert!(report.contains("aria-labelledby=\"guide-flow-title\""));
+    assert!(report.contains("id=\"requested-scan-scope\""));
+    assert!(report.contains("id=\"review-guidance\""));
+    assert!(report.contains("href=\"#requested-scan-scope\""));
+    assert!(report.contains("href=\"#review-guidance\""));
     assert!(report.contains("<dialog id=\"command-dialog\""));
     assert!(report.contains("aria-controls=\"command-results\""));
     assert!(report.contains("class=\"ui-icon\" aria-hidden=\"true\""));
@@ -1207,6 +1211,9 @@ fn reading_guide_explains_inventory_and_embeds_an_offline_diagram() {
     let selected = view::build(&source, &review, Default::default(), "repo").unwrap();
     let report = html::review(&selected, 4 * 1024 * 1024).unwrap();
     assert!(report.contains("This report includes a Git review"));
+    assert!(!report.contains("href=\"#requested-scan-scope\""));
+    assert!(!report.contains("href=\"#review-guidance\""));
+    assert!(report.contains("Click a block to open its report section"));
 }
 
 #[test]

@@ -20,7 +20,7 @@ The macOS job runs formatting, Clippy, Rust tests and build, Python fixtures,
 writer-exclusion experiments, the comparison harness and instruction generation.
 It installs the locked website development dependencies to run the HTML browser
 checks against synthetic inventory and review reports. These cover volume gauges, command search,
-sections, themes, narrow screens and JavaScript-disabled reading. No host-wide
+sections, themes, diagram navigation, narrow screens and JavaScript-disabled reading. No host-wide
 worktree scan or real cleanup is part of CI.
 
 ## Verify automatic execution

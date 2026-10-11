@@ -10,6 +10,8 @@ Avec `--disk-usage`, le tableau de bord affiche la capacité capturée, l’espa
 
 L’inventaire ouvre directement la liste des worktrees. Filtrez les entrées présentes, bare, absentes ou non vérifiées, ou triez toute la liste. L’analyse conserve les familles Git et les filtres de verdict. Cmd+K / Ctrl+K ouvre une recherche locale parmi les sections et les worktrees enregistrés. Le guide de lecture et son diagramme fonctionnent hors ligne ; les limites techniques du scan restent dépliables.
 
+Le diagramme comporte sept blocs cliquables. Un clic, ou Tab puis Entrée, rejoint la section correspondante. Dans un inventaire, les blocs d’analyse expliquent quelles vérifications Git manquent. Dans un rapport analysé, ils ouvrent les preuves des worktrees. Les liens fonctionnent sans JavaScript ; avec JavaScript, un clic répété rouvre aussi une destination repliée.
+
 Les filtres ne changent ni les comptes source, ni les jauges, ni les preuves. Une mesure partielle reste partielle ; l’allocation mesurée ne prédit pas l’espace libéré.
 
 ## Enregistrer et ouvrir un rapport

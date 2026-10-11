@@ -515,7 +515,7 @@ fn inventory_into(h: &mut Html, source: &Inventory) -> fmt::Result {
     h.raw("<p class=\"inventory-note\"><strong>Cleanup analysis not performed.</strong> This inventory lists what was found; it does not identify what can be removed.</p>")?;
     dashboard::render(h, source.disk_usage.as_ref(), None)?;
     help::guide(h, false)?;
-    h.raw("<details class=\"panel\"><summary>Requested scan scope</summary>")?;
+    h.raw("<details class=\"panel\"><summary>Requested scan scope</summary><div id=\"requested-scan-scope\">")?;
     match &source.scope {
         ScanScope::Repo { path } => {
             h.raw("Repository: <code>")?;
@@ -538,7 +538,7 @@ fn inventory_into(h: &mut Html, source: &Inventory) -> fmt::Result {
             "All visible mounted volumes; unavailable and non-visible data are not certified.",
         )?,
     }
-    h.raw("</details>")?;
+    h.raw("</div></details>")?;
     section_end(h)?;
     section_start(
         h,

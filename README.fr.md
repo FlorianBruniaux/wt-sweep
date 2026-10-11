@@ -200,6 +200,10 @@ ouverte ; un inventaire distingue dossiers présents, dépôts bare, chemins
 absents et non vérifiés. Cmd+K / Ctrl+K rejoint une section ou un worktree.
 Ces ajouts ne sont pas dans l’archive alpha publiée. [Guide disque](docs/disk-usage.md).
 
+Le guide de lecture hors ligne contient un diagramme cliquable. Chaque bloc
+rejoint sa section du rapport, aussi avec Tab et Entrée. Un inventaire explique
+quelles vérifications Git demandent une analyse séparée.
+
 Recherchez un chemin ou une branche, filtrez les verdicts, triez par taille et
 copiez les chemins. Les worktrees sont regroupés par famille Git : thèmes clair
 et sombre, tailles en Ko/Mo/Go, sections dépliables. Les totaux source, les lignes

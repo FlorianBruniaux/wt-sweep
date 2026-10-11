@@ -10,6 +10,11 @@
 
 ### Added
 
+- Navigate the report workflow diagram through seven internal links, with
+  keyboard access and visible hover/focus outlines. Inventory review blocks
+  explain the missing review; reviewed reports link to worktree evidence.
+  Enlarge transparent hit areas to keep 44px targets at a 390px viewport.
+  CI exercises both report types, themes and widths, with and without JavaScript.
 - HTML disk dashboard with per-volume capacity, available space and measured
   allocation gauges. Capture volume statistics from verified directory descriptors
   with `--disk-usage`; preserve inode deduplication and source totals after filtering.

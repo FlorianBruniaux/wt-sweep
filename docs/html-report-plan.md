@@ -154,9 +154,27 @@ mmdc -i src/presentation/html/report-flow.mmd -o /tmp/report-flow.svg \
   -I wt-report-flow -q
 ```
 
-Le fichier intégré ajoute un titre accessible et le lien `aria-labelledby`.
+Les sept blocs sont des liens internes dans le même onglet. Les blocs de revue
+ouvrent les explications dans un inventaire, ou les preuves de la liste dans
+un rapport revu. Les liens fonctionnent au clic et avec Tab/Entrée ; le script
+du rapport ouvre aussi une destination repliée lors d'un clic répété.
+
+Le mode `loose` sert uniquement à générer les liens du diagramme fixe, sans
+contenu capturé. Aucun moteur Mermaid ne s'exécute dans le rapport. Le fichier
+intégré ajoute un titre accessible, `role="group"` et `aria-labelledby` pour
+exposer ses liens. Les attributs `xlink:href` deviennent `href` ; chaque lien
+reçoit `tabindex="0"` et un `aria-label` égal au texte de son bloc. Ces ajustements
+préservent les liens de fragment générés et les rectangles du diagramme.
+Chaque lien ajoute hors du groupe visible un rectangle transparent de 80 unités
+de haut, centré sur son bloc, pour conserver une cible d’au moins 44 px à 390 px.
+Le `viewBox` ajoute 16 unités en haut et en bas pour ne pas rogner ces cibles.
+Le test navigateur vérifie leur taille et la navigation dans les deux thèmes.
 Les refus d'accès du navigateur de génération ne demandent aucune installation :
 la génération locale peut utiliser un Chromium existant avec `-p CONFIG.json`.
+
+```sh
+node tests/html-diagram.cjs /chemin/vers/inventaire.html /chemin/vers/nouveaux-resultats /chemin/vers/revue.html
+```
 
 ## Thème et navigation
 

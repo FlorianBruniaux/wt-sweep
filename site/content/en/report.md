@@ -10,6 +10,8 @@ With `--disk-usage`, the dashboard shows captured capacity, available space and 
 
 Inventory reports open the worktree list directly. Filter present, bare, absent or unverified entries, or sort the entire list. Review reports retain Git-family grouping and verdict filters. Cmd+K / Ctrl+K opens a local search over sections and recorded worktrees. The reading guide works offline, including its diagram; technical scan limits remain expandable.
 
+The diagram has seven clickable blocks. Click one, or use Tab and Enter, to reach its report section. In an inventory, the review blocks explain which Git checks are missing. In a reviewed report, they open the worktree evidence. The links work without JavaScript; with JavaScript, they also reopen collapsed destinations on repeated clicks.
+
 Filters do not change source counts, volume gauges or recorded evidence. Partial measurements stay partial, and measured allocation does not predict freed disk space.
 
 ## Save and open a report

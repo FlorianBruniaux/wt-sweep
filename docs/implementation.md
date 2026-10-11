@@ -12,6 +12,8 @@ moteur de nettoyage.
 
 Les sources après l’alpha ajoutent les jauges par volume, la liste d’inventaire
 ouverte et filtrable, le guide de lecture et la recherche Cmd+K / Ctrl+K.
+Le diagramme du guide relie aussi ses sept blocs aux sections du rapport,
+avec des destinations adaptées à l’inventaire ou à la revue.
 Le bloc facultatif `disk_usage.storage` conserve la capacité observée pendant
 la collecte ; le rendu reste hors ligne. Ces ajouts ne modifient ni C1-C5 ni
 l’archive `v0.1.0-alpha.1` déjà publiée.

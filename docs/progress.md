@@ -9,6 +9,35 @@ des observations datées, pas une liste des tâches encore ouvertes.
 
 ## Dashboard et CI automatique, 11/10/2026
 
+La finition du diagramme ajoute sept liens internes, adaptés à l’inventaire
+ou à la revue. Le test navigateur échoue d’abord sur la version sans liens,
+puis révèle des cibles mobiles inférieures à 44 px. Des rectangles transparents
+agrandissent ces zones sans changer le dessin. Les 16 variantes passent ensuite :
+inventaire/revue, clair/sombre, 390/1440 px et JavaScript actif/inactif, avec clic
+sur le bord des cibles, clavier, fragments répétés, conservation des données et
+absence de requête réseau. Quatre captures finales sont relues. Les 29 tests
+Rust HTML passent ; le site passe 8 tests de source/compilation et 34 tests
+navigateur, avec 31 pages construites et aucun diagnostic Astro.
+
+La première suite Rust parallèle de cette finition échoue sur deux tests
+d’historique privé : un contrôle final dépasse son délai Git ; le test de timeout
+ne retrouve pas l’interprétation indépendante de l’index. Les deux cas passent
+isolément, puis les 39 tests de ce module passent dans un rejeu sérialisé.
+Le code d’historique et ses plafonds sont inchangés ; ces résultats ne suffisent
+pas à attribuer la cause exacte de l’écart à la charge de la machine.
+Le rejeu Rust complet avec `--test-threads=1` réussit : 450 tests passent,
+3 sont ignorés. Le contrôle Clippy et la compilation réussissent aussi.
+
+Livraison confirmée par la [PR #32](https://github.com/FlorianBruniaux/wt-sweep/pull/32),
+fusionnée à `02dd1099ea32c879dce4661a09a9f5d792d5bb83`. La
+[CI automatique du commit main](https://github.com/FlorianBruniaux/wt-sweep/actions/runs/38126000063)
+réussit : 450 tests Rust passent, 3 sont ignorés ; Python exécute 316 cas,
+310 réussis et 6 ignorés. Les contrôles navigateur passent pour inventaire
+et revue. Le [déploiement](https://github.com/FlorianBruniaux/wt-sweep/actions/runs/38126293575)
+réussit sur le même commit ; les pages publiques HTML et changelog EN/FR
+contiennent les ajouts attendus. Les résultats locaux ci-dessous conservent
+la distinction entre la première passe Python échouée et son rejeu.
+
 Le lot A1 ajoute les capacités et disponibilités capturées par volume, les
 jauges d’allocation observée, une liste d’inventaire ouverte et filtrable, un
 guide de lecture hors ligne et la recherche Cmd+K / Ctrl+K. Le champ optionnel
