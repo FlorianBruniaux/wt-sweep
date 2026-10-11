@@ -41,11 +41,34 @@ Le JSON sur stdout et les verdicts restent inchangés.
 
 ## Lire le bilan
 
+Le dashboard ajoute deux jauges par volume : capacité moins espace disponible,
+et allocation mesurée divisée par capacité. Les volumes sont séparés, les
+pourcentages partiels restent signalés et les capacités inconnues expliquées.
+Les [mesures disque](disk-usage.md#lire-les-jauges-html) donnent les formules et
+les limites APFS. Les statistiques capturées restent inspectables dans la section
+technique ; le rendu ne consulte pas la machine pour compléter un ancien fichier.
+L'analyse de nettoyage affiche des comptes source uniquement lorsqu'une revue
+existe, sans score arbitraire.
+
 - Le haut du rapport indique le périmètre, les dates d’observation, la couverture
   et les totaux source/sélection. Ce sont des observations passées, pas un état
   courant vérifié au moment de l’ouverture.
-- Le sommaire regroupe les worktrees par famille Git, même si deux projets ont
-  le même nom. Les filtres CLI et le regroupement demandé restent consignés.
+- Pour un inventaire, le nombre d’inscriptions Git inclut les dossiers principaux,
+  les worktrees liés, les dépôts sans dossier de travail et les chemins manquants.
+  Le résumé distingue dossiers de travail présents, dépôts sans dossier de travail
+  (`bare`) et chemins absents ou non vérifiés. Ce nombre n’est ni un total de
+  worktrees supplémentaires ni une garantie de découverte exhaustive.
+- L’inventaire commence par les décomptes puis une liste ouverte, sans en-tête
+  répété pour chaque repo. Elle affiche repo, branche, chemin complet, taille
+  mesurée et état du dossier. Les dossiers présents viennent en premier ; les
+  dépôts sans dossier de travail, les chemins absents et ceux non vérifiés restent
+  dans la liste. Les détails de chaque ligne conservent le chemin Git commun,
+  son identité physique, le HEAD complet et les faits enregistrés.
+- La recherche et le filtre d’état portent sur cette liste ; le tri des tailles
+  est global et utilise les octets exacts, avec les tailles inconnues après les
+  mesures, y compris une mesure nulle. Le bilan source ne change pas avec les filtres.
+- Les rapports de revue conservent le regroupement par famille Git, même si deux
+  projets ont le même nom. Les filtres CLI et le regroupement demandé restent consignés.
 - Chaque ligne conserve chemin, branche ou tête détachée, HEAD complet, verdict,
   raisons, contrôles manquants et tailles. Les détails sont repliables au clavier.
 - La recherche, le filtre de verdict et le tri changent les lignes visibles dans
@@ -63,24 +86,77 @@ suppression ; `apply` reste indisponible. Un reçu n’est pas une sauvegarde.
 
 ## Lire le bilan disque
 
-Le bloc **Disk space review** apparaît en tête du rapport. Il distingue :
+Dans un inventaire, une ligne près des décomptes donne l’allocation mesurée,
+avec la mention partielle si nécessaire. **Cleanup analysis not performed**
+signale l’absence de verdicts. Les détails disque viennent après la liste et
+sont fermés au chargement. Dans une revue, le bloc **Disk space review** conserve
+sa place en tête. Le bloc distingue :
 
-- **Observed disk footprint** : allocation dédupliquée des racines mesurées.
+- **Measured allocation** ou **Partial measured allocation** : allocation
+  dédupliquée des racines mesurées. Une mesure partielle indique explicitement
+  que le total de l’inventaire est inconnu ; ce chiffre n’est pas la taille du disque.
   Par défaut, toutes les racines enregistrées sont demandées, Git commun compris.
   Avec `--disk-root`, le total porte sur cette sélection explicite. Le libellé
   conserve la couverture partielle du périmètre source.
-- **Recoverable space** : gain non établi. Les clones et snapshots APFS peuvent
+- **Space freed by cleanup** : gain non établi. Les clones et snapshots APFS peuvent
   partager des blocs ; une taille allouée ne prédit pas l’espace libéré.
 - **Cleanup review** : candidats et worktrees restant à vérifier dans le rapport
   source. Un inventaire seul indique que cette revue n’a pas été effectuée.
 
 La couverture distingue les racines demandées et non demandées, puis les mesures
-complètes, partielles et absentes. Une taille absente n’est pas un zéro. Le repli **Largest observed
+complètes, partielles et absentes, séparément pour les dossiers de travail et le
+Git partagé. Leur nombre combiné n’est pas un nombre de worktrees. Une taille
+absente n’est pas un zéro. Le repli **Largest observed
 worktree sizes** liste jusqu’à trois worktrees par allocation décroissante,
 avec chemins copiables. Il exclut le Git commun ; les worktrees non mesurés
 peuvent être plus grands. Les tailles peuvent se recouvrir et ne sont pas
 additionnées. Vérifier le verdict de chaque worktree avant de préparer un
 nettoyage. Les filtres du rapport ne changent ni ces chiffres ni ce classement.
+
+## Guide de lecture et recherche rapide
+
+L'aide « How to use this report » distingue inventaire et revue Git. Son
+schéma Mermaid est fourni en SVG statique dans le HTML : il fonctionne hors
+ligne, sans JavaScript ni chargement de Mermaid. Il décrit le parcours,
+pas des étapes toutes réalisées dans le rapport courant. Les icônes SVG du
+menu et des titres complètent les libellés, sans les remplacer.
+
+Avec JavaScript, « Search report », ⌘K sur Mac ou Ctrl+K ailleurs ouvre une
+recherche des sections et des lignes enregistrées. Les chemins, repos et
+branches sont recherchés dans les données de la liste ; les incidents du
+système de fichiers ne remplissent pas ces résultats. Les flèches déplacent
+la sélection, Entrée rejoint le résultat, Échap ferme et rend le focus.
+Sélectionner un worktree efface les filtres de la liste, ouvre la section et
+ses preuves, puis place le focus sur la ligne. Aucun fait source ni total disque
+n'est modifié. La palette affiche au plus trente résultats à la fois avec le
+nombre total de correspondances ; préciser la recherche donne accès aux autres.
+Sans JavaScript, les liens, la liste, le guide et les détails restent accessibles.
+
+« Scan limits » présente les limites de découverte et de collecte. Il conserve
+aussi les HEAD inconnus et les inventaires locaux incomplets. Une frontière de
+découverte enregistrée indique les chemins restants ; un indicateur incomplet
+sans cette frontière ne devient pas une preuve de parcours disque interrompu.
+Les chemins restants ne sont pas un nombre de worktrees non découverts. Les
+incidents de liens, d'accès et autres raisons sont regroupés dans les détails
+techniques repliés. Chaque chemin, raison et bloc JSON original est conservé.
+Un incident lié à une application ou à un framework n'est pas un verdict Git.
+
+```sh
+node tests/html-command.cjs /chemin/vers/fixture.html /chemin/vers/nouvelles-captures
+```
+
+Le SVG est généré depuis `src/presentation/html/report-flow.mmd` et sa
+configuration avec un Mermaid CLI déjà installé. Pour le reproduire :
+
+```sh
+mmdc -i src/presentation/html/report-flow.mmd -o /tmp/report-flow.svg \
+  -c src/presentation/html/report-flow-config.json -b transparent \
+  -I wt-report-flow -q
+```
+
+Le fichier intégré ajoute un titre accessible et le lien `aria-labelledby`.
+Les refus d'accès du navigateur de génération ne demandent aucune installation :
+la génération locale peut utiliser un Chromium existant avec `-p CONFIG.json`.
 
 ## Thème et navigation
 
@@ -102,7 +178,9 @@ sont réduits selon la préférence du système.
 Le bilan disque, la synthèse, les familles Git, les mesures disque et la
 couverture s’ouvrent et se ferment en cliquant sur leur titre. Au clavier,
 utilisez Tab puis Entrée ou Espace. Ces contrôles natifs fonctionnent sans
-JavaScript. Les cinq sections sont ouvertes au chargement. Elles partagent le même fond,
+JavaScript. Dans un inventaire, seuls les décomptes et la liste sont ouverts au
+chargement ; les détails disque et la couverture sont fermés. Dans une revue,
+les cinq sections sont ouvertes. Elles partagent le même fond,
 les mêmes bordures et les mêmes marges internes dans les deux thèmes. Seul le
 bilan disque conserve une bordure supérieure orange pour le repérer rapidement.
 
@@ -119,6 +197,13 @@ dossier de captures, avec Playwright et Chromium déjà installés :
 
 ```sh
 node tests/html-sections.cjs /chemin/vers/report.html /nouveau/dossier/captures
+```
+
+Le contrôle suivant vérifie les filtres et tris du script avec des lignes
+synthétiques, sans navigateur, collecte Git ou disque :
+
+```sh
+node tests/html-list.cjs
 ```
 
 ## Copier un chemin

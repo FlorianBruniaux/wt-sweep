@@ -724,3 +724,22 @@ sizes and timestamps without a new disk walk. Text reports and console summaries
 render this block deterministically; absent measurements are labeled as such.
 Detailed reports preserve every disk root, even when review rows are filtered.
 The size observation interval is separate from the later decision interval.
+
+### Captured volume space
+
+`disk_usage.storage` is an optional diagnostic extension with
+`schema: wt-sweep.storage/1`. Absent storage is not serialized, preserving
+historical canonical digests. The new reader accepts older artifacts; an older
+strict reader may refuse artifacts containing this extension. Inventory and
+review envelope versions stay unchanged. It never changes C1-C5.
+
+`devices` holds device/inode-deduplicated logical and allocated bytes per device.
+Its sums equal `unique_bytes`; root sizes must not be summed to construct it.
+Each device has optional `volume` and `unavailable_reason`. A volume records
+the verified descriptor anchor, path bytes, native mount names, capacity,
+free and user-available bytes, method, interval and bounded gaps. Unknown
+quantities are null. Capacity is filesystem-reported, not a physical disk
+capacity. Volume capacities and available space are never added together.
+Source storage is copied intact into reviews and filtered views. Rendering
+uses no live disk query; invalid or unsupported storage leaves the historical
+sizes and list available, with percentages unavailable.

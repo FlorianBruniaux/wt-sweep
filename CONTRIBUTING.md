@@ -44,6 +44,28 @@ changing Rust code. The repository's [CI workflow](.github/workflows/ci.yml)
 defines the same checks. Record local results, skipped tests and the source
 revision tested; check the remote run separately before claiming CI passed.
 
+The HTML dashboard checks also run in CI. To repeat them with an installed
+Playwright/Chromium (the locked `site` dependencies provide Playwright):
+
+```sh
+(
+  set -eu
+  export PLAYWRIGHT_MODULE="$PWD/site/node_modules/@playwright/test"
+  fixture_dir="$(mktemp -d)"
+  WT_SWEEP_DASHBOARD_FIXTURE_DIR="$fixture_dir" cargo test --locked --offline --test html_report dashboard_fixture_export -- --exact
+  node tests/html-list.cjs
+  node tests/html-dashboard.cjs "$fixture_dir/report.html" "$fixture_dir/dashboard"
+  node tests/html-command.cjs "$fixture_dir/report.html" "$fixture_dir/commands"
+  node tests/html-sections.cjs "$fixture_dir/report.html" "$fixture_dir/sections"
+  node tests/html-theme.cjs "$fixture_dir/report.html" "$fixture_dir/themes"
+)
+```
+
+Install development dependencies with `pnpm --dir site install --frozen-lockfile`
+and Chromium with `pnpm --dir site exec playwright install chromium` when needed.
+The report fixture contains synthetic paths and volume statistics. See
+[CI and Actions policy](docs/ci.md) when a workflow fails before any job starts.
+
 Where `rtk` is installed, follow repository instructions and use its supported
 wrappers. Use `rtk proxy` when exact output matters, especially for Git evidence.
 The product's Git parser must never consume transformed wrapper output.

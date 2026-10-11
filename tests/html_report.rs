@@ -1,5 +1,6 @@
 #![allow(clippy::unwrap_used)]
 use wt_sweep::{
+    disk::storage::{DeviceStorage, StorageUsage, VolumeSpace},
     disk::{DiskBytes, DiskKind, DiskLimits, DiskMeasurement, DiskUsage},
     model::*,
     output::canonical_digest,
@@ -9,6 +10,254 @@ use wt_sweep::{
 
 fn bp(bytes: &[u8]) -> BytePath {
     BytePath::from_bytes(bytes)
+}
+
+fn dashboard_storage() -> StorageUsage {
+    let inputs = [
+        (
+            7u64,
+            b"/synthetic/volume-a".as_slice(),
+            100_000_000_000,
+            1234,
+            800_000_000_000,
+        ),
+        (
+            8u64,
+            b"/synthetic/volume-b".as_slice(),
+            50_000_000_000,
+            0,
+            1_200_000_000_000,
+        ),
+    ];
+    StorageUsage {
+        schema: "wt-sweep.storage/1".into(),
+        started_unix_ms: 101,
+        finished_unix_ms: 150,
+        temporal_consistency: "not_guaranteed".into(),
+        devices: inputs
+            .into_iter()
+            .map(
+                |(device, path, allocated, logical, available)| DeviceStorage {
+                    device,
+                    bytes: DiskBytes { logical, allocated },
+                    unavailable_reason: None,
+                    volume: Some(VolumeSpace {
+                        anchor: Identity {
+                            device,
+                            inode: device + 10,
+                        },
+                        anchor_path: bp(path),
+                        mount_path: Some(bp(path)),
+                        source: None,
+                        filesystem: Some(bp(b"apfs")),
+                        identity_verified: true,
+                        capacity_bytes: Some(2_000_000_000_000),
+                        free_bytes: Some(available),
+                        available_bytes: Some(available),
+                        method: "fstatfs".into(),
+                        started_unix_ms: 101,
+                        finished_unix_ms: 102,
+                        gaps: vec![],
+                    }),
+                },
+            )
+            .collect(),
+    }
+}
+
+fn dashboard_fixture() -> Inventory {
+    let (mut source, _) = fixture();
+    let usage = source.disk_usage.as_mut().unwrap();
+    usage.storage = Some(dashboard_storage());
+    usage.unique_bytes = DiskBytes {
+        logical: 1234,
+        allocated: 150_000_000_000,
+    };
+    source
+}
+
+#[test]
+fn dashboard_keeps_volumes_distinct_and_source_intact() {
+    let source = dashboard_fixture();
+    let before = serde_json::to_vec(&source).unwrap();
+    let report = html::inventory(&source, 4 * 1024 * 1024).unwrap();
+    assert!(report.contains("data-device=\"7\""));
+    assert!(report.contains("data-device=\"8\""));
+    assert!(report.contains("5.0%"));
+    assert!(report.contains("2.5%"));
+    assert!(!report.contains("data-capacity-bytes=\"4000000000000\""));
+    assert_eq!(serde_json::to_vec(&source).unwrap(), before);
+    assert!(report.contains("data-disk-dashboard"));
+    assert!(report.contains("aria-label=\"Measured allocation as a share of volume capacity\""));
+}
+
+#[test]
+fn dashboard_legacy_inventory_explains_missing_capacity() {
+    let (source, _) = fixture();
+    let report = html::inventory(&source, 4 * 1024 * 1024).unwrap();
+    assert!(report.contains("Capacity was not recorded in this inventory"));
+    assert!(report.contains("8192 octets"));
+    assert!(!report.contains("<meter"));
+}
+
+#[test]
+fn dashboard_over_100_keeps_number_and_caps_meter() {
+    let mut source = dashboard_fixture();
+    let storage = source
+        .disk_usage
+        .as_mut()
+        .unwrap()
+        .storage
+        .as_mut()
+        .unwrap();
+    storage.devices[0].volume.as_mut().unwrap().capacity_bytes = Some(40_000_000_000);
+    storage.devices[0].volume.as_mut().unwrap().free_bytes = Some(0);
+    storage.devices[0].volume.as_mut().unwrap().available_bytes = Some(0);
+    let report = html::inventory(&source, 4 * 1024 * 1024).unwrap();
+    assert!(report.contains("250.0%"));
+    assert!(report.contains("value=\"100.0\""));
+    assert!(report.contains("exceeds reported capacity"));
+    let usage = source.disk_usage.as_mut().unwrap();
+    usage.storage.as_mut().unwrap().devices.truncate(1);
+    usage.storage.as_mut().unwrap().devices[0].bytes.allocated = u64::MAX;
+    let volume = usage.storage.as_mut().unwrap().devices[0]
+        .volume
+        .as_mut()
+        .unwrap();
+    volume.capacity_bytes = Some(u64::MAX);
+    volume.available_bytes = Some(0);
+    volume.free_bytes = Some(0);
+    usage.unique_bytes.allocated = u64::MAX;
+    let report = html::inventory(&source, 4 * 1024 * 1024).unwrap();
+    assert!(report.contains("data-capacity-bytes=\"18446744073709551615\""));
+    assert!(report.contains("100.0%"));
+}
+
+#[test]
+fn dashboard_unknown_schema_or_broken_totals_refuses_percentages() {
+    for case in 0..4 {
+        let mut source = dashboard_fixture();
+        let storage = source
+            .disk_usage
+            .as_mut()
+            .unwrap()
+            .storage
+            .as_mut()
+            .unwrap();
+        match case {
+            0 => storage.schema = "wt-sweep.storage/99".into(),
+            1 => storage.devices[0].bytes.allocated += 1,
+            2 => storage.devices[1].device = 7,
+            _ => storage.devices[0].bytes.logical += 1,
+        }
+        let report = html::inventory(&source, 4 * 1024 * 1024).unwrap();
+        assert!(report.contains("Captured volume data is unsupported or inconsistent"));
+        assert!(!report.contains("<meter"));
+        assert_eq!(report.matches("data-worktree=\"").count(), 2);
+    }
+}
+
+#[test]
+fn dashboard_escape_names_and_unknown_capacity_without_hiding_measured_bytes() {
+    let mut source = dashboard_fixture();
+    let volume = source
+        .disk_usage
+        .as_mut()
+        .unwrap()
+        .storage
+        .as_mut()
+        .unwrap()
+        .devices[0]
+        .volume
+        .as_mut()
+        .unwrap();
+    volume.mount_path = Some(bp(b"/bad<&\"\xff"));
+    volume.capacity_bytes = Some(0);
+    let report = html::inventory(&source, 4 * 1024 * 1024).unwrap();
+    assert!(report.contains("/bad&lt;&amp;&quot;\\xff"));
+    assert!(!report.contains("data-capacity-bytes=\"0\""));
+    assert!(report.contains("Partial measurement"));
+    assert!(report.contains("Capacity unavailable for this volume"));
+    assert!(report.contains("100000000000 octets"));
+}
+
+#[test]
+fn dashboard_review_uses_full_source_counts_and_keeps_four_coverage_states() {
+    let inventory = dashboard_fixture();
+    let (_, mut review) = fixture();
+    review.disk_usage = inventory.disk_usage.clone();
+    let usage = review.disk_usage.as_mut().unwrap();
+    let mut complete = usage.measurements[0].clone();
+    complete.complete = true;
+    let mut missing = complete.clone();
+    missing.bytes = None;
+    missing.complete = false;
+    let mut omitted = missing.clone();
+    omitted.requested = false;
+    usage.measurements.extend([complete, missing, omitted]);
+    review.inventory_sha256 = canonical_digest(&inventory).unwrap();
+    review.digest_sha256 = canonical_digest(&review).unwrap();
+    let selected = view::build(
+        &inventory,
+        &review,
+        ReviewFilters {
+            verdict: Some("keep".into()),
+            ..Default::default()
+        },
+        "repo",
+    )
+    .unwrap();
+    assert_eq!(selected.selected_paths.len(), 1);
+    let report = html::review(&selected, 4 * 1024 * 1024).unwrap();
+    assert!(report.contains("data-cleanup-count=\"keep\">1"));
+    assert!(report.contains("data-cleanup-count=\"cleanup_candidate\">1"));
+    assert!(report.contains("data-cleanup-count=\"verify\">0"));
+    assert!(
+        report.contains(
+            "Working directories: 1 complete; 1 partial; 1 not measured; 1 not requested"
+        )
+    );
+    assert!(report.contains("data-device=\"8\""));
+}
+
+#[test]
+fn dashboard_fixture_export() {
+    let source = dashboard_fixture();
+    let before = serde_json::to_vec(&source).unwrap();
+    let report = html::inventory(&source, 4 * 1024 * 1024).unwrap();
+    assert!(report.contains("<meter"));
+    assert!(report.contains("Captured volume statistics"));
+    assert_eq!(serde_json::to_vec(&source).unwrap(), before);
+    if let Some(path) = std::env::var_os("WT_SWEEP_DASHBOARD_FIXTURE_DIR") {
+        use std::io::Write;
+        let path = std::path::PathBuf::from(path).join("report.html");
+        let mut file = std::fs::OpenOptions::new()
+            .write(true)
+            .create_new(true)
+            .open(path)
+            .unwrap();
+        file.write_all(report.as_bytes()).unwrap();
+    }
+}
+
+#[test]
+fn dashboard_no_measurements_distinguishes_unavailable_from_invalid_storage() {
+    let (mut source, _) = fixture();
+    source.disk_usage = None;
+    let report = html::inventory(&source, 4 * 1024 * 1024).unwrap();
+    assert!(report.contains("Sizes and capacity are unavailable in this inventory"));
+    assert!(!report.contains("The measured size remains available"));
+    let (mut source, _) = fixture();
+    let usage = source.disk_usage.as_mut().unwrap();
+    usage.measurements.clear();
+    usage.unique_bytes = DiskBytes::default();
+    let mut storage = dashboard_storage();
+    storage.devices.clear();
+    usage.storage = Some(storage);
+    let report = html::inventory(&source, 4 * 1024 * 1024).unwrap();
+    assert!(report.contains("No measured device has captured capacity"));
+    assert!(!report.contains("unsupported or inconsistent"));
+    assert!(!report.contains("<meter"));
 }
 fn fixture() -> (Inventory, Review) {
     let mut inventory = Inventory::new(ScanScope::Roots {
@@ -64,6 +313,7 @@ fn fixture() -> (Inventory, Review) {
         });
     }
     inventory.disk_usage = Some(DiskUsage {
+        storage: None,
         requested_paths: None,
         started_unix_ms: 101,
         finished_unix_ms: 150,
@@ -165,6 +415,148 @@ fn fixture() -> (Inventory, Review) {
 }
 
 #[test]
+fn inventory_puts_counts_and_one_visible_flat_list_before_closed_technical_details() {
+    let (mut inventory, _) = fixture();
+    let original = inventory.families[0].worktrees[0].clone();
+    for (path, bare, state) in [
+        (b"/synthetic/0-bare".as_slice(), true, DirState::Present),
+        (b"/synthetic/0-missing".as_slice(), false, DirState::Absent),
+        (
+            b"/synthetic/0-unknown".as_slice(),
+            false,
+            DirState::Unknown {
+                reason: "access <refused>".into(),
+            },
+        ),
+    ] {
+        let mut row = original.clone();
+        row.path = bp(path);
+        row.bare = bare;
+        row.path_state = state;
+        inventory.families[0].worktrees.push(row);
+    }
+    let before = serde_json::to_vec(&inventory).unwrap();
+    let report = html::inventory(&inventory, 1_000_000).unwrap();
+    let overview = report.find("id=\"overview\"").unwrap();
+    let list = report.find("id=\"worktree-families\"").unwrap();
+    let disk = report.find("id=\"disk-priority\"").unwrap();
+    assert!(
+        overview < list && list < disk,
+        "counts and list must lead the report"
+    );
+    let table = &report[list..disk];
+    assert!(table.split_once('>').unwrap().0.contains("open"));
+    assert!(table.contains("data-flat-list=\"\""));
+    assert_eq!(table.matches("data-row-group").count(), 1);
+    assert_eq!(table.matches("data-worktree=\"").count(), 5);
+    assert!(
+        !table.contains("class=\"family\""),
+        "no repeated family headers before rows"
+    );
+    for column in [
+        "Repository",
+        "Branch",
+        "Path",
+        "Measured size",
+        "Directory state",
+    ] {
+        assert!(table.contains(&format!("scope=\"col\">{column}</th>")));
+    }
+    for state in ["present", "bare", "absent", "unknown"] {
+        assert!(table.contains(&format!("data-state=\"{state}\"")));
+    }
+    assert!(
+        table.find("data-state=\"present\"").unwrap() < table.find("data-state=\"bare\"").unwrap()
+    );
+    assert!(table.contains("access &lt;refused&gt;"));
+    assert!(table.contains("Recorded evidence"));
+    assert!(report[..list].contains("Cleanup analysis not performed"));
+    assert!(!report[..list].contains("Not established"));
+    for id in ["disk-priority", "disk", "coverage"] {
+        let opening = report
+            .split_once(&format!("id=\"{id}\""))
+            .unwrap()
+            .1
+            .split_once('>')
+            .unwrap()
+            .0;
+        assert!(
+            !opening.contains("open"),
+            "technical section {id} starts closed"
+        );
+    }
+    assert_eq!(serde_json::to_vec(&inventory).unwrap(), before);
+}
+
+#[test]
+fn inventory_summary_separates_present_directories_bare_and_unavailable_entries() {
+    let (mut inventory, _) = fixture();
+    let original = inventory.families[0].worktrees[0].clone();
+    for (path, bare, state) in [
+        (b"/synthetic/bare".as_slice(), true, DirState::Present),
+        (b"/synthetic/missing".as_slice(), false, DirState::Absent),
+        (
+            b"/synthetic/unknown".as_slice(),
+            false,
+            DirState::Unknown {
+                reason: "not checked".into(),
+            },
+        ),
+        (
+            b"/synthetic/inaccessible".as_slice(),
+            false,
+            DirState::Inaccessible {
+                reason: "denied".into(),
+            },
+        ),
+        (
+            b"/synthetic/read-error".as_slice(),
+            false,
+            DirState::ReadError {
+                reason: "read failed".into(),
+            },
+        ),
+        (
+            b"/synthetic/volume-unavailable".as_slice(),
+            false,
+            DirState::VolumeUnavailable {
+                reason: "not mounted".into(),
+            },
+        ),
+    ] {
+        let mut tree = original.clone();
+        tree.path = bp(path);
+        tree.bare = bare;
+        tree.path_state = state;
+        inventory.families[0].worktrees.push(tree);
+    }
+    let report = html::inventory(&inventory, 1_000_000).unwrap();
+    let overview = report
+        .split_once("id=\"overview\"")
+        .unwrap()
+        .1
+        .split_once("Requested scan scope")
+        .unwrap()
+        .0;
+    for expected in [
+        "8 Git registrations across 2 repository families",
+        "data-inventory-count=\"present\">2</strong>",
+        "data-inventory-count=\"bare\">1</strong>",
+        "data-inventory-count=\"unavailable\">5</strong>",
+        "1 absent; 4 not verified",
+    ] {
+        assert!(overview.contains(expected), "missing {expected}");
+    }
+    assert_eq!(report.matches("data-worktree=\"").count(), 8);
+
+    inventory.families.clear();
+    let empty = html::inventory(&inventory, 1_000_000).unwrap();
+    for category in ["present", "bare", "unavailable"] {
+        assert!(empty.contains(&format!("data-inventory-count=\"{category}\">0</strong>")));
+    }
+}
+
+#[test]
 fn inventory_retains_distinct_families_bytes_sizes_and_untriaged_status() {
     let (inventory, _) = fixture();
     let before = serde_json::to_vec(&inventory).unwrap();
@@ -175,7 +567,7 @@ fn inventory_retains_distinct_families_bytes_sizes_and_untriaged_status() {
         "project\\xff&lt;&amp;&quot;&#39;\\n",
         "refs/heads/topic&lt;&amp;&quot;",
         "detached",
-        "Not triaged",
+        "Cleanup analysis not performed",
         "1,23 Ko",
         "8,19 Ko",
         "4,10 Ko",
@@ -542,7 +934,7 @@ fn disk_priority_section(report: &str) -> &str {
         .split_once("id=\"disk-priority\"")
         .unwrap()
         .1
-        .split_once("<div class=\"notice\">")
+        .split_once("<details class=\"report-section ")
         .unwrap()
         .0
 }
@@ -614,13 +1006,24 @@ fn disk_priority_retains_source_scope_without_claiming_reclaimable_bytes() {
         !section.contains("12,00 Ko"),
         "never sum overlapping row allocations"
     );
-    assert!(section.contains("Recoverable space</span><strong>Not established"));
+    assert!(section.contains("Space freed by cleanup"));
+    assert!(section.contains("Unknown: APFS"));
     assert!(
         section.contains("1 candidate"),
         "source count survives empty view"
     );
     assert!(section.contains("2/5 roots fully measured"));
     assert!(section.contains("2 partial; 1 not measured"));
+    assert!(section.contains("Partial measured allocation"));
+    assert!(section.contains("Inventory total unknown"));
+    assert!(
+        section.contains(
+            "Working directories: 1 complete; 2 partial; 1 not measured; 0 not requested"
+        )
+    );
+    assert!(section.contains(
+        "Shared Git directories: 1 complete; 0 partial; 0 not measured; 0 not requested"
+    ));
     assert!(section.contains("APFS"));
     assert!(section.contains("unaffected by filters"));
     assert!(
@@ -658,7 +1061,7 @@ fn disk_priority_distinguishes_absent_measurements_from_measured_zero() {
         let report = html::inventory(&source, 1_000_000).unwrap();
         let section = disk_priority_section(&report);
         assert!(section.contains("Not measured"));
-        assert!(section.contains("Not reviewed"));
+        assert!(section.contains("Cleanup analysis not performed"));
         assert!(!section.contains("0 o</span>"));
     }
     let usage = inventory.disk_usage.as_mut().unwrap();
@@ -670,5 +1073,157 @@ fn disk_priority_distinguishes_absent_measurements_from_measured_zero() {
     let section = disk_priority_section(&report);
     assert!(section.contains("0 o</span>"));
     assert!(section.contains("1/1 roots fully measured"));
-    assert!(section.contains("Recoverable space</span><strong>Not established"));
+    assert!(!section.contains("Partial measured allocation"));
+    assert!(!section.contains("Inventory total unknown"));
+    assert!(section.contains("Space freed by cleanup"));
+    assert!(section.contains("Unknown: APFS"));
+}
+
+#[test]
+fn enriched_output_limit_is_exact() {
+    let inventory = dashboard_fixture();
+    let full = html::inventory(&inventory, 4 * 1024 * 1024).unwrap();
+    assert!(full.contains("<meter"));
+    assert_eq!(html::inventory(&inventory, full.len()).unwrap(), full);
+    assert_eq!(
+        html::inventory(&inventory, full.len() - 1)
+            .unwrap_err()
+            .code,
+        "publication_limit"
+    );
+}
+
+#[test]
+fn discovery_status_is_explicit_next_to_inventory_counts() {
+    let mut inventory = dashboard_fixture();
+    inventory.coverage.publication = None;
+    inventory.coverage.traversal_complete = false;
+    inventory.coverage.remaining = Some(DiscoveryRemainder {
+        reason: DiscoveryStop::DirectoryBudget,
+        known_pending_paths: 2,
+        cover: RemainingCover::RequestedScope,
+    });
+    let report = html::inventory(&inventory, 4 * 1024 * 1024).unwrap();
+    let overview = report.split("id=\"worktree-families\"").next().unwrap();
+    assert!(
+        overview.contains("Discovery interrupted: additional worktrees may remain undiscovered")
+    );
+    inventory.coverage.traversal_complete = true;
+    inventory.coverage.remaining = None;
+    let report = html::inventory(&inventory, 4 * 1024 * 1024).unwrap();
+    let overview = report.split("id=\"worktree-families\"").next().unwrap();
+    assert!(overview.contains("Recorded discovery traversal completed within the requested scope"));
+    assert!(!overview.contains("Discovery interrupted"));
+    inventory.coverage.publication = Some(PublicationOmissions {
+        local_inventories: 0,
+        markers: 0,
+        families: 2,
+        worktrees: 3,
+        cover: PublicationCover::RequestedScopeAndRegisteredWorktrees,
+    });
+    let report = html::inventory(&inventory, 4 * 1024 * 1024).unwrap();
+    let overview = report.split("id=\"worktree-families\"").next().unwrap();
+    assert!(
+        overview.contains("Publication omitted 3 worktree observations and 2 repository families")
+    );
+    inventory.coverage.publication = None;
+    inventory.coverage.remaining = Some(DiscoveryRemainder {
+        reason: DiscoveryStop::DirectoryBudget,
+        known_pending_paths: 2,
+        cover: RemainingCover::RequestedScope,
+    });
+    let report = html::inventory(&inventory, 4 * 1024 * 1024).unwrap();
+    assert!(
+        report
+            .split("id=\"worktree-families\"")
+            .next()
+            .unwrap()
+            .contains("Discovery interrupted")
+    );
+}
+
+#[test]
+fn scan_limits_group_incidents_without_changing_source() {
+    let mut inventory = dashboard_fixture();
+    inventory.coverage.gaps = [
+        (
+            b"/synthetic/link-a".as_slice(),
+            "symlink reaches an already visited directory; cycle or repeated alias retained",
+        ),
+        (
+            b"/synthetic/link-b".as_slice(),
+            "broken or cyclic symlink: missing target",
+        ),
+        (b"/synthetic/private".as_slice(), "permission denied"),
+        (b"/synthetic/other<&".as_slice(), "other <unknown> reason"),
+    ]
+    .into_iter()
+    .map(|(path, reason)| Gap {
+        path: bp(path),
+        reason: reason.into(),
+    })
+    .collect();
+    inventory.coverage.remaining = Some(DiscoveryRemainder {
+        reason: DiscoveryStop::DirectoryBudget,
+        known_pending_paths: 123,
+        cover: RemainingCover::RequestedScope,
+    });
+    let before = serde_json::to_vec(&inventory).unwrap();
+    let report = html::inventory(&inventory, 4 * 1024 * 1024).unwrap();
+    assert!(report.contains("data-scan-limits"));
+    assert!(report.contains("data-gap-group=\"links\" data-gap-count=\"2\""));
+    assert!(report.contains("data-gap-group=\"access\" data-gap-count=\"1\""));
+    assert!(report.contains("data-gap-group=\"other\" data-gap-count=\"1\""));
+    assert!(report.contains("123 filesystem paths still pending"));
+    assert!(report.contains("not a count of undiscovered worktrees"));
+    assert!(report.contains("<details class=\"scan-technical\"><summary>Technical scan details"));
+    for gap in &inventory.coverage.gaps {
+        assert!(report.contains(&format!("data-copy-path=\"{}\"", gap.path.hex)));
+    }
+    assert!(report.contains("other &lt;unknown&gt; reason"));
+    assert_eq!(serde_json::to_vec(&inventory).unwrap(), before);
+}
+
+#[test]
+fn reading_guide_explains_inventory_and_embeds_an_offline_diagram() {
+    let source = dashboard_fixture();
+    let report = html::inventory(&source, 4 * 1024 * 1024).unwrap();
+    assert!(report.contains("id=\"reading-guide\""));
+    assert!(report.contains("This report is an inventory"));
+    assert!(report.contains("class=\"guide-diagram\""));
+    assert!(report.contains("aria-labelledby=\"guide-flow-title\""));
+    assert!(report.contains("<dialog id=\"command-dialog\""));
+    assert!(report.contains("aria-controls=\"command-results\""));
+    assert!(report.contains("class=\"ui-icon\" aria-hidden=\"true\""));
+    let (source, review) = fixture();
+    let selected = view::build(&source, &review, Default::default(), "repo").unwrap();
+    let report = html::review(&selected, 4 * 1024 * 1024).unwrap();
+    assert!(report.contains("This report includes a Git review"));
+}
+
+#[test]
+fn scan_limits_do_not_mislabel_local_collection_gaps_as_a_stopped_filesystem_walk() {
+    let (mut source, _) = fixture();
+    source.coverage.remaining = None;
+    source.coverage.traversal_complete = false;
+    source.coverage.gaps = vec![
+        Gap {
+            path: bp(b"/synthetic/project"),
+            reason: "local inventory is incomplete; see local_inventories gaps".into(),
+        },
+        Gap {
+            path: bp(b"/synthetic/project"),
+            reason: "Git reports an unborn or unknown HEAD".into(),
+        },
+    ];
+    let report = html::inventory(&source, 4 * 1024 * 1024).unwrap();
+    let limits = report.split("data-scan-limits").nth(1).unwrap();
+    assert!(
+        report.contains("Recorded scan is incomplete: discovery or local evidence may be missing")
+    );
+    assert!(!report.contains("Discovery interrupted:"));
+    assert!(limits.contains("Discovery or local collection is incomplete"));
+    assert!(!limits.contains("filesystem scan stopped"));
+    assert!(limits.contains("Git reports an unborn or unknown HEAD"));
+    assert!(limits.contains("local inventory is incomplete"));
 }

@@ -1,4 +1,5 @@
 //! Bounded metadata-only disk accounting, separate from cleanup evidence.
+pub mod storage;
 use crate::model::{BytePath, Gap, Identity, Inventory, SweepError, now_ms};
 use rustix::{
     fd::OwnedFd,
@@ -8,6 +9,7 @@ use serde::{Deserialize, Serialize};
 use std::{
     collections::{BTreeMap, BTreeSet, HashSet},
     ffi::OsString,
+    os::fd::AsFd,
     os::unix::ffi::OsStringExt,
     path::{Path, PathBuf},
     time::{Duration, Instant},
@@ -76,6 +78,8 @@ pub struct DiskMeasurement {
 #[derive(Clone, Debug, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct DiskUsage {
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub storage: Option<storage::StorageUsage>,
     /// None preserves the historical all-roots scope. Some contains exact requested paths.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub requested_paths: Option<Vec<BytePath>>,
@@ -192,6 +196,8 @@ struct Collector<'a> {
     root_paths: HashSet<PathBuf>,
     seen: HashSet<Key>,
     unique: DiskBytes,
+    device_bytes: BTreeMap<u64, DiskBytes>,
+    volume_probes: storage::native::Probes<'a>,
 }
 struct Walk {
     entry_allowance: usize,
@@ -244,8 +250,11 @@ impl Collector<'_> {
         Ok(())
     }
     fn account(&mut self, w: &mut Walk, st: &Stat) -> Result<bool, &'static str> {
+        if st.st_dev as u64 != w.device {
+            return Err("filesystem boundary not traversed");
+        }
         let id = key(st);
-        if !w.seen.insert(id) {
+        if w.seen.contains(&id) {
             return Ok(false);
         }
         let kind = st.st_mode & libc::S_IFMT;
@@ -260,10 +269,14 @@ impl Collector<'_> {
                 .and_then(|n| n.checked_mul(512))
                 .ok_or("invalid allocated block count")?,
         };
-        add(w.row.bytes.get_or_insert_with(Default::default), &bytes)?;
-        if self.seen.insert(id) {
-            add(&mut self.unique, &bytes)?;
+        let mut next_row = w.row.bytes.clone().unwrap_or_default();
+        add(&mut next_row, &bytes)?;
+        if !self.seen.contains(&id) {
+            storage::add_unique(&mut self.unique, &mut self.device_bytes, id.0, &bytes)?;
+            self.seen.insert(id);
         }
+        w.row.bytes = Some(next_row);
+        w.seen.insert(id);
         Ok(true)
     }
     fn directory(&mut self, w: &mut Walk, fd: OwnedFd, path: &Path, depth: usize, before: &Stat) {
@@ -388,6 +401,24 @@ impl Collector<'_> {
                 return Err("dataless root not traversed".into());
             }
             w.device = st.st_dev as u64;
+            let allowed = self.check(&w).is_ok();
+            let total_start = self.started;
+            let total_timeout = self.limits.timeout;
+            let root_start = w.started;
+            let root_timeout = w.time_allowance;
+            self.volume_probes.observe(
+                fd.as_fd(),
+                &Identity {
+                    device: w.device,
+                    inode: st.st_ino,
+                },
+                &w.row.path,
+                || {
+                    allowed
+                        && total_start.elapsed() < total_timeout
+                        && root_start.elapsed() < root_timeout
+                },
+            );
             self.entries += 1;
             w.row.entries_checked += 1;
             self.account(&mut w, &st).map_err(str::to_string)?;
@@ -480,6 +511,8 @@ pub fn collect_selected(
         root_paths,
         seen: HashSet::new(),
         unique: DiskBytes::default(),
+        device_bytes: BTreeMap::new(),
+        volume_probes: storage::native::Probes::new(&storage::native::KernelVolumeBackend, 4096),
     };
     let mut measurements = Vec::with_capacity(rows.len());
     for (path, (kind, identity)) in rows {
@@ -508,10 +541,44 @@ pub fn collect_selected(
         };
         measurements.push(row);
     }
+    let finished_unix_ms = now_ms();
+    let mut volumes = collector.volume_probes.spaces;
+    let skipped = collector.volume_probes.skipped;
+    let devices = collector
+        .device_bytes
+        .into_iter()
+        .map(|(device, bytes)| {
+            let volume = volumes.remove(&device);
+            let unavailable_reason = if volume.is_some() {
+                None
+            } else {
+                Some(
+                    skipped
+                        .get(&device)
+                        .copied()
+                        .unwrap_or("capacity_not_observed")
+                        .into(),
+                )
+            };
+            storage::DeviceStorage {
+                device,
+                bytes,
+                volume,
+                unavailable_reason,
+            }
+        })
+        .collect();
     inventory.disk_usage = Some(DiskUsage {
+        storage: Some(storage::StorageUsage {
+            schema: "wt-sweep.storage/1".into(),
+            started_unix_ms,
+            finished_unix_ms,
+            temporal_consistency: "not_guaranteed".into(),
+            devices,
+        }),
         requested_paths: (!selected.is_empty()).then(|| selected.into_iter().collect()),
         started_unix_ms,
-        finished_unix_ms: now_ms(),
+        finished_unix_ms,
         elapsed_ms: millis(started),
         limits: limits.clone(),
         complete: measurements.iter().all(|r| r.complete),
@@ -701,6 +768,79 @@ mod progress_tests {
     use super::*;
 
     #[test]
+    fn account_refuses_another_device_then_counts_its_own_root_without_duplicate_inodes() {
+        let limits = DiskLimits::default();
+        let mut progress = |_: DiskProgress<'_>| {};
+        let started = Instant::now();
+        let mut collector = Collector {
+            progress: &mut progress,
+            last_progress: started,
+            roots_requested: 2,
+            roots_completed: 0,
+            limits: &limits,
+            started,
+            entries: 0,
+            roots: HashSet::new(),
+            root_paths: HashSet::new(),
+            seen: HashSet::new(),
+            unique: DiskBytes::default(),
+            device_bytes: BTreeMap::new(),
+            volume_probes: storage::native::Probes::new(
+                &storage::native::KernelVolumeBackend,
+                4096,
+            ),
+        };
+        let mut walk = Walk {
+            entry_allowance: 10,
+            time_allowance: limits.timeout_per_root,
+            started,
+            seen: HashSet::new(),
+            device: 7,
+            row: DiskMeasurement {
+                requested: true,
+                path: BytePath::from_bytes(b"/synthetic"),
+                kind: DiskKind::Worktree,
+                identity: None,
+                bytes: None,
+                complete: true,
+                entries_checked: 0,
+                excluded_registered_roots: 0,
+                elapsed_ms: 0,
+                gaps: vec![],
+                gaps_omitted: 0,
+            },
+        };
+        // Only obtain the platform Stat layout; inode data below is synthetic.
+        let fd = open(std::env::temp_dir(), DIRECTORY, Mode::empty())
+            .unwrap_or_else(|e| panic!("fixture stat: {e}"));
+        let mut st = fstat(&fd).unwrap_or_else(|e| panic!("fixture stat: {e}"));
+        st.st_dev = 7;
+        st.st_ino = 42;
+        st.st_size = 5;
+        st.st_blocks = 8;
+        st.st_mode = libc::S_IFREG;
+        assert_eq!(collector.account(&mut walk, &st), Ok(true));
+        assert_eq!(collector.account(&mut walk, &st), Ok(false));
+        st.st_dev = 8;
+        st.st_ino = 42;
+        st.st_size = 7;
+        st.st_blocks = 16;
+        assert_eq!(
+            collector.account(&mut walk, &st),
+            Err("filesystem boundary not traversed")
+        );
+        assert_eq!(collector.unique.allocated, 4096);
+        assert!(!collector.device_bytes.contains_key(&8));
+        walk.device = 8;
+        assert_eq!(collector.account(&mut walk, &st), Ok(true));
+        assert_eq!(
+            (collector.unique.logical, collector.unique.allocated),
+            (12, 12288)
+        );
+        assert_eq!(collector.device_bytes.len(), 2);
+    }
+
+    #[test]
     fn root_completion_does_not_postpone_periodic_progress() {
         let limits = DiskLimits::default();
         let started = Instant::now() - Duration::from_millis(4900);
@@ -718,6 +858,11 @@ mod progress_tests {
             root_paths: HashSet::new(),
             seen: HashSet::new(),
             unique: DiskBytes::default(),
+            device_bytes: BTreeMap::new(),
+            volume_probes: storage::native::Probes::new(
+                &storage::native::KernelVolumeBackend,
+                4096,
+            ),
         };
         let row = DiskMeasurement {
             requested: true,

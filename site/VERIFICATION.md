@@ -93,3 +93,20 @@ commit `765a5d9` avait remplacé « Development version » par la version Cargo,
 sans adapter le test. L’assertion vérifie maintenant cette version tout en
 conservant les contrôles de disposition, de date et de navigation. La seconde
 passe complète réussit. Ces contrôles locaux ne prouvent pas un déploiement.
+
+
+## Documentation du dashboard et CI, 11/10/2026
+
+Les pages rapport, disque et contrat EN/FR décrivent le dashboard par volume,
+la liste d’inventaire et la recherche clavier. Les deux pages de changelog
+reprennent la source canonique. Le manifeste relu est mis à jour ; ces ajouts
+sont explicitement postérieurs à l’archive alpha publiée.
+
+Validation locale : 8 tests documentaires, de compilation et de métadonnées
+publiques, 34 tests Chromium, Astro sans erreur ni avertissement et 31 pages
+construites. Les essais utilisent Python 3.14 et les dépendances verrouillées.
+Le Python système 3.9 et l’écriture de cache dans un checkout de référence ont
+été refusés lors des premières tentatives ; la validation a repris dans une
+copie de dépendances appartenant au clone isolé. Ces contrôles ne prouvent pas
+une publication. La [politique CI actuelle](../docs/ci.md) remplace la restriction
+aux seuls événements manuels décrite dans l’entrée historique ci-dessus.

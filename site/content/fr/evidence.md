@@ -27,3 +27,7 @@ La CLI active un contrôle macOS contre la matérialisation des fichiers datales
 ## Contexte de forge
 
 Les URL de dépôt, branche et commit viennent de métadonnées locales capturées. Elles ne sont pas vérifiées auprès du serveur. Les PR/MR affichées exigent une association exacte avec des observations importées ; les liens de remotes ne changent pas le triage. [Liens du rapport et provenance](/fr/docs/report/#liens-github-et-gitlab).
+
+## Compatibilité du format disque
+
+Les sources après `v0.1.0-alpha.1` peuvent enregistrer le bloc facultatif `disk_usage.storage`. Le nouveau lecteur accepte les anciens inventaires sans changer leur empreinte canonique. Les anciens lecteurs stricts peuvent refuser les fichiers enrichis. Des données de volume inconnues ou incohérentes empêchent le calcul des pourcentages, sans effacer tailles ni lignes. La capacité ne change pas C1–C5.

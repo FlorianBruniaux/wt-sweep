@@ -27,3 +27,7 @@ The CLI establishes a native macOS dataless materialization guard. Actual FilePr
 ## Forge context
 
 Repository, branch and commit URLs are built from captured local metadata. They are not checked against the server. Only exactly associated imported PR/MR observations are shown as requests; remote links do not alter triage. [Report links and provenance](/docs/report/#github-and-gitlab-links).
+
+## Storage format compatibility
+
+Source builds after `v0.1.0-alpha.1` can record the optional `disk_usage.storage` block. New readers accept older inventories without changing their canonical digest. Older strict readers can reject enriched files. Unsupported or inconsistent volume data leaves percentages unavailable while retaining recorded sizes and rows. Capacity never changes C1–C5.

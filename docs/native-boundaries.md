@@ -2,8 +2,9 @@
 
 [Index documentaire](README.md) · [Architecture](architecture.md) · [Contrats](contracts.md)
 
-Le MVP utilise trois exceptions unsafe privées : `mounts::ffi`,
-`residency::ffi` et `git::anchored_cwd`.
+Le MVP utilise les exceptions unsafe privées `mounts::ffi`, `residency::ffi`
+et `git::anchored_cwd`, ainsi que `disk::storage::native::ffi` pour les
+statistiques de capacité demandées avec la mesure disque.
 `libc` fournit les types de l'ABI et `getfsstat`. Les deux fonctions de politique
 dataless absentes de cette version de libc sont déclarées avec les signatures
 scalaires du SDK macOS. Aucun exécutable auxiliaire n'est requis par le produit.
@@ -49,6 +50,29 @@ celle-ci peut échapper à la comparaison. Des tables égales ne prouvent ni une
 photographie atomique, ni l'existence ou l'accessibilité de volumes non montés.
 `available` signifie ici présent dans la table ; les refus d'accès du parcours
 sont enregistrés séparément.
+
+## Capacité sur descripteur
+
+La mesure disque observe au plus une fois chaque device depuis un répertoire
+déjà acquis et vérifié. `fstatfs` utilise le type Darwin de `libc`, une mémoire
+initialisée et un fd emprunté vivant pendant l'appel. Le code de retour est
+contrôlé avant lecture. Les noms sont bornés aux tableaux natifs et conservés
+en octets ; une chaîne sans NUL provoque une erreur, jamais une troncature.
+Les identités device/inode avant et après doivent égaler l'ancre attendue.
+
+Les produits blocs × taille de bloc sont vérifiés séparément. Capacité nulle,
+compteurs indéfinis ou débordements restent inconnus. Un disponible ou libre
+supérieur à la capacité n'est pas publié comme valide. Ces observations ne
+modifient ni la table des montages ni la preuve de nettoyage.
+
+Le plafond est de 4 096 tentatives de devices dans le budget disque restant.
+Un échec n'entraîne pas de retry ; les octets par device sont conservés.
+Les contrôles de temps précèdent et suivent chaque lecture d'identité et de
+statistiques. Une limite atteinte arrête les appels suivants et laisse les
+capacités inconnues. Ils ne garantissent pas l'interruption
+immédiate d'un syscall bloqué dans le noyau. Aucun montage supplémentaire n'est
+ouvert, aucune commande externe ou modification système n'est nécessaire.
+La frontière exige une revue indépendante avant livraison.
 
 ## Refus de matérialisation
 

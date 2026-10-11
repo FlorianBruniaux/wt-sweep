@@ -1,0 +1,7 @@
+flowchart TD
+    disk[Explore the chosen folders] --> git[Find Git repositories]
+    git --> worktrees[List registered worktrees]
+    disk -. Paths not explored .-> limits[Scan limits]
+    worktrees --> inventory[Inventory: paths and measured sizes]
+    inventory -. Run a Git review .-> review[Check current Git and local evidence]
+    review --> verdicts[Keep / Verify / Cleanup candidate]

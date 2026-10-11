@@ -16,6 +16,43 @@ Le total garde son périmètre source ; les tailles des lignes ne sont pas
 additionnées. Le HTML conserve Ko/Mo/Go, le détail texte et `--verbose` leurs
 unités binaires KiB/MiB/GiB. Le JSON conserve les octets exacts.
 
+## Lire les jauges HTML
+
+Le dashboard conserve le nombre de dossiers présents et la liste des worktrees
+ouverte. Il affiche chaque volume séparément, sans additionner leurs capacités.
+Plusieurs volumes APFS peuvent partager le même conteneur.
+
+- **Capacité du volume** : capacité rapportée par le système de fichiers,
+  sans déduire la capacité du SSD physique.
+- **Disponible pour vous** : espace disponible pour l'utilisateur à la capture.
+  La jauge « Space not available » représente capacité moins disponible, avec
+  les éventuelles réserves et limites ; elle ne compte pas les autres fichiers.
+- **Allocation mesurée** : octets alloués dédupliqués par device/inode, comprenant
+  le Git partagé. La jauge divise cette allocation par la capacité du même volume.
+  Des clones APFS peuvent partager des blocs : ce ratio ne prédit pas l'espace
+  physique exclusif ou libérable.
+- **Couverture** : mesures complètes, partielles, sans résultat et non demandées,
+  séparées entre dossiers de travail et Git partagé. Elle ne certifie pas une
+  découverte complète de la machine. Les filtres ne changent pas ces chiffres.
+
+Les pourcentages sont arrondis à une décimale en arithmétique entière. Une valeur
+supérieure à 100 % reste affichée, avec une barre bornée à 100 %. Une capacité
+absente, nulle ou invalide donne une explication, jamais un zéro inventé.
+Les mesures restent partielles quand le périmètre source l'est. Aucun score
+global de nettoyage n'est calculé.
+
+`--disk-usage` capture la capacité sur un descripteur déjà ouvert et vérifié,
+au plus une tentative par device dans le budget disque restant. Un échec conserve
+les octets mesurés. Le JSON contient le bloc facultatif `disk_usage.storage`,
+ses intervalles et diagnostics. Les [frontières natives](native-boundaries.md)
+décrivent les limites de temps et de lecture.
+
+Le rendu est hors ligne : les anciens rapports sans ce bloc restent lisibles,
+mais leur pourcentage demeure indisponible. Une nouvelle collecte explicitement
+choisie est nécessaire. Le rendu ne complète pas les données historiques avec
+les statistiques actuelles. Les observations source sont conservées dans les
+revues et vues filtrées ; la liste et les autres volumes fonctionnent sans JavaScript.
+
 ## Lancer une mesure
 
 Depuis le checkout de Worktree Sweep, sur macOS :

@@ -194,6 +194,12 @@ fichiers enregistrés et le JSON ne contiennent pas de décoration terminal.
 
 ## Rapport HTML
 
+Les sources après `v0.1.0-alpha.1` ajoutent un tableau de bord disque : capacité
+capturée, espace disponible et allocation mesurée par volume. La liste reste
+ouverte ; un inventaire distingue dossiers présents, dépôts bare, chemins
+absents et non vérifiés. Cmd+K / Ctrl+K rejoint une section ou un worktree.
+Ces ajouts ne sont pas dans l’archive alpha publiée. [Guide disque](docs/disk-usage.md).
+
 Recherchez un chemin ou une branche, filtrez les verdicts, triez par taille et
 copiez les chemins. Les worktrees sont regroupés par famille Git : thèmes clair
 et sombre, tailles en Ko/Mo/Go, sections dépliables. Les totaux source, les lignes

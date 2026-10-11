@@ -54,7 +54,7 @@
   {
     "slug": "disk",
     "source": "docs/disk-usage.md",
-    "sourceHash": "1a8d49355b1815afe4b0696d3ad81e8d5652d6cf53135aecdb6c955e6d381ee2",
+    "sourceHash": "f1a12437020e30e25eab019edd16ba9a2957ac1fd89aa1f34b32b9136fab7a56",
     "title": {
       "en": "Read disk measurements",
       "fr": "Comprendre les mesures disque"
@@ -67,7 +67,7 @@
   {
     "slug": "report",
     "source": "docs/html-report-plan.md",
-    "sourceHash": "476b70f5ad0b2f0016315c29eeb8877c1234319b63a002efca178a38c741cc63",
+    "sourceHash": "ec0d456c98a43c8ae364bece93e622a1a5359c16b47043b03b77a6ee12c42483",
     "title": {
       "en": "Read the HTML report",
       "fr": "Lire le rapport HTML"
@@ -106,7 +106,7 @@
   {
     "slug": "evidence",
     "source": "docs/contracts.md",
-    "sourceHash": "149542c8468bb6c5eb46d45be3bef25f5c011b3cbc651f9135ca390f8d041f03",
+    "sourceHash": "85ec9cc69115f3f05355093fbf70ea472242c7c510d8632e665e0ef0b070d0e1",
     "title": {
       "en": "Evidence and limits",
       "fr": "Preuves et limites"
@@ -132,7 +132,7 @@
   {
     "slug": "changelog",
     "source": "CHANGELOG.md",
-    "sourceHash": "a3adc1321660beb786949be0a632e04da667887af062cd31ce8b3be694792e03",
+    "sourceHash": "a7c7500c0f70c33bed43dd7666e9bc7a1da3cb5f16abeb894b9c4ff0f4eb790a",
     "title": {
       "en": "Changelog",
       "fr": "Historique des changements"

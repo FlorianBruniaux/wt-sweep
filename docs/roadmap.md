@@ -2,6 +2,23 @@
 
 [Index documentaire](README.md) · [Preuves du triage](finish-ledger.md#triage-t01-t09) · [Plan T01-T09](superpowers/plans/2026-10-05-worktree-triage-v2.md)
 
+## Dashboard et CI automatique, 11/10/2026
+
+Les sources après l’alpha ajoutent les jauges par volume, la liste d’inventaire
+ouverte et filtrable, le guide de lecture et la recherche Cmd+K / Ctrl+K.
+Le bloc facultatif `disk_usage.storage` conserve la capacité observée pendant
+la collecte ; le rendu reste hors ligne. Ces ajouts ne modifient ni C1-C5 ni
+l’archive `v0.1.0-alpha.1` déjà publiée.
+
+La politique Actions du dépôt refusait les événements `push` et `pull_request`.
+Elle les autorise désormais pour le seul compte propriétaire, avec les lancements
+manuels conservés. Le workflow exécute aussi les tests navigateur du rapport.
+Le [registre de validation](progress.md#dashboard-et-ci-automatique-11102026)
+distingue les vérifications locales des exécutions automatiques distantes.
+
+La suite reste l’évaluation facultative de #20 et les extensions #27 à #30
+regroupées sous #14. Ni nouvelle release ni suppression réelle dans ce lot.
+
 ## Finitions de lecture, 10/10/2026
 
 Le lot `60f0038` ajoute le récapitulatif console centré sur le disque, la sortie

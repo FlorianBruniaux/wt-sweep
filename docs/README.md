@@ -36,9 +36,10 @@ Le [guide de v0.1.0-alpha.1](release.md) d√©crit le paquet Apple Silicon, son t√
 | Document | Contents |
 | --- | --- |
 | [Contributing](../CONTRIBUTING.md) | Local checks, fixture ownership and change requirements. |
+| [CI and Actions policy](ci.md) | Automatic triggers, owner-only execution, browser checks and startup-failure diagnosis. |
 | [README illustrations](assets/README.md) | Current Gemini overview, dated native HTML captures, archived illustrations and their provenance. |
 | [Architecture](architecture.md) | Module responsibilities, data flow, read boundaries and test strategy. |
-| [Native boundaries](native-boundaries.md) | Three reviewed private unsafe boundaries and their evidence limits. |
+| [Native boundaries](native-boundaries.md) | Private native boundaries, captured volume capacity and their evidence limits. |
 | [AI development harness](harness.md) | Canonical instructions, generated host files and separate checks for native activation. |
 | [Collection measurements](collection-performance.md) | Discovery throughput, reproducible Rust benchmark, budget profiles, phase metrics and observed coverage. |
 | [Collection benchmark, 07/10](research/collection-benchmark-2026-10-07.md) | Before/after release samples at 50 and 100 worktrees, first provisional fact, comparable evidence and rejected measurements. |
@@ -62,6 +63,8 @@ Le [guide de v0.1.0-alpha.1](release.md) d√©crit le paquet Apple Silicon, son t√
 
 | Document | Contents |
 | --- | --- |
+| [Tableau de bord disque](superpowers/specs/2026-10-11-disk-dashboard-design.md) | Approved volume gauges, measured allocation percentages, coverage and offline compatibility design. |
+| [Plan du tableau de bord disque](superpowers/plans/2026-10-11-disk-dashboard.md) | Approved implementation tasks, contracts, native observations, HTML gauges and conservation checks. |
 | [Roadmap](roadmap.md) | Delivered scope, large-repository collection limits, next validation steps and separate removal gates. |
 | [Plan de tri des worktrees, v2](superpowers/plans/2026-10-05-worktree-triage-v2.md) | Completed T01-T09 plan, decision conditions, acceptance checks and conditional extensions. |
 | [Critique du plan et de l'architecture](superpowers/plans/2026-10-05-worktree-triage-review.md) | Findings against the first proposal and current code, alternatives, failure modes and corrections adopted in v2. |
