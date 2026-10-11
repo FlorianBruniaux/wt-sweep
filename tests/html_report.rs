@@ -230,13 +230,21 @@ fn dashboard_fixture_export() {
     assert_eq!(serde_json::to_vec(&source).unwrap(), before);
     if let Some(path) = std::env::var_os("WT_SWEEP_DASHBOARD_FIXTURE_DIR") {
         use std::io::Write;
-        let path = std::path::PathBuf::from(path).join("report.html");
-        let mut file = std::fs::OpenOptions::new()
-            .write(true)
-            .create_new(true)
-            .open(path)
-            .unwrap();
-        file.write_all(report.as_bytes()).unwrap();
+        let (_, mut review) = fixture();
+        review.disk_usage = source.disk_usage.clone();
+        review.inventory_sha256 = canonical_digest(&source).unwrap();
+        review.digest_sha256 = canonical_digest(&review).unwrap();
+        let selected = view::build(&source, &review, ReviewFilters::default(), "repo").unwrap();
+        let review_report = html::review(&selected, 4 * 1024 * 1024).unwrap();
+        let directory = std::path::PathBuf::from(path);
+        for (name, content) in [("report.html", report), ("review.html", review_report)] {
+            let mut file = std::fs::OpenOptions::new()
+                .write(true)
+                .create_new(true)
+                .open(directory.join(name))
+                .unwrap();
+            file.write_all(content.as_bytes()).unwrap();
+        }
     }
 }
 

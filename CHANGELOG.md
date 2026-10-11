@@ -18,7 +18,8 @@
 - Offline reading guide, static Mermaid diagram and Cmd+K / Ctrl+K search for
   report sections and recorded worktrees, with keyboard focus restoration.
 - Browser checks in CI for dashboard gauges, command search, sections, themes,
-  mobile layout, JavaScript-disabled reading and unchanged source counts.
+  mobile layout, JavaScript-disabled reading and unchanged source counts,
+  covering both inventory and review reports.
 
 ### Changed
 

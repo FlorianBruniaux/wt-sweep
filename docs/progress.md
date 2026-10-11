@@ -44,6 +44,16 @@ reste une suite échouée, le rejeu une preuve distincte. Les six cas ignorés
 incluent quatre fixtures historiques et deux chemins non UTF-8 refusés par le
 système de fichiers. La CI rejoue la suite complète sans compilation concurrente.
 
+Une recette après installation dans un préfixe temporaire produit un rapport
+natif sur quatre worktrees synthétiques : trois `keep`, un `cleanup_candidate`,
+capacité capturée, fixture conservée et reçus vérifiés. Le test visuel de cette
+revue sélectionnait initialement « Repository links » au lieu des preuves ;
+son sélecteur vise maintenant les détails de preuve de la cellule. Les thèmes
+et sections passent sur la fixture de revue ajoutée à la CI, puis sur la revue
+installée : 12 variantes de thèmes et 8 de sections pour chacune. La fixture
+d’inventaire repasse aussi ses 12 variantes de thèmes. Le produit n’a pas été
+modifié pour satisfaire ce sélecteur.
+
 Les 6 expériences d’exclusion, 2 tests du harness de comparaison et 22 fichiers
 générés du harness passent. Le site passe 8 tests documentaires/de compilation,
 34 tests navigateur et Astro sans erreur ni avertissement. Ces observations

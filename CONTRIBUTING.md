@@ -58,6 +58,8 @@ Playwright/Chromium (the locked `site` dependencies provide Playwright):
   node tests/html-command.cjs "$fixture_dir/report.html" "$fixture_dir/commands"
   node tests/html-sections.cjs "$fixture_dir/report.html" "$fixture_dir/sections"
   node tests/html-theme.cjs "$fixture_dir/report.html" "$fixture_dir/themes"
+  node tests/html-sections.cjs "$fixture_dir/review.html" "$fixture_dir/review-sections"
+  node tests/html-theme.cjs "$fixture_dir/review.html" "$fixture_dir/review-themes"
 )
 ```
 

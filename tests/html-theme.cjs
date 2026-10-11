@@ -47,7 +47,7 @@ fs.mkdirSync(output, {recursive:false});
       assert.equal(await page.locator('.skip').evaluate(e=>e===document.activeElement),true);
       const focus=await page.locator('.skip').evaluate(e=>({width:getComputedStyle(e).outlineWidth,style:getComputedStyle(e).outlineStyle,color:getComputedStyle(e).outlineColor}));
       assert.ok(parseFloat(focus.width)>=2,'keyboard focus outline must be at least 2px');assert.notEqual(focus.style,'none');assert.equal(focus.color,theme==='light'?'rgb(194, 65, 12)':'rgb(249, 115, 22)');
-      const summary=page.locator('tbody details summary').first();
+      const summary=page.locator('tbody > tr > td:last-child > details > summary').first();
       const evidenceWidth=await summary.evaluate(e=>e.parentElement.parentElement.getBoundingClientRect().width);
       await summary.focus();await page.keyboard.press('Enter');assert.equal(await summary.evaluate(e=>e.parentElement.open),true);
       if(width>=1440) {
