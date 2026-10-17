@@ -62,6 +62,7 @@ pub(crate) struct SummaryOutcome {
     pub summary: LocalSummary,
     pub first_git_timeout: Option<GitRead>,
     pub metrics: SummaryMetrics,
+    pub comparison: Option<comparison::SourceCapture>,
 }
 pub(crate) fn collect_summary_for_review(
     w: &Worktree,
@@ -97,8 +98,29 @@ struct Collector<'a> {
     first_git_timeout: Option<GitRead>,
     diagnostic_bytes: usize,
     blobs: BTreeMap<String, Result<String, String>>,
+    comparison: Option<comparison::SourceCapture>,
 }
 impl Collector<'_> {
+    fn capture(
+        &mut self,
+        path: &BytePath,
+        category: comparison::Category,
+        layer: comparison::Layer,
+        stage: Option<u8>,
+        source: comparison::Value,
+        source_oid: Option<String>,
+    ) {
+        if let Some(capture) = &mut self.comparison {
+            capture.push(comparison::SourceRow {
+                path: path.clone(),
+                category,
+                layer,
+                stage,
+                source,
+                source_oid,
+            });
+        }
+    }
     fn gap(&mut self, path: &Path, reason: impl Into<String>) {
         let reason = reason.into();
         let bp = BytePath::from_path(path);
@@ -737,6 +759,7 @@ impl Collector<'_> {
                     }
                 }
             }
+            let mut additional_categories = BTreeMap::new();
             for batch in candidates.chunks(256) {
                 match self
                     .git(
@@ -755,8 +778,16 @@ impl Collector<'_> {
                             for bp in batch {
                                 if ignored.contains(bp) {
                                     observe(&mut self.s.ignored, bp);
+                                    if self.comparison.is_some() {
+                                        additional_categories
+                                            .insert(bp.clone(), comparison::Category::Ignored);
+                                    }
                                 } else {
                                     observe(&mut self.s.untracked, bp);
+                                    if self.comparison.is_some() {
+                                        additional_categories
+                                            .insert(bp.clone(), comparison::Category::Untracked);
+                                    }
                                 }
                             }
                         }
@@ -805,6 +836,14 @@ impl Collector<'_> {
                 if kind == libc::S_IFDIR {
                     if tracked.is_some() {
                         observe(&mut self.s.unstaged, &bp);
+                        self.capture(
+                            &bp,
+                            comparison::Category::Unstaged,
+                            comparison::Layer::Disk,
+                            None,
+                            comparison::Value::unknown("directory replaced indexed file"),
+                            None,
+                        );
                     }
                     if depth >= self.limits.max_depth {
                         self.disk_gap(&p, "disk depth limit reached");
@@ -870,6 +909,8 @@ impl Collector<'_> {
                     self.disk_gap(&p, "unsupported special file");
                     (0, None)
                 };
+                let stable = statat(&fd, &name, AtFlags::SYMLINK_NOFOLLOW)
+                    .is_ok_and(|after| same_stat(&st, &after));
                 match statat(&fd, &name, AtFlags::SYMLINK_NOFOLLOW) {
                     Ok(after) if same_stat(&st, &after) => {}
                     Ok(_) => self
@@ -881,16 +922,46 @@ impl Collector<'_> {
                     if cached.is_some() {
                         self.metrics.cache_hits = self.metrics.cache_hits.saturating_add(1);
                     }
-                    let expected = cached.and_then(|r| r.as_ref().ok());
+                    let expected = cached.and_then(|r| r.as_ref().ok()).cloned();
                     if intent_to_add.contains(&bp)
                         || mode != entry.mode
-                        || digest.as_ref().zip(expected).is_some_and(|(a, b)| a != b)
+                        || digest
+                            .as_ref()
+                            .zip(expected.as_ref())
+                            .is_some_and(|(a, b)| a != b)
                     {
                         observe(&mut self.s.unstaged, &bp);
+                        let value = if stable && !intent_to_add.contains(&bp) {
+                            comparison::Value::disk(digest.clone(), mode, &st)
+                        } else {
+                            comparison::Value::unknown("unstable or intent-to-add source")
+                        };
+                        self.capture(
+                            &bp,
+                            comparison::Category::Unstaged,
+                            comparison::Layer::Disk,
+                            None,
+                            value,
+                            None,
+                        );
                     }
                     if digest.is_none() || (expected.is_none() && !intent_to_add.contains(&bp)) {
                         self.s.unstaged.complete = false;
                     }
+                } else if let Some(category) = additional_categories.get(&bp) {
+                    let value = if stable {
+                        comparison::Value::disk(digest, mode, &st)
+                    } else {
+                        comparison::Value::unknown("source changed during read")
+                    };
+                    self.capture(
+                        &bp,
+                        category.clone(),
+                        comparison::Layer::Disk,
+                        None,
+                        value,
+                        None,
+                    );
                 }
             }
             match fstat(&fd) {
@@ -906,6 +977,14 @@ impl Collector<'_> {
             for bp in index.keys() {
                 if !seen.contains(bp) {
                     observe(&mut self.s.unstaged, bp);
+                    self.capture(
+                        bp,
+                        comparison::Category::Unstaged,
+                        comparison::Layer::Disk,
+                        None,
+                        comparison::Value::Absent { parent: None },
+                        None,
+                    );
                 }
             }
         }
@@ -949,6 +1028,14 @@ fn collect_outcome(
     l: &SummaryLimits,
     h: &dyn LocalHooks,
 ) -> Result<SummaryOutcome, SweepError> {
+    collect_outcome_with_projection(w, l, h, None)
+}
+fn collect_outcome_with_projection(
+    w: &Worktree,
+    l: &SummaryLimits,
+    h: &dyn LocalHooks,
+    projection: Option<(usize, usize)>,
+) -> Result<SummaryOutcome, SweepError> {
     crate::residency::ensure_no_materialization()?;
     let path = w.path.to_path()?;
     let ceiling = SummaryLimits::thorough();
@@ -989,6 +1076,7 @@ fn collect_outcome(
         first_git_timeout: None,
         diagnostic_bytes: 0,
         blobs: BTreeMap::new(),
+        comparison: projection.map(|(rows, bytes)| comparison::SourceCapture::new(l, rows, bytes)),
     };
     if let Err(e) = run(&mut c, w, &path) {
         c.gap(&path, e.to_string());
@@ -1051,7 +1139,16 @@ fn collect_outcome(
             ));
         }
     }
+    if let Some(capture) = &mut c.comparison {
+        capture.identity = c.s.worktree_identity.clone();
+        capture.sources = c.s.sources.clone();
+        capture.summary_sha256 = c.s.digest_sha256.clone();
+        capture.remaining.max_total_bytes = l.max_total_bytes.saturating_sub(c.bytes);
+        capture.remaining.max_objects = l.max_objects.saturating_sub(c.objects);
+        capture.remaining.timeout = l.timeout.saturating_sub(c.started.elapsed());
+    }
     Ok(SummaryOutcome {
+        comparison: c.comparison,
         summary: c.s,
         first_git_timeout: c.first_git_timeout,
         metrics: c.metrics,
@@ -1166,6 +1263,14 @@ fn run(c: &mut Collector<'_>, w: &Worktree, path: &Path) -> io::Result<()> {
                     }
                     if e.stage > 0 {
                         conflicts.insert(e.path.clone());
+                        c.capture(
+                            &e.path,
+                            comparison::Category::Conflicts,
+                            comparison::Layer::Index,
+                            Some(e.stage),
+                            comparison::Value::unknown("unmerged index stage"),
+                            Some(e.oid),
+                        );
                     } else {
                         index.insert(e.path.clone(), e);
                     }
@@ -1310,6 +1415,42 @@ fn run(c: &mut Collector<'_>, w: &Worktree, path: &Path) -> io::Result<()> {
             }
         }
     }
+    if c.comparison.is_some() {
+        for bp in head_tree
+            .keys()
+            .chain(index.keys())
+            .chain(conflicts.iter())
+            .cloned()
+            .collect::<BTreeSet<_>>()
+        {
+            let staged = index.get(&bp).filter(|_| !intent_to_add.contains(&bp));
+            let different = match (head_tree.get(&bp), staged) {
+                (Some(a), Some(b)) => a.mode != b.mode || a.oid != b.oid,
+                (None, None) => conflicts.contains(&bp),
+                _ => true,
+            };
+            if different && c.s.staged.observed > 0 {
+                let value = if conflicts.contains(&bp) {
+                    comparison::Value::unknown("unmerged index stages")
+                } else if let Some(entry) = staged {
+                    match c.blobs.get(&entry.oid) {
+                        Some(Ok(d)) => comparison::Value::git(d.clone(), entry.mode),
+                        _ => comparison::Value::unknown("index blob unavailable"),
+                    }
+                } else {
+                    comparison::Value::Absent { parent: None }
+                };
+                c.capture(
+                    &bp,
+                    comparison::Category::Staged,
+                    comparison::Layer::Index,
+                    Some(0),
+                    value,
+                    staged.map(|e| e.oid.clone()),
+                );
+            }
+        }
+    }
     c.disk(
         &root,
         path,
@@ -1380,6 +1521,688 @@ fn run(c: &mut Collector<'_>, w: &Worktree, path: &Path) -> io::Result<()> {
         ),
     }
     Ok(())
+}
+
+pub(crate) fn collect_for_comparison(
+    w: &Worktree,
+    l: &SummaryLimits,
+    max_rows: usize,
+    max_bytes: usize,
+) -> Result<SummaryOutcome, SweepError> {
+    collect_outcome_with_projection(w, l, &NativeHooks, Some((max_rows, max_bytes)))
+}
+pub(crate) struct CheckoutBinding {
+    pub path: BytePath,
+    pub identity: Identity,
+    pub common_dir: BytePath,
+    pub common_dir_identity: Identity,
+}
+pub(crate) fn validate_checkout(
+    path: &Path,
+    family: &crate::model::Family,
+    timeout: Duration,
+) -> Result<CheckoutBinding, SweepError> {
+    let check = || -> io::Result<CheckoutBinding> {
+        let root = open_absolute_directory(path)?;
+        let st = fstat(&root)?;
+        if NativeHooks.is_dataless(&BytePath::from_path(path), &st) {
+            return Err(io::Error::other("dataless reference root"));
+        }
+        let marker = statat(&root, ".git", AtFlags::SYMLINK_NOFOLLOW)?;
+        if !matches!(marker.st_mode & libc::S_IFMT, libc::S_IFREG | libc::S_IFDIR)
+            || flags(&marker) & 0x4000_0000 != 0
+        {
+            return Err(io::Error::other("unsafe reference Git marker"));
+        }
+        let common = path_from_output(
+            &ControlledGit::with_output_limit(timeout, 64 * 1024)
+                .read_from_directory(&root, path, GitRead::CommonDir)
+                .map_err(|e| io::Error::other(e.to_string()))?,
+        )?;
+        let common_fd = open_absolute_directory(&common)?;
+        if identity(&fstat(&common_fd)?) != family.identity
+            || BytePath::from_path(&common) != family.common_dir
+        {
+            return Err(io::Error::other(
+                "reference checkout belongs to another physical Git family",
+            ));
+        }
+        Ok(CheckoutBinding {
+            path: BytePath::from_path(path),
+            identity: identity(&st),
+            common_dir: family.common_dir.clone(),
+            common_dir_identity: family.identity.clone(),
+        })
+    };
+    check().map_err(|e| {
+        SweepError::new(
+            "local_comparison",
+            "reference_checkout",
+            path,
+            e.to_string(),
+        )
+    })
+}
+fn comparison_collector<'a>(limits: &'a SummaryLimits, hooks: &'a dyn LocalHooks) -> Collector<'a> {
+    Collector {
+        s: LocalSummary::default(),
+        metrics: SummaryMetrics::default(),
+        limits,
+        hooks,
+        started: Instant::now(),
+        bytes: 0,
+        objects: 0,
+        paths: 0,
+        path_bytes: 0,
+        stopped: false,
+        git_failed: false,
+        first_git_timeout: None,
+        diagnostic_bytes: 0,
+        blobs: BTreeMap::new(),
+        comparison: None,
+    }
+}
+fn checkout_administration(
+    c: &mut Collector<'_>,
+    root: &OwnedFd,
+    binding: &CheckoutBinding,
+) -> io::Result<comparison::CheckoutAdministration> {
+    c.check()?;
+    let path = binding
+        .path
+        .to_path()
+        .map_err(|e| io::Error::other(e.to_string()))?;
+    let root_stat = fstat(root)?;
+    if identity(&root_stat) != binding.identity || c.hooks.is_dataless(&binding.path, &root_stat) {
+        return Err(io::Error::other("reference root changed or dataless"));
+    }
+    let marker = statat(root, ".git", AtFlags::SYMLINK_NOFOLLOW)?;
+    let marker_path = path.join(".git");
+    if c.hooks
+        .is_dataless(&BytePath::from_path(&marker_path), &marker)
+    {
+        return Err(io::Error::other("dataless reference marker"));
+    }
+    let marker_sha256 = match marker.st_mode & libc::S_IFMT {
+        libc::S_IFDIR => None,
+        libc::S_IFREG => Some(
+            c.read(root, OsStr::new(".git"), &marker_path, 256 * 1024, false)?
+                .0,
+        ),
+        _ => return Err(io::Error::other("unsafe reference Git marker")),
+    };
+    let git_dir = path_from_output(&c.git(root, &path, GitRead::GitDir)?)?;
+    let common_dir = path_from_output(&c.git(root, &path, GitRead::CommonDir)?)?;
+    let admin = open_absolute_directory(&git_dir)?;
+    let common = open_absolute_directory(&common_dir)?;
+    let admin_stat = fstat(&admin)?;
+    let common_stat = fstat(&common)?;
+    if identity(&common_stat) != binding.common_dir_identity
+        || BytePath::from_path(&common_dir) != binding.common_dir
+        || c.hooks
+            .is_dataless(&BytePath::from_path(&git_dir), &admin_stat)
+        || c.hooks
+            .is_dataless(&BytePath::from_path(&common_dir), &common_stat)
+    {
+        return Err(io::Error::other(
+            "reference physical Git family changed or dataless",
+        ));
+    }
+    let commondir = checkout_value(c, &admin, &BytePath::from_bytes(b"commondir"))?;
+    if matches!(commondir, comparison::Value::Unknown { .. }) {
+        return Err(io::Error::other("reference commondir unreadable"));
+    }
+    if !same_stat(&marker, &statat(root, ".git", AtFlags::SYMLINK_NOFOLLOW)?)
+        || !same_stat(&root_stat, &fstat(root)?)
+    {
+        return Err(io::Error::other(
+            "reference administration changed during capture",
+        ));
+    }
+    Ok(comparison::CheckoutAdministration {
+        root: comparison::FsWitness::from_stat(&root_stat),
+        marker: comparison::FsWitness::from_stat(&marker),
+        marker_sha256,
+        git_dir: BytePath::from_path(&git_dir),
+        git_dir_identity: identity(&admin_stat),
+        common_dir: BytePath::from_path(&common_dir),
+        common_dir_identity: identity(&common_stat),
+        commondir,
+    })
+}
+fn checkout_value(
+    c: &mut Collector<'_>,
+    root: &OwnedFd,
+    relative: &BytePath,
+) -> io::Result<comparison::Value> {
+    let bytes = relative
+        .bytes()
+        .map_err(|e| io::Error::other(e.to_string()))?;
+    if !valid_relative(&bytes) {
+        return Err(io::Error::other("unsafe reference-relative path"));
+    }
+    let path = relative
+        .to_path()
+        .map_err(|e| io::Error::other(e.to_string()))?;
+    let mut fd = openat(root, ".", DIRECTORY, Mode::empty())?;
+    let components = path.components().collect::<Vec<_>>();
+    let mut parents = Vec::new();
+    let mut value = comparison::Value::unknown("no final path component");
+    for (i, component) in components.iter().enumerate() {
+        c.check()?;
+        let Component::Normal(name) = *component else {
+            return Err(io::Error::other("unsafe reference component"));
+        };
+        let before = fstat(&fd)?;
+        let child = statat(&fd, name, AtFlags::SYMLINK_NOFOLLOW);
+        let st = match child {
+            Err(rustix::io::Errno::NOENT) => {
+                if !same_stat(&before, &fstat(&fd)?) {
+                    return Err(io::Error::other("absence parent changed"));
+                }
+                value = comparison::Value::Absent {
+                    parent: Some(comparison::FsWitness::from_stat(&before)),
+                };
+                break;
+            }
+            Err(e) => return Err(e.into()),
+            Ok(st) => st,
+        };
+        if c.hooks.is_dataless(relative, &st) {
+            return Err(io::Error::other("dataless reference entry"));
+        }
+        if i + 1 < components.len() {
+            let next = openat(&fd, name, DIRECTORY, Mode::empty())?;
+            if !same_stat(&st, &fstat(&next)?) {
+                return Err(io::Error::other("reference directory changed"));
+            }
+            match statat(&next, ".git", AtFlags::SYMLINK_NOFOLLOW) {
+                Ok(_) => return Err(io::Error::other("nested reference repository")),
+                Err(rustix::io::Errno::NOENT) => (),
+                Err(e) => return Err(e.into()),
+            }
+            let mut bare = true;
+            // The bounded discovery signature also protects reference reads.
+            for admin_name in ["HEAD", "objects", "refs"] {
+                match statat(&next, admin_name, AtFlags::SYMLINK_NOFOLLOW) {
+                    Ok(_) => (),
+                    Err(rustix::io::Errno::NOENT) => bare = false,
+                    Err(e) => return Err(e.into()),
+                }
+            }
+            if bare {
+                return Err(io::Error::other("nested bare reference administration"));
+            }
+            parents.push((fd, (*name).to_os_string(), st));
+            fd = next;
+            continue;
+        }
+        let kind = st.st_mode & libc::S_IFMT;
+        let (mode, digest) = if kind == libc::S_IFREG {
+            let mode = if st.st_mode & 0o100 != 0 {
+                0o100755
+            } else {
+                0o100644
+            };
+            (
+                mode,
+                Some(c.read(&fd, name, &path, c.limits.max_file_bytes, false)?.0),
+            )
+        } else if kind == libc::S_IFLNK {
+            let mut buffer = [0u8; 4096];
+            let n = rustix::fs::readlinkat_raw(&fd, name, &mut buffer[..])?;
+            if n == buffer.len() {
+                return Err(io::Error::other("reference symlink exceeds limit"));
+            }
+            c.charge(n)?;
+            (
+                0o120000,
+                Some(format!("{:x}", Sha256::digest(&buffer[..n]))),
+            )
+        } else {
+            return Err(io::Error::other("unsupported reference file type"));
+        };
+        if !same_stat(&st, &statat(&fd, name, AtFlags::SYMLINK_NOFOLLOW)?)
+            || !same_stat(&before, &fstat(&fd)?)
+        {
+            return Err(io::Error::other("reference entry or parent changed"));
+        }
+        value = comparison::Value::disk(digest, mode, &st);
+    }
+    for (parent, name, before) in parents {
+        if !same_stat(&before, &statat(&parent, &name, AtFlags::SYMLINK_NOFOLLOW)?) {
+            return Err(io::Error::other("reference path namespace changed"));
+        }
+    }
+    Ok(value)
+}
+type ComparisonOutput = (
+    Vec<comparison::Reference>,
+    Vec<comparison::Row>,
+    Vec<String>,
+);
+pub(crate) fn compare_capture(
+    path: &BytePath,
+    capture: comparison::SourceCapture,
+    targets: &[BytePath],
+    checkout: Option<&CheckoutBinding>,
+    source_valid: bool,
+    capacity: usize,
+) -> Result<ComparisonOutput, SweepError> {
+    compare_capture_with(
+        path,
+        capture,
+        targets,
+        checkout,
+        source_valid,
+        capacity,
+        &NativeHooks,
+    )
+}
+fn compare_capture_with(
+    path: &BytePath,
+    capture: comparison::SourceCapture,
+    targets: &[BytePath],
+    checkout: Option<&CheckoutBinding>,
+    source_valid: bool,
+    capacity: usize,
+    hooks: &dyn LocalHooks,
+) -> Result<ComparisonOutput, SweepError> {
+    use comparison::{Lookup, Reference, Row, Value};
+    let started = now_ms();
+    let source_path = path.to_path()?;
+    let root = open_absolute_directory(&source_path);
+    let mut valid = source_valid
+        && root
+            .as_ref()
+            .ok()
+            .and_then(|fd| fstat(fd).ok())
+            .is_some_and(|s| Some(identity(&s)) == capture.identity);
+    let root = root.ok();
+    let mut c = comparison_collector(&capture.remaining, hooks);
+    if checkout.is_some_and(|binding| capture.identity.as_ref() == Some(&binding.identity)) {
+        return Err(SweepError::new(
+            "local_comparison",
+            "reference_checkout",
+            &source_path,
+            "reference checkout cannot be the source physical worktree",
+        ));
+    }
+    let mut gaps = Vec::new();
+    if capture.omitted > 0 {
+        gaps.push("source details omitted by bounded projection".into());
+    }
+    let mut refs = Vec::new();
+    let mut trees = Vec::new();
+    for name in targets {
+        let read = || -> io::Result<(String, String, BTreeMap<BytePath, IndexEntry>)> {
+            let root = root
+                .as_ref()
+                .ok_or_else(|| io::Error::other("source root unavailable"))?;
+            let raw = c.git(
+                root,
+                &source_path,
+                GitRead::ResolveCommit {
+                    reference: name.clone(),
+                },
+            )?;
+            let oid = text(
+                raw.strip_suffix(b"\n")
+                    .ok_or_else(|| io::Error::other("unterminated ref OID"))?,
+            )?
+            .to_owned();
+            let raw = c.object(root, &source_path, "commit", &oid)?;
+            let tree = text(
+                raw.split(|b| *b == b'\n')
+                    .next()
+                    .and_then(|line| line.strip_prefix(b"tree "))
+                    .ok_or_else(|| io::Error::other("missing target tree"))?,
+            )?
+            .to_owned();
+            let entries = c.trees(root, &source_path, &tree, oid.len() / 2)?;
+            Ok((oid, tree, entries))
+        };
+        let mut read = read;
+        let result = read();
+        let (commit_oid, tree_oid, entries, gap) = match result {
+            Ok((oid, tree, entries)) => (Some(oid), Some(tree), Some(entries), None),
+            Err(_) => (
+                None,
+                None,
+                None,
+                Some("Git target unreadable, changed or budget exhausted".into()),
+            ),
+        };
+        refs.push(Reference {
+            origin: "git".into(),
+            name: name.clone(),
+            commit_oid,
+            tree_oid,
+            identity: None,
+            administration: None,
+            started_unix_ms: started,
+            finished_unix_ms: now_ms(),
+            checks: if gap.is_none() { "stable" } else { "unknown" }.into(),
+            gap,
+        });
+        trees.push(entries);
+    }
+    let checkout_root = checkout
+        .and_then(|binding| binding.path.to_path().ok())
+        .and_then(|p| open_absolute_directory(&p).ok());
+    let checkout_before = checkout_root
+        .as_ref()
+        .zip(checkout)
+        .and_then(|(fd, binding)| checkout_administration(&mut c, fd, binding).ok());
+    if let Some(binding) = checkout {
+        refs.push(Reference {
+            origin: "checkout".into(),
+            name: binding.path.clone(),
+            commit_oid: None,
+            tree_oid: None,
+            identity: checkout_before.as_ref().map(|w| w.root.identity.clone()),
+            administration: checkout_before.clone(),
+            started_unix_ms: started,
+            finished_unix_ms: now_ms(),
+            checks: if checkout_before.is_some() {
+                "stable"
+            } else {
+                "unknown"
+            }
+            .into(),
+            gap: checkout_before
+                .is_none()
+                .then(|| "reference checkout unavailable".into()),
+        });
+    }
+    let mut rows = Vec::new();
+    let mut bytes = crate::output::bounded_json_size(&refs, capacity)?;
+    for mut change in capture.rows {
+        if !valid {
+            change.source =
+                Value::unknown("source final identity or administration checks unavailable");
+        }
+        let mut lookups = Vec::new();
+        for (i, reference) in refs.iter().enumerate() {
+            let mut object_oid = None;
+            let value = if reference.origin == "checkout" {
+                checkout_root
+                    .as_ref()
+                    .filter(|_| checkout_before.is_some())
+                    .map_or_else(
+                        || Value::unknown("checkout unavailable"),
+                        |fd| {
+                            checkout_value(&mut c, fd, &change.path).unwrap_or_else(|_| {
+                            Value::unknown(
+                                "checkout content unavailable, unsafe, changed or budget exhausted",
+                            )
+                        })
+                        },
+                    )
+            } else if let Some(entries) = &trees[i] {
+                if let Some(entry) = entries.get(&change.path) {
+                    object_oid = Some(entry.oid.clone());
+                    root.as_ref().map_or_else(
+                        || Value::unknown("source root unavailable"),
+                        |fd| {
+                            c.blob(fd, &source_path, &entry.oid)
+                                .map(|d| Value::git(d, entry.mode))
+                                .unwrap_or_else(|_| {
+                                    Value::unknown("target blob unavailable or budget exhausted")
+                                })
+                        },
+                    )
+                } else {
+                    Value::Absent { parent: None }
+                }
+            } else {
+                Value::unknown("target tree unavailable")
+            };
+            lookups.push(Lookup {
+                reference: i,
+                value,
+                object_oid,
+            });
+        }
+        let result = comparison::classify(&change, &lookups, &refs);
+        let row = Row {
+            change,
+            lookups,
+            result,
+        };
+        let n = crate::output::bounded_json_size(&row, capacity)
+            .ok()
+            .map(|n| n.saturating_add(512));
+        if n.is_none_or(|n| n > capacity.saturating_sub(bytes)) {
+            gaps.push("comparison details omitted by run byte limit".into());
+            break;
+        }
+        if let Some(n) = n {
+            bytes += n;
+            rows.push(row);
+        }
+    }
+    // Fresh final checks apply even when blob digests came from a cache.
+    for (i, reference) in refs.iter_mut().enumerate() {
+        let stable = if reference.origin == "git" {
+            root.as_ref()
+                .zip(reference.commit_oid.as_ref())
+                .is_some_and(|(fd, oid)| {
+                    c.git(
+                        fd,
+                        &source_path,
+                        GitRead::ResolveCommit {
+                            reference: reference.name.clone(),
+                        },
+                    )
+                    .is_ok_and(|raw| raw == format!("{oid}\n").as_bytes())
+                })
+        } else {
+            checkout
+                .zip(checkout_before.as_ref())
+                .is_some_and(|(binding, before)| {
+                    binding
+                        .path
+                        .to_path()
+                        .ok()
+                        .and_then(|p| open_absolute_directory(&p).ok())
+                        .is_some_and(|fd| {
+                            checkout_administration(&mut c, &fd, binding)
+                                .is_ok_and(|after| before == &after)
+                        })
+                })
+        };
+        reference.finished_unix_ms = now_ms();
+        if !stable {
+            reference.checks = "unknown".into();
+            reference.gap = Some("reference final validation unavailable or changed".into());
+            for row in &mut rows {
+                row.lookups[i].value =
+                    Value::unknown("reference final validation unavailable or changed");
+            }
+        }
+    }
+    for source in &capture.sources {
+        let check = source
+            .path
+            .to_path()
+            .ok()
+            .and_then(|p| p.parent().map(|parent| (p.clone(), parent.to_path_buf())))
+            .and_then(|(p, parent)| open_absolute_directory(&parent).ok().map(|fd| (p, fd)));
+        valid &= check.is_some_and(|(p, fd)| {
+            p.file_name().is_some_and(|name| {
+                c.read(&fd, name, &p, c.limits.max_index_bytes, false)
+                    .is_ok_and(|(digest, _)| digest == source.sha256)
+            })
+        });
+    }
+    // Re-observe changed disk entries under the remaining allowance. Saved
+    // fingerprints are observations, never permission to trust a later payload.
+    for row in &mut rows {
+        if row.change.layer == comparison::Layer::Disk {
+            let current = root
+                .as_ref()
+                .and_then(|fd| checkout_value(&mut c, fd, &row.change.path).ok());
+            if current
+                .as_ref()
+                .is_some_and(|current| comparison::same_disk_value(&row.change.source, current))
+            {
+                if matches!(row.change.source, Value::Absent { .. }) {
+                    row.change.source =
+                        current.unwrap_or_else(|| Value::unknown("source absence unavailable"));
+                }
+            } else {
+                row.change.source = Value::unknown("source file changed or final read unavailable");
+            }
+        }
+    }
+    valid &= source_path.as_path().is_absolute()
+        && open_absolute_directory(&source_path)
+            .ok()
+            .and_then(|fd| fstat(&fd).ok())
+            .is_some_and(|s| Some(identity(&s)) == capture.identity);
+    if !valid {
+        gaps.push("source final checks unavailable, changed or budget exhausted".into());
+        for row in &mut rows {
+            row.change.source = Value::unknown("source final checks unavailable or changed");
+        }
+    }
+    for row in &mut rows {
+        row.result = comparison::classify(&row.change, &row.lookups, &refs);
+    }
+    Ok((refs, rows, gaps))
+}
+
+#[cfg(test)]
+mod comparison_drift_tests {
+    use super::*;
+    use std::fs;
+    use std::process::Command;
+    use std::sync::atomic::{AtomicBool, AtomicU64, Ordering};
+    static NEXT: AtomicU64 = AtomicU64::new(0);
+    struct Fixture(PathBuf);
+    impl Drop for Fixture {
+        fn drop(&mut self) {
+            let _ = fs::remove_dir_all(&self.0);
+        }
+    }
+    struct Redirect<'a> {
+        marker: &'a Path,
+        foreign: &'a Path,
+        changed: AtomicBool,
+    }
+    impl LocalHooks for Redirect<'_> {
+        fn after_file_open(&self, path: &BytePath) -> io::Result<()> {
+            if path.bytes().is_ok_and(|p| p == b"payload")
+                && !self.changed.swap(true, Ordering::Relaxed)
+            {
+                // Rewrite the existing inode: the parent directory does not change.
+                fs::write(self.marker, format!("gitdir: {}\n", self.foreign.display()))?;
+            }
+            Ok(())
+        }
+    }
+    #[test]
+    fn reference_git_marker_rewrite_invalidates_only_checkout_proofs() {
+        let f = Fixture(PathBuf::from(format!(
+            "/private/tmp/wt-sweep-comparison-drift-{}-{}",
+            std::process::id(),
+            NEXT.fetch_add(1, Ordering::Relaxed)
+        )));
+        fs::create_dir(&f.0).unwrap_or_else(|e| panic!("{e}"));
+        let source = f.0.join("source");
+        let foreign = f.0.join("foreign");
+        for root in [&source, &foreign] {
+            let status = Command::new("/usr/bin/git")
+                .env_clear()
+                .env("PATH", "/usr/bin:/bin")
+                .env("GIT_CONFIG_NOSYSTEM", "1")
+                .env("GIT_CONFIG_GLOBAL", "/dev/null")
+                .args(["init", "-q", "-b", "main"])
+                .arg(root)
+                .status()
+                .unwrap_or_else(|e| panic!("{e}"));
+            assert!(status.success());
+        }
+        let reference = f.0.join("reference");
+        fs::create_dir(&reference).unwrap_or_else(|e| panic!("{e}"));
+        let marker = reference.join(".git");
+        fs::write(
+            &marker,
+            format!("gitdir: {}\n", source.join(".git").display()),
+        )
+        .unwrap_or_else(|e| panic!("{e}"));
+        for root in [&source, &reference] {
+            fs::write(root.join("payload"), b"same\n").unwrap_or_else(|e| panic!("{e}"));
+        }
+        let limits = SummaryLimits::default();
+        let source_fd = open_absolute_directory(&source).unwrap_or_else(|e| panic!("{e}"));
+        let mut c = comparison_collector(&limits, &NativeHooks);
+        let path = BytePath::from_bytes(b"payload");
+        let value = checkout_value(&mut c, &source_fd, &path).unwrap_or_else(|e| panic!("{e}"));
+        let capture = || {
+            let mut capture = comparison::SourceCapture::new(&limits, 16, 65536);
+            capture.identity = Some(identity(
+                &fstat(&source_fd).unwrap_or_else(|e| panic!("{e}")),
+            ));
+            capture.push(comparison::SourceRow {
+                path: path.clone(),
+                category: comparison::Category::Untracked,
+                layer: comparison::Layer::Disk,
+                stage: None,
+                source: value.clone(),
+                source_oid: None,
+            });
+            capture
+        };
+        let source_bp = BytePath::from_path(&source);
+        let common = source.join(".git");
+        let binding = CheckoutBinding {
+            path: BytePath::from_path(&reference),
+            identity: identity(
+                &fstat(open_absolute_directory(&reference).unwrap_or_else(|e| panic!("{e}")))
+                    .unwrap_or_else(|e| panic!("{e}")),
+            ),
+            common_dir: BytePath::from_path(&common),
+            common_dir_identity: identity(
+                &fstat(open_absolute_directory(&common).unwrap_or_else(|e| panic!("{e}")))
+                    .unwrap_or_else(|e| panic!("{e}")),
+            ),
+        };
+        let (_, positive, _) = compare_capture_with(
+            &source_bp,
+            capture(),
+            &[],
+            Some(&binding),
+            true,
+            65536,
+            &NativeHooks,
+        )
+        .unwrap_or_else(|e| panic!("{e}"));
+        assert_eq!(positive[0].result, comparison::ResultKind::MatchesReference);
+        let hooks = Redirect {
+            marker: &marker,
+            foreign: &foreign.join(".git"),
+            changed: AtomicBool::new(false),
+        };
+        let (refs, rows, _) = compare_capture_with(
+            &source_bp,
+            capture(),
+            &[],
+            Some(&binding),
+            true,
+            65536,
+            &hooks,
+        )
+        .unwrap_or_else(|e| panic!("{e}"));
+        assert!(hooks.changed.load(Ordering::Relaxed));
+        assert_eq!(refs[0].checks, "unknown");
+        assert_eq!(rows[0].result, comparison::ResultKind::Unknown);
+        assert!(matches!(
+            rows[0].change.source,
+            comparison::Value::Present { .. }
+        ));
+    }
 }
 
 #[cfg(test)]
@@ -1466,6 +2289,7 @@ mod timeout_tests {
             first_git_timeout: None,
             diagnostic_bytes: 0,
             blobs: BTreeMap::new(),
+            comparison: None,
         };
         crate::git::take_child_read_journal();
         let error = match c.git(&fd, &f.0, GitRead::GitDir) {
@@ -1514,6 +2338,7 @@ mod timeout_tests {
             first_git_timeout: None,
             diagnostic_bytes: 0,
             blobs: BTreeMap::new(),
+            comparison: None,
         };
         let bytes = other
             .git(&healthy_fd, &healthy.0, GitRead::ObjectFormat)
@@ -1570,6 +2395,7 @@ mod timeout_tests {
                 first_git_timeout: None,
                 diagnostic_bytes: 0,
                 blobs: BTreeMap::new(),
+                comparison: None,
             };
             assert!(c.git(&fd, &f.0, op.clone()).is_err());
             match (&op, &c.first_git_timeout) {
@@ -1608,6 +2434,7 @@ mod timeout_tests {
             first_git_timeout: None,
             diagnostic_bytes: 0,
             blobs: BTreeMap::new(),
+            comparison: None,
         };
         assert!(c.object(&fd, &f.0, "blob", &oid).is_err());
         assert!(c.first_git_timeout.is_none());
@@ -1641,6 +2468,7 @@ mod timeout_tests {
             first_git_timeout: None,
             diagnostic_bytes: 0,
             blobs: BTreeMap::new(),
+            comparison: None,
         };
         let oids = ["ab".repeat(20), "cd".repeat(20)];
         crate::git::take_child_read_journal();
@@ -1680,6 +2508,7 @@ mod timeout_tests {
             first_git_timeout: None,
             diagnostic_bytes: 0,
             blobs: BTreeMap::new(),
+            comparison: None,
         };
         let error = c
             .charge(2)
@@ -1743,6 +2572,7 @@ mod timeout_tests {
             first_git_timeout: None,
             diagnostic_bytes: 0,
             blobs: BTreeMap::new(),
+            comparison: None,
         };
         let fd = open_absolute_directory(&f.0).unwrap_or_else(|e| panic!("{e}"));
         c.disk(

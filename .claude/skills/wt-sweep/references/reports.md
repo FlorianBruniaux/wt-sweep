@@ -6,6 +6,8 @@
 
 - `inventory.json`: discovered families, paths, collection scope and gaps.
 - `review.json`: original decision evidence, or a filtered view embedding it.
+- `local-comparison.json` when requested: content observations linked to the
+  original review and inventory, with source/reference fingerprints and coverage.
 - `report.txt`: human-readable explanation of those observations.
 - `report.html` when requested: offline reading by Git family, with search, sort
   and collapsible evidence. Scan reports explicitly have no review verdict.
@@ -21,6 +23,34 @@ exit status separately; when explaining an old run it may be unavailable.
 
 Check dates before using old observations for a new decision. Keep source review
 and view digests distinct. Do not rewrite JSON to make it pass a digest check.
+
+## Local content comparison
+
+An old run without this optional artifact means comparison not collected, never
+that there is no work to recover. Check the receipt hash/size first, then schema
+`wt-sweep.local-comparison/1`, `review_sha256` against the source review digest
+and `inventory_sha256` against the inventory bound by that review. Each item must
+use a source worktree path and its exact `local_summary.digest_sha256`.
+Do not attach a comparison merely because a branch name matches. Hashes establish
+consistency, not authenticity or the current filesystem state.
+
+Read `collection`, `complete`, category `coverage`, omitted counts, reference
+checks and per-row `lookups`. Preserve `matches_target`, `matches_reference`,
+`different` and `unknown` as recorded. The library validator replays results
+from saved proof inputs; an assistant reading JSON must not promote an unchecked
+or contradictory document into validated evidence. Report the inconsistency.
+
+Index and disk are separate layers; stages in a conflict remain unresolved.
+`path_totals` count distinct observed paths, `layer_totals` count observations.
+Matching one reference can coexist with another unknown lookup and incomplete
+coverage. Zero differences in an incomplete comparison does not mean nothing
+remains to recover. For `not_requested`, explain the deliberate collection scope.
+
+A Git match names the captured target. A checkout match names another observed
+copy and requires its content/type/POSIX mode, not an integration claim.
+Inspect different files, retry missing observations on an exact worktree, then
+finish any missing Git/conservation checks. Keep the original verdict even when
+every compared file has an equivalent; ignored copies remain a `keep` reason.
 
 ## Versions and source coverage
 

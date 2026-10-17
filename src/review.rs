@@ -22,6 +22,7 @@ use targets::{FamilyTargets, TargetInput};
 pub struct ReviewOptions {
     /// Collect expensive evidence only for this exact recorded worktree.
     pub worktree: Option<BytePath>,
+    pub comparison: Option<crate::local::comparison::CaptureStore>,
     pub evidence: ReviewLimits,
     pub budget_profile: &'static str,
     pub local: crate::local::SummaryLimits,
@@ -34,6 +35,7 @@ impl Default for ReviewOptions {
     fn default() -> Self {
         Self {
             worktree: None,
+            comparison: None,
             evidence: ReviewLimits::default(),
             budget_profile: "standard",
             local: crate::local::SummaryLimits::default(),
@@ -1406,9 +1408,40 @@ fn collect_with_options(
         &history.stopped_families,
         &options.local,
         options.local_timeout,
-        crate::local::collect_summary_for_review,
+        |w, limits| {
+            if let Some(store) = &options.comparison {
+                let used = store
+                    .borrow()
+                    .captures
+                    .values()
+                    .map(|c| c.bytes)
+                    .sum::<usize>();
+                let max_rows = if options.budget_profile == "thorough" {
+                    32768
+                } else {
+                    4096
+                };
+                let mut outcome = crate::local::summary::collect_for_comparison(
+                    w,
+                    limits,
+                    max_rows,
+                    crate::local::comparison::CAPTURE_BYTES.saturating_sub(used),
+                )?;
+                if let Some(capture) = outcome.comparison.take() {
+                    store.borrow_mut().captures.insert(w.path.clone(), capture);
+                }
+                Ok(outcome)
+            } else {
+                crate::local::collect_summary_for_review(w, limits)
+            }
+        },
         callback,
     )?;
+    if let Some(store) = &options.comparison {
+        store.borrow_mut().remaining_timeout = options
+            .local_timeout
+            .saturating_sub(phase_started.elapsed());
+    }
     record_phase(
         &mut collection_metrics,
         "local",

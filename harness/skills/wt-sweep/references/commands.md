@@ -127,6 +127,28 @@ Completion: the new checkpoint and report exist, or the exit diagnostic is
 reported without claiming saved progress. A failed digest or identity check
 requires a fresh authorized scan, not manual checkpoint editing.
 
+## Compare local content
+
+Check `review --help` for these options before using them. A content comparison
+requires a saved run, preserves the review verdict and publishes a separate
+`local-comparison.json` with source bindings:
+
+```sh
+"$sweep_bin" review --repo "$chosen_repo" --target "$confirmed_target" \
+  --worktree "$chosen_worktree" --compare-local --html --run-dir "$report_base"
+```
+
+If the user supplies a retained checkout in the same family, add
+`--compare-reference "$reference_checkout"`. This observes the current copy;
+it does not establish that those bytes are committed, integrated or backed up.
+The option refuses self-comparison and an ambiguous checkout across families.
+Use confirmed targets per family for a multi-repo run. `plan --inventory` also
+supports comparison and retains the source inventory in that run.
+
+Read the file-level results and omissions before proposing inspection or a
+focused retry with the existing `--budget thorough`. Do not promise that a
+larger budget will finish. Display filters do not reduce collection work.
+
 ## Inspect an existing run in pages
 
 Set `run_dir` to the exact saved `run-*` directory. Read `run.json` first, check

@@ -1,4 +1,5 @@
 //! Bounded local observations. This is an inventory, never a backup or snapshot.
+pub mod comparison;
 pub(crate) mod history;
 use crate::git::{ControlledGit, GitRead};
 use crate::model::{
@@ -1048,7 +1049,7 @@ pub fn collect_with(
     Ok(context.inventory)
 }
 
-mod summary;
+pub(crate) mod summary;
 pub use summary::{SummaryLimits, collect_summary, collect_summary_with};
 
 pub(crate) use summary::{SummaryOutcome, collect_summary_for_review};

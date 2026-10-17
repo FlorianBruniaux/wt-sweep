@@ -21,6 +21,7 @@ wt-sweep scan (--repo PATH | --root PATH... | --all | --resume FILE)
 
 wt-sweep plan --inventory FILE [--target FULL_REF... | --target-map FILE]
   [--budget standard|thorough] [--worktree ABSOLUTE_PATH] [--filter-repo PATH] [--path-prefix PATH] [--branch FULL_REF]
+  [--compare-local] [--compare-reference ABSOLUTE_PATH]
   [--local-state clean|dirty|unknown] [--verdict keep|cleanup_candidate|verify]
   [--group-by repo|directory] [--forge FILE]
   [--changelog-path RELATIVE... | --no-context] [--summary] [--format json|table]
@@ -121,6 +122,8 @@ overwritten or removed.
 | `--target-map FILE` | `wt-sweep.targets/1` mapping of physical families to explicit refs. Cannot combine with `--target`. Missing families get no target. |
 | `--budget PROFILE` | `standard` by default; `thorough` selects larger finite local, history, deep-object and private-history allowances. Available on `review` and `plan`, not `scan` or forge commands. |
 | `--worktree ABSOLUTE_PATH` | Collect history, local files, private history and context for one exact recorded path. Full inventory, registration/control checks and unselected rows remain. This is a fresh targeted collection, not a resumed snapshot. |
+| `--compare-local` | Compare observed local changes with explicit integration targets, without changing verdicts. Requires `--run-dir` or `--html`, and refuses `--out`. Publishes a linked `local-comparison.json`. |
+| `--compare-reference ABSOLUTE_PATH` | Add an explicitly chosen checkout in the same physical Git family. Requires `--compare-local`; refuses self-comparison and ambiguity across families. Equality of the local copy is not integration or backup evidence. |
 | `--filter-repo PATH` | Select a family by its exact common directory or a registered main/linked checkout path in the input inventory. No alias resolution. |
 | `--path-prefix PATH` | Select absolute path components: `/a` includes `/a/one`, not `/ab`. Parent traversal is refused. |
 | `--branch FULL_REF` | Match exact branch bytes, for example `refs/heads/feature`. |

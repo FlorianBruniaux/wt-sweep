@@ -297,6 +297,7 @@ impl RunDirectory {
         if ![
             "inventory.json",
             "review.json",
+            "local-comparison.json",
             "forge.json",
             "report.txt",
             "report.html",

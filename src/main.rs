@@ -42,7 +42,7 @@ Auto respects NO_COLOR and TERM=dumb; JSON and saved reports stay plain.
 --run-dir BASE overrides that destination; BASE must exist outside inspected targets.
 --open implies --html and asks macOS to open the saved report; no browser is opened otherwise.
 If Desktop is missing or blocked, choose --run-dir BASE. Reports are never overwritten.
-apply is unavailable until conservation and approval gates are verified.
+--compare-local compares local changes against explicit targets; requires --run-dir or --html.\n--compare-reference ABSOLUTE_PATH adds a same-family checkout; requires --compare-local.\napply is unavailable until conservation and approval gates are verified.
 ";
 
 type Options = BTreeMap<String, Vec<OsString>>;
@@ -96,6 +96,7 @@ fn options(args: &[OsString], allowed: &[&str], repeat: &[&str]) -> Result<Optio
                 | "--verbose"
                 | "--html"
                 | "--open"
+                | "--compare-local"
         ) {
             OsString::from("true")
         } else {
@@ -191,7 +192,7 @@ fn command_help(command: &str) -> Result<(), String> {
             "Discovery requires an explicit scope.\n--checkpoint-out NEW_FILE saves traversal state for --root scopes.\n--resume FILE --checkpoint-out NEW_FILE resumes the saved exact roots; no old Git HEAD is reused.\n--discovery-directories 1..100000, --discovery-entries 1..1000000, --discovery-seconds 1..600 bound each pass.\nDefaults: 100000 directories, 1000000 entries, 60 seconds. Intervals remain separate; this is not a snapshot.\n--disk-usage measures registered roots, including ignored files, without hashing.\nDisk budgets: 30s/500,000 entries per root; 600s/2,000,000 entries overall; depth 128.\n--disk-budget thorough: 120s/1,000,000 entries per root; 1800s/10,000,000 overall.\n--disk-root ABSOLUTE_PATH (repeatable) selects exact registered roots; requires --disk-usage.\nRemaining total entries and time are shared among roots still to visit.\nAllocated blocks are not a reclaim estimate; partial measurements remain explicit.\n--local additionally hashes local content within budgets.\n--html saves report.html; default on macOS: ~/Desktop/Worktree Sweep/.\n--run-dir BASE overrides it and must be an existing directory outside inspected targets.\n--open implies --html and asks macOS to open the report after successful publication.\nIf Desktop is unavailable, choose --run-dir BASE. Browser failures leave the report saved.\nProgress is compact on stderr. --verbose adds paths and discovery counters.\n--color auto|always|never controls terminal color and icons.\nReports retain discovery metrics and coverage separately. Gaps and unfinished scope remain in the inventory.\n"
         }
         "plan" | "review" => {
-            "REVIEW OPTIONS:\n  --budget standard|thorough (default: standard; larger finite collection allowances)\n  --target FULL_REF... | --target-map FILE\n  --worktree ABSOLUTE_PATH (collect evidence for this exact recorded worktree)\n  --filter-repo PATH  --path-prefix PATH  --branch FULL_REF\n  --local-state clean|dirty|unknown  --verdict keep|cleanup_candidate|verify\n  --group-by repo|directory  --forge FILE\n  --changelog-path RELATIVE... | --no-context (skip commit, changelog and remote-link context)\n  --summary  --format json|table  --out FILE | --run-dir BASE\n  --html (offline report.html; macOS default: ~/Desktop/Worktree Sweep/)\n  --open (implies --html; ask macOS to open the saved report)\n\nTargets must be explicit; no target leaves integration unknown.\nFilters select rows after judgement and retain source coverage in JSON views.\n--worktree narrows history/local/private/context reads; full inventory and identity checks remain.\nOther rows explicitly retain missing evidence. Add --path-prefix for a focused display.\n--summary cannot be combined with --format json. Progress is compact on stderr.\n--verbose adds detailed progress and recap metrics.\n--color auto|always|never (default: auto; respects NO_COLOR and TERM=dumb).\nJSON and saved report.txt files are always plain text.\n--run-dir needs an existing directory outside inspected targets; it overrides the Desktop default.\nWithout --html/--open, output defaults are unchanged. If Desktop is unavailable, choose --run-dir.\nOpening failure leaves the saved report available and prints a reopen command.\nreview accepts --disk-usage [--disk-budget standard|thorough] for metadata-only sizes.\nDisk measurement covers all inventoried roots by default. --disk-root ABSOLUTE_PATH (repeatable) selects exact roots.\n--disk-root requires --disk-usage and is independent of --worktree and display filters.\nRemaining total entries and time are shared among roots still to visit; unused shares go forward.\nIts budget is separate from --budget; defaults: 30s/root, 600s overall; thorough: 120s/root, 1800s overall.\nGitHub/GitLab repository, branch and commit links use local remotes (no fetch or server check).\nPR/MR links and captured states require --forge FILE and an exact source association.\nSelf-hosted forge routes need an associated import to identify the provider.\nscan does not collect remote-link context; use review or plan.\nreview saves inventory.json, review.json, report.txt and run.json together.\nplan reuses saved disk observations with their original interval; it does not recount sizes.\nplan saves review.json, report.txt and run.json.\nA cleanup_candidate still requires confirmation of its use. apply is unavailable.\n"
+            "REVIEW OPTIONS:\n  --budget standard|thorough (default: standard; larger finite collection allowances)\n  --target FULL_REF... | --target-map FILE\n  --compare-local [--compare-reference ABSOLUTE_PATH] (requires --run-dir or --html)\n  --worktree ABSOLUTE_PATH (collect evidence for this exact recorded worktree)\n  --filter-repo PATH  --path-prefix PATH  --branch FULL_REF\n  --local-state clean|dirty|unknown  --verdict keep|cleanup_candidate|verify\n  --group-by repo|directory  --forge FILE\n  --changelog-path RELATIVE... | --no-context (skip commit, changelog and remote-link context)\n  --summary  --format json|table  --out FILE | --run-dir BASE\n  --html (offline report.html; macOS default: ~/Desktop/Worktree Sweep/)\n  --open (implies --html; ask macOS to open the saved report)\n\nTargets must be explicit; no target leaves integration unknown.\nFilters select rows after judgement and retain source coverage in JSON views.\n--worktree narrows history/local/private/context reads; full inventory and identity checks remain.\nOther rows explicitly retain missing evidence. Add --path-prefix for a focused display.\n--summary cannot be combined with --format json. Progress is compact on stderr.\n--verbose adds detailed progress and recap metrics.\n--color auto|always|never (default: auto; respects NO_COLOR and TERM=dumb).\nJSON and saved report.txt files are always plain text.\n--run-dir needs an existing directory outside inspected targets; it overrides the Desktop default.\nWithout --html/--open, output defaults are unchanged. If Desktop is unavailable, choose --run-dir.\nOpening failure leaves the saved report available and prints a reopen command.\nreview accepts --disk-usage [--disk-budget standard|thorough] for metadata-only sizes.\nDisk measurement covers all inventoried roots by default. --disk-root ABSOLUTE_PATH (repeatable) selects exact roots.\n--disk-root requires --disk-usage and is independent of --worktree and display filters.\nRemaining total entries and time are shared among roots still to visit; unused shares go forward.\nIts budget is separate from --budget; defaults: 30s/root, 600s overall; thorough: 120s/root, 1800s overall.\nGitHub/GitLab repository, branch and commit links use local remotes (no fetch or server check).\nPR/MR links and captured states require --forge FILE and an exact source association.\nSelf-hosted forge routes need an associated import to identify the provider.\nscan does not collect remote-link context; use review or plan.\nreview saves inventory.json, review.json, report.txt and run.json together.\nplan reuses saved disk observations with their original interval; it does not recount sizes.\nplan saves review.json, report.txt and run.json.\nA cleanup_candidate still requires confirmation of its use. apply is unavailable.\n"
         }
         _ => {
             "Offline evidence only. No network command is executed by these subcommands.\ncommandes prints capture guidance; ingerer reads captured raw data and its receipt.\n"
@@ -288,6 +289,7 @@ fn scan(args: &[OsString]) -> Result<(), String> {
             detail: None,
             inventory_json: None,
             html: html.as_deref(),
+            comparison: None,
         },
     )
 }
@@ -584,6 +586,8 @@ fn collect_local(inventory: &mut Inventory, publication_limits: &PublicationLimi
 }
 
 const PLAN_OPTIONS: &[&str] = &[
+    "--compare-local",
+    "--compare-reference",
     "--html",
     "--open",
     "--verbose",
@@ -708,11 +712,23 @@ fn review_settings(opts: &Options) -> Result<ReviewSettings, String> {
     if opts.contains_key("--no-context") && opts.contains_key("--changelog-path") {
         return Err("--no-context and --changelog-path are mutually exclusive".into());
     }
+    if opts.contains_key("--compare-reference") && !opts.contains_key("--compare-local") {
+        return Err("--compare-reference requires --compare-local".into());
+    }
+    if opts.contains_key("--compare-local")
+        && (opts.contains_key("--out")
+            || (!opts.contains_key("--run-dir") && !opts.contains_key("--html")))
+    {
+        return Err("--compare-local requires --run-dir BASE or --html, without --out".into());
+    }
     let mut review_options = ReviewOptions {
         worktree: one(opts, "--worktree").map(|p| BytePath::from_path(&p)),
         ..ReviewOptions::with_budget(value("--budget")?.as_deref().unwrap_or("standard"))
             .map_err(|e| e.to_string())?
     };
+    if opts.contains_key("--compare-local") {
+        review_options.comparison = Some(Default::default());
+    }
     review_options.context.enabled = !opts.contains_key("--no-context");
     if let Some(paths) = opts.get("--changelog-path") {
         review_options.context.changelog_paths = paths
@@ -790,7 +806,7 @@ fn produce_review(
         review_options,
     } = settings;
     // Save exactly the input bound by the review digest. Never compact it after judgement.
-    let source_json = combined
+    let source_json = (combined || opts.contains_key("--compare-local"))
         .then(|| bounded_json(&inventory, PublicationLimits::default().json_bytes))
         .transpose()
         .map_err(|e| format!("review input cannot be published; select a narrower scope: {e}"))?;
@@ -823,12 +839,40 @@ fn produce_review(
     if canonical_digest(&review).map_err(|e| e.to_string())? != review.digest_sha256 {
         return Err("review digest mismatch".into());
     }
+    let comparison = if let Some(store) = &review_options.comparison {
+        let bound = wt_sweep::review::targets::FamilyTargets::bind(&inventory, target_input)
+            .map_err(|e| e.to_string())?;
+        let reference = one(opts, "--compare-reference").map(|p| BytePath::from_path(&p));
+        Some(
+            wt_sweep::local::comparison::collect(
+                &inventory,
+                &review,
+                &bound,
+                store,
+                reference.as_ref(),
+                review_options.worktree.as_ref(),
+                if review_options.budget_profile == "thorough" {
+                    32768
+                } else {
+                    4096
+                },
+            )
+            .map_err(|e| e.to_string())?,
+        )
+    } else {
+        None
+    };
+    let comparison_json = comparison
+        .as_ref()
+        .map(|doc| bounded_json(doc, wt_sweep::local::comparison::DOCUMENT_BYTES))
+        .transpose()
+        .map_err(|e| e.to_string())?;
     let view = (use_view || opts.contains_key("--html"))
         .then(|| wt_sweep::view::build(&inventory, &review, filters, &group_by))
         .transpose()
         .map_err(|e| e.to_string())?;
     let publication_limits = PublicationLimits::default();
-    let html = if opts.contains_key("--html") {
+    let mut html = if opts.contains_key("--html") {
         let view = view
             .as_ref()
             .ok_or("HTML review requires family bindings")?;
@@ -840,12 +884,38 @@ fn produce_review(
         None
     };
     let view = if use_view { view } else { None };
-    let detail = if let Some(view) = &view {
+    let mut detail = if let Some(view) = &view {
         wt_sweep::presentation::view_detail_bounded(view, publication_limits.report_bytes)
     } else {
         wt_sweep::presentation::detail_bounded(&review, publication_limits.report_bytes)
     }
     .map_err(|e| e.to_string())?;
+    if let Some(comparison) = &comparison {
+        detail.push_str(
+            &comparison
+                .text_bounded(publication_limits.report_bytes.saturating_sub(detail.len()))
+                .map_err(|e| e.to_string())?,
+        );
+        if let Some(html) = &mut html {
+            let navigation = "<div class=\"nav-item\"><a href=\"#local-comparison\"><span aria-hidden=\"true\">↔ </span>Comparer les fichiers</a></div>";
+            let nav_at = html
+                .find("</nav>")
+                .ok_or("HTML report has no navigation boundary")?;
+            html.insert_str(nav_at, navigation);
+            let at = html
+                .rfind("</main>")
+                .ok_or("HTML report has no main boundary")?;
+            html.insert_str(
+                at,
+                &comparison
+                    .html_bounded(publication_limits.report_bytes.saturating_sub(html.len()))
+                    .map_err(|e| e.to_string())?,
+            );
+            if html.len() > publication_limits.report_bytes {
+                return Err("HTML comparison exceeds publication byte limit".into());
+            }
+        }
+    }
     let executable = std::env::current_exe()
         .ok()
         .map(|p| BytePath::from_path(&p))
@@ -865,6 +935,15 @@ fn produce_review(
         detail.clone()
     };
     if opts.contains_key("--summary")
+        && let Some(comparison) = &comparison
+    {
+        table.push_str(
+            &comparison
+                .text_bounded(publication_limits.report_bytes.saturating_sub(table.len()))
+                .map_err(|e| e.to_string())?,
+        );
+    }
+    if opts.contains_key("--summary")
         && !opts.contains_key("--run-dir")
         && !opts.contains_key("--html")
     {
@@ -876,7 +955,7 @@ fn produce_review(
         bounded_json(&review, publication_limits.json_bytes)
     }
     .map_err(|e| e.to_string())?;
-    let boundaries = if opts.contains_key("--out")
+    let mut boundaries = if opts.contains_key("--out")
         || opts.contains_key("--run-dir")
         || opts.contains_key("--html")
     {
@@ -884,6 +963,15 @@ fn produce_review(
     } else {
         inventory
     };
+    if let Some(reference) = one(opts, "--compare-reference") {
+        let mut paths = match &boundaries.scope {
+            ScanScope::Repo { path } => vec![path.clone()],
+            ScanScope::Roots { paths } => paths.clone(),
+            ScanScope::AllMounted => Vec::new(),
+        };
+        paths.push(BytePath::from_path(&reference));
+        boundaries.scope = ScanScope::Roots { paths };
+    }
     progress.finish();
     deliver(
         opts,
@@ -901,10 +989,12 @@ fn produce_review(
                 || !review.coverage.traversal_complete
                 || review.coverage.remaining.is_some()
                 || review.coverage.publication.is_some()
-                || review.items.iter().any(|item| !item.unknowns.is_empty()),
+                || review.items.iter().any(|item| !item.unknowns.is_empty())
+                || comparison.as_ref().is_some_and(|c| c.partial()),
             detail: Some(&detail),
             inventory_json: source_json.as_deref(),
             html: html.as_deref(),
+            comparison: comparison_json.as_deref(),
         },
     )
 }
@@ -921,7 +1011,7 @@ fn forge(args: &[OsString]) -> Result<(), String> {
             let table = format!("Forge requests: {}; pagination complete: {}; temporal consistency: {}; absence proven: {}\n", export.requests.len(), export.coverage.pagination_complete, export.coverage.temporal_consistency, export.coverage.absence_proven);
             let mut opts = opts;
             if !opts.contains_key("--out") && !opts.contains_key("--format") { opts.insert("--format".into(), vec![OsString::from("json")]); }
-            deliver(&opts, bounded_json(&export, PublicationLimits::default().json_bytes).map_err(|e| e.to_string())?, table, &scope, RunInfo { command: "forge ingerer", name: "forge.json", partial: !export.coverage.gaps.is_empty() || !export.coverage.pagination_complete, detail: None, inventory_json: None, html: None })
+            deliver(&opts, bounded_json(&export, PublicationLimits::default().json_bytes).map_err(|e| e.to_string())?, table, &scope, RunInfo { command: "forge ingerer", name: "forge.json", partial: !export.coverage.gaps.is_empty() || !export.coverage.pagination_complete, detail: None, inventory_json: None, html: None, comparison: None })
         }
         _ => Err("use forge commandes or forge ingerer --raw FILE".into()),
     }
@@ -934,6 +1024,7 @@ struct RunInfo<'a> {
     detail: Option<&'a str>,
     inventory_json: Option<&'a [u8]>,
     html: Option<&'a str>,
+    comparison: Option<&'a [u8]>,
 }
 
 fn deliver(
@@ -982,7 +1073,16 @@ fn deliver_with_opener(
             html: run.html,
             partial: run.partial,
         };
-        let path = if let Some(source) = run.inventory_json {
+        let path = if let Some(comparison) = run.comparison {
+            wt_sweep::run::publish_with_comparison(
+                &base,
+                artifact,
+                inventory,
+                run.inventory_json
+                    .ok_or("comparison requires source inventory")?,
+                comparison,
+            )
+        } else if let Some(source) = run.inventory_json {
             wt_sweep::run::publish_with_inventory(&base, artifact, inventory, source)
         } else {
             wt_sweep::run::publish(&base, artifact, inventory)

@@ -16,7 +16,9 @@
     "Génère un rapport HTML hors ligne de mes worktrees avec leur poids et les vérifications manquantes.",
     "Open this saved wt-sweep HTML audit and explain the per-project worktree totals without rescanning.",
     "Reprends la découverte des worktrees depuis ce checkpoint wt-sweep sans changer les racines.",
-    "Resume the interrupted explicit-root wt-sweep discovery and retain each observation interval."
+    "Resume the interrupted explicit-root wt-sweep discovery and retain each observation interval.",
+    "Avec wt-sweep, vérifie si les fichiers ignorés et changements locaux du worktree existent déjà dans cette copie de référence.",
+    "Use wt-sweep to compare staged and disk changes against this explicit integration target, preserving unknown file comparisons."
   ],
   "negative": [
     "Crée un nouveau worktree Git pour développer cette fonctionnalité.",

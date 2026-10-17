@@ -78,6 +78,8 @@ fn write_artifact(
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum PublicationPhase {
+    ComparisonWrite,
+    ComparisonSync,
     InventoryWrite,
     InventorySync,
     JsonWrite,
@@ -95,6 +97,8 @@ pub enum PublicationPhase {
 impl PublicationPhase {
     pub fn as_str(self) -> &'static str {
         match self {
+            Self::ComparisonWrite => "comparison_write",
+            Self::ComparisonSync => "comparison_sync",
             Self::InventoryWrite => "inventory_write",
             Self::InventorySync => "inventory_sync",
             Self::JsonWrite => "json_write",
@@ -130,13 +134,14 @@ pub fn publish_with_io(
     boundaries: &Inventory,
     io: &mut dyn PublicationIo,
 ) -> Result<PathBuf, SweepError> {
-    publish_internal(base, artifact, boundaries, None, io)
+    publish_internal(base, artifact, boundaries, None, None, io)
 }
 fn publish_internal(
     base: &Path,
     artifact: Artifact<'_>,
     boundaries: &Inventory,
     inventory_json: Option<&[u8]>,
+    comparison_json: Option<&[u8]>,
     io: &mut dyn PublicationIo,
 ) -> Result<PathBuf, SweepError> {
     use PublicationPhase::*;
@@ -155,6 +160,8 @@ fn publish_internal(
             .html
             .is_some_and(|html| html.len() > limits.report_bytes)
         || inventory_json.is_some_and(|bytes| bytes.len() > limits.json_bytes)
+        || comparison_json
+            .is_some_and(|bytes| bytes.len() > crate::local::comparison::DOCUMENT_BYTES)
     {
         return Err(SweepError::new(
             "run_output",
@@ -162,6 +169,48 @@ fn publish_internal(
             base,
             "full artifact exceeds publication byte limit; rescan a smaller scope",
         ));
+    }
+    if let Some(bytes) = comparison_json {
+        let document: crate::local::comparison::Document =
+            serde_json::from_slice(bytes).map_err(|e| {
+                SweepError::new("run_output", "comparison_validation", base, e.to_string())
+            })?;
+        let value: serde_json::Value = serde_json::from_slice(artifact.json).map_err(|e| {
+            SweepError::new("run_output", "comparison_validation", base, e.to_string())
+        })?;
+        let review: crate::model::Review =
+            serde_json::from_value(value.get("source").unwrap_or(&value).clone()).map_err(|e| {
+                SweepError::new("run_output", "comparison_validation", base, e.to_string())
+            })?;
+        crate::local::comparison::verify(&document, &review)?;
+        let saved_inventory: Inventory =
+            serde_json::from_slice(inventory_json.ok_or_else(|| {
+                SweepError::new(
+                    "run_output",
+                    "comparison_validation",
+                    base,
+                    "comparison requires its saved inventory",
+                )
+            })?)
+            .map_err(|e| {
+                SweepError::new("run_output", "comparison_validation", base, e.to_string())
+            })?;
+        if crate::output::canonical_digest(&saved_inventory)? != document.inventory_sha256 {
+            return Err(SweepError::new(
+                "run_output",
+                "comparison_validation",
+                base,
+                "saved inventory does not match comparison source",
+            ));
+        }
+        if document.partial() && !artifact.partial {
+            return Err(SweepError::new(
+                "run_output",
+                "comparison_validation",
+                base,
+                "partial comparison cannot have a complete receipt",
+            ));
+        }
     }
     let started = now_ms();
     let directory = RunDirectory::create(base, boundaries)?;
@@ -217,6 +266,17 @@ fn publish_internal(
             false,
         )?;
     }
+    if let Some(bytes) = comparison_json {
+        write_artifact(
+            &directory,
+            "local-comparison.json",
+            bytes,
+            io,
+            ComparisonWrite,
+            ComparisonSync,
+            false,
+        )?;
+    }
     directory
         .verify()
         .map_err(|e| failed(&directory, ArtifactsDirectorySync, false, e))?;
@@ -230,6 +290,9 @@ fn publish_internal(
     artifacts.push(serde_json::json!({"name": "report.txt", "sha256": sha256(artifact.report.as_bytes()), "bytes": artifact.report.len()}));
     if let Some(html) = artifact.html {
         artifacts.push(serde_json::json!({"name": "report.html", "sha256": sha256(html.as_bytes()), "bytes": html.len()}));
+    }
+    if let Some(bytes) = comparison_json {
+        artifacts.push(serde_json::json!({"name":"local-comparison.json","sha256":sha256(bytes),"bytes":bytes.len()}));
     }
     let receipt = serde_json::json!({
         "schema": "wt-sweep.run/1", "run_id": run_id, "command": artifact.command,
@@ -285,5 +348,40 @@ pub fn publish_with_inventory_io(
     inventory_json: &[u8],
     io: &mut dyn PublicationIo,
 ) -> Result<PathBuf, SweepError> {
-    publish_internal(base, artifact, boundaries, Some(inventory_json), io)
+    publish_internal(base, artifact, boundaries, Some(inventory_json), None, io)
+}
+
+/// Sidecar publication validates source binding before creating a run directory.
+pub fn publish_with_comparison(
+    base: &Path,
+    artifact: Artifact<'_>,
+    boundaries: &Inventory,
+    inventory_json: &[u8],
+    comparison_json: &[u8],
+) -> Result<PathBuf, SweepError> {
+    publish_with_comparison_io(
+        base,
+        artifact,
+        boundaries,
+        inventory_json,
+        comparison_json,
+        &mut NativePublicationIo,
+    )
+}
+pub fn publish_with_comparison_io(
+    base: &Path,
+    artifact: Artifact<'_>,
+    boundaries: &Inventory,
+    inventory_json: &[u8],
+    comparison_json: &[u8],
+    io: &mut dyn PublicationIo,
+) -> Result<PathBuf, SweepError> {
+    publish_internal(
+        base,
+        artifact,
+        boundaries,
+        Some(inventory_json),
+        Some(comparison_json),
+        io,
+    )
 }

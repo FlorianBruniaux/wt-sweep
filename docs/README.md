@@ -63,6 +63,10 @@ Le [guide de v0.1.0-alpha.2](release.md) décrit le paquet Apple Silicon, son t�
 
 | Document | Contents |
 | --- | --- |
+| [Comparaison du contenu local](superpowers/specs/2026-10-13-local-content-comparison-design.md) | Approved per-file comparison design against explicit Git targets and a reference checkout, coverage and linked artifact. Implemented locally. |
+| [Plan de comparaison du contenu local, v2](superpowers/plans/2026-10-13-local-content-comparison-v2.md) | Approved U01-U06 units, persistent proofs, source coverage, bounded publication and preservation checkpoints. |
+| [Recette de la comparaison locale](research/local-comparison-acceptance-2026-10-13.md) | Observed local checks, independent review corrections, implementation rulings and delivery limits. |
+| [Critique du plan de comparaison](superpowers/plans/2026-10-13-local-content-comparison-review.md) | Two blocking contract gaps, budget and delivery-order concerns, and corrections adopted in v2. Documentation review, not product acceptance. |
 | [Tableau de bord disque](superpowers/specs/2026-10-11-disk-dashboard-design.md) | Approved volume gauges, measured allocation percentages, coverage and offline compatibility design. |
 | [Plan du tableau de bord disque](superpowers/plans/2026-10-11-disk-dashboard.md) | Approved implementation tasks, contracts, native observations, HTML gauges and conservation checks. |
 | [Extension decisions, 11/10](research/extension-decisions-2026-10-11.md) | Outcomes of #20 and #27–30, evidence and reopening conditions. |

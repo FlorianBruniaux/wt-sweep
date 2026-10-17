@@ -63,6 +63,7 @@ fn open_implies_html_and_happens_only_after_successful_publication()
         detail: None,
         inventory_json: None,
         html: Some("<html>fixture</html>"),
+        comparison: None,
     };
     deliver_with_opener(
         &opts,
@@ -124,6 +125,7 @@ fn html_without_open_never_launches_an_application() -> Result<(), Box<dyn std::
             detail: None,
             inventory_json: None,
             html: Some("<html>fixture</html>"),
+            comparison: None,
         },
         &opener,
     )?;

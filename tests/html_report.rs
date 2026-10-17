@@ -1225,6 +1225,15 @@ fn reading_guide_explains_inventory_and_embeds_an_offline_diagram() {
     assert!(!report.contains("href=\"#requested-scan-scope\""));
     assert!(!report.contains("href=\"#review-guidance\""));
     assert!(report.contains("Click a block to open its report section"));
+    if let Some(path) = std::env::var_os("WT_SWEEP_REVIEW_GUIDE_FIXTURE_DIR") {
+        use std::io::Write;
+        let mut file = std::fs::OpenOptions::new()
+            .write(true)
+            .create_new(true)
+            .open(std::path::PathBuf::from(path).join("report.html"))
+            .unwrap();
+        file.write_all(report.as_bytes()).unwrap();
+    }
 }
 
 #[test]
@@ -1430,4 +1439,24 @@ fn primary_retention_reason_preserves_the_ancestry_evidence_boundary() {
             .any(|text| text.contains("commits not integrated"))
     );
     assert_eq!(serde_json::to_value(&view.source).unwrap(), before);
+}
+
+#[test]
+fn claude_prompt_is_an_explicit_local_copy_action_with_scope_and_manual_fallback() {
+    let (inventory, review) = fixture();
+    let view = view::build(&inventory, &review, ReviewFilters::default(), "repo").unwrap();
+    for report in [
+        html::inventory(&inventory, 1_000_000).unwrap(),
+        html::review(&view, 1_000_000).unwrap(),
+    ] {
+        assert!(report.contains("id=\"claude-open\""));
+        assert!(report.contains("<dialog id=\"claude-dialog\""));
+        assert!(report.contains("id=\"claude-scope\""));
+        assert!(report.contains("value=\"all\">All saved entries"));
+        assert!(report.contains("value=\"visible\">Currently shown entries"));
+        assert!(report.contains("id=\"claude-prompt\""));
+        assert!(report.contains("readonly spellcheck=\"false\""));
+        assert!(report.contains("id=\"claude-copy\""));
+        assert!(report.contains("id=\"claude-status\" role=\"status\""));
+    }
 }

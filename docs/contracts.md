@@ -14,6 +14,7 @@ They contain no cleanup actions. Field definitions are in
 | `wt-sweep.inventory/1` | `scan` | Scope, interval, families, registrations, path states, discovery coverage and optional local manifests |
 | `wt-sweep.discovery-checkpoint/1` | `scan --checkpoint-out` | Explicit root identities, traversal state, candidate markers and separate intervals; no saved HEAD or Git-family evidence |
 | `wt-sweep.review/2` | `plan` | Inventory digest, live local summaries, policy version, classifications, Git observations, forge facts, risks and unknowns |
+| `wt-sweep.local-comparison/1` | `review` or `plan --compare-local` | Optional source/reference content observations, category coverage and source review/inventory bindings; no change to triage |
 | `wt-sweep.forge/1` | `forge ingerer` | Normalized requests, raw-source identity, receipt metadata and coverage |
 | `wt-sweep.forge-receipt/1` | External capture executor | Actual invocation, scope, interval, exit status, pages and raw-file hash |
 | `wt-sweep.run/1` | Any artifact command with `--run-dir` | Run identity, publication interval, status and hashes of published artifacts |
@@ -743,3 +744,63 @@ capacity. Volume capacities and available space are never added together.
 Source storage is copied intact into reviews and filtered views. Rendering
 uses no live disk query; invalid or unsupported storage leaves the historical
 sizes and list available, with percentages unavailable.
+
+## Optional local content comparison
+
+`--compare-local` publishes `local-comparison.json` in a saved run. The optional
+`--compare-reference` names a checkout in the same physical Git family. `review/2`
+and `triage/1` remain unchanged; identical ignored content can still require keep.
+
+The sidecar binds `inventory_sha256`, `review_sha256` (source, never view), and
+its canonical `digest_sha256`. Each item binds its exact `summary_sha256` and
+source worktree `BytePath`. `collection` distinguishes `collected`,
+`not_requested` and `unavailable`. A source summary with positive counts cannot
+be represented as a complete empty comparison. `coverage` records each source
+category's observed/emitted/omitted distinct paths and source completeness.
+Several conflict stages count once per category path, but remain separate rows.
+
+Rows preserve category, layer, stage, source value and full source object OID
+when available. Each `lookup` retains a reference index, observed value and
+object OID. Values distinguish present (SHA-256, Git mode, optional POSIX mode
+and filesystem witness), observed absence, and unknown with a reason. Reference
+captures retain origin, exact name, commit/tree OIDs or identity, interval and
+final checks. No file payload or configuration value is serialized.
+
+`matches_target` requires equal content/type/Git mode; `matches_reference`
+requires equal content/type/POSIX mode in the checkout. Missing index POSIX mode
+stays unknown for that equality. Absence differs from an empty file. Symlinks
+compare link bytes, never targets. Positive equality can coexist with another
+unknown reference; only exhaustive unequal lookups give `different`.
+
+`path_totals` count each observed path once: different precedes unknown, then
+all layers matching Git, then other fully matched paths. `layer_totals` retain
+per-observation unknowns. `complete` is derived from source coverage, emitted
+paths, reference checks and missing comparisons, not supplied as a free claim.
+An omitted or unexamined path prevents a claim that all work has an equivalent.
+The validator replays this consistency from saved inputs and rejects mismatched
+results/counts/bindings; it does not authenticate a wholly fabricated capture.
+
+Source projection is globally bounded to 8 MiB with allocation overhead reserved;
+details are capped at 4,096 standard / 32,768 thorough per worktree. The comparison
+document has a 24 MiB envelope inside the existing publisher's 32 MiB cap.
+Reference reads consume the source collector's remaining allowances. Saturation
+marks comparison partial without retroactively stopping the base review.
+Missing mandatory metadata refuses publication. Report text/HTML use bounded
+writers. A partial comparison forces a partial receipt. Sidecar writes and syncs
+precede receipt publication; failures remain errors. Old runs omit the sidecar
+and mean comparison not collected.
+
+A checkout reference persists its root and `.git` witnesses, marker digest for
+a regular marker, Git/common directory identities and the `commondir`
+fingerprint/type/mode or absence witness. These are captured and revalidated
+under the remaining budget.
+Self-reference is refused by physical identity, including `/.` aliases; in a
+whole-family comparison that reference row remains visible as not requested.
+Nested `.git` entries and the bounded bare signature (`HEAD`, `objects`, `refs`)
+prevent reference reads across a repository boundary. Disk absence requires a
+saved parent witness. Git-tree absence instead comes from the verified tree.
+
+Captured matches do not establish integration ancestry, private-history
+preservation, a durable backup, useful/obsolete work, freed disk space or removal
+permission. Source/reference observations retain separate intervals; there is
+no claim of an atomic snapshot.
