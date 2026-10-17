@@ -269,3 +269,14 @@ Le [tutoriel de collecte ciblée](tutorial.fr.md#approfondir-un-worktree-après-
 fournit le bloc de commandes. Vérifier la présence de l’option dans l’aide du
 binaire utilisé. Garder les deux rapports et expliquer les contrôles qui restent
 incomplets après la relance.
+
+## Comparer les fichiers locaux
+
+Pour vérifier si des changements ou fichiers ignorés existent déjà ailleurs,
+utiliser `--compare-local` avec les cibles Git confirmées et un run sauvegardé.
+`--compare-reference /chemin/absolu` ajoute une copie explicite de la même famille.
+La compétence lit le sidecar et sa liaison à la revue source ; elle sépare
+fichiers différents, doublons observés et preuves manquantes sans changer le
+verdict CLI. Une copie locale identique ne prouve ni fusion ni sauvegarde durable.
+Les projections du repo sont générées pour Claude et Codex ; leurs contrôles de
+fichiers ne prouvent pas leur activation native.

@@ -410,6 +410,7 @@ fn local_allowance_reserves_time_for_later_worktrees() -> TestResult {
                 metrics: Default::default(),
                 summary: unavailable_local_summary(w, "injected no-I/O collector".into())?,
                 first_git_timeout: None,
+                comparison: None,
             })
         },
     )?;

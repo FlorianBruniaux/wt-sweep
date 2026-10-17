@@ -28,6 +28,22 @@ missing information that changes the scope or integration comparison.
 State the scope, target refs and whether observations are fresh or saved.
 Completion: the user can see what will be inspected and what remains unspecified.
 
+## Compare local changes when requested
+
+When the question is whether local edits or ignored files already exist in a
+chosen target or checkout, use the optional content comparison in
+[command recipes](references/commands.md#compare-local-content).
+Keep integration targets explicit. Add a reference checkout only when its exact
+path is supplied or confirmed; it must belong to the same Git family.
+Read the linked artifact as described in
+[report interpretation](references/reports.md#local-content-comparison).
+Keep index and disk separate, retain unknowns and the CLI verdict. A matching
+ignored file still requires retention under the current policy.
+
+Completion: name the reference and show different, matching and unexamined paths,
+or report comparison not collected. Never infer usefulness or removal permission
+from identical bytes, a cache directory name or a merged PR.
+
 ## Choose model, effort and delegation
 
 Before reading a large report or spawning a child, apply the

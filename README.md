@@ -286,6 +286,7 @@ installation is performed by Sweep.
 | One-command review | Discover an explicit scope and collect current review evidence. | `review --repo PATH` |
 | Current local state | Compare HEAD, index and files with separate complete or partial counts. | `review` or `plan` |
 | Local file manifests | Inspect file hashes, metadata, index entries and selected worktree administration. | `scan --local` |
+| Local content comparison | Find local changes whose exact content already exists in explicit Git targets or a same-family checkout, with differences and unknowns. | `review --compare-local --run-dir BASE` |
 | Git relationships | Observe identical commits, ancestry and identical trees against named refs. | `plan --target FULL_REF` |
 | Offline forge evidence | Import captured GitHub/GitLab data with provenance, without contacting a forge. | `forge ingerer` |
 | Human and machine output | Read the detailed report or structured console recap; retain full path bytes and OIDs in JSON. | `--summary`, `--format json` |

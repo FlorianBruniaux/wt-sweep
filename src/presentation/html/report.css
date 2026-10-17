@@ -211,6 +211,15 @@ p { margin: .5rem 0 1rem; }
 .capture-details { color: var(--muted); }
 .capture-details > summary { padding-inline: 0; font-size: .78rem; font-weight: 500; }
 .theme { flex-shrink: 0; align-items: center; white-space: nowrap; font-size: .8rem; }
+.claude-open { font-size: .8rem; white-space: nowrap; }
+#claude-dialog { width: min(46rem, calc(100vw - 2rem)); max-height: calc(100dvh - 2rem); overflow: auto; padding: 1.25rem; border: 1px solid var(--control-line); border-radius: var(--panel-radius); background: var(--surface); color: var(--ink); }
+#claude-dialog::backdrop { background: #0008; }
+#claude-dialog h2 { margin-top: 0; }
+#claude-dialog label { display: block; margin: .6rem 0 .3rem; font-size: .85rem; }
+#claude-scope, #claude-prompt { display: block; width: 100%; margin-top: .3rem; }
+#claude-prompt { resize: vertical; }
+.prompt-actions { display: flex; flex-wrap: wrap; gap: .5rem; }
+@media print { #claude-dialog, #claude-open { display: none !important; } }
 .notice {
   margin: 1.5rem 0;
   padding: 1rem 1.2rem;

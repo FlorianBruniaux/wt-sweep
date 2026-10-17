@@ -116,6 +116,21 @@ nettoyage. Les filtres du rapport ne changent ni ces chiffres ni ce classement.
 
 ## Guide de lecture et recherche rapide
 
+« Claude prompt » prépare localement un texte français à copier, avec tous les
+chemins présents dans le HTML ou seulement les lignes correspondant aux filtres.
+Le texte inclut les octets hexadécimaux exacts, les verdicts et conditions
+enregistrés, les tailles en chaînes décimales et les limites de découverte.
+Les chemins non UTF-8 gardent leurs octets et une valeur textuelle `null`.
+L'inventaire ne devient pas une liste de candidats. Claude doit vérifier l'état
+actuel et proposer un plan ; ce prompt n'autorise aucune suppression.
+Le texte est généré à la demande, sans collecte ni envoi. Si le presse-papier
+refuse la copie, le texte complet est sélectionné pour une copie manuelle.
+Une incohérence entre une ligne et son JSON refuse le prompt entier.
+
+```sh
+node tests/html-claude.cjs /chemin/inventaire.html /chemin/revue.html /chemin/nouveaux-resultats
+```
+
 Le bloc visible « In brief: recommended actions » précède la liste. Dans un
 inventaire, il propose d'inspecter les gros dossiers, de lancer une revue Git
 avec dépôt et cible explicites, puis de compléter la découverte si une
@@ -373,3 +388,17 @@ node tests/html-ux.cjs /chemin/vers/inventaire-synthetique.html \
 Ces scripts utilisent un navigateur déjà installé ; ils ne déclenchent aucune
 collecte ni suppression. Les captures synthétiques ne prouvent pas le rendu de
 chaque inventaire personnel.
+
+## Comparaison des changements locaux
+
+Avec `review` ou `plan --compare-local`, le rapport ajoute « Que reste-t-il à
+récupérer ? ». Chaque worktree expose les chemins déjà présents dans les cibles
+Git explicites, présents dans la copie locale choisie, différents et non comparés.
+Les détails gardent source, référence, empreinte et couche index/disque. Les
+fichiers ignorés ne sont pas exclus et les conflits restent incomplets.
+
+La section consomme le sidecar lié `local-comparison.json` après vérification.
+Un bilan partiel garde ses omissions : zéro différence ne signifie pas zéro
+travail à récupérer. Les verdicts et figures disque restent ceux de la revue.
+Le contenu est disponible hors ligne, sans JavaScript ; aucune donnée n'est
+transmise et aucun retrait n'est autorisé par cette comparaison.
