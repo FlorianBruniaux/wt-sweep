@@ -231,7 +231,7 @@
   for (const item of document.querySelectorAll('.nav-item')) {
     const link = item.querySelector('a');
     const tip = item.querySelector('[popover]');
-    if (typeof tip.showPopover !== 'function') continue;
+    if (!link || !tip || typeof tip.showPopover !== 'function') continue;
     link.removeAttribute('title');
     let pinned = false, timer;
     const isOpen = () => tip.matches(':popover-open');

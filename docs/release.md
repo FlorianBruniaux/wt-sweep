@@ -37,7 +37,7 @@ La CLI inventorie les familles Git choisies, mesure leur occupation disque et pr
 
 La version reste en lecture seule. `apply` refuse les demandes. Une taille allouée ne prédit pas les octets récupérables sur APFS ; un candidat ne prouve pas l’absence d’utilisation par un agent ou un terminal. Les grandes familles peuvent demander des reprises ciblées, même avec le budget `thorough`.
 
-Les liens GitHub/GitLab proviennent des remotes locaux et des exports PR/MR associés. La CLI ne vérifie pas l’état actuel du serveur. L’évaluation du collecteur natif [#20](https://github.com/FlorianBruniaux/wt-sweep/issues/20) et les extensions [#14](https://github.com/FlorianBruniaux/wt-sweep/issues/14) sont hors de cette release.
+Les liens GitHub/GitLab proviennent des remotes locaux et des exports PR/MR associés. La CLI ne vérifie pas l’état actuel du serveur. Les évaluations du collecteur natif [#20](https://github.com/FlorianBruniaux/wt-sweep/issues/20) et des extensions [#14](https://github.com/FlorianBruniaux/wt-sweep/issues/14) sont incluses dans les sources ; elles restent expérimentales et ne sont pas activées dans la CLI.
 
 ## Reproduire le paquet
 

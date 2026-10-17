@@ -20,9 +20,17 @@ restent décrits dans la recette ; ils ne remplacent pas ces résultats distants
 
 La préparation alpha.3 aligne Cargo, les deux README, le guide de release,
 les pages publiques EN/FR et leurs sources vérifiées. La CI ajoute le test
-navigateur du prompt Claude. La recette de l’archive rejoue la démo puis une
+navigateur du prompt Claude et un rapport de comparaison réellement produit
+par la CLI. Ce second test a révélé puis vérifié la correction d’un lien de
+navigation sans infobulle qui bloquait les contrôles interactifs. La recette de l’archive rejoue la démo puis une
 comparaison locale : note différente conservée, liaison à la revue vérifiée,
 empreintes des artefacts conformes et verdicts inchangés.
+
+La suite Rust locale complète du 17/10 a signalé un échec dans
+`old_reflog_root_covered_only_by_lightweight_tag_can_qualify_linked` : verdict
+`verify` au lieu de `cleanup_candidate`. Le rejeu isolé a réussi. Cette
+observation sous charge reste distincte de la validation CI du commit final ;
+aucune limite de collecte ni condition de verdict n’a été assouplie.
 
 Les contrôles ci-dessus portent sur la PR. Le commit final du paquet, sa CI,
 sa somme SHA-256 et le résultat du retéléchargement sont consignés dans la
