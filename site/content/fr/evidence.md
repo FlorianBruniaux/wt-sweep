@@ -31,3 +31,11 @@ Les URL de dépôt, branche et commit viennent de métadonnées locales capturé
 ## Compatibilité du format disque
 
 Depuis `v0.1.0-alpha.2`, les sources peuvent enregistrer le bloc facultatif `disk_usage.storage`. Le nouveau lecteur accepte les anciens inventaires sans changer leur empreinte canonique. Les anciens lecteurs stricts peuvent refuser les fichiers enrichis. Des données de volume inconnues ou incohérentes empêchent le calcul des pourcentages, sans effacer tailles ni lignes. La capacité ne change pas C1–C5.
+
+## La comparaison locale porte des preuves séparées
+
+Alpha.3 peut enregistrer `local-comparison.json`, lié aux empreintes de l’inventaire
+et de la revue. Il distingue index et disque, contenus identiques aux cibles ou à
+la référence, différences et chemins non examinés. Les preuves partielles ou
+manquantes restent inconnues ; un zéro incomplet n’est pas un résultat de
+conservation. La comparaison ne change pas C1–C5 et n’autorise aucun retrait.

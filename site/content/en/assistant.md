@@ -35,3 +35,12 @@ Distinguish recorded observations from current state, which was not rechecked.
 The path must identify the `run-*` directory containing the receipt and artifacts. A historical report cannot decide a present-day deletion. [Focused reviews](/docs/targets/) may gather a missing proof in a new run.
 
 Reports can include GitHub/GitLab navigation and associated imported PR/MR states. Treat them as captured context, not proof of publication, integration or cleanup eligibility. [Read the link provenance](/docs/report/#github-and-gitlab-links).
+
+## Start from the HTML prompt
+
+In alpha.3, **Claude prompt** prepares a French handoff from all saved entries or
+the current list filters. It preserves recorded verdicts, sizes and missing checks.
+Nothing is sent automatically. Copy it only after reviewing the included paths.
+For optional local-content comparison, the skill checks `local-comparison.json`
+and its binding to the source review before explaining matches and differences.
+A matching local copy does not establish merge status or durable preservation.

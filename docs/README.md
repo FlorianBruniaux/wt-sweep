@@ -3,8 +3,7 @@
 [Project overview](../README.md) · [Présentation en français](../README.fr.md) · [Changelog](../CHANGELOG.md) · [Contributing](../CONTRIBUTING.md)
 
 These guides cover the read-only macOS CLI and the T01-T09 triage workflow.
-The [current delivery record](progress.md) separates alpha.2 publication,
-subsequent evaluations, local checks and real-world observations. The
+The [current delivery record](progress.md) separates release publication, local checks and real-world observations. The
 [roadmap](roadmap.md) records the [extension decisions](research/extension-decisions-2026-10-11.md),
 including stopped options and their reopening conditions. The
 [validation ledger](finish-ledger.md#triage-t01-t09) retains historical checks.
@@ -12,7 +11,7 @@ The project overview is available in English and French. The tutorial, assistant
 and disk guides are in French; other user guides are in English. Design and
 validation records retain their original language and observation dates.
 
-Le [guide de v0.1.0-alpha.2](release.md) décrit le paquet Apple Silicon, son téléchargement, la vérification SHA-256 et les scripts de recette.
+Le [guide de v0.1.0-alpha.3](release.md) décrit le paquet Apple Silicon, son téléchargement, la vérification SHA-256 et les scripts de recette.
 
 ## Use the CLI
 

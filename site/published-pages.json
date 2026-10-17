@@ -2,7 +2,7 @@
   {
     "slug": "index",
     "source": "docs/getting-started.md",
-    "sourceHash": "2aed5ee098deb12a48cec50a63934c801eb3842f6f4a64dd81d8fc78ac6ea251",
+    "sourceHash": "8b8502bdc580725aa0ce654ade1e69dcd3a5d839d39970f4ea8428d493bcf29d",
     "title": {
       "en": "Start with wt-sweep",
       "fr": "Démarrer avec wt-sweep"
@@ -15,7 +15,7 @@
   {
     "slug": "installation",
     "source": "docs/getting-started.md",
-    "sourceHash": "2aed5ee098deb12a48cec50a63934c801eb3842f6f4a64dd81d8fc78ac6ea251",
+    "sourceHash": "8b8502bdc580725aa0ce654ade1e69dcd3a5d839d39970f4ea8428d493bcf29d",
     "title": {
       "en": "Install wt-sweep",
       "fr": "Installer wt-sweep"
@@ -28,7 +28,7 @@
   {
     "slug": "demo",
     "source": "docs/getting-started.md",
-    "sourceHash": "2aed5ee098deb12a48cec50a63934c801eb3842f6f4a64dd81d8fc78ac6ea251",
+    "sourceHash": "8b8502bdc580725aa0ce654ade1e69dcd3a5d839d39970f4ea8428d493bcf29d",
     "title": {
       "en": "Demo with a test repo",
       "fr": "Démo sur un repo de test"
@@ -41,7 +41,7 @@
   {
     "slug": "cli",
     "source": "docs/cli.md",
-    "sourceHash": "d45b3a1faef162a7bf7b2335365db2f9e30700af364ba98c4f0562e864200929",
+    "sourceHash": "1a4b04edb0b90d5e6a540401a586ff6b3ef7b6abf9b6c718a37025ec499ab73f",
     "title": {
       "en": "CLI workflow",
       "fr": "Parcours CLI"
@@ -67,7 +67,7 @@
   {
     "slug": "report",
     "source": "docs/html-report-plan.md",
-    "sourceHash": "6c3fd017619d3edc1bc163eba012d8b4d48953d25d041cd9dc630df89f5e2696",
+    "sourceHash": "c54395decc79c8cb70c073655f31c3ed975ed19e8dee09696583f34e03d94047",
     "title": {
       "en": "Read the HTML report",
       "fr": "Lire le rapport HTML"
@@ -93,7 +93,7 @@
   {
     "slug": "assistant",
     "source": "docs/assistant-skill.md",
-    "sourceHash": "ed8e731da15cafabb9641499c288e001278d4bd2e9a82c096f9bb721ef61bcd2",
+    "sourceHash": "cd1c81e7169f32be42855a0c5416e148f118fcd7ba1f43fdf7219a65de749ddc",
     "title": {
       "en": "Claude Code and Codex",
       "fr": "Claude Code et Codex"
@@ -106,7 +106,7 @@
   {
     "slug": "evidence",
     "source": "docs/contracts.md",
-    "sourceHash": "85ec9cc69115f3f05355093fbf70ea472242c7c510d8632e665e0ef0b070d0e1",
+    "sourceHash": "1653357820c3b6301bf116a1fb7069459ffbed2c7c98e3fce9268f6fd04acd16",
     "title": {
       "en": "Evidence and limits",
       "fr": "Preuves et limites"
@@ -132,7 +132,7 @@
   {
     "slug": "changelog",
     "source": "CHANGELOG.md",
-    "sourceHash": "e7d9ab92603f19531534489401d6b42522c877156484996eab5a2c97556e9a09",
+    "sourceHash": "d59ed7f7fc0bc8662932e19d018ee428e80746f7686f4abfb1e000b6e5a7398e",
     "title": {
       "en": "Changelog",
       "fr": "Historique des changements"

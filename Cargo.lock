@@ -255,7 +255,7 @@ dependencies = [
 
 [[package]]
 name = "wt-sweep"
-version = "0.1.0-alpha.2"
+version = "0.1.0-alpha.3"
 dependencies = [
  "libc",
  "rustix",

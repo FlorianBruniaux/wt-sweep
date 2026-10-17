@@ -58,7 +58,7 @@ encore contenir des fichiers ignorés, des modifications non commitées ou des n
 
 ### Télécharger l’alpha Apple Silicon
 
-Utilisez [v0.1.0-alpha.2](https://github.com/FlorianBruniaux/wt-sweep/releases/tag/v0.1.0-alpha.2) sur macOS Apple Silicon avec `/usr/bin/git`. Le binaire téléchargé ne demande pas Rust. Le dossier `Downloads` doit exister ; chaque installation crée un nouveau dossier.
+Utilisez [v0.1.0-alpha.3](https://github.com/FlorianBruniaux/wt-sweep/releases/tag/v0.1.0-alpha.3) sur macOS Apple Silicon avec `/usr/bin/git`. Le binaire téléchargé ne demande pas Rust. Le dossier `Downloads` doit exister ; chaque installation crée un nouveau dossier.
 
 ```sh
 (
@@ -67,12 +67,12 @@ Utilisez [v0.1.0-alpha.2](https://github.com/FlorianBruniaux/wt-sweep/releases/t
   test "$(uname -m)" = arm64
   install_dir="$(mktemp -d "$HOME/Downloads/wt-sweep-alpha.XXXXXX")"
   cd "$install_dir"
-  release_url="https://github.com/FlorianBruniaux/wt-sweep/releases/download/v0.1.0-alpha.2"
+  release_url="https://github.com/FlorianBruniaux/wt-sweep/releases/download/v0.1.0-alpha.3"
   curl --fail --location --proto '=https' --tlsv1.2 -O "$release_url/SHA256SUMS"
-  curl --fail --location --proto '=https' --tlsv1.2 -O "$release_url/wt-sweep-v0.1.0-alpha.2-aarch64-apple-darwin.tar.gz"
+  curl --fail --location --proto '=https' --tlsv1.2 -O "$release_url/wt-sweep-v0.1.0-alpha.3-aarch64-apple-darwin.tar.gz"
   shasum -a 256 -c SHA256SUMS
-  tar -xzf wt-sweep-v0.1.0-alpha.2-aarch64-apple-darwin.tar.gz
-  cd wt-sweep-v0.1.0-alpha.2-aarch64-apple-darwin
+  tar -xzf wt-sweep-v0.1.0-alpha.3-aarch64-apple-darwin.tar.gz
+  cd wt-sweep-v0.1.0-alpha.3-aarch64-apple-darwin
   ./wt-sweep --version
   ./wt-sweep review --help
   printf '\nBinary: %s/wt-sweep\n' "$PWD"
@@ -151,6 +151,18 @@ La découverte de racines explicites peut reprendre depuis un [checkpoint](docs/
 
 </details>
 
+<details>
+<summary>Comparer les fichiers locaux avant de préparer leur conservation</summary>
+
+Ajoutez `--compare-local` à une revue `review` ou `plan` sauvegardée pour comparer
+les changements locaux aux cibles Git explicites. `--compare-reference CHEMIN_ABSOLU`
+ajoute un autre checkout de la même famille. Le rapport distingue les contenus
+identiques, différents et non comparés, fichiers ignorés inclus. Il conserve
+`local-comparison.json` avec la revue. Ni une égalité ni un zéro incomplet ne
+changent l’éligibilité au nettoyage. [Commandes et limites](docs/cli.md).
+
+</details>
+
 ### Lire le résultat
 
 `--summary` affiche d’abord l’espace disque, puis sépare l’ascendance des commits
@@ -194,7 +206,7 @@ fichiers enregistrés et le JSON ne contiennent pas de décoration terminal.
 
 ## Rapport HTML
 
-`v0.1.0-alpha.2` ouvre un bilan compact, les prochaines vérifications conseillées
+`v0.1.0-alpha.3` ouvre un bilan compact, les prochaines vérifications conseillées
 et la liste des worktrees. Les filtres rapides sélectionnent un statut ; le
 raccourci de taille montre les plus gros dossiers mesurés. **Show all** rétablit la vue
 initiale. Chaque ligne analysée affiche son statut et son motif principal ; les
@@ -250,6 +262,9 @@ Ces liens ne prouvent pas qu’un push a eu lieu ; la CLI ne contacte pas le ser
 
 ## Utiliser avec Claude ou Codex
 
+Le bouton **Claude prompt** du rapport HTML prépare un prompt français
+depuis toutes les lignes ou les filtres actifs. Aucune donnée n’est envoyée.
+
 Pour partir de zéro, donnez à votre assistant le [prompt d’installation et
 d’analyse guidée](docs/bootstrap-prompt.fr.md#prompt-à-copier) : récupération
 de l’outil et des skills, compilation, démo sur un repo de test puis premier rapport.
@@ -297,6 +312,7 @@ Sweep n’installe aucun skill global ni hook.
 | Revue en une commande | Découvrir le périmètre et collecter les preuves courantes du triage. | `review --repo PATH` |
 | État local courant | Comparer HEAD, index et fichiers avec compteurs complets ou partiels. | `review` ou `plan` |
 | Inventaires de fichiers locaux | Examiner les empreintes, métadonnées, entrées d’index et certains éléments d’administration du worktree. | `scan --local` |
+| Comparaison des fichiers locaux | Repérer les contenus présents dans les cibles Git ou une copie choisie de la même famille, avec différences et inconnues. | `review --compare-local --run-dir BASE` |
 | Relations Git | Vérifier l’identité de commits, l’ascendance et l’identité d’arbres par rapport aux références nommées. | `plan --target FULL_REF` |
 | Preuves de forge hors ligne | Importer des données capturées depuis GitHub ou GitLab avec leur provenance, sans contacter de forge. | `forge ingerer` |
 | Rapports texte et JSON | Lire le rapport détaillé ou le bilan structuré dans la console ; conserver les octets complets des chemins et les identifiants d’objets Git dans le JSON. | `--summary`, `--format json` |
@@ -453,7 +469,7 @@ placeholders FileProvider, refus TCC et instantanés machine restent non vérifi
 
 ## Développement et état du projet
 
-[v0.1.0-alpha.2](https://github.com/FlorianBruniaux/wt-sweep/releases/tag/v0.1.0-alpha.2) est la pré-release actuelle, en lecture seule, pour macOS Apple Silicon. Le [guide de release](docs/release.md) décrit l’installation, les sommes de contrôle et les limites.
+[v0.1.0-alpha.3](https://github.com/FlorianBruniaux/wt-sweep/releases/tag/v0.1.0-alpha.3) est la pré-release actuelle, en lecture seule, pour macOS Apple Silicon. Le [guide de release](docs/release.md) décrit l’installation, les sommes de contrôle et les limites.
 
 [CONTRIBUTING.md](CONTRIBUTING.md) décrit les contrôles locaux et les repos de test temporaires ; [CHANGELOG.md](CHANGELOG.md) conserve les changements. La publication Cargo reste désactivée.
 

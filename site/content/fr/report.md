@@ -58,3 +58,18 @@ Les intitulés de la barre latérale expliquent leur contenu au survol, au focus
 Gardez `run.json`, les fichiers JSON et le rapport texte avec le HTML. Avant de partager, comparez les tailles et SHA-256 des fichiers avec le reçu de publication `run.json`. Un reçu n’est ni une sauvegarde, ni une preuve de synchronisation finale réussie. Un ancien rapport ne décrit pas forcément l’état actuel des worktrees.
 
 Les [captures datées de la page d’accueil](/assets/report-captures.json) et le [relevé de génération de la démo interactive](/demo/provenance.json) sont des relevés distincts.
+
+## Comparaison locale et prompt pour l’assistant
+
+Alpha.3 ajoute `--compare-local` aux exécutions sauvegardées de `review` et `plan`.
+Le rapport sépare les contenus identiques aux cibles Git explicites, ceux présents
+dans un checkout choisi de la même famille, les différences et les chemins non
+comparés. Index et disque restent distincts ; les ignorés sont inclus. Gardez le
+fichier lié `local-comparison.json` avec le run. Une égalité ne prouve ni fusion,
+ni sauvegarde restaurable, ni éligibilité au nettoyage.
+
+**Claude prompt** prépare un prompt français depuis toutes les entrées HTML
+sauvegardées ou les lignes correspondant aux filtres actifs. Il inclut chemins,
+verdicts, tailles et contrôles manquants. Relisez le texte avant de le copier dans
+votre assistant ; aucune donnée n’est envoyée automatiquement. Une copie manuelle
+reste possible si le navigateur refuse l’accès au presse-papier.

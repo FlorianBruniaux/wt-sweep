@@ -47,3 +47,12 @@ Le bilan en anglais commence par l’allocation disque observée en KB/MB/GB, si
 Les filtres d’affichage ne réduisent pas la collecte. Les guides [cibles et filtres](/fr/docs/targets/) et [périmètre disque](/fr/docs/disk/) expliquent la distinction.
 
 La commande peut se terminer avec le code `0` alors que les preuves restent partielles. Lisez la couverture, les conditions manquantes et les diagnostics. La [référence CLI complète du repo](https://github.com/FlorianBruniaux/wt-sweep/blob/main/docs/cli.md) définit toutes les options et les codes de sortie.
+
+## Comparer les changements locaux
+
+Ajoutez `--compare-local` à la commande ci-dessus, en gardant `--open` ou `--html`
+(ou un `--run-dir` explicite). Cette comparaison refuse `--out`.
+`--compare-reference CHEMIN_ABSOLU` ajoute un autre checkout de la même famille
+Git physique. L’auto-comparaison, ses alias et les familles ambiguës sont refusés.
+Le fichier lié `local-comparison.json` conserve égalités, différences, inconnues
+et couverture. Il ne change pas les verdicts CLI.

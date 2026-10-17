@@ -47,3 +47,12 @@ The English summary starts with observed disk allocation in KB/MB/GB when collec
 Display filters do not reduce collection. [Targets and filters](/docs/targets/) and [disk scope](/docs/disk/) explain the distinction.
 
 A command can exit with code `0` while its evidence remains partial. Read the coverage, missing conditions and diagnostics. [The full repository CLI reference](https://github.com/FlorianBruniaux/wt-sweep/blob/main/docs/cli.md) defines all options and exit codes.
+
+## Compare local changes
+
+Add `--compare-local` to the review command above, keeping `--open` or `--html`
+(or an explicit `--run-dir`). `--out` cannot be combined with this comparison.
+Add `--compare-reference ABSOLUTE_PATH` only for a different checkout in the
+same physical Git family. Self-comparison, path aliases and ambiguous families
+are refused. The linked `local-comparison.json` retains exact matches, differences,
+unknowns and coverage. It does not change the CLI verdicts.

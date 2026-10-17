@@ -9,6 +9,27 @@ la [préparation alpha.2](#préparation-alpha2-11102026), la
 validation locale et contrôles distants. Les sections plus anciennes conservent
 des observations datées, pas une liste des tâches encore ouvertes.
 
+## Alpha.3 : préparation et comparaison locale, 17/10/2026
+
+La [PR #34](https://github.com/FlorianBruniaux/wt-sweep/pull/34) est fusionnée au
+commit `2d12a93a1e0d8f418c4cc7be380820951a760b7f`. Ses contrôles
+[push](https://github.com/FlorianBruniaux/wt-sweep/actions/runs/39031725380) et
+[PR](https://github.com/FlorianBruniaux/wt-sweep/actions/runs/39031835655) ont réussi
+sur `8f2df78c3385c92490d1d44d5342808c78c5d355`. Les anciens échecs locaux sous charge
+restent décrits dans la recette ; ils ne remplacent pas ces résultats distants.
+
+La préparation alpha.3 aligne Cargo, les deux README, le guide de release,
+les pages publiques EN/FR et leurs sources vérifiées. La CI ajoute le test
+navigateur du prompt Claude. La recette de l’archive rejoue la démo puis une
+comparaison locale : note différente conservée, liaison à la revue vérifiée,
+empreintes des artefacts conformes et verdicts inchangés.
+
+Les contrôles ci-dessus portent sur la PR. Le commit final du paquet, sa CI,
+sa somme SHA-256 et le résultat du retéléchargement sont consignés dans la
+[release alpha.3](https://github.com/FlorianBruniaux/wt-sweep/releases/tag/v0.1.0-alpha.3)
+à la publication. Une préparation des sources ne prouve pas la disponibilité
+publique du paquet. Les [limites de plateforme](release.md) restent applicables.
+
 ## Évaluations des extensions, 11/10/2026
 
 Les [cinq décisions](research/extension-decisions-2026-10-11.md) concluent #20

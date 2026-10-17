@@ -31,3 +31,11 @@ Repository, branch and commit URLs are built from captured local metadata. They 
 ## Storage format compatibility
 
 Starting with `v0.1.0-alpha.2`, builds can record the optional `disk_usage.storage` block. New readers accept older inventories without changing their canonical digest. Older strict readers can reject enriched files. Unsupported or inconsistent volume data leaves percentages unavailable while retaining recorded sizes and rows. Capacity never changes C1–C5.
+
+## Local-content comparison is separate evidence
+
+Alpha.3 can save `local-comparison.json` linked to the inventory and review digests.
+Its findings distinguish index and disk observations, exact target/reference
+matches, differences and unexamined paths. Missing or partial evidence stays
+unknown; an incomplete zero is not a preservation result. Comparison never
+changes C1–C5 or authorizes removal.

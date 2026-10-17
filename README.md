@@ -56,7 +56,7 @@ files, uncommitted changes or local notes.
 
 ### Download the Apple Silicon alpha
 
-Use [v0.1.0-alpha.2](https://github.com/FlorianBruniaux/wt-sweep/releases/tag/v0.1.0-alpha.2) on macOS Apple Silicon with `/usr/bin/git`. Rust is not required for the downloaded binary. The `Downloads` directory must exist; each installation uses a new folder.
+Use [v0.1.0-alpha.3](https://github.com/FlorianBruniaux/wt-sweep/releases/tag/v0.1.0-alpha.3) on macOS Apple Silicon with `/usr/bin/git`. Rust is not required for the downloaded binary. The `Downloads` directory must exist; each installation uses a new folder.
 
 ```sh
 (
@@ -65,12 +65,12 @@ Use [v0.1.0-alpha.2](https://github.com/FlorianBruniaux/wt-sweep/releases/tag/v0
   test "$(uname -m)" = arm64
   install_dir="$(mktemp -d "$HOME/Downloads/wt-sweep-alpha.XXXXXX")"
   cd "$install_dir"
-  release_url="https://github.com/FlorianBruniaux/wt-sweep/releases/download/v0.1.0-alpha.2"
+  release_url="https://github.com/FlorianBruniaux/wt-sweep/releases/download/v0.1.0-alpha.3"
   curl --fail --location --proto '=https' --tlsv1.2 -O "$release_url/SHA256SUMS"
-  curl --fail --location --proto '=https' --tlsv1.2 -O "$release_url/wt-sweep-v0.1.0-alpha.2-aarch64-apple-darwin.tar.gz"
+  curl --fail --location --proto '=https' --tlsv1.2 -O "$release_url/wt-sweep-v0.1.0-alpha.3-aarch64-apple-darwin.tar.gz"
   shasum -a 256 -c SHA256SUMS
-  tar -xzf wt-sweep-v0.1.0-alpha.2-aarch64-apple-darwin.tar.gz
-  cd wt-sweep-v0.1.0-alpha.2-aarch64-apple-darwin
+  tar -xzf wt-sweep-v0.1.0-alpha.3-aarch64-apple-darwin.tar.gz
+  cd wt-sweep-v0.1.0-alpha.3-aarch64-apple-darwin
   ./wt-sweep --version
   ./wt-sweep review --help
   printf '\nBinary: %s/wt-sweep\n' "$PWD"
@@ -147,6 +147,18 @@ Interrupted explicit-root discovery can use [checkpoints](docs/discovery-resume.
 
 </details>
 
+<details>
+<summary>Compare local files before planning preservation</summary>
+
+Add `--compare-local` to a saved `review` or `plan` to compare local changes with
+your explicit integration targets. Add `--compare-reference ABSOLUTE_PATH` only
+for a different checkout in the same Git family. The report separates exact
+matches, differences and unexamined paths, including ignored files. It saves
+`local-comparison.json` alongside the review. Neither equality nor an incomplete
+zero changes cleanup eligibility. [Commands and limits](docs/cli.md).
+
+</details>
+
 ### Read the result
 
 `--summary` starts with disk allocation, then separates commit ancestry from
@@ -188,7 +200,7 @@ contain terminal decoration.
 
 ## HTML report
 
-`v0.1.0-alpha.2` opens with a compact summary, recommended next checks and the
+`v0.1.0-alpha.3` opens with a compact summary, recommended next checks and the
 worktree list. Quick filters select a status; a size shortcut shows the largest
 recorded entries. **Show all** restores the initial view. Review rows show a readable
 status and main reason, with full evidence folded underneath.
@@ -240,6 +252,10 @@ do not confirm publication; the CLI does not contact the server.
 ---
 
 ## Use with Claude or Codex
+
+In the HTML report, **Claude prompt** prepares a French prompt containing
+all saved entries or the current filtered selection. Inspect it before copying;
+nothing is sent automatically.
 
 Starting from scratch? Give your assistant the [installation and guided-review
 prompt (French)](docs/bootstrap-prompt.fr.md#prompt-à-copier). It covers cloning
@@ -436,7 +452,7 @@ denials and a machine-wide snapshot have not been verified.
 
 ## Development and project status
 
-[v0.1.0-alpha.2](https://github.com/FlorianBruniaux/wt-sweep/releases/tag/v0.1.0-alpha.2) is the current read-only macOS Apple Silicon pre-release. See the [release guide](docs/release.md) for installation, checksums and scope.
+[v0.1.0-alpha.3](https://github.com/FlorianBruniaux/wt-sweep/releases/tag/v0.1.0-alpha.3) is the current read-only macOS Apple Silicon pre-release. See the [release guide](docs/release.md) for installation, checksums and scope.
 
 [CONTRIBUTING.md](CONTRIBUTING.md) covers local checks and disposable fixtures; [CHANGELOG.md](CHANGELOG.md) records changes. Cargo publishing remains disabled.
 

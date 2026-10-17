@@ -1,12 +1,15 @@
 # Changelog
 
-[v0.1.0-alpha.2](https://github.com/FlorianBruniaux/wt-sweep/releases/tag/v0.1.0-alpha.2) is the current macOS Apple Silicon pre-release. `Unreleased` tracks subsequent changes.
+[v0.1.0-alpha.3](https://github.com/FlorianBruniaux/wt-sweep/releases/tag/v0.1.0-alpha.3) is the current macOS Apple Silicon pre-release. `Unreleased` tracks subsequent changes.
 
 [Project overview](README.md) · [Documentation](docs/README.md) · [Contributing](CONTRIBUTING.md)
 
 ## [Unreleased]
 
-<!-- unreleased-updated: 2026-10-11 -->
+## [0.1.0-alpha.3] - 2026-10-17
+
+Third read-only Apple Silicon alpha. Adds optional local-content comparison and
+a copyable assistant prompt; existing cleanup verdicts are unchanged.
 
 ### Added
 
@@ -30,8 +33,26 @@
 
 ### Changed
 
+- Add optional local-content comparison to `review` and `plan`: explicit Git
+  targets and a same-family reference checkout, separate index/disk observations,
+  ignored files, conflict stages and source-linked coverage. Publish a verified
+  `local-comparison.json` before its receipt, with bounded HTML/text details and
+  fresh source/reference checks. Comparison does not change triage or authorize
+  removal.
+  Refuse physical self-reference, including path aliases; revalidate checkout
+  Git administration and refuse nested bare boundaries. Persist disk absence
+  witnesses. Record the approved design, revised plan, independent review and
+  local acceptance evidence.
+
+- Prepare a copyable French prompt for Claude from saved HTML entries, including
+  exact path bytes, recorded verdicts, missing checks and measured sizes.
+  Offer the full saved list or rows matching current filters, with a manual
+  clipboard fallback. Preparation never sends data or authorizes cleanup.
+
 - Record extension decisions and reopening conditions in both READMEs, roadmap
-  and documentation index. Alpha.2 remains the current published archive.
+  and documentation index. Earlier alpha archives remain unchanged.
+- Run the HTML assistant-prompt browser checks in CI, including filtered rows,
+  clipboard refusal and preservation of source evidence.
 - Add native correctness/sanitizer, provenance and APFS fixture checks to CI;
   keep performance campaigns separate from CI timing.
 

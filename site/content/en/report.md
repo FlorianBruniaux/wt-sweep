@@ -57,3 +57,16 @@ The sidebar labels provide explanations on hover, focus or click. You can open a
 Keep `run.json`, JSON and text with HTML. Verify artifact sizes and SHA-256 against the receipt before sharing a saved result. A receipt is neither a backup nor proof of successful final disk synchronization. An older report may no longer describe the current worktree state.
 
 The [dated landing captures](/assets/report-captures.json) and [new interactive demo provenance](/demo/provenance.json) are separate records.
+
+## Local content comparison and assistant prompt
+
+Alpha.3 adds `--compare-local` to saved `review` and `plan` runs. The report separates
+local bytes matching explicit Git targets, bytes matching a chosen same-family
+checkout, differences and paths not compared. Index and disk layers remain distinct;
+ignored files are included. Keep the linked `local-comparison.json` with the run.
+Equal bytes do not establish integration, a restorable backup or cleanup eligibility.
+
+**Claude prompt** prepares a French prompt from all saved HTML entries or the rows
+matching current filters. It includes recorded paths, verdicts, sizes and missing
+checks. Review the text before copying it to your assistant; nothing is sent
+automatically. A manual copy fallback is available if clipboard access is denied.

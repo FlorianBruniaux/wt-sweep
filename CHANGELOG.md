@@ -1,12 +1,15 @@
 # Changelog
 
-[v0.1.0-alpha.2](https://github.com/FlorianBruniaux/wt-sweep/releases/tag/v0.1.0-alpha.2) is the current macOS Apple Silicon pre-release. `Unreleased` tracks subsequent changes.
+[v0.1.0-alpha.3](https://github.com/FlorianBruniaux/wt-sweep/releases/tag/v0.1.0-alpha.3) is the current macOS Apple Silicon pre-release. `Unreleased` tracks subsequent changes.
 
 [Project overview](README.md) · [Documentation](docs/README.md) · [Contributing](CONTRIBUTING.md)
 
 ## [Unreleased]
 
-<!-- unreleased-updated: 2026-10-17 -->
+## [0.1.0-alpha.3] - 2026-10-17
+
+Third read-only Apple Silicon alpha. Adds optional local-content comparison and
+a copyable assistant prompt; existing cleanup verdicts are unchanged.
 
 ### Added
 
@@ -47,7 +50,9 @@
   clipboard fallback. Preparation never sends data or authorizes cleanup.
 
 - Record extension decisions and reopening conditions in both READMEs, roadmap
-  and documentation index. Alpha.2 remains the current published archive.
+  and documentation index. Earlier alpha archives remain unchanged.
+- Run the HTML assistant-prompt browser checks in CI, including filtered rows,
+  clipboard refusal and preservation of source evidence.
 - Add native correctness/sanitizer, provenance and APFS fixture checks to CI;
   keep performance campaigns separate from CI timing.
 

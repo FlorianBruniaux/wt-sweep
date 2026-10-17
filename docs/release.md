@@ -1,31 +1,35 @@
-# Worktree Sweep v0.1.0-alpha.2
+# Worktree Sweep v0.1.0-alpha.3
 
 [Index documentaire](README.md) · [Changelog](../CHANGELOG.md) · [Feuille de route](roadmap.md)
 
-Pré-release GitHub : [v0.1.0-alpha.2](https://github.com/FlorianBruniaux/wt-sweep/releases/tag/v0.1.0-alpha.2).
+Pré-release GitHub : [v0.1.0-alpha.3](https://github.com/FlorianBruniaux/wt-sweep/releases/tag/v0.1.0-alpha.3).
 Le paquet vise macOS Apple Silicon (`aarch64-apple-darwin`) et conserve la licence FSL-1.1-ALv2. Il s’agit de Fair Source. La visibilité publique du repo ne change pas cette licence.
 
 ## Installer et vérifier
 
 La [procédure de téléchargement](getting-started.md#download-the-apple-silicon-alpha) crée un dossier neuf, télécharge l’archive et `SHA256SUMS`, vérifie la somme puis exécute `--version` et `review --help`. Le binaire ne demande pas Rust. `/usr/bin/git` doit être disponible.
 
-L’archive `wt-sweep-v0.1.0-alpha.2-aarch64-apple-darwin.tar.gz` contient le binaire, sa licence, les notices des dépendances et `MANIFEST.json`. Le manifeste identifie le commit source, le compilateur et les empreintes des fichiers. Gardez `SHA256SUMS` avec l’archive.
+L’archive `wt-sweep-v0.1.0-alpha.3-aarch64-apple-darwin.tar.gz` contient le binaire, sa licence, les notices des dépendances et `MANIFEST.json`. Le manifeste identifie le commit source, le compilateur et les empreintes des fichiers. Gardez `SHA256SUMS` avec l’archive.
 
 Utilisez le chemin absolu du binaire dans la [démo temporaire](getting-started.md#disposable-demo), à la place de `./target/release/wt-sweep`. Le résultat attendu est 2 `keep`, 1 `cleanup_candidate`, 0 `verify`. Les skills Claude/Codex restent dans le repo source.
 
 Le binaire n’est pas notarisé par Apple. Le téléchargement par CLI et le lancement local ne qualifient pas Gatekeeper après téléchargement par navigateur. Aucun contournement de cette protection n’est demandé. Intel, Linux, Windows et une version minimale de macOS ne sont pas qualifiés. La recette précédente utilisait macOS 26.5.1 ; chaque nouvelle recette doit conserver son environnement exact.
 
-## Changements depuis alpha.1
+## Changements depuis alpha.2
 
-Alpha.2 distribue les jauges disque par volume, la recherche Cmd+K / Ctrl+K,
-le diagramme de lecture cliquable et le parcours HTML compact. Le bilan et la
-liste sont ouverts ; disque et couverture sont repliés. Les filtres rapides,
-le tri par taille et **Show all** changent la vue sans modifier les preuves capturées.
-La CI automatique vérifie aussi les interactions des rapports.
+Alpha.3 ajoute `review --compare-local` et `plan --compare-local` pour comparer
+les changements locaux aux cibles Git explicites. `--compare-reference` ajoute
+un checkout choisi dans la même famille. Le rapport distingue les contenus
+identiques, différents et non comparés, avec un fichier lié `local-comparison.json`.
+Une égalité de contenu ne change pas les verdicts et ne prouve pas une sauvegarde.
 
-L’archive alpha.1 reste inchangée. Les anciens inventaires peuvent être relus
-sans capacité de volume inventée ; les anciens lecteurs stricts peuvent refuser
-le nouveau bloc facultatif `disk_usage.storage`.
+Le bouton **Claude prompt** produit un prompt français depuis toutes les
+lignes enregistrées ou les filtres actifs. Il conserve chemins, tailles, verdicts
+et contrôles manquants. Rien n’est envoyé automatiquement.
+
+Les évaluations Worktrunk, provenance, APFS, exclusion des écritures et collecte
+native sont livrées comme expériences. Elles n’activent pas de nouvelle commande
+de gestion ni de collecteur natif. Les archives alpha.1 et alpha.2 restent inchangées.
 
 ## Périmètre de l’alpha
 
@@ -47,7 +51,7 @@ python3 -B scripts/release/package.py "$PWD" "$release_check/package"
 python3 -B scripts/release/accept-archive.py "$PWD" "$release_check/package"
 ```
 
-La recette vérifie les empreintes de l’archive et de ses fichiers, exécute l’aide et la démo documentaire, compare les verdicts attendus et vérifie les artefacts contre `run.json`. Ses fixtures restent dans des dossiers temporaires possédés ; aucun scan global n’est lancé.
+La recette vérifie les empreintes de l’archive et de ses fichiers, exécute l’aide et la démo documentaire, compare les verdicts attendus et vérifie les artefacts contre `run.json`. Elle rejoue aussi `--compare-local` depuis le binaire extrait : une note locale différente doit rester visible, avec la liaison à la revue et les verdicts inchangés. Ses fixtures restent dans des dossiers temporaires possédés ; aucun scan global n’est lancé.
 
 ## Contrôles de publication
 

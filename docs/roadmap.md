@@ -2,6 +2,22 @@
 
 [Index documentaire](README.md) · [Preuves du triage](finish-ledger.md#triage-t01-t09) · [Plan T01-T09](superpowers/plans/2026-10-05-worktree-triage-v2.md)
 
+## Alpha.3 : comparaison locale et prompt, 17/10/2026
+
+La [PR #34](https://github.com/FlorianBruniaux/wt-sweep/pull/34) ajoute la comparaison
+facultative des fichiers locaux aux cibles Git et à un checkout explicite de la
+même famille. Le rapport garde les couches index/disque, les fichiers ignorés,
+les conflits et les chemins non comparés. Les verdicts C1-C5 restent inchangés.
+
+Le HTML prépare aussi un prompt français pour Claude depuis toutes les lignes
+ou la sélection affichée. La copie ne transmet aucune donnée automatiquement.
+Les README EN/FR, pages d’installation et guides CLI décrivent alpha.3 ; le
+[guide de release](release.md) conserve les étapes de validation du paquet.
+
+La suite reste la revue ciblée des preuves manquantes. Les extensions ci-dessous
+ont été évaluées, pas activées. Sauvegarde, restauration et retrait restent
+indisponibles tant que leurs conditions de preuve ne sont pas remplies.
+
 ## Alpha.2 : interface et distribution, 11/10/2026
 
 [v0.1.0-alpha.2](https://github.com/FlorianBruniaux/wt-sweep/releases/tag/v0.1.0-alpha.2)
