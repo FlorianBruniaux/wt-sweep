@@ -1,0 +1,53 @@
+.github/workflows/ci.yml
+  s_160b3107588443::t_6d1c32350ea310 63
+CHANGELOG.md
+  s_160b3107588443::t_79540b304e4ad1 14-20
+CONTRIBUTING.md
+  s_160b3107588443::t_70bd9ef436cd21 74
+docs/progress.md
+  s_60d4a01bc3ed2e::t_2dd588242f7232 23-25,29-34
+docs/release.md
+  s_160b3107588443::t_5d304a2858b0f2 40
+site/content/en/changelog.md
+  s_160b3107588443::t_7eac7a834c848d 14-20
+site/content/fr/changelog.md
+  s_160b3107588443::t_c8265f62702e21 14-20
+site/published-pages.json
+  s_160b3107588443::t_bb75c99a5a3544 135
+src/presentation/html/report.js
+  s_160b3107588443::t_eba2542d37a693 234
+tests/html-comparison.cjs
+  s_766292561fda56::t_0f87abc6308a7b 1-52
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "0bf2d6c07275c74b549017bfb49bad57eff3c086",
+  "prompts": {},
+  "sessions": {
+    "s_160b3107588443": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a106f2-069b-7be2-aa09-88b1bbf2331e",
+        "model": "gpt-6-astra"
+      },
+      "human_author": "Florian BRUNIAUX <florian@bruniaux.com>"
+    },
+    "s_60d4a01bc3ed2e": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a12186-45a9-7700-a661-e83a1d28583e",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "Florian BRUNIAUX <florian@bruniaux.com>"
+    },
+    "s_766292561fda56": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "a3a1deea-8893-42c3-82aa-20605bd626ec",
+        "model": "unknown"
+      },
+      "human_author": "Florian BRUNIAUX <florian@bruniaux.com>"
+    }
+  }
+}
