@@ -2,6 +2,15 @@
 
 [Index documentaire](README.md) · [Preuves du triage](finish-ledger.md#triage-t01-t09) · [Plan T01-T09](superpowers/plans/2026-10-05-worktree-triage-v2.md)
 
+## Après alpha.3 : analyse guidée depuis l’inventaire
+
+`plan --interactive` propose les refs présentes par famille et demande une
+confirmation avant d’utiliser le moteur d’analyse existant. Le parcours garde
+les tailles capturées et peut ouvrir le HTML avec `--open`. Il remplace la
+préparation manuelle d’une carte JSON dans un terminal ; `--target-map` reste
+le parcours automatisable. Cette évolution est suivie dans `Unreleased`, hors
+de l’archive alpha.3. Les verdicts et les conditions de retrait ne changent pas.
+
 ## Alpha.3 : comparaison locale et prompt, 17/10/2026
 
 La [PR #34](https://github.com/FlorianBruniaux/wt-sweep/pull/34) ajoute la comparaison

@@ -19,6 +19,22 @@ Run from the built source checkout. Choose an absolute repository path and a ful
 
 `review` discovers and collects fresh evidence in one run. `scan` saves an inventory; `plan --inventory` reviews a saved inventory. `review` does not accept `--local` or `--inventory`.
 
+## Guided analysis from an inventory
+
+Available in source builds after alpha.3; the published alpha.3 archive is unchanged.
+In a terminal, replace the inventory path below with your saved file:
+
+```sh
+wt-sweep plan --inventory /absolute/path/to/inventory.json \
+  --interactive --compare-local --group-by repo --summary --open
+```
+
+Choose branch numbers or full refs for each repository, then confirm the recap
+with `yes`. `more` pages through branches, `skip` leaves integration unknown,
+and `quit` cancels. No default is accepted. Saved disk observations retain their
+original interval; current evidence is collected again. Use `--target-map` for
+unattended runs. No fetch or cleanup is performed.
+
 ## Saved artifacts
 
 With `--html` or `--open`, a new `run-*` directory contains `inventory.json`, `review.json`, `report.txt`, `report.html` and `run.json`. Keep them together. The report directory must be outside every inspected root and Git family. Its parent directories must be ordinary directories.

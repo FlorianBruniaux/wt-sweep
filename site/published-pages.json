@@ -41,7 +41,7 @@
   {
     "slug": "cli",
     "source": "docs/cli.md",
-    "sourceHash": "1a4b04edb0b90d5e6a540401a586ff6b3ef7b6abf9b6c718a37025ec499ab73f",
+    "sourceHash": "936b30e81378309eac5e852a2cb39cc37a43d492a289866456b206eeb4d0f8b5",
     "title": {
       "en": "CLI workflow",
       "fr": "Parcours CLI"
@@ -80,7 +80,7 @@
   {
     "slug": "targets",
     "source": "docs/targets-and-filters.md",
-    "sourceHash": "7c972e389a41edc6d0c7165de6a45020c7ae963e63f67bdf049c8c109a7c2f2b",
+    "sourceHash": "7ac55a9f8c60c8a4eb7ca6b1e48c56a7d93d51d726d807b0563ebd3586444c76",
     "title": {
       "en": "Targets and focused reviews",
       "fr": "Cibles et analyses ciblées"
@@ -93,7 +93,7 @@
   {
     "slug": "assistant",
     "source": "docs/assistant-skill.md",
-    "sourceHash": "cd1c81e7169f32be42855a0c5416e148f118fcd7ba1f43fdf7219a65de749ddc",
+    "sourceHash": "41584089622cb2e00122c631599283f3512c005dc84e1e0c6fd24cfb442cbd59",
     "title": {
       "en": "Claude Code and Codex",
       "fr": "Claude Code et Codex"
@@ -132,7 +132,7 @@
   {
     "slug": "changelog",
     "source": "CHANGELOG.md",
-    "sourceHash": "1f90566e1b907f3eb60b69cadffe50dd2a7097b2cc43166c44f535a3943067d6",
+    "sourceHash": "f5c941cbf9b742b755a378a20ce1407a5d8bd71ebde0e8e908b74853a7b5f176",
     "title": {
       "en": "Changelog",
       "fr": "Historique des changements"

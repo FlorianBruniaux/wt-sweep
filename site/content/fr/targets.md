@@ -10,6 +10,14 @@ Choisissez des racines explicites et examinez l’inventaire. Une `--target-map`
 
 La [procédure de création du fichier de cibles](https://github.com/FlorianBruniaux/wt-sweep/blob/main/docs/targets-and-filters.md) conserve les octets des chemins et refuse les sorties existantes.
 
+## Choix guidé dans le terminal
+
+Les sources après alpha.3 proposent `plan --inventory FILE --interactive --open`.
+La CLI affiche les branches locales par famille, accepte les numéros ou refs
+complètes, puis demande `yes` après le récapitulatif. `skip` laisse l’intégration
+inconnue sans masquer la famille. Rien n’est choisi par défaut. Gardez
+`--target-map` pour automatiser sans terminal. [Commande guidée](/fr/docs/cli/#analyse-guidée-depuis-un-inventaire).
+
 ## Collecter moins ou afficher moins
 
 | Contrôle | Effet |

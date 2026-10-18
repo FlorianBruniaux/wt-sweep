@@ -4,8 +4,31 @@
 
 A target is the branch against which you want to check integration. `main` in
 one repository says nothing about `main` in another. Use `--target` for a scan of
-one repository. For an inventory containing several repositories, provide a map.
+one repository. For several repositories, choose targets interactively or provide a map.
 All refs are local observations. The tool never fetches them.
+
+## Guided selection
+
+Source builds after alpha.3 can replace the map-building Python script with:
+
+```sh
+wt-sweep plan --inventory "$report_dir/inventory.json" \
+  --interactive --compare-local --group-by repo --summary --open
+```
+
+Here `report_dir` is the existing run directory containing the inventory.
+The CLI lists locally recorded branches per physical family, with common branch
+names first. Choose displayed numbers or full refs, separated by spaces, then
+confirm the complete selection with `yes`. There is no default target. `more`
+pages through long lists; `skip` leaves that family’s integration unknown;
+`quit`, EOF or Ctrl-C cancel before analysis. All rows remain in the report.
+
+The prompts require a terminal on stdin and stderr. They do not fetch, infer a
+merge from a branch name or change the verdict policy. Ref and directory checks
+run again after confirmation. The new run keeps the input inventory and its
+original disk observation interval. `--open` publishes and opens HTML; `--html`
+only saves it. Add `--run-dir` for an existing destination outside the scanned
+scope. For noninteractive automation, the explicit map below remains supported.
 
 ## One repository
 
@@ -24,6 +47,9 @@ authorize deletion. `dirty` includes untracked and ignored content. `unknown`
 means the current local comparison is incomplete; it does not mean clean.
 
 ## Several repositories
+
+This manual map is for scripts and unattended runs. For terminal use, prefer
+[guided selection](#guided-selection).
 
 The map binds each repository to the exact administration path and device/inode
 recorded by the scan. This script lists the families with stable indices and

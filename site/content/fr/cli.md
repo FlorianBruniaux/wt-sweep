@@ -19,6 +19,23 @@ Depuis le checkout wt-sweep compilé, choisissez le chemin absolu du repo et con
 
 `review` découvre les worktrees et recueille les preuves sur leur état actuel en une exécution. `scan` enregistre un inventaire ; `plan --inventory` analyse un inventaire déjà enregistré. `review` n’accepte ni `--local`, ni `--inventory`.
 
+## Analyse guidée depuis un inventaire
+
+Disponible dans les sources après alpha.3 ; l’archive alpha.3 reste inchangée.
+Dans un terminal, remplacez le chemin ci-dessous par votre inventaire enregistré :
+
+```sh
+wt-sweep plan --inventory /chemin/absolu/vers/inventory.json \
+  --interactive --compare-local --group-by repo --summary --open
+```
+
+Choisissez les numéros des branches ou leurs refs complètes par dépôt, puis
+confirmez le récapitulatif avec `yes`. `more` affiche la page suivante, `skip`
+laisse l’intégration inconnue, `quit` annule. Rien n’est choisi par défaut.
+Les tailles gardent leur intervalle d’origine ; les preuves courantes sont
+relues. Pour automatiser sans terminal, gardez `--target-map`. Aucun fetch ni
+nettoyage n’est exécuté.
+
 ## Fichiers produits
 
 Avec `--html` ou `--open`, un nouveau dossier `run-*` contient `inventory.json`, `review.json`, `report.txt`, `report.html` et `run.json`. Gardez-les ensemble. Le dossier des rapports doit être en dehors de toutes les racines et familles Git inspectées. Ses répertoires parents doivent être des dossiers ordinaires.

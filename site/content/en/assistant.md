@@ -44,3 +44,9 @@ Nothing is sent automatically. Copy it only after reviewing the included paths.
 For optional local-content comparison, the skill checks `local-comparison.json`
 and its binding to the source review before explaining matches and differences.
 A matching local copy does not establish merge status or durable preservation.
+
+## Human target selection
+
+In source builds after alpha.3, `plan --interactive` lets a person confirm refs
+in a terminal. An unattended assistant should keep using `--target` or
+`--target-map` with user-confirmed refs, rather than answer `yes` on their behalf.

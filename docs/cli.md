@@ -11,7 +11,7 @@ for example `--workers 4`. `scan`, `plan`, `review`, `forge`, `forge commandes` 
 ```text
 wt-sweep review (--repo PATH | --root PATH... | --all)
   [--workers 1..8] [--disk-usage] [--disk-budget standard|thorough]
-  [all plan options except --inventory]
+  [all plan options except --inventory and --interactive]
 
 wt-sweep scan (--repo PATH | --root PATH... | --all | --resume FILE)
   [--checkpoint-out NEW_FILE] [--discovery-directories N]
@@ -19,7 +19,7 @@ wt-sweep scan (--repo PATH | --root PATH... | --all | --resume FILE)
   [--workers 1..8] [--local] [--disk-usage] [--disk-budget standard|thorough] [--format json|table]
   [--verbose] [--color auto|always|never] [--html] [--open] [--out FILE | --run-dir BASE]
 
-wt-sweep plan --inventory FILE [--target FULL_REF... | --target-map FILE]
+wt-sweep plan --inventory FILE [--interactive | --target FULL_REF... | --target-map FILE]
   [--budget standard|thorough] [--worktree ABSOLUTE_PATH] [--filter-repo PATH] [--path-prefix PATH] [--branch FULL_REF]
   [--compare-local] [--compare-reference ABSOLUTE_PATH]
   [--local-state clean|dirty|unknown] [--verdict keep|cleanup_candidate|verify]
@@ -49,7 +49,7 @@ wt-sweep review --repo /absolute/path/to/repo \
 The reports directory must already exist outside inspected repositories. Select
 the actual target ref for your repository. `review` accepts exactly one scope:
 `--repo PATH`, repeated `--root PATH`, or `--all`. It accepts `--workers 1..8`
-and all plan options listed below, except `--inventory`. `--local` belongs to
+and all plan options listed below, except `--inventory` and `--interactive`. `--local` belongs to
 `scan`; review already collects current local state during judgement.
 
 This command reuses discovery, enrichment and judgement from `scan` and `plan`.
@@ -118,6 +118,7 @@ overwritten or removed.
 | Option | Behavior |
 | --- | --- |
 | `--inventory FILE` | Required saved `wt-sweep.inventory/1` artifact. |
+| `--interactive` | Source builds after alpha.3: propose current local and remote-tracking branches per recorded family, then require explicit selection and final `yes`. Terminal stdin/stderr required. Conflicts with `--target` and `--target-map`; only `plan` accepts it. |
 | `--target FULL_REF` | Explicit integration ref under `refs/heads/` or `refs/remotes/`; repeat for several. Requires one physical repository family. No default is guessed. |
 | `--target-map FILE` | `wt-sweep.targets/1` mapping of physical families to explicit refs. Cannot combine with `--target`. Missing families get no target. |
 | `--budget PROFILE` | `standard` by default; `thorough` selects larger finite local, history, deep-object and private-history allowances. Available on `review` and `plan`, not `scan` or forge commands. |
@@ -136,6 +137,30 @@ overwritten or removed.
 | `--summary` | Print a short recap of verdicts, disk sizes and coverage; incompatible with `--format json`. |
 | `--verbose` | Show detailed progress, disk paths and recap metrics. Also accepted by `scan`. |
 | `--color auto\|always\|never` | Control terminal colors and icons; default `auto`. Also accepted by `scan`. |
+
+For a saved multi-project inventory, use:
+
+```sh
+wt-sweep plan --inventory /absolute/path/to/inventory.json \
+  --interactive --compare-local --group-by repo --summary --open
+```
+
+The inventory path is an example to replace. Numbers select displayed refs,
+including non-UTF-8 names. Several numbers or full refs can be separated by
+spaces. Conventional branch names appear first but are not preselected. `more`
+shows another page of branches; `skip` leaves the family without targets;
+`quit`, EOF or Ctrl-C cancel. Blank input never selects a default. Only `yes`
+at the final recap starts collection. Remote-tracking refs are local copies;
+no server is contacted. An unavailable family can be skipped without losing its
+rows or unknowns. Skipping every family cancels without a report.
+
+The CLI checks family identity before proposals and again before analysis.
+A selected ref that disappeared is refused. It then resolves current commits
+through the existing review engine, including its final consistency checks.
+With `--run-dir` or `--html`, guided plans also save the original `inventory.json`.
+Disk observations retain their original interval; `plan` does not measure sizes
+again. Prompts go to stderr, so `--format json` keeps stdout valid JSON.
+For unattended use, provide an explicit `--target` or `--target-map` instead.
 
 The command first collects bounded commit-history results across worktrees, then
 collects current local summaries and checks deep Git relationships

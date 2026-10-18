@@ -9,6 +9,38 @@ la [préparation alpha.2](#préparation-alpha2-11102026), la
 validation locale et contrôles distants. Les sections plus anciennes conservent
 des observations datées, pas une liste des tâches encore ouvertes.
 
+## Analyse guidée depuis un inventaire, 18/10/2026
+
+Évolution préparée sur `codex/interactive-plan`, depuis le commit alpha.3
+`0bf2d6c07275c74b549017bfb49bad57eff3c086`. L’archive publiée reste inchangée.
+`plan --interactive` propose les refs par famille, attend les choix et leur
+confirmation, puis utilise la collecte et le jugement existants. Il peut ouvrir
+le HTML avec `--open`. Les mesures disque gardent leur intervalle capturé.
+
+Les onze tests en pseudo-terminal utilisent des dépôts Git temporaires réels.
+Ils couvrent deux familles avec des cibles différentes, les noms non UTF-8,
+plusieurs refs, la pagination, les refs distantes locales, les réponses vides,
+l’annulation, les conflits d’options, les identités périmées, un échec Git et
+une cible retirée pendant la confirmation. Les manifestes indépendants avant
+et après contrôlent la conservation des repos et de l’inventaire. Un contrôle
+positif établit des candidats pour les deux bonnes cibles et publie le HTML.
+
+Contrôles observés : 468 tests Rust réussis (3 ignorés), onze tests du parcours
+guidé réussis, neuf tests d’exclusion réussis, formatage et Clippy sans erreur,
+harness synchronisé. Les quatre tests de documentation du site, la préparation
+EN/FR, le contrôle Astro, le build et les trois tests du site généré passent.
+La suite Python complète exécute 353 tests, dont 7 ignorés. Deux tests de
+découverte échouent dans le bac à sable (trois assertions, dont deux variantes
+d’un même test), puis réussissent lors du rejeu décrit ci-dessous. Les autres
+tests ne signalent aucun échec. Ces résultats décrivent la validation locale
+avant publication ; les contrôles distants sont consultables dans la PR associée.
+
+Deux tests de découverte nécessitent `ps` et `pgrep` pour identifier leurs
+propres enfants Git. Le bac à sable les bloque avant cette observation ; leur
+rejeu avec cet accès réussit. Aucune configuration globale ni condition de
+verdict n’a été modifiée pour ces tests. Aucun scan de dépôts personnels,
+nouvelle release ou déploiement ne fait partie de cette validation locale.
+
 ## Alpha.3 : préparation et comparaison locale, 17/10/2026
 
 La [PR #34](https://github.com/FlorianBruniaux/wt-sweep/pull/34) est fusionnée au

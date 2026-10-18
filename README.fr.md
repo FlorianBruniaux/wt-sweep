@@ -152,6 +152,30 @@ La découverte de racines explicites peut reprendre depuis un [checkpoint](docs/
 </details>
 
 <details>
+<summary>Analyser un inventaire existant en choisissant les cibles dans le terminal</summary>
+
+Disponible dans les sources après alpha.3 ; l’archive alpha.3 reste inchangée.
+Depuis le checkout compilé, saisissez le chemin de votre `inventory.json` :
+
+```sh
+(
+  set -eu
+  printf 'Chemin du fichier inventory.json : '
+  IFS= read -r inventory_path
+  ./target/release/wt-sweep plan --inventory "$inventory_path" \
+    --interactive --compare-local --group-by repo --summary --open
+)
+```
+
+Choisissez les numéros ou les refs complètes par dépôt, puis confirmez le bilan
+avec `yes`. Aucune cible n’est présélectionnée. `skip` passe un dépôt en laissant
+son intégration inconnue ; `quit` annule. L’analyse relit les preuves courantes,
+garde les mesures disque capturées et ouvre un nouveau rapport HTML. Aucun
+script Python ni fetch n’est nécessaire. [Parcours guidé](docs/targets-and-filters.md#guided-selection).
+
+</details>
+
+<details>
 <summary>Comparer les fichiers locaux avant de préparer leur conservation</summary>
 
 Ajoutez `--compare-local` à une revue `review` ou `plan` sauvegardée pour comparer

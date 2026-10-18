@@ -1,3 +1,4 @@
+mod interactive_plan;
 mod report_access;
 mod terminal;
 
@@ -17,7 +18,7 @@ const HELP: &str = "Worktree Sweep (wt-sweep)
 Usage:
   wt-sweep review (--repo PATH | --root PATH... | --all) [--workers 1..8] [--disk-usage] [--disk-budget standard|thorough] [PLAN OPTIONS]
   wt-sweep scan (--repo PATH | --root PATH... | --all | --resume FILE) [--workers 1..8] [--local] [--disk-usage] [--disk-budget standard|thorough] [--format json|table] [--html] [--open] [--out FILE | --run-dir BASE]
-  wt-sweep plan --inventory FILE [--target FULL_REF... | --target-map FILE] [--filter-repo PATH] [--path-prefix PATH] [--branch FULL_REF] [--local-state clean|dirty|unknown] [--verdict keep|cleanup_candidate|verify] [--group-by repo|directory] [--changelog-path RELATIVE...] [--no-context] [--forge FILE] [--summary] [--format json|table] [--html] [--open] [--out FILE | --run-dir BASE]
+  wt-sweep plan --inventory FILE [--interactive | --target FULL_REF... | --target-map FILE] [--filter-repo PATH] [--path-prefix PATH] [--branch FULL_REF] [--local-state clean|dirty|unknown] [--verdict keep|cleanup_candidate|verify] [--group-by repo|directory] [--changelog-path RELATIVE...] [--no-context] [--forge FILE] [--summary] [--format json|table] [--html] [--open] [--out FILE | --run-dir BASE]
   wt-sweep forge commandes
   wt-sweep forge ingerer --raw FILE [--receipt FILE] [--out FILE | --run-dir BASE]
   wt-sweep --help | --version
@@ -25,6 +26,7 @@ Usage:
 Read-only inventory and evidence review. Scans require explicit scope.
 JSON preserves path bytes as hexadecimal; tables escape control bytes.
 --out creates a new JSON file outside inspected targets and prints a table.
+Use plan --interactive to choose and confirm targets per family in a terminal.
 Use --target for one repository family, or --target-map for explicit targets per family.
 Filters select reviewed rows; JSON views retain the full source and its coverage.
 Global discovery reports gaps and does not establish a machine-wide snapshot.
@@ -97,6 +99,7 @@ fn options(args: &[OsString], allowed: &[&str], repeat: &[&str]) -> Result<Optio
                 | "--html"
                 | "--open"
                 | "--compare-local"
+                | "--interactive"
         ) {
             OsString::from("true")
         } else {
@@ -174,7 +177,7 @@ fn command_help(command: &str) -> Result<(), String> {
         "scan" => {
             "wt-sweep scan (--repo PATH | --root PATH... | --all | --resume FILE) [--workers 1..8] [--local] [--disk-usage] [--disk-budget standard|thorough] [--format json|table] [--html] [--open] [--out FILE | --run-dir BASE]"
         }
-        "plan" => "wt-sweep plan --inventory FILE [REVIEW OPTIONS]",
+        "plan" => "wt-sweep plan --inventory FILE [--interactive] [REVIEW OPTIONS]",
         "review" => {
             "wt-sweep review (--repo PATH | --root PATH... | --all) [--workers 1..8] [--disk-usage] [--disk-budget standard|thorough] [REVIEW OPTIONS]"
         }
@@ -198,7 +201,12 @@ fn command_help(command: &str) -> Result<(), String> {
             "Offline evidence only. No network command is executed by these subcommands.\ncommandes prints capture guidance; ingerer reads captured raw data and its receipt.\n"
         }
     };
-    print(format!("Usage:\n  {usage}\n\nRead-only.\n{notes}").as_bytes())
+    let guided = if command == "plan" {
+        "--interactive proposes locally recorded branches for each repository family.\nChoose numbers or full refs, then confirm the complete selection with yes.\nNo default; skip leaves integration unknown. quit, EOF or Ctrl-C cancel.\nRequires terminal stdin/stderr; conflicts with --target and --target-map.\nAdd --open to save and open HTML; --compare-local adds optional file comparisons.\nInteractive runs saved with --run-dir or --html also retain inventory.json.\n\n"
+    } else {
+        ""
+    };
+    print(format!("Usage:\n  {usage}\n\nRead-only.\n{guided}{notes}").as_bytes())
 }
 
 fn scan(args: &[OsString]) -> Result<(), String> {
@@ -613,15 +621,24 @@ const PLAN_OPTIONS: &[&str] = &[
 
 fn plan(args: &[OsString]) -> Result<(), String> {
     let mut allowed = PLAN_OPTIONS.to_vec();
-    allowed.push("--inventory");
+    allowed.extend(["--inventory", "--interactive"]);
     let opts = options(args, &allowed, &["--target", "--changelog-path"])?;
-    let settings = review_settings(&opts)?;
+    if opts.contains_key("--interactive") {
+        if opts.contains_key("--target") || opts.contains_key("--target-map") {
+            return Err("--interactive cannot be combined with --target or --target-map".into());
+        }
+        interactive_plan::require_terminal()?;
+    }
+    let mut settings = review_settings(&opts)?;
     let input = one(&opts, "--inventory").ok_or("plan requires --inventory FILE")?;
     let value: serde_json::Value = read_artifact(&input).map_err(|e| e.to_string())?;
     if value.get("schema").and_then(serde_json::Value::as_str) == Some("wt-sweep.review/1") {
         return Err("this is a historical review/1 archive, not an inventory; it provides no current C5 verification. Use wt-sweep review with an explicit scope, or create a fresh scan inventory for plan".into());
     }
     let inventory: Inventory = serde_json::from_value(value).map_err(|e| e.to_string())?;
+    if opts.contains_key("--interactive") {
+        settings.target_map = Some(interactive_plan::select(&inventory, &input)?);
+    }
     let mut progress = terminal::Progress::new(&opts);
     produce_review(&opts, inventory, settings, false, &mut progress)
 }
@@ -806,10 +823,12 @@ fn produce_review(
         review_options,
     } = settings;
     // Save exactly the input bound by the review digest. Never compact it after judgement.
-    let source_json = (combined || opts.contains_key("--compare-local"))
-        .then(|| bounded_json(&inventory, PublicationLimits::default().json_bytes))
-        .transpose()
-        .map_err(|e| format!("review input cannot be published; select a narrower scope: {e}"))?;
+    let source_json = (combined
+        || opts.contains_key("--compare-local")
+        || opts.contains_key("--interactive"))
+    .then(|| bounded_json(&inventory, PublicationLimits::default().json_bytes))
+    .transpose()
+    .map_err(|e| format!("review input cannot be published; select a narrower scope: {e}"))?;
     let target_input = target_map
         .as_ref()
         .map(TargetInput::Map)
