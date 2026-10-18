@@ -72,6 +72,14 @@ Sur macOS, `--html` sans destination enregistre dans
 `--run-dir` ; ajoutez `--open` si vous souhaitez ouvrir le HTML après publication.
 L’[aide des sorties](cli.md#output-modes) précise les limites et les erreurs.
 
+## Choisir les cibles depuis un terminal
+
+Les sources après alpha.3 proposent `plan --inventory FILE --interactive --open`.
+Ce parcours est destiné à une personne dans un terminal : elle choisit les refs
+par famille et confirme le bilan. Un assistant sans terminal doit conserver
+`--target` ou `--target-map` avec des cibles acceptées par l’utilisateur, sans
+répondre automatiquement `yes` à sa place. [Commandes et limites](cli.md#plan).
+
 ## Reprendre un rapport sans relancer l’analyse
 
 Le chemin attendu est le sous-dossier `run-*` qui contient `run.json`,

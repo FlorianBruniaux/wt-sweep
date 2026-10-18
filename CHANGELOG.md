@@ -6,6 +6,20 @@
 
 ## [Unreleased]
 
+<!-- unreleased-updated: 2026-10-18 -->
+
+### Added
+
+- `plan --inventory FILE --interactive`: propose local branches per recorded
+  Git family, accept explicit target selections, then require confirmation before
+  analysis. Supports multiple refs, paged suggestions, skipped families and
+  cancellation. Rechecks family identity and selected refs before collection.
+- Guided plans use the existing review and optional local-comparison pipeline.
+  Saved runs retain the source inventory and captured disk measurements;
+  `--open` saves and opens HTML through the existing macOS opener. Terminal
+  prompts stay on stderr. Explicit targets remain available for automation.
+
+
 ## [0.1.0-alpha.3] - 2026-10-17
 
 Third read-only Apple Silicon alpha. Adds optional local-content comparison and

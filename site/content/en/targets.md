@@ -10,6 +10,14 @@ Choose roots explicitly and inspect the resulting inventory. A `--target-map` bi
 
 The [canonical target-map recipe](https://github.com/FlorianBruniaux/wt-sweep/blob/main/docs/targets-and-filters.md) preserves path bytes and refuses existing output files.
 
+## Guided choice in a terminal
+
+Source builds after alpha.3 support `plan --inventory FILE --interactive --open`.
+The CLI proposes locally recorded branches per family, accepts numbers or full
+refs, and asks for `yes` after showing the complete selection. `skip` leaves
+integration unknown without hiding the family. Nothing is selected by default.
+Use `--target-map` for unattended runs. [Guided command](/docs/cli/#guided-analysis-from-an-inventory).
+
 ## Collect less or display less
 
 | Control | Effect |

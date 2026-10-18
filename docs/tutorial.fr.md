@@ -210,6 +210,35 @@ Ils ne valident ni suppression réelle, ni restauration, ni instantané machine.
 Le [registre de finition](finish-ledger.md#triage-t01-t09) conserve les résultats
 observés de la passe finale ; ce tutoriel donne une procédure et des attentes.
 
+## Reprendre un inventaire avec des cibles proposées
+
+Dans les sources après alpha.3, `plan --interactive` remplace la préparation
+manuelle d’une carte de cibles. L’archive alpha.3 ne contient pas cette option.
+Depuis le checkout recompilé, lancez dans un terminal :
+
+```sh
+(
+  set -eu
+  printf 'Chemin du fichier inventory.json : '
+  IFS= read -r inventory_path
+  ./target/release/wt-sweep plan --inventory "$inventory_path" \
+    --interactive --compare-local --group-by repo --summary --open
+)
+```
+
+La CLI affiche les branches disponibles dépôt par dépôt. Saisissez un numéro,
+plusieurs numéros séparés par des espaces, ou les refs complètes. `more` affiche
+la page suivante, `skip` passe le dépôt sans cible, `quit` annule. Une réponse
+vide ne choisit rien. Le récapitulatif final exige `yes` pour lancer la collecte.
+Aucun dépôt passé avec `skip` ne disparaît du rapport ; l’intégration y reste
+inconnue. Tout passer annule l’analyse.
+
+Les preuves Git et locales sont relues. Les mesures disque restent celles de
+l’inventaire, à leur date d’origine. Le nouveau dossier contient aussi cet
+inventaire original. Le HTML s’ouvre après publication. Les cibles distantes
+sont des refs de suivi locales, sans fetch. Pour automatiser sans terminal,
+gardez `--target` ou `--target-map` ; ces options excluent `--interactive`.
+
 ## Parcours avancé scan puis plan
 
 Pour demander un manifeste détaillé ou séparer découverte et revue, renseignez

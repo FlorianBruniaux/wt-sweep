@@ -45,3 +45,9 @@ chemins inclus avant de copier le texte. Pour la comparaison locale facultative,
 le skill vérifie `local-comparison.json` et sa liaison à la revue source avant
 d’expliquer égalités et différences. Une copie locale identique ne prouve ni
 fusion ni conservation durable.
+
+## Choix des cibles par l’utilisateur
+
+Dans les sources après alpha.3, `plan --interactive` permet de confirmer les refs
+dans un terminal. Un assistant sans terminal garde `--target` ou `--target-map`
+avec des refs acceptées par l’utilisateur, sans répondre `yes` à sa place.

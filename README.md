@@ -148,6 +148,30 @@ Interrupted explicit-root discovery can use [checkpoints](docs/discovery-resume.
 </details>
 
 <details>
+<summary>Analyze an existing inventory with guided target selection</summary>
+
+Available in source builds after alpha.3; the alpha.3 archive is unchanged.
+Run in a terminal and enter the path to your saved `inventory.json`:
+
+```sh
+(
+  set -eu
+  printf 'Inventory JSON path: '
+  IFS= read -r inventory_path
+  ./target/release/wt-sweep plan --inventory "$inventory_path" \
+    --interactive --compare-local --group-by repo --summary --open
+)
+```
+
+Choose branch numbers or full refs for each repository, then confirm the recap
+with `yes`. Nothing is preselected. `skip` leaves that repository without an
+integration target; `quit` cancels. The analysis reads current evidence, keeps
+the captured disk measurements and opens a new HTML report. No Python script or
+network fetch is needed. [Guided analysis](docs/targets-and-filters.md#guided-selection).
+
+</details>
+
+<details>
 <summary>Compare local files before planning preservation</summary>
 
 Add `--compare-local` to a saved `review` or `plan` to compare local changes with
