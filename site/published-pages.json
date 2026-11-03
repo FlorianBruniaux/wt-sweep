@@ -67,7 +67,7 @@
   {
     "slug": "report",
     "source": "docs/html-report-plan.md",
-    "sourceHash": "c54395decc79c8cb70c073655f31c3ed975ed19e8dee09696583f34e03d94047",
+    "sourceHash": "cd8ab5dbad7fa9be5013319a99ee83216c1b98a0c8b1ecbad77c9f09e7744a40",
     "title": {
       "en": "Read the HTML report",
       "fr": "Lire le rapport HTML"
@@ -132,7 +132,7 @@
   {
     "slug": "changelog",
     "source": "CHANGELOG.md",
-    "sourceHash": "6bdb21dad3187723e4c239b8a949696c4dde948436603d9097ccfde11d6d23d1",
+    "sourceHash": "9bd4b301b74ef6360a75620e5a88c498ce4311decc7fd610511bbfce8108732d",
     "title": {
       "en": "Changelog",
       "fr": "Historique des changements"

@@ -4,6 +4,7 @@
 const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const path = require('node:path');
+const http = require('node:http');
 const {pathToFileURL} = require('node:url');
 const {chromium} = require(process.env.PLAYWRIGHT_MODULE || 'playwright');
 if (process.argv.length !== 4) throw Error('Usage: node tests/html-theme.cjs report.html NEW_OUTPUT_DIR');
@@ -11,6 +12,7 @@ const report = path.resolve(process.argv[2]), output = path.resolve(process.argv
 fs.mkdirSync(output, {recursive:false});
 (async()=>{
   const browser=await chromium.launch({headless:true}), checks=[];
+  let storageServer;
   try {
     for(const js of [true,false]) for(const theme of ['light','dark']) for(const width of [2560,1440,390]) {
       const context=await browser.newContext({javaScriptEnabled:js,colorScheme:theme,reducedMotion:'reduce',viewport:{width,height:width===390?844:1000}});
@@ -84,9 +86,21 @@ fs.mkdirSync(output, {recursive:false});
       assert.equal(await page.locator('#theme').textContent(),saved==='dark'?'Switch to light':'Switch to dark');
       await page.locator('#theme').click();assert.equal(await page.evaluate(()=>localStorage.getItem('wt-sweep.theme')),saved==='dark'?'light':'dark');await context.close();
     }
+    // file: storage persistence is undefined across navigations. Exercise the
+    // actual report on a stable loopback origin for this persistence contract.
+    const reportBytes=fs.readFileSync(report);
+    storageServer=http.createServer((request,response)=>{
+      if(request.url!=='/') {response.writeHead(404);response.end();return;}
+      response.writeHead(200,{'Content-Type':'text/html; charset=utf-8'});
+      response.end(reportBytes);
+    });
+    await new Promise((resolve,reject)=>{
+      storageServer.once('error',reject);
+      storageServer.listen(0,'127.0.0.1',resolve);
+    });
     const reloadContext=await browser.newContext({colorScheme:'light'});
     const reloadPage=await reloadContext.newPage();
-    await reloadPage.goto(pathToFileURL(report).href);
+    await reloadPage.goto('http://127.0.0.1:'+storageServer.address().port+'/');
     for(const selected of ['dark','light']) {
       await reloadPage.locator('#theme').click();
       assert.equal(await reloadPage.evaluate(()=>localStorage.getItem('wt-sweep.theme')),selected);
@@ -95,12 +109,22 @@ fs.mkdirSync(output, {recursive:false});
       assert.equal(await reloadPage.locator('#theme').textContent(),selected==='dark'?'Switch to light':'Switch to dark');
     }
     await reloadContext.close();
+    const lostContext=await browser.newContext({colorScheme:'light'});
+    const lostPage=await lostContext.newPage();
+    await lostPage.goto(pathToFileURL(report).href);
+    await lostPage.locator('#theme').click();
+    assert.equal(await lostPage.locator('html').getAttribute('data-theme'),'dark');
+    await lostPage.addInitScript(()=>localStorage.removeItem('wt-sweep.theme'));
+    await lostPage.reload();
+    assert.equal(await lostPage.locator('html').getAttribute('data-theme'),null);
+    assert.equal(await lostPage.locator('#theme').textContent(),'Switch to dark');
+    await lostContext.close();
     const context=await browser.newContext({colorScheme:'dark'});
     await context.addInitScript(()=>Object.defineProperty(window,'localStorage',{get(){throw Error('storage denied by test');}}));
     const page=await context.newPage(),errors=[];page.on('pageerror',e=>errors.push(e.message));await page.goto(pathToFileURL(report).href);
     assert.equal(await page.locator('#theme').textContent(),'Switch to light');await page.emulateMedia({colorScheme:'light'});await page.waitForFunction(()=>document.getElementById('theme').textContent==='Switch to dark');await page.locator('#theme').click();assert.equal(await page.locator('html').getAttribute('data-theme'),'dark');assert.deepEqual(errors,[]);
     await page.emulateMedia({media:'print'});assert.equal(await page.locator('body').evaluate(e=>getComputedStyle(e).backgroundColor),'rgb(255, 255, 255)');await context.close();
-    fs.writeFileSync(path.join(output,'checks.json'),JSON.stringify({renders:checks,savedPreferenceCases:4,preferenceReload:true,deniedStorage:true,systemThemeChange:true,print:true},null,2)+'\n');
+    fs.writeFileSync(path.join(output,'checks.json'),JSON.stringify({renders:checks,savedPreferenceCases:4,preferenceReload:true,preferenceReloadOrigin:'http-loopback',lostFilePreference:true,deniedStorage:true,systemThemeChange:true,print:true},null,2)+'\n');
     console.log('PASS: '+checks.length+' renders, preferences, keyboard, contrast, targets, reduced motion, print');
-  } finally {await browser.close();}
+  } finally {await browser.close();if(storageServer)await new Promise(resolve=>storageServer.close(resolve));}
 })().catch(e=>{console.error(e);process.exit(1);});

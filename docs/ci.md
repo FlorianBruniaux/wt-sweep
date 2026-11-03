@@ -27,7 +27,10 @@ never qualifies a Worktrunk version.
 It installs the locked website development dependencies to run the HTML browser
 checks against synthetic inventory and review reports. These cover volume gauges, command search,
 sections, themes, diagram navigation, quick filters, reset, initial list position
-and JavaScript-disabled reading on narrow and wide screens. No host-wide
+and JavaScript-disabled reading on narrow and wide screens. Theme persistence
+is checked on a temporary loopback HTTP origin: browser storage for `file:` URLs
+is not guaranteed. Local-file checks still cover saved choices, missing or denied
+storage, system fallback and the offline report interactions. No host-wide
 worktree scan or real cleanup is part of CI.
 
 ## Verify automatic execution

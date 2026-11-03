@@ -11,6 +11,12 @@
 Fourth read-only Apple Silicon alpha. Adds persistent user installation and
 guided analysis from a saved inventory.
 
+### Fixed
+
+- Browser theme tests check persistence on a stable loopback origin and retain
+  local-file fallback checks. They no longer assume that browsers preserve
+  `file:` storage across reloads. The report documentation states this limit.
+
 ### Added
 
 - Persistent user installation from an extracted release with `install.sh`:

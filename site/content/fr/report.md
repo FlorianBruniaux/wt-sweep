@@ -53,7 +53,7 @@ Les unités sont décimales et l’affichage est arrondi ; les octets exacts res
 
 ## Navigation et partage
 
-Les intitulés de la barre latérale expliquent leur contenu au survol, au focus ou au clic. Vous pouvez ouvrir et fermer les sections de détail au clavier. Le thème suit celui du système ; vous pouvez aussi choisir un thème enregistré localement. La copie respecte l’identité du chemin et propose une copie manuelle si l’accès au presse-papiers est refusé. Les chemins non UTF-8 ou contenant des caractères de contrôle sont décrits sous une forme qui conserve leurs octets, sans copie texte altérée.
+Les intitulés de la barre latérale expliquent leur contenu au survol, au focus ou au clic. Vous pouvez ouvrir et fermer les sections de détail au clavier. Le thème suit celui du système ; vous pouvez aussi choisir un thème enregistré localement. Pour un fichier HTML ouvert directement, le navigateur peut perdre ce choix au rechargement ; le rapport suit alors de nouveau le système. La copie respecte l’identité du chemin et propose une copie manuelle si l’accès au presse-papiers est refusé. Les chemins non UTF-8 ou contenant des caractères de contrôle sont décrits sous une forme qui conserve leurs octets, sans copie texte altérée.
 
 Gardez `run.json`, les fichiers JSON et le rapport texte avec le HTML. Avant de partager, comparez les tailles et SHA-256 des fichiers avec le reçu de publication `run.json`. Un reçu n’est ni une sauvegarde, ni une preuve de synchronisation finale réussie. Un ancien rapport ne décrit pas forcément l’état actuel des worktrees.
 

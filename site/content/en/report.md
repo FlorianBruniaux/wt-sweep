@@ -52,7 +52,7 @@ Sizes use decimal units and are rounded for display; exact bytes stay in tooltip
 
 ## Navigation and sharing
 
-The sidebar labels provide explanations on hover, focus or click. You can open and close the detail sections using the keyboard. The theme follows your system, with an optional local saved choice. Copy path uses the recorded path identity and offers a manual fallback if the clipboard is refused. Non-UTF-8 or control-containing paths retain reversible byte evidence instead of a lossy text copy.
+The sidebar labels provide explanations on hover, focus or click. You can open and close the detail sections using the keyboard. The theme follows your system, with an optional local saved choice. For a directly opened HTML file, the browser may not preserve that choice after reload; the report then follows the system again. Copy path uses the recorded path identity and offers a manual fallback if the clipboard is refused. Non-UTF-8 or control-containing paths retain reversible byte evidence instead of a lossy text copy.
 
 Keep `run.json`, JSON and text with HTML. Verify artifact sizes and SHA-256 against the receipt before sharing a saved result. A receipt is neither a backup nor proof of successful final disk synchronization. An older report may no longer describe the current worktree state.
 

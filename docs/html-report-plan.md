@@ -210,7 +210,10 @@ couleurs distinctes et leurs libellés. Le rapport utilise les polices du systè
 embarqués et aucun téléchargement n’est nécessaire.
 
 Le thème suit le système au premier affichage. Le bouton permet de changer
-le thème et mémorise ce choix lorsque le navigateur autorise le stockage local.
+le thème et tente de mémoriser ce choix lorsque le navigateur autorise le stockage local.
+Pour un fichier ouvert directement, la conservation de ce choix au rechargement
+n’est pas garantie par le navigateur. Si le choix disparaît, le thème suit de nouveau
+le système. Voir [le comportement de localStorage pour les fichiers locaux](https://developer.mozilla.org/en-US/docs/Web/API/Window/localStorage).
 Si ce stockage est refusé, la bascule fonctionne pour la page courante. Sans
 JavaScript, le rapport suit le thème du système et garde ses détails repliables.
 Sur grand écran, déplier une preuve élargit sa colonne ; sur mobile, les
