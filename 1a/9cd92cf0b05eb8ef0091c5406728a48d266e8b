@@ -1,0 +1,47 @@
+CHANGELOG.md
+  s_160b3107588443::t_3d0f4cbc9693a9 3,9,11-12
+README.fr.md
+  s_160b3107588443::t_635cba91ca3002 61,70,72,74-79,83,85,87-89,164,240,503
+README.md
+  s_160b3107588443::t_bc8dd100dad83f 59,68,70,72-77,81,83,85-87,160,234,486
+docs/README.md
+  s_160b3107588443::t_d5be97fd2699eb 14,23
+docs/getting-started.md
+  s_160b3107588443::t_7b8739bb172106 10,19,21,23-28,32,34,38-39
+docs/installation.md
+  s_160b3107588443::t_94780348f6c99b 5-7,10
+docs/release.md
+  s_160b3107588443::t_b802ea3074f97b 5,8,10,18-19,25
+docs/roadmap.md
+  s_160b3107588443::t_4004661b3e37a7 5,7,13-15,23
+site/content/en/changelog.md
+  s_160b3107588443::t_3f4d5e77e5610f 3,9,11-12
+site/content/en/cli.md
+  s_160b3107588443::t_0391d7f20ade84 2-3,28
+site/content/en/installation.md
+  s_160b3107588443::t_101fcc57b14da5 3,12,14,16-21,25,27,29,31-32,36
+site/content/fr/changelog.md
+  s_160b3107588443::t_1d56579d965c3e 3,9,11-12
+site/content/fr/cli.md
+  s_160b3107588443::t_68538d0d006217 2-3,28
+site/content/fr/installation.md
+  s_160b3107588443::t_87b4eef18a4d1b 3,12,14,16-21,25,27,29,32,36
+site/published-pages.json
+  s_160b3107588443::t_ddf080dcefd96c 5,18,31,135
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "1a9cd92cf0b05eb8ef0091c5406728a48d266e8b",
+  "prompts": {},
+  "sessions": {
+    "s_160b3107588443": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a106f2-069b-7be2-aa09-88b1bbf2331e",
+        "model": "gpt-6-astra"
+      },
+      "human_author": "Florian BRUNIAUX <florian@bruniaux.com>"
+    }
+  }
+}
