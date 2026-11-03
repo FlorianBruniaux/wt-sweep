@@ -1,6 +1,6 @@
 Après une [installation persistante](../../docs/installation.md), utilisez
-`"$HOME/.local/bin/wt-sweep"` à la place du chemin de compilation. Le candidat
-alpha.4 inclut `install.sh --help` ; l’archive alpha.3 reste inchangée.
+`"$HOME/.local/bin/wt-sweep"` à la place du chemin de compilation. L’archive
+alpha.4 inclut un installateur documenté par `bash install.sh --help`.
 
 ## Analyser un repo
 
@@ -25,7 +25,7 @@ Depuis le checkout wt-sweep compilé, choisissez le chemin absolu du repo et con
 
 ## Analyse guidée depuis un inventaire
 
-Disponible dans les sources après alpha.3 ; l’archive alpha.3 reste inchangée.
+Disponible à partir d’alpha.4.
 Dans un terminal, remplacez le chemin ci-dessous par votre inventaire enregistré :
 
 ```sh

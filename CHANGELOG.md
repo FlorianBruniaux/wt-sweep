@@ -1,14 +1,15 @@
 # Changelog
 
-[v0.1.0-alpha.3](https://github.com/FlorianBruniaux/wt-sweep/releases/tag/v0.1.0-alpha.3) is the current macOS Apple Silicon pre-release. `Unreleased` tracks subsequent changes.
+[v0.1.0-alpha.4](https://github.com/FlorianBruniaux/wt-sweep/releases/tag/v0.1.0-alpha.4) is the current macOS Apple Silicon pre-release. `Unreleased` tracks subsequent changes.
 
 [Project overview](README.md) · [Documentation](docs/README.md) · [Contributing](CONTRIBUTING.md)
 
 ## [Unreleased]
 
-<!-- unreleased-updated: 2026-11-03 -->
+## [0.1.0-alpha.4] - 2026-11-03
 
-Preparing `v0.1.0-alpha.4`; no new release has been published.
+Fourth read-only Apple Silicon alpha. Adds persistent user installation and
+guided analysis from a saved inventory.
 
 ### Added
 

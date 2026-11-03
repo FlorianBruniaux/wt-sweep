@@ -2,12 +2,12 @@
 
 [Getting started](getting-started.md) · [Release checklist](release.md) · [CLI reference](cli.md)
 
-These instructions describe the **alpha.4 candidate**, not a published download.
-The public alpha.3 archive has neither this installer nor `plan --interactive`.
-Use a locally packaged candidate until alpha.4 is published. No Rust or Python
+These instructions apply to [v0.1.0-alpha.4](https://github.com/FlorianBruniaux/wt-sweep/releases/tag/v0.1.0-alpha.4).
+Use the [download instructions](getting-started.md#download-the-apple-silicon-alpha)
+to verify and extract the archive. No Rust or Python
 is needed to run the packaged binary or its Bash installer on macOS Apple Silicon.
 
-## Install an extracted candidate
+## Install an extracted release
 
 First verify the archive with its accompanying `SHA256SUMS`, then extract it.
 From the extracted `wt-sweep-v0.1.0-alpha.4-aarch64-apple-darwin` directory:

@@ -2,7 +2,7 @@
   {
     "slug": "index",
     "source": "docs/getting-started.md",
-    "sourceHash": "e2116192f94ef6c6e4541559dc4f3f8f3dd6d70895d752de7d1a96a26a7b1db0",
+    "sourceHash": "4ed53e3ac259a98e9106b7a899c993fb006c62f174ea6f70e92c55737eb9c7d1",
     "title": {
       "en": "Start with wt-sweep",
       "fr": "Démarrer avec wt-sweep"
@@ -15,7 +15,7 @@
   {
     "slug": "installation",
     "source": "docs/getting-started.md",
-    "sourceHash": "e2116192f94ef6c6e4541559dc4f3f8f3dd6d70895d752de7d1a96a26a7b1db0",
+    "sourceHash": "4ed53e3ac259a98e9106b7a899c993fb006c62f174ea6f70e92c55737eb9c7d1",
     "title": {
       "en": "Install wt-sweep",
       "fr": "Installer wt-sweep"
@@ -28,7 +28,7 @@
   {
     "slug": "demo",
     "source": "docs/getting-started.md",
-    "sourceHash": "e2116192f94ef6c6e4541559dc4f3f8f3dd6d70895d752de7d1a96a26a7b1db0",
+    "sourceHash": "4ed53e3ac259a98e9106b7a899c993fb006c62f174ea6f70e92c55737eb9c7d1",
     "title": {
       "en": "Demo with a test repo",
       "fr": "Démo sur un repo de test"
@@ -132,7 +132,7 @@
   {
     "slug": "changelog",
     "source": "CHANGELOG.md",
-    "sourceHash": "c6c6454b37612e05792ec1ac7a0142a61535d836cfaef472b834ba5069cc58fc",
+    "sourceHash": "6bdb21dad3187723e4c239b8a949696c4dde948436603d9097ccfde11d6d23d1",
     "title": {
       "en": "Changelog",
       "fr": "Historique des changements"

@@ -2,12 +2,12 @@
 
 [Index documentaire](README.md) · [Changelog](../CHANGELOG.md) · [Feuille de route](roadmap.md)
 
-Pré-release GitHub : [v0.1.0-alpha.3](https://github.com/FlorianBruniaux/wt-sweep/releases/tag/v0.1.0-alpha.3).
+Pré-release GitHub : [v0.1.0-alpha.4](https://github.com/FlorianBruniaux/wt-sweep/releases/tag/v0.1.0-alpha.4).
 Le paquet vise macOS Apple Silicon (`aarch64-apple-darwin`) et conserve la licence FSL-1.1-ALv2. Il s’agit de Fair Source. La visibilité publique du repo ne change pas cette licence.
 
-## Prochaine version : v0.1.0-alpha.4, en préparation
+## v0.1.0-alpha.4 : installation et analyse guidée
 
-Le candidat rassemble `plan --interactive` et une [installation persistante](installation.md).
+Alpha.4 rassemble `plan --interactive` et une [installation persistante](installation.md).
 Le paquet ajoute `install.sh`, `VERSION` et `FILES.sha256`. L'installation utilise
 `~/.local` par défaut, conserve les licences et refuse le remplacement du lanceur
 sans `--replace`. Une version déjà installée n'est jamais écrasée.
@@ -15,14 +15,14 @@ sans `--replace`. Une version déjà installée n'est jamais écrasée.
 La recette de l'archive installe dans un préfixe temporaire avec espaces, retire
 le dossier extrait, puis teste le binaire installé : aide, démo, comparaison,
 choix des cibles dans un terminal, annulations et conservation des fixtures.
-Elle ne lance aucun inventaire des worktrees personnels. Alpha.3 reste le
-téléchargement public courant jusqu'à la publication explicite d'alpha.4.
+Elle ne lance aucun inventaire des worktrees personnels. Les résultats de
+publication et la CI du commit tagué figurent dans les notes GitHub de la release.
 
 ## Installer et vérifier
 
 La [procédure de téléchargement](getting-started.md#download-the-apple-silicon-alpha) crée un dossier neuf, télécharge l’archive et `SHA256SUMS`, vérifie la somme puis exécute `--version` et `review --help`. Le binaire ne demande pas Rust. `/usr/bin/git` doit être disponible.
 
-L’archive `wt-sweep-v0.1.0-alpha.3-aarch64-apple-darwin.tar.gz` contient le binaire, sa licence, les notices des dépendances et `MANIFEST.json`. Le manifeste identifie le commit source, le compilateur et les empreintes des fichiers. Gardez `SHA256SUMS` avec l’archive.
+L’archive `wt-sweep-v0.1.0-alpha.4-aarch64-apple-darwin.tar.gz` contient le binaire, sa licence, les notices des dépendances et `MANIFEST.json`. Le manifeste identifie le commit source, le compilateur et les empreintes des fichiers. Gardez `SHA256SUMS` avec l’archive.
 
 Utilisez le chemin absolu du binaire dans la [démo temporaire](getting-started.md#disposable-demo), à la place de `./target/release/wt-sweep`. Le résultat attendu est 2 `keep`, 1 `cleanup_candidate`, 0 `verify`. Les skills Claude/Codex restent dans le repo source.
 

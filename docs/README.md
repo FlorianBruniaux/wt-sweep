@@ -11,7 +11,7 @@ The project overview is available in English and French. The tutorial, assistant
 and disk guides are in French; other user guides are in English. Design and
 validation records retain their original language and observation dates.
 
-Le [guide de v0.1.0-alpha.3](release.md) décrit le paquet Apple Silicon, son téléchargement, la vérification SHA-256 et les scripts de recette.
+Le [guide de v0.1.0-alpha.4](release.md) décrit le paquet Apple Silicon, son téléchargement, la vérification SHA-256 et les scripts de recette.
 
 ## Use the CLI
 
@@ -20,7 +20,7 @@ Le [guide de v0.1.0-alpha.3](release.md) décrit le paquet Apple Silicon, son t�
 | [Tutoriel en français](tutorial.fr.md) | One-command review, disposable trial, tests, advanced replay and a copyable assistant prompt. |
 | [Installation guidée (French)](bootstrap-prompt.fr.md) | Copyable assistant prompt: acquire the CLI and bundled skills, build, try a disposable repository and guide a real review. |
 | [Assistant skill (French)](assistant-skill.md) | Claude/Codex invocation, progressive report reading, cleanup suggestions and local verification. |
-| [Persistent installation](installation.md) | Alpha.4 candidate installer, explicit updates, PATH troubleshooting and guided analysis. |
+| [Persistent installation](installation.md) | Alpha.4 installer, explicit updates, PATH troubleshooting and guided analysis. |
 | [Getting started](getting-started.md) | macOS setup, disposable demo, report interpretation and troubleshooting. |
 | [Espace disque](disk-usage.md) | Taille par worktree, Git partagé, total dédupliqué et limites de la mesure. |
 | [Rapport HTML par projet](html-report-plan.md) | HTML hors ligne, ouverture sur macOS, lecture par famille, liens GitHub/GitLab, copie des chemins et reçus. |
