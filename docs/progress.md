@@ -35,10 +35,19 @@ pré-release publique vérifiée le 03/11. Aucun tag, push ou déploiement n'est
 - Génération IA synchronisée sur 22 fichiers. Aucune activation native nouvelle
   n'est déduite de ce contrôle. Aucun scan global ni nettoyage réel n'a été lancé.
 
-La recette du paquet est définie dans [release.md](release.md). Elle doit être
-exécutée depuis le commit propre du candidat ; son résultat et les empreintes
-restent dans `archive-acceptance/result.json`. Publication et validation distante
-restent séparées de cette préparation locale.
+La recette du paquet définie dans [release.md](release.md) passe sur macOS
+26.5.1 Apple Silicon. Le binaire installé reste utilisable après suppression
+du dossier extrait. La démo établit 2 `keep`, 1 `cleanup_candidate`, 0 `verify` ;
+la comparaison conserve ces verdicts et les onze tests interactifs passent
+depuis ce même binaire installé. Les empreintes des fichiers et reçus sont
+vérifiées. Le résultat complet est dans `archive-acceptance/result.json` à côté
+du paquet candidat ; il identifie son commit et son SHA-256.
+
+La reprise du collecteur natif avec les permissions nécessaires couvre aussi
+la socket de sa fixture ; seul son cas de nom non UTF-8 reste sauté sur APFS.
+La publication, le téléchargement public et la CI distante restent à vérifier.
+Gatekeeper après téléchargement par navigateur, notarisation Apple et autres
+architectures ne sont pas qualifiés par cette recette locale.
 
 ## Analyse guidée depuis un inventaire, 18/10/2026
 
