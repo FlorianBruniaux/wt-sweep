@@ -27,7 +27,10 @@ never qualifies a Worktrunk version.
 It installs the locked website development dependencies to run the HTML browser
 checks against synthetic inventory and review reports. These cover volume gauges, command search,
 sections, themes, diagram navigation, quick filters, reset, initial list position
-and JavaScript-disabled reading on narrow and wide screens. No host-wide
+and JavaScript-disabled reading on narrow and wide screens. Theme persistence
+is checked on a temporary loopback HTTP origin: browser storage for `file:` URLs
+is not guaranteed. Local-file checks still cover saved choices, missing or denied
+storage, system fallback and the offline report interactions. No host-wide
 worktree scan or real cleanup is part of CI.
 
 ## Verify automatic execution
@@ -58,3 +61,14 @@ failures; do not infer either cause from a red badge alone.
 See GitHub's [Actions policy API](https://docs.github.com/en/rest/actions/policies)
 for policy fields and [workflow execution protections](https://docs.github.com/en/actions/concepts/about-actions-policies)
 for the separate actor and event rules.
+
+## Installation du candidat alpha.4
+
+Sur un runner `ARM64`, le workflow produit compile aussi le binaire release,
+construit une archive depuis le checkout propre et exécute
+`scripts/release/accept-archive.py`. Cette recette installe le paquet dans un
+préfixe temporaire, supprime sa copie extraite puis rejoue la démo, la comparaison
+et les tests interactifs avec le binaire installé. Sur un autre runner, cette
+étape est explicitement sautée ; elle ne qualifie aucun paquet Apple Silicon.
+La recette native reste obligatoire avant publication. Les tests de l'installateur
+sur fixtures font partie de la suite Python habituelle.

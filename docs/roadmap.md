@@ -2,14 +2,25 @@
 
 [Index documentaire](README.md) · [Preuves du triage](finish-ledger.md#triage-t01-t09) · [Plan T01-T09](superpowers/plans/2026-10-05-worktree-triage-v2.md)
 
-## Après alpha.3 : analyse guidée depuis l’inventaire
+## Alpha.4 : installation et analyse guidée, 03/11/2026
+
+Alpha.4 ajoute une installation persistante dans `~/.local`, avec vérification
+par empreinte, versions conservées et remplacement explicite du lanceur. La
+[procédure](installation.md) relie installation, inventaire disque et confirmation
+des cibles. La recette du paquet rejoue le parcours interactif depuis le binaire
+installé, après retrait de sa copie téléchargée.
+
+Le [guide de release](release.md) exige une CI réussie sur le commit tagué
+et la recette des fichiers retéléchargés avant de confirmer la publication.
+Le nettoyage réel reste hors de ce lot.
+
+### Analyse guidée depuis l’inventaire
 
 `plan --interactive` propose les refs présentes par famille et demande une
 confirmation avant d’utiliser le moteur d’analyse existant. Le parcours garde
 les tailles capturées et peut ouvrir le HTML avec `--open`. Il remplace la
 préparation manuelle d’une carte JSON dans un terminal ; `--target-map` reste
-le parcours automatisable. Cette évolution est suivie dans `Unreleased`, hors
-de l’archive alpha.3. Les verdicts et les conditions de retrait ne changent pas.
+le parcours automatisable. Cette évolution est incluse dans alpha.4. Les verdicts et les conditions de retrait ne changent pas.
 
 ## Alpha.3 : comparaison locale et prompt, 17/10/2026
 

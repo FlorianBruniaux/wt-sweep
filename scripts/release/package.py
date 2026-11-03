@@ -15,7 +15,7 @@ assert not run('git', 'status', '--porcelain'), 'release checkout must be clean'
 metadata = json.loads(run('cargo', 'metadata', '--format-version=1', '--locked', '--offline'))
 package = next(p for p in metadata['packages'] if p['name'] == 'wt-sweep')
 version = package['version']
-assert version == '0.1.0-alpha.3'
+assert version.startswith('0.1.0-alpha.'), 'expected an alpha version'
 binary = source / 'target/release/wt-sweep'
 assert run(str(binary), '--version') == 'wt-sweep ' + version
 assert run('uname', '-m') == 'arm64'
@@ -26,6 +26,8 @@ stage = destination / name
 stage.mkdir()
 shutil.copy2(binary, stage / 'wt-sweep')
 shutil.copy2(source / 'LICENSE.md', stage / 'LICENSE.md')
+shutil.copy2(source / 'scripts/release/install.sh', stage / 'install.sh')
+(stage / 'VERSION').write_text(version + '\n')
 notices = stage / 'third-party-licenses'
 notices.mkdir()
 dependencies = []
@@ -52,7 +54,11 @@ Use the absolute path to this binary in the CLI tutorial:
 https://github.com/FlorianBruniaux/wt-sweep/blob/v{version}/docs/getting-started.md
 
 The Claude/Codex skills are included in the source repository.
-No global installation or configuration is required.
+For a persistent installation, run: bash install.sh
+Then use ~/.local/bin/wt-sweep; add ~/.local/bin to PATH if desired.
+Use --prefix /absolute/path for another destination and --replace for updates.
+Previous version files are retained. No sudo or shell configuration changes.
+Run bash install.sh --help for details.
 
 This is a read-only audit. apply is unavailable.
 Measured disk sizes do not establish recoverable space on APFS.
@@ -67,6 +73,9 @@ for path in sorted(stage.rglob('*')):
     if path.is_file():
         manifest['files'][str(path.relative_to(stage))] = {'bytes': path.stat().st_size, 'sha256': hashlib.sha256(path.read_bytes()).hexdigest()}
 (stage / 'MANIFEST.json').write_text(json.dumps(manifest, indent=2) + '\n')
+(stage / 'FILES.sha256').write_text(''.join(
+    hashlib.sha256(path.read_bytes()).hexdigest() + '  ' + str(path.relative_to(stage)) + '\n'
+    for path in sorted(stage.rglob('*')) if path.is_file()))
 archive = destination / (name + '.tar.gz')
 with tarfile.open(archive, 'w:gz', format=tarfile.PAX_FORMAT) as tar:
     for path in [stage, *sorted(stage.rglob('*'))]:

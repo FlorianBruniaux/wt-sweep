@@ -58,7 +58,7 @@ encore contenir des fichiers ignorés, des modifications non commitées ou des n
 
 ### Télécharger l’alpha Apple Silicon
 
-Utilisez [v0.1.0-alpha.3](https://github.com/FlorianBruniaux/wt-sweep/releases/tag/v0.1.0-alpha.3) sur macOS Apple Silicon avec `/usr/bin/git`. Le binaire téléchargé ne demande pas Rust. Le dossier `Downloads` doit exister ; chaque installation crée un nouveau dossier.
+Utilisez [v0.1.0-alpha.4](https://github.com/FlorianBruniaux/wt-sweep/releases/tag/v0.1.0-alpha.4) sur macOS Apple Silicon avec `/usr/bin/git`. Le binaire téléchargé ne demande pas Rust. Le dossier `Downloads` doit exister ; chaque installation crée un nouveau dossier.
 
 ```sh
 (
@@ -67,19 +67,26 @@ Utilisez [v0.1.0-alpha.3](https://github.com/FlorianBruniaux/wt-sweep/releases/t
   test "$(uname -m)" = arm64
   install_dir="$(mktemp -d "$HOME/Downloads/wt-sweep-alpha.XXXXXX")"
   cd "$install_dir"
-  release_url="https://github.com/FlorianBruniaux/wt-sweep/releases/download/v0.1.0-alpha.3"
+  release_url="https://github.com/FlorianBruniaux/wt-sweep/releases/download/v0.1.0-alpha.4"
   curl --fail --location --proto '=https' --tlsv1.2 -O "$release_url/SHA256SUMS"
-  curl --fail --location --proto '=https' --tlsv1.2 -O "$release_url/wt-sweep-v0.1.0-alpha.3-aarch64-apple-darwin.tar.gz"
+  curl --fail --location --proto '=https' --tlsv1.2 -O "$release_url/wt-sweep-v0.1.0-alpha.4-aarch64-apple-darwin.tar.gz"
   shasum -a 256 -c SHA256SUMS
-  tar -xzf wt-sweep-v0.1.0-alpha.3-aarch64-apple-darwin.tar.gz
-  cd wt-sweep-v0.1.0-alpha.3-aarch64-apple-darwin
-  ./wt-sweep --version
-  ./wt-sweep review --help
-  printf '\nBinary: %s/wt-sweep\n' "$PWD"
+  tar -xzf wt-sweep-v0.1.0-alpha.4-aarch64-apple-darwin.tar.gz
+  cd wt-sweep-v0.1.0-alpha.4-aarch64-apple-darwin
+  bash install.sh
+  "$HOME/.local/bin/wt-sweep" --version
+  "$HOME/.local/bin/wt-sweep" plan --help
+  printf '\nBinary: %s/.local/bin/wt-sweep\n' "$HOME"
 )
 ```
 
-Utilisez le chemin du binaire affiché à la place de `./target/release/wt-sweep` dans les commandes. Aucun changement global de configuration ou de permissions. L’archive contient les licences et `MANIFEST.json`, avec le commit source et les empreintes des fichiers. Le binaire n’est pas notarisé par Apple ; Gatekeeper après téléchargement par navigateur et les anciennes versions de macOS restent non qualifiés. Si macOS bloque son exécution, conservez cette protection et compilez depuis les sources. Aucun binaire Intel, Linux ou Windows n’est proposé.
+Utilisez le chemin du binaire affiché à la place de `./target/release/wt-sweep` dans les commandes. L’installateur écrit dans son préfixe utilisateur sans modifier la configuration du shell. L’archive contient les licences et `MANIFEST.json`, avec le commit source et les empreintes des fichiers. Le binaire n’est pas notarisé par Apple ; Gatekeeper après téléchargement par navigateur et les anciennes versions de macOS restent non qualifiés. Si macOS bloque son exécution, conservez cette protection et compilez depuis les sources. Aucun binaire Intel, Linux ou Windows n’est proposé.
+
+### Installation persistante
+
+L'installateur conserve une copie versionnée dans `~/.local` et crée son lanceur
+dans `~/.local/bin`. Le [guide d'installation et d'analyse guidée](docs/installation.md)
+décrit les mises à jour, le PATH et le choix des cibles. Un remplacement exige `--replace`.
 
 ### Compiler depuis les sources
 
@@ -154,7 +161,7 @@ La découverte de racines explicites peut reprendre depuis un [checkpoint](docs/
 <details>
 <summary>Analyser un inventaire existant en choisissant les cibles dans le terminal</summary>
 
-Disponible dans les sources après alpha.3 ; l’archive alpha.3 reste inchangée.
+Disponible à partir d’alpha.4.
 Depuis le checkout compilé, saisissez le chemin de votre `inventory.json` :
 
 ```sh
@@ -230,7 +237,7 @@ fichiers enregistrés et le JSON ne contiennent pas de décoration terminal.
 
 ## Rapport HTML
 
-`v0.1.0-alpha.3` ouvre un bilan compact, les prochaines vérifications conseillées
+`v0.1.0-alpha.4` ouvre un bilan compact, les prochaines vérifications conseillées
 et la liste des worktrees. Les filtres rapides sélectionnent un statut ; le
 raccourci de taille montre les plus gros dossiers mesurés. **Show all** rétablit la vue
 initiale. Chaque ligne analysée affiche son statut et son motif principal ; les
@@ -493,7 +500,7 @@ placeholders FileProvider, refus TCC et instantanés machine restent non vérifi
 
 ## Développement et état du projet
 
-[v0.1.0-alpha.3](https://github.com/FlorianBruniaux/wt-sweep/releases/tag/v0.1.0-alpha.3) est la pré-release actuelle, en lecture seule, pour macOS Apple Silicon. Le [guide de release](docs/release.md) décrit l’installation, les sommes de contrôle et les limites.
+[v0.1.0-alpha.4](https://github.com/FlorianBruniaux/wt-sweep/releases/tag/v0.1.0-alpha.4) est la pré-release actuelle, en lecture seule, pour macOS Apple Silicon. Le [guide de release](docs/release.md) décrit l’installation, les sommes de contrôle et les limites.
 
 [CONTRIBUTING.md](CONTRIBUTING.md) décrit les contrôles locaux et les repos de test temporaires ; [CHANGELOG.md](CHANGELOG.md) conserve les changements. La publication Cargo reste désactivée.
 

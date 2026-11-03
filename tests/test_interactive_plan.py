@@ -14,8 +14,11 @@ import tempfile
 import time
 import unittest
 
-from inventory_support import BINARY, decode_path
+from inventory_support import BINARY as DEFAULT_BINARY, decode_path
+
 from test_targets import TargetsFixture
+
+BINARY = Path(os.environ.get("WT_SWEEP_INTERACTIVE_BINARY", str(DEFAULT_BINARY)))
 
 
 class InteractivePlanTests(unittest.TestCase):

@@ -1,14 +1,33 @@
 # Changelog
 
-[v0.1.0-alpha.3](https://github.com/FlorianBruniaux/wt-sweep/releases/tag/v0.1.0-alpha.3) is the current macOS Apple Silicon pre-release. `Unreleased` tracks subsequent changes.
+[v0.1.0-alpha.4](https://github.com/FlorianBruniaux/wt-sweep/releases/tag/v0.1.0-alpha.4) is the current macOS Apple Silicon pre-release. `Unreleased` tracks subsequent changes.
 
 [Project overview](README.md) · [Documentation](docs/README.md) · [Contributing](CONTRIBUTING.md)
 
 ## [Unreleased]
 
-<!-- unreleased-updated: 2026-10-18 -->
+## [0.1.0-alpha.4] - 2026-11-03
+
+Fourth read-only Apple Silicon alpha. Adds persistent user installation and
+guided analysis from a saved inventory.
+
+### Fixed
+
+- Browser theme tests check persistence on a stable loopback origin and retain
+  local-file fallback checks. They no longer assume that browsers preserve
+  `file:` storage across reloads. The report documentation states this limit.
 
 ### Added
+
+- Persistent user installation from an extracted release with `install.sh`:
+  checksummed files, versioned distribution and licenses under `~/.local/lib`,
+  and a `~/.local/bin/wt-sweep` launcher. Existing commands require `--replace`;
+  installed versions are retained and never overwritten.
+- Archive acceptance installs into a separate prefix, removes its extracted
+  download, and runs the demo, comparison and interactive terminal suite from
+  the installed binary. Release scripts derive the version from package metadata.
+  CI repeats archive acceptance on ARM64 runners; other architectures skip that
+  step and do not qualify the Apple Silicon package.
 
 - `plan --inventory FILE --interactive`: propose local branches per recorded
   Git family, accept explicit target selections, then require confirmation before
