@@ -1,0 +1,85 @@
+docs/getting-started.md
+  s_160b3107588443::t_a0139a5513c4d5 33-39
+docs/installation.md
+  s_160b3107588443::t_961451cfbdffc6 71-73
+  s_160b3107588443::t_a0139a5513c4d5 1-44,48-57,59-67,74-96
+  s_160b3107588443::t_b6d7d9fddc2ba4 45-47,58,68-70
+docs/roadmap.md
+  s_160b3107588443::t_a0139a5513c4d5 5-16
+docs/ci.md
+  s_160b3107588443::t_61e308748b62fc 61-71
+site/content/en/installation.md
+  s_160b3107588443::t_a0139a5513c4d5 26-32,35
+docs/progress.md
+  s_160b3107588443::t_0afa9519050e58 12-42
+README.fr.md
+  s_160b3107588443::t_2b7b2d4b8d0de6 84-88
+  s_160b3107588443::t_82b20bcfc18a0a 89
+site/content/fr/changelog.md
+  s_160b3107588443::t_a0139a5513c4d5 9-11,15-21
+  s_160b3107588443::t_61e308748b62fc 22-23
+  s_160b3107588443::t_dac8da74251347 24
+.github/workflows/ci.yml
+  s_160b3107588443::t_61e308748b62fc 38-44
+docs/release.md
+  s_160b3107588443::t_a0139a5513c4d5 1,8-20
+site/content/en/cli.md
+  s_160b3107588443::t_e9a0e135c4e695 1-4
+scripts/release/install.sh
+  s_160b3107588443::t_b6d7d9fddc2ba4 17
+  s_160b3107588443::t_2b7b2d4b8d0de6 28-37
+  s_160b3107588443::t_1aebf8a7b136f5 1-16,18-27,38,40-61,63-74
+  s_160b3107588443::t_61e308748b62fc 39,62
+tests/test_install.py
+  s_160b3107588443::t_0d01de7546da88 98-116
+  s_160b3107588443::t_8ce5093e96afe9 1-97
+README.md
+  s_160b3107588443::t_2b7b2d4b8d0de6 82-86
+  s_160b3107588443::t_5cc671aa0595ea 87
+docs/cli.md
+  s_160b3107588443::t_a0139a5513c4d5 9-12
+site/published-pages.json
+  s_160b3107588443::t_2b7b2d4b8d0de6 5,18,31,44
+  s_160b3107588443::t_61e308748b62fc 135
+tests/test_interactive_plan.py
+  s_160b3107588443::t_e9a0e135c4e695 21
+  s_160b3107588443::t_7f3365b8650723 17-18,22
+site/content/fr/cli.md
+  s_160b3107588443::t_e9a0e135c4e695 1-4
+docs/README.md
+  s_160b3107588443::t_a0139a5513c4d5 23
+site/content/en/changelog.md
+  s_160b3107588443::t_61e308748b62fc 22-23
+  s_160b3107588443::t_a0139a5513c4d5 9-11,15-21
+  s_160b3107588443::t_e1e36386158340 24
+CHANGELOG.md
+  s_160b3107588443::t_a0139a5513c4d5 9-11,15-21
+  s_160b3107588443::t_61e308748b62fc 22-23
+  s_160b3107588443::t_5cd8d64aa9f263 24
+site/content/fr/installation.md
+  s_160b3107588443::t_a0139a5513c4d5 26-32,35
+Cargo.lock
+  s_160b3107588443::t_f90360d5e149df 258
+Cargo.toml
+  s_160b3107588443::t_266ade12b7e4a0 3
+scripts/release/accept-archive.py
+  s_160b3107588443::t_d3e611c05eb53d 3-4,29-34,39,87-95
+scripts/release/package.py
+  s_160b3107588443::t_9f1d92db656fce 18,29-30,57-61,76-78
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "c9153f38ff3cd6a965576204f0df1c0ac13f391c",
+  "prompts": {},
+  "sessions": {
+    "s_160b3107588443": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a106f2-069b-7be2-aa09-88b1bbf2331e",
+        "model": "gpt-6-astra"
+      },
+      "human_author": "Florian BRUNIAUX <florian@bruniaux.com>"
+    }
+  }
+}
