@@ -1,0 +1,36 @@
+tests/html-theme.cjs
+  s_160b3107588443::t_2330a6e5f59ea3 117
+  s_160b3107588443::t_c1c40847a80753 7,15,89-100,103,112-116,118-121,127,129
+CHANGELOG.md
+  s_160b3107588443::t_e3ed90dd19033c 14-19
+docs/ci.md
+  s_160b3107588443::t_230920845b56fe 30-33
+docs/html-report-plan.md
+  s_160b3107588443::t_e86aad6a4e7121 213-216
+site/content/en/changelog.md
+  s_160b3107588443::t_4d32f15bc38024 14-19
+site/content/en/report.md
+  s_160b3107588443::t_4c8b6bab9d2e2f 55
+site/content/fr/changelog.md
+  s_160b3107588443::t_a51924c061edf5 14-19
+site/content/fr/report.md
+  s_160b3107588443::t_119cce23650237 56
+site/published-pages.json
+  s_160b3107588443::t_adce5394885e82 70,135
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "4953bf4ac3dda06cac1be014ea8103a02dfab04c",
+  "prompts": {},
+  "sessions": {
+    "s_160b3107588443": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a106f2-069b-7be2-aa09-88b1bbf2331e",
+        "model": "gpt-6-astra"
+      },
+      "human_author": "Florian BRUNIAUX <florian@bruniaux.com>"
+    }
+  }
+}
