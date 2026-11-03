@@ -2,7 +2,18 @@
 
 [Index documentaire](README.md) · [Preuves du triage](finish-ledger.md#triage-t01-t09) · [Plan T01-T09](superpowers/plans/2026-10-05-worktree-triage-v2.md)
 
-## Après alpha.3 : analyse guidée depuis l’inventaire
+## Alpha.4 en préparation : installation et analyse guidée
+
+Le candidat ajoute une installation persistante dans `~/.local`, avec vérification
+par empreinte, versions conservées et remplacement explicite du lanceur. La
+[procédure](installation.md) relie installation, inventaire disque et confirmation
+des cibles. La recette du paquet rejoue le parcours interactif depuis le binaire
+installé, après retrait de sa copie téléchargée.
+
+Restent avant publication : CI sur le commit retenu, tag, publication du paquet
+et recette des fichiers retéléchargés. Aucun nettoyage réel n'appartient à ce lot.
+
+### Analyse guidée depuis l’inventaire
 
 `plan --interactive` propose les refs présentes par famille et demande une
 confirmation avant d’utiliser le moteur d’analyse existant. Le parcours garde

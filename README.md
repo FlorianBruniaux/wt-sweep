@@ -79,6 +79,12 @@ Use [v0.1.0-alpha.3](https://github.com/FlorianBruniaux/wt-sweep/releases/tag/v0
 
 Use the printed binary path in place of `./target/release/wt-sweep` in the commands below. No global installation or permissions change is made. The archive includes licenses and `MANIFEST.json` with its source commit and file hashes. It is not Apple-notarized; browser-downloaded Gatekeeper behavior and older macOS versions remain unqualified. If macOS blocks execution, keep the protection and use the source-build instructions. Intel, Linux and Windows binaries are not provided.
 
+### Preparing alpha.4
+
+Persistent user installation and `plan --interactive` are included in the next
+release candidate. See the [installation and guided analysis guide](docs/installation.md).
+The public alpha.3 archive remains unchanged.
+
 ### Build from source
 
 Use macOS and Rust. The repository is public; clone it over HTTPS.

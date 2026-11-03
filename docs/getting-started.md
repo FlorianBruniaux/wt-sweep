@@ -30,6 +30,13 @@ Use [v0.1.0-alpha.3](https://github.com/FlorianBruniaux/wt-sweep/releases/tag/v0
 
 Use the printed binary path in place of `./target/release/wt-sweep` in the commands below. No global installation or permissions change is made. The archive includes licenses and `MANIFEST.json` with its source commit and file hashes. It is not Apple-notarized; browser-downloaded Gatekeeper behavior and older macOS versions remain unqualified. If macOS blocks execution, keep the protection and use the source-build instructions. Intel, Linux and Windows binaries are not provided.
 
+## Persistent installation and guided analysis (alpha.4 candidate)
+
+The [installation guide](installation.md) describes the versioned user installation,
+explicit updates, PATH checks and the inventory-to-interactive-analysis command.
+These additions are being prepared for alpha.4; the public alpha.3 download above
+is unchanged. `bash install.sh --help` documents the bundled installer.
+
 ## Prerequisites
 
 Run the CLI on macOS with `/usr/bin/git` available. Before protected reads, the

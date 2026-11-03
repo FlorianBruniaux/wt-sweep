@@ -2,7 +2,7 @@
   {
     "slug": "index",
     "source": "docs/getting-started.md",
-    "sourceHash": "8b8502bdc580725aa0ce654ade1e69dcd3a5d839d39970f4ea8428d493bcf29d",
+    "sourceHash": "e2116192f94ef6c6e4541559dc4f3f8f3dd6d70895d752de7d1a96a26a7b1db0",
     "title": {
       "en": "Start with wt-sweep",
       "fr": "Démarrer avec wt-sweep"
@@ -15,7 +15,7 @@
   {
     "slug": "installation",
     "source": "docs/getting-started.md",
-    "sourceHash": "8b8502bdc580725aa0ce654ade1e69dcd3a5d839d39970f4ea8428d493bcf29d",
+    "sourceHash": "e2116192f94ef6c6e4541559dc4f3f8f3dd6d70895d752de7d1a96a26a7b1db0",
     "title": {
       "en": "Install wt-sweep",
       "fr": "Installer wt-sweep"
@@ -28,7 +28,7 @@
   {
     "slug": "demo",
     "source": "docs/getting-started.md",
-    "sourceHash": "8b8502bdc580725aa0ce654ade1e69dcd3a5d839d39970f4ea8428d493bcf29d",
+    "sourceHash": "e2116192f94ef6c6e4541559dc4f3f8f3dd6d70895d752de7d1a96a26a7b1db0",
     "title": {
       "en": "Demo with a test repo",
       "fr": "Démo sur un repo de test"
@@ -41,7 +41,7 @@
   {
     "slug": "cli",
     "source": "docs/cli.md",
-    "sourceHash": "936b30e81378309eac5e852a2cb39cc37a43d492a289866456b206eeb4d0f8b5",
+    "sourceHash": "a9bf0d9aa5bcbd0a7b45908cd2d0fb2f014f9c0d5d19faf4aed1687a1ebf2002",
     "title": {
       "en": "CLI workflow",
       "fr": "Parcours CLI"
@@ -132,7 +132,7 @@
   {
     "slug": "changelog",
     "source": "CHANGELOG.md",
-    "sourceHash": "f5c941cbf9b742b755a378a20ce1407a5d8bd71ebde0e8e908b74853a7b5f176",
+    "sourceHash": "c6c6454b37612e05792ec1ac7a0142a61535d836cfaef472b834ba5069cc58fc",
     "title": {
       "en": "Changelog",
       "fr": "Historique des changements"

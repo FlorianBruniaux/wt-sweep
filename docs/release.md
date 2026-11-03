@@ -1,9 +1,22 @@
-# Worktree Sweep v0.1.0-alpha.3
+# Releases de Worktree Sweep
 
 [Index documentaire](README.md) · [Changelog](../CHANGELOG.md) · [Feuille de route](roadmap.md)
 
 Pré-release GitHub : [v0.1.0-alpha.3](https://github.com/FlorianBruniaux/wt-sweep/releases/tag/v0.1.0-alpha.3).
 Le paquet vise macOS Apple Silicon (`aarch64-apple-darwin`) et conserve la licence FSL-1.1-ALv2. Il s’agit de Fair Source. La visibilité publique du repo ne change pas cette licence.
+
+## Prochaine version : v0.1.0-alpha.4, en préparation
+
+Le candidat rassemble `plan --interactive` et une [installation persistante](installation.md).
+Le paquet ajoute `install.sh`, `VERSION` et `FILES.sha256`. L'installation utilise
+`~/.local` par défaut, conserve les licences et refuse le remplacement du lanceur
+sans `--replace`. Une version déjà installée n'est jamais écrasée.
+
+La recette de l'archive installe dans un préfixe temporaire avec espaces, retire
+le dossier extrait, puis teste le binaire installé : aide, démo, comparaison,
+choix des cibles dans un terminal, annulations et conservation des fixtures.
+Elle ne lance aucun inventaire des worktrees personnels. Alpha.3 reste le
+téléchargement public courant jusqu'à la publication explicite d'alpha.4.
 
 ## Installer et vérifier
 

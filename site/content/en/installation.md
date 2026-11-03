@@ -23,9 +23,16 @@ Use [v0.1.0-alpha.3](https://github.com/FlorianBruniaux/wt-sweep/releases/tag/v0
 
 Use the printed binary path in place of `./target/release/wt-sweep` in the commands below. No global installation or permissions change is made. The archive includes licenses and `MANIFEST.json` with its source commit and file hashes. It is not Apple-notarized; browser-downloaded Gatekeeper behavior and older macOS versions remain unqualified. If macOS blocks execution, keep the protection and use the source-build instructions. Intel, Linux and Windows binaries are not provided.
 
+## Alpha.4 candidate installation
+
+The next candidate adds a persistent installation and guided target selection.
+See the [installation guide](../../docs/installation.md) for `bash install.sh`,
+explicit updates and the inventory-to-analysis command. The public alpha.3
+archive above remains unchanged.
+
 ## Requirements
 
-Run on macOS with `/usr/bin/git`. Build using the Rust toolchain pinned in `rust-toolchain.toml` (1.95). The source version is `0.1.0-alpha.3`.
+Run on macOS with `/usr/bin/git`. Build using the Rust toolchain pinned in `rust-toolchain.toml` (1.95). The source candidate version is `0.1.0-alpha.4`.
 
 The public repository can be cloned over HTTPS. From an existing checkout, skip clone and `cd` below.
 

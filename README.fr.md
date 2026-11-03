@@ -81,6 +81,12 @@ Utilisez [v0.1.0-alpha.3](https://github.com/FlorianBruniaux/wt-sweep/releases/t
 
 Utilisez le chemin du binaire affiché à la place de `./target/release/wt-sweep` dans les commandes. Aucun changement global de configuration ou de permissions. L’archive contient les licences et `MANIFEST.json`, avec le commit source et les empreintes des fichiers. Le binaire n’est pas notarisé par Apple ; Gatekeeper après téléchargement par navigateur et les anciennes versions de macOS restent non qualifiés. Si macOS bloque son exécution, conservez cette protection et compilez depuis les sources. Aucun binaire Intel, Linux ou Windows n’est proposé.
 
+### Alpha.4 en préparation
+
+L'installation persistante et `plan --interactive` font partie du prochain
+candidat. Voir le [guide d'installation et d'analyse guidée](docs/installation.md).
+L'archive publique alpha.3 reste inchangée.
+
 ### Compiler depuis les sources
 
 Utilisez macOS et Rust. Le repo est public et peut être cloné en HTTPS.

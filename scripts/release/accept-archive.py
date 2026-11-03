@@ -1,5 +1,7 @@
 import hashlib
 import json
+import os
+import shutil
 from pathlib import Path
 import re
 import shlex
@@ -24,12 +26,17 @@ for name, expected in manifest['files'].items():
     data = (root / name).read_bytes()
     assert len(data) == expected['bytes']
     assert hashlib.sha256(data).hexdigest() == expected['sha256']
-binary = root / 'wt-sweep'
+installed_prefix = out / 'installed with spaces'
+subprocess.run(['bash', str(root / 'install.sh'), '--prefix', str(installed_prefix)],
+               check=True, capture_output=True, text=True, timeout=30)
+# Acceptance must not depend on the download directory still existing.
+shutil.rmtree(root)
+binary = installed_prefix / 'bin/wt-sweep'
 for args in (['--version'], ['--help'], ['review', '--help']):
     result = subprocess.run([str(binary), *args], capture_output=True, text=True, timeout=10)
     assert result.returncode == 0, result.stderr
     if args == ['--version']:
-        assert result.stdout.strip() == 'wt-sweep 0.1.0-alpha.3'
+        assert result.stdout.strip() == 'wt-sweep ' + manifest['version']
 section = (source / 'docs/getting-started.md').read_text().split('## Disposable demo\n',1)[1].split('## Review your repository',1)[0]
 script = re.search(r'```sh\n(.*?)```', section, re.S).group(1)
 assert script.count('./target/release/wt-sweep') == 1
@@ -77,5 +84,14 @@ assert note['complete'] and note['path_totals']['different'] == 1
 assert 'Claude prompt' in (comparison_run / 'report.html').read_text()
 record = {'archive':str(archive),'archive_sha256':checksum,'source_commit':manifest['source_commit'],'archive_files_verified':len(manifest['files']), 'demo_exit_code':0, 'verdicts':{'keep':2,'cleanup_candidate':1,'verify':0},'receipt_artifacts':len(receipt['artifacts']), 'demo_run':str(runs[0]), 'not_verified':['Fresh-machine toolchain installation','Downloaded-file Gatekeeper behavior','Apple notarization','Intel/Linux runtime','Browser rendering','Native skill discovery']}
 record['comparison'] = {'run': str(comparison_run), 'different_paths': 1, 'source_binding_verified': True, 'verdicts_unchanged': True}
+interactive = subprocess.run([sys.executable, '-B', '-m', 'unittest', 'discover',
+    '-s', 'tests', '-p', 'test_interactive_plan.py', '-v'], cwd=source,
+    env={**os.environ, 'WT_SWEEP_INTERACTIVE_BINARY': str(binary),
+         'WT_SWEEP_TARGETS_BINARY': str(binary)}, capture_output=True, text=True, timeout=600)
+(out / 'interactive.log').write_text(interactive.stdout + interactive.stderr)
+assert interactive.returncode == 0, str(out / 'interactive.log')
+record['installed_binary'] = str(binary)
+record['interactive_suite_passed'] = True
+record['download_removed_before_acceptance'] = True
 (out / 'result.json').write_text(json.dumps(record,indent=2)+'\n')
 print(json.dumps(record,indent=2))

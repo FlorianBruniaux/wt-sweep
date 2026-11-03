@@ -1,3 +1,7 @@
+After a [persistent installation](../../docs/installation.md), use
+`"$HOME/.local/bin/wt-sweep"` in place of the build path. The alpha.4 candidate
+bundles `install.sh --help`; the public alpha.3 archive remains unchanged.
+
 ## Review one repository
 
 Run from the built source checkout. Choose an absolute repository path and a full, confirmed integration ref.

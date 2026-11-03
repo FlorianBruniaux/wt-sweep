@@ -6,6 +6,10 @@ Run `wt-sweep --help` for global help and `wt-sweep review --help` for the combi
 `./target/release/wt-sweep` after a release build. Options are separate arguments,
 for example `--workers 4`. `scan`, `plan`, `review`, `forge`, `forge commandes` and `forge ingerer` accept `--help` or `-h` without collecting data.
 
+After a [persistent installation](installation.md), use
+`"$HOME/.local/bin/wt-sweep"`. `bash install.sh --help` explains installation;
+installation is separate from the CLI and does not start a scan.
+
 ## Commands
 
 ```text

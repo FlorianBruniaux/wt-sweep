@@ -23,9 +23,16 @@ Utilisez [v0.1.0-alpha.3](https://github.com/FlorianBruniaux/wt-sweep/releases/t
 
 Utilisez le chemin du binaire affiché à la place de `./target/release/wt-sweep` dans les commandes. Aucun changement global de configuration ou de permissions. L’archive contient les licences et `MANIFEST.json`, avec le commit source et les empreintes des fichiers. Le binaire n’est pas notarisé par Apple ; Gatekeeper après téléchargement par navigateur et les anciennes versions de macOS restent non qualifiés. Si macOS bloque son exécution, conservez cette protection et compilez depuis les sources. Aucun binaire Intel, Linux ou Windows n’est proposé.
 
+## Installation du candidat alpha.4
+
+Le prochain candidat ajoute l'installation persistante et le choix guidé des
+cibles. Le [guide d'installation](../../docs/installation.md) décrit
+`bash install.sh`, les mises à jour explicites et le parcours inventaire-analyse.
+L'archive publique alpha.3 ci-dessus reste inchangée.
+
 ## Prérequis
 
-Utilisez macOS avec `/usr/bin/git`. Compilez avec la version de Rust indiquée dans `rust-toolchain.toml` (1.95). La version des sources est `0.1.0-alpha.3`.
+Utilisez macOS avec `/usr/bin/git`. Compilez avec la version de Rust indiquée dans `rust-toolchain.toml` (1.95). La version candidate des sources est `0.1.0-alpha.4`.
 
 Clonez le repo public en HTTPS. Si vous avez déjà un checkout, omettez le clonage et le `cd` ci-dessous.
 

@@ -9,6 +9,37 @@ la [préparation alpha.2](#préparation-alpha2-11102026), la
 validation locale et contrôles distants. Les sections plus anciennes conservent
 des observations datées, pas une liste des tâches encore ouvertes.
 
+## Préparation alpha.4 : installation, 03/11/2026
+
+Branche `codex/alpha4-installation`, depuis `b5360e33224c3bc8b5a6385afc68a90b9494a8ca`
+(PR #35). La version Cargo est `0.1.0-alpha.4` ; alpha.3 reste la dernière
+pré-release publique vérifiée le 03/11. Aucun tag, push ou déploiement n'est
+établi par les vérifications locales ci-dessous.
+
+- Installation versionnée dans un préfixe utilisateur, lanceur explicite,
+  empreintes avant/après copie et anciennes versions conservées. Dix tests
+  couvrent installation, mise à jour, corruption, collisions et chemins avec espaces.
+- `cargo fmt`, Clippy et builds debug/release réussis. Suite Rust : 468 réussites,
+  trois tests ignorés. Suite Python : 363 tests exécutés ; trois échecs initiaux
+  correspondent à deux tests d'interruption, dont un à deux variantes, privés
+  d'accès à la liste des processus. Leurs reprises ciblées avec cet accès passent.
+  Un troisième test d'interruption, sauté pour la même raison, passe à la reprise.
+  Les autres sauts concernent quatre fixtures historiques privées non fournies
+  et deux noms physiques non UTF-8 refusés par APFS.
+- Suites d'exclusion (9), provenance (22), comparaison (2) et collecteur natif
+  exécutées sur fixtures. Deux tests de création APFS passent ; l'alternative
+  Worktrunk demande son binaire externe épinglé et reste sautée.
+- Site : contrôles documentaires, compilation et 34 tests navigateur réussis.
+  Les scripts de validation HTML hors ligne passent, y compris comparaison,
+  navigation, copie, thèmes, sections, clavier et conservation des données.
+- Génération IA synchronisée sur 22 fichiers. Aucune activation native nouvelle
+  n'est déduite de ce contrôle. Aucun scan global ni nettoyage réel n'a été lancé.
+
+La recette du paquet est définie dans [release.md](release.md). Elle doit être
+exécutée depuis le commit propre du candidat ; son résultat et les empreintes
+restent dans `archive-acceptance/result.json`. Publication et validation distante
+restent séparées de cette préparation locale.
+
 ## Analyse guidée depuis un inventaire, 18/10/2026
 
 Évolution préparée sur `codex/interactive-plan`, depuis le commit alpha.3

@@ -6,9 +6,21 @@
 
 ## [Unreleased]
 
-<!-- unreleased-updated: 2026-10-18 -->
+<!-- unreleased-updated: 2026-11-03 -->
+
+Preparing `v0.1.0-alpha.4`; no new release has been published.
 
 ### Added
+
+- Persistent user installation from an extracted release with `install.sh`:
+  checksummed files, versioned distribution and licenses under `~/.local/lib`,
+  and a `~/.local/bin/wt-sweep` launcher. Existing commands require `--replace`;
+  installed versions are retained and never overwritten.
+- Archive acceptance installs into a separate prefix, removes its extracted
+  download, and runs the demo, comparison and interactive terminal suite from
+  the installed binary. Release scripts derive the version from package metadata.
+  CI repeats archive acceptance on ARM64 runners; other architectures skip that
+  step and do not qualify the Apple Silicon package.
 
 - `plan --inventory FILE --interactive`: propose local branches per recorded
   Git family, accept explicit target selections, then require confirmation before
