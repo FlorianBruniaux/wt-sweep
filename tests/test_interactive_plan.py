@@ -135,6 +135,7 @@ class InteractivePlanTests(unittest.TestCase):
             (b"GUIDED ANALYSIS", b"find family-b\nall\nrefs/heads/develop\nyes\nquit\n"),
         ], "--run-dir", self.output, "--html", "--compare-local")
         self.assertEqual(status, 0, transcript.decode(errors="replace"))
+        self.assertIn(b"Checking report destination against all 2 recorded Git families", transcript)
         view = json.loads(stdout)
         self.assertEqual(len(view["selected_paths"]), 2)
         review = view["source"]

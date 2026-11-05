@@ -1010,13 +1010,15 @@ fn produce_review(
         || opts.contains_key("--run-dir")
         || opts.contains_key("--html")
     {
-        progress.update(
-            &format!(
-                "Checking report destination against all {} recorded Git families...",
-                inventory.families.len()
-            ),
-            true,
-        );
+        if opts.contains_key("--interactive") {
+            progress.update(
+                &format!(
+                    "Checking report destination against all {} recorded Git families...",
+                    inventory.families.len()
+                ),
+                true,
+            );
+        }
         wt_sweep::output::revalidate_boundaries(&inventory).map_err(|e| e.to_string())?
     } else {
         inventory
