@@ -46,6 +46,8 @@ class InteractivePlanTests(unittest.TestCase):
             stdin=slave, stderr=slave, stdout=subprocess.PIPE)
         os.close(slave)
         todo = deque(answers)
+        if todo and todo[0][0] != b"GUIDED ANALYSIS":
+            todo.appendleft((b"Repositories> ", b"all\n"))
         transcript = bytearray()
         stdout = bytearray()
         pending = bytearray()
@@ -93,6 +95,67 @@ class InteractivePlanTests(unittest.TestCase):
             os.close(master)
             self.assertEqual(before, self.f.manifest(), "guided review mutated inspected roots or inventory")
 
+    def test_saved_scan_recaps_bare_counts_and_retains_full_gap_evidence(self):
+        bare = self.f.root / "bare-cache"
+        self.f.git(self.f.root, "init", "--bare", bare)
+        for number in range(30):
+            (self.f.root / f"alias-{number}").symlink_to(self.f.repo, target_is_directory=True)
+        destination = self.output / "inventory.json"
+        result = subprocess.run([BINARY, "scan", "--root", self.f.root,
+                                 "--format", "json", "--out", destination],
+                                env=self.f.env, capture_output=True, timeout=30)
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertIn(b"Bare repository records: 1", result.stdout)
+        self.assertNotIn(b"Gap: ", result.stdout)
+        saved = json.loads(destination.read_bytes())
+        self.assertGreaterEqual(len(saved["coverage"]["gaps"]), 29)
+        self.assertIn(b"Full paths and diagnostics", result.stdout)
+
+    def test_repository_picker_keeps_bare_visible_and_excludes_it_only_on_request(self):
+        bare = self.f.root / "bare-cache"
+        self.f.git(self.f.root, "init", "--bare", bare)
+        result = subprocess.run([BINARY, "scan", "--root", self.f.root, "--format", "json"],
+                                env=self.f.env, capture_output=True, timeout=30, check=True)
+        self.inventory = json.loads(result.stdout)
+        self.path = self.f.save(self.inventory)
+        status, stdout, transcript = self.guided([
+            (b"GUIDED ANALYSIS", b"find no-match\nall\nworktrees\nall\nrefs/heads/main\nrefs/heads/develop\nyes\nquit\n"),
+        ])
+        self.assertEqual(status, 0, transcript.decode(errors="replace"))
+        self.assertIn(b"Bare repository records: 1", transcript)
+        self.assertIn(b"0 matching / 3 recorded", transcript)
+        self.assertIn(b"2 matching / 3 recorded", transcript)
+        self.assertEqual(transcript.count(b"Targets> "), 2)
+        items = {decode_path(row["path"]): row for row in json.loads(stdout).get("source", json.loads(stdout))["items"]}
+        self.assertIsNone(items[os.fsencode(bare)]["worktree_state"])
+        self.assertEqual(items[os.fsencode(bare)]["classification"], "verify")
+
+    def test_repository_search_limits_collection_and_preserves_omitted_rows(self):
+        status, stdout, transcript = self.guided([
+            (b"GUIDED ANALYSIS", b"find family-b\nall\nrefs/heads/develop\nyes\nquit\n"),
+        ], "--run-dir", self.output, "--html", "--compare-local")
+        self.assertEqual(status, 0, transcript.decode(errors="replace"))
+        view = json.loads(stdout)
+        self.assertEqual(len(view["selected_paths"]), 2)
+        review = view["source"]
+        items = {decode_path(row["path"]): row for row in review["items"]}
+        self.assertEqual(len(items), sum(len(f["worktrees"]) for f in self.inventory["families"]))
+        omitted = items[os.fsencode(self.f.linked)]
+        self.assertEqual(omitted["classification"], "verify")
+        self.assertIsNone(omitted["local_summary"])
+        self.assertIsNone(omitted["worktree_state"])
+        self.assertEqual(omitted["history"], [])
+        self.assertIn("Not selected for evidence collection (repository selection).", omitted["unknowns"])
+        self.assertEqual(items[os.fsencode(self.f.other_linked)]["classification"], "cleanup_candidate")
+        self.assertEqual(review["disk_usage"], self.inventory["disk_usage"])
+        self.assertEqual(transcript.count(b"Targets> "), 1)
+        run = next(self.output.glob("run-*"))
+        self.assertEqual(json.loads((run / "inventory.json").read_bytes()), self.inventory)
+        comparison = json.loads((run / "local-comparison.json").read_bytes())
+        compared = {decode_path(row["path"]): row for row in comparison["items"]}
+        self.assertEqual(compared[os.fsencode(self.f.linked)]["collection"], "not_requested")
+        self.assertNotEqual(compared[os.fsencode(self.f.other_linked)]["collection"], "not_requested")
+
     def test_confirmed_family_targets_drive_real_verdicts_and_preserve_disk(self):
         status, stdout, transcript = self.guided([
             (b"Targets> ", b"refs/heads/main\n"),
@@ -121,7 +184,7 @@ class InteractivePlanTests(unittest.TestCase):
             (b"Type yes to confirm> ", b"yes\n"),
         ])
         self.assertEqual(status, 0, transcript.decode(errors="replace"))
-        items = {decode_path(row["path"]): row for row in json.loads(stdout)["items"]}
+        items = {decode_path(row["path"]): row for row in json.loads(stdout).get("source", json.loads(stdout))["items"]}
         self.assertEqual(items[os.fsencode(self.f.linked)]["classification"], "verify")
         self.assertEqual(items[os.fsencode(self.f.other_linked)]["classification"], "cleanup_candidate")
 
@@ -159,7 +222,7 @@ class InteractivePlanTests(unittest.TestCase):
             (b"Type yes to confirm> ", b"yes\n"),
         ])
         self.assertEqual(status, 0, transcript.decode(errors="replace"))
-        items = {decode_path(row["path"]): row for row in json.loads(stdout)["items"]}
+        items = {decode_path(row["path"]): row for row in json.loads(stdout).get("source", json.loads(stdout))["items"]}
         targets = {decode_path(h["target_ref"]) for h in items[os.fsencode(self.f.linked)]["history"]}
         self.assertEqual(targets, {b"refs/heads/main", b"refs/heads/raw-\xff"})
         self.assertEqual(items[os.fsencode(self.f.linked)]["classification"], "cleanup_candidate")
@@ -174,7 +237,7 @@ class InteractivePlanTests(unittest.TestCase):
         ])
         self.assertEqual(status, 0, transcript.decode(errors="replace"))
         self.assertIn(b"Cannot propose targets", transcript)
-        items = {decode_path(row["path"]): row for row in json.loads(stdout)["items"]}
+        items = {decode_path(row["path"]): row for row in json.loads(stdout).get("source", json.loads(stdout))["items"]}
         self.assertNotEqual(items[os.fsencode(self.f.linked)]["classification"], "cleanup_candidate")
         self.assertEqual(items[os.fsencode(self.f.other_linked)]["classification"], "cleanup_candidate")
 
@@ -212,7 +275,7 @@ class InteractivePlanTests(unittest.TestCase):
         ])
         self.assertEqual(status, 0, transcript.decode(errors="replace"))
         self.assertIn(b"Cannot propose targets", transcript)
-        items = {decode_path(row["path"]): row for row in json.loads(stdout)["items"]}
+        items = {decode_path(row["path"]): row for row in json.loads(stdout).get("source", json.loads(stdout))["items"]}
         self.assertNotEqual(items[os.fsencode(self.f.linked)]["classification"], "cleanup_candidate")
         self.assertEqual(items[os.fsencode(self.f.other_linked)]["classification"], "cleanup_candidate")
 
@@ -230,7 +293,7 @@ class InteractivePlanTests(unittest.TestCase):
         self.assertEqual(status, 0, transcript.decode(errors="replace"))
         self.assertIn(b"extra-21", transcript)
         self.assertNotIn(b"refs/remotes/origin/HEAD", transcript)
-        items = {decode_path(row["path"]): row for row in json.loads(stdout)["items"]}
+        items = {decode_path(row["path"]): row for row in json.loads(stdout).get("source", json.loads(stdout))["items"]}
         targets = {decode_path(h["target_ref"]) for h in items[os.fsencode(self.f.linked)]["history"]}
         self.assertEqual(targets, {b"refs/remotes/origin/main"})
         self.assertEqual(items[os.fsencode(self.f.linked)]["classification"], "cleanup_candidate")

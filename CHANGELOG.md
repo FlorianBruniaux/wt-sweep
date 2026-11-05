@@ -6,6 +6,22 @@
 
 ## [Unreleased]
 
+<!-- unreleased-updated: 2026-11-05 -->
+
+### Fixed
+
+- Retry finite Git I/O batches immediately after byte progress. The 32 MiB
+  round-trip regression now completes within its unchanged deadline on the
+  qualification Mac; idle streams still wait for readiness.
+- Guided analysis selects repositories before asking for integration branches.
+  Search paths, page results, choose numbered families, or explicitly list
+  non-bare families. Only families with confirmed targets receive current Git
+  evidence collection; omitted rows, disk measurements and source coverage remain.
+  A single confirmed family opens a focused view retaining the complete source.
+- Saved scans print a compact recap with separate worktree/bare record counts,
+  observed disk allocation and grouped discovery gaps. Full paths and diagnostics
+  remain in JSON, saved text reports and verbose output.
+
 ## [0.1.0-alpha.4] - 2026-11-03
 
 Fourth read-only Apple Silicon alpha. Adds persistent user installation and

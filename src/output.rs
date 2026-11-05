@@ -413,6 +413,78 @@ fn publish(
     result.and(cleanup)
 }
 
+/// Compact terminal recap. Full paths and individual gaps remain in saved artifacts.
+pub fn inventory_summary(inventory: &Inventory) -> String {
+    use std::fmt::Write;
+    let rows = inventory.families.iter().flat_map(|f| &f.worktrees);
+    let bare = rows.clone().filter(|w| w.bare).count();
+    let mut text = format!(
+        "\nINVENTORY\n  Repository families: {}\n  Worktree records (including main checkouts): {}\n  Bare repository records: {}\n",
+        inventory.families.len(),
+        rows.count() - bare,
+        bare
+    );
+    if let Some(disk) = &inventory.disk_usage {
+        let _ = writeln!(
+            text,
+            "\nDISK USAGE\n  Observed allocated: {} ({})\n  Logical: {}\n  {}\n  Captured sizes; not reclaimable space. APFS sharing is not measured.",
+            crate::disk::human_bytes(disk.unique_bytes.allocated),
+            if disk.complete {
+                "complete"
+            } else {
+                "INCOMPLETE"
+            },
+            crate::disk::human_bytes(disk.unique_bytes.logical),
+            disk.scope_summary()
+        );
+    }
+    let _ = writeln!(
+        text,
+        "\nDISCOVERY\n  Traversal complete: {}; {} recorded gaps",
+        inventory.coverage.traversal_complete,
+        inventory.coverage.gaps.len()
+    );
+    if let Some(remaining) = &inventory.coverage.remaining {
+        let _ = writeln!(
+            text,
+            "  Stopped: {}; {} known paths pending. Inventory is not exhaustive.",
+            remaining.reason.as_str(),
+            remaining.known_pending_paths
+        );
+    }
+    let mut reasons = std::collections::BTreeMap::<String, usize>::new();
+    for gap in &inventory.coverage.gaps {
+        *reasons.entry(gap.reason.clone()).or_default() += 1;
+    }
+    let mut reasons: Vec<_> = reasons.into_iter().collect();
+    reasons.sort_by(|a, b| b.1.cmp(&a.1).then_with(|| a.0.cmp(&b.0)));
+    for (reason, count) in reasons.iter().take(8) {
+        let escaped = crate::model::BytePath::from_bytes(reason.as_bytes()).display();
+        let label: String = escaped.chars().take(240).collect();
+        let _ = writeln!(
+            text,
+            "  - {count}: {label}{}",
+            if label.len() < escaped.len() {
+                "..."
+            } else {
+                ""
+            }
+        );
+    }
+    if reasons.len() > 8 {
+        let _ = writeln!(
+            text,
+            "  {} other diagnostic types in the saved inventory.",
+            reasons.len() - 8
+        );
+    }
+    if inventory.coverage.publication.is_some() {
+        text.push_str("  Publication is partial; inspect saved coverage before analysis.\n");
+    }
+    text.push_str("Full paths and diagnostics: saved inventory/report, or scan --verbose.\n");
+    text
+}
+
 fn render_inventory(inventory: &Inventory, text: &mut impl std::fmt::Write) {
     crate::presentation::write_discovery_performance(&inventory.coverage, text);
     if let Some(disk) = &inventory.disk_usage {

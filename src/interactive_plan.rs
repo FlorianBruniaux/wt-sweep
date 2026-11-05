@@ -57,19 +57,27 @@ pub fn select(inventory: &Inventory, input: &Path) -> Result<TargetMap, String> 
         }
     };
     let mut out = std::io::stderr().lock();
-    writeln!(out, "\nGUIDED ANALYSIS\nInventory: {}\n{} repository families; {} recorded worktrees.\nSaved disk measurements will not be refreshed.\nBranches below are local observations, not recommended cleanup decisions.\nRemote-tracking refs may be stale; no fetch is performed.\nChoose numbers or full refs, separated by spaces. 'more' shows the next page;\n'skip' leaves a family without integration targets; 'quit' cancels.\nNothing is selected by default.\n",
-        BytePath::from_path(input).display(), inventory.families.len(),
-        inventory.families.iter().map(|f| f.worktrees.len()).sum::<usize>()).map_err(io_error)?;
+    writeln!(
+        out,
+        "\nGUIDED ANALYSIS\nInventory: {}",
+        BytePath::from_path(input).display()
+    )
+    .map_err(io_error)?;
+    write!(out, "{}", wt_sweep::output::inventory_summary(inventory)).map_err(io_error)?;
+    writeln!(out, "Saved disk measurements will not be refreshed.\nSelect repositories first; only confirmed families receive current evidence collection.\nAll source rows and coverage remain in the report. Nothing is selected by default.\n").map_err(io_error)?;
+    let selected = select_families(inventory, &mut out, &answer)?;
+    writeln!(out, "\nChoose target numbers or full refs, separated by spaces.\n'more' pages refs; 'skip' leaves the family uncollected; 'quit' cancels.\nBranches are local observations, not cleanup decisions. Remote refs may be stale; no fetch.\n").map_err(io_error)?;
     let mut map = TargetMap {
         schema: TARGET_MAP_SCHEMA.into(),
         families: Vec::new(),
     };
-    for (index, family) in inventory.families.iter().enumerate() {
+    for (index, family_index) in selected.iter().enumerate() {
+        let family = &inventory.families[*family_index];
         writeln!(
             out,
             "Repository {}/{}: {}\n  {} recorded worktrees",
             index + 1,
-            inventory.families.len(),
+            selected.len(),
             family.common_dir.display(),
             family.worktrees.len()
         )
@@ -118,25 +126,13 @@ pub fn select(inventory: &Inventory, input: &Path) -> Result<TargetMap, String> 
         return Err("no targets selected; analysis cancelled, no report created".into());
     }
     writeln!(out, "\nCONFIRM TARGETS").map_err(io_error)?;
-    for family in &inventory.families {
-        let selected = map
-            .families
-            .iter()
-            .find(|f| f.common_dir == family.common_dir);
-        writeln!(out, "  {}", family.common_dir.display()).map_err(io_error)?;
-        match selected {
-            Some(entry) => {
-                for target in &entry.targets {
-                    writeln!(out, "    {}", target.display()).map_err(io_error)?;
-                }
-            }
-            None => writeln!(
-                out,
-                "    Skipped: no integration target; rows remain in the report."
-            )
-            .map_err(io_error)?,
+    for entry in &map.families {
+        writeln!(out, "  {}", entry.common_dir.display()).map_err(io_error)?;
+        for target in &entry.targets {
+            writeln!(out, "    {}", target.display()).map_err(io_error)?;
         }
     }
+    writeln!(out, "{} selected families; {} families not requested. Unrequested rows remain unknown in the report.", map.families.len(), inventory.families.len() - map.families.len()).map_err(io_error)?;
     prompt(&mut out, "Start read-only analysis? Type yes to confirm> ")?;
     if answer()? != "yes" {
         return Err("analysis not confirmed; no report created".into());
@@ -171,6 +167,95 @@ pub fn select(inventory: &Inventory, input: &Path) -> Result<TargetMap, String> 
         }
     }
     Ok(map)
+}
+
+fn select_families(
+    inventory: &Inventory,
+    out: &mut impl Write,
+    answer: &impl Fn() -> Result<String, String>,
+) -> Result<Vec<usize>, String> {
+    let mut matching: Vec<_> = (0..inventory.families.len()).collect();
+    // Non-bare families appear first, but bare repositories stay selectable.
+    matching.sort_by_key(|i| inventory.families[*i].worktrees.iter().all(|w| w.bare));
+    let all = matching.clone();
+    let mut page = 0;
+    loop {
+        writeln!(
+            out,
+            "\nREPOSITORIES: {} matching / {} recorded",
+            matching.len(),
+            all.len()
+        )
+        .map_err(io_error)?;
+        for i in matching.iter().skip(page * PAGE_SIZE).take(PAGE_SIZE) {
+            let family = &inventory.families[*i];
+            let bare = family.worktrees.iter().filter(|w| w.bare).count();
+            writeln!(
+                out,
+                "  {}. {} [worktrees: {}; bare records: {}]",
+                i + 1,
+                family.common_dir.display(),
+                family.worktrees.len() - bare,
+                bare
+            )
+            .map_err(io_error)?;
+        }
+        writeln!(out, "Choose numbers separated by spaces, or 'all' for matching families.\n'find TEXT' searches recorded paths; 'worktrees' lists non-bare families;\n'more' pages results; 'reset' restores all; 'quit' cancels.").map_err(io_error)?;
+        prompt(out, "Repositories> ")?;
+        let line = answer()?;
+        match line.as_str() {
+            "quit" => return Err("analysis cancelled; no report created".into()),
+            "more" => {
+                page = if (page + 1) * PAGE_SIZE < matching.len() {
+                    page + 1
+                } else {
+                    0
+                }
+            }
+            "reset" => {
+                matching = all.clone();
+                page = 0;
+            }
+            "worktrees" => {
+                matching = all
+                    .iter()
+                    .copied()
+                    .filter(|i| inventory.families[*i].worktrees.iter().any(|w| !w.bare))
+                    .collect();
+                page = 0;
+            }
+            "all" if !matching.is_empty() => return Ok(matching),
+            _ if line.starts_with("find ") => {
+                let query = line[5..].trim();
+                matching = all
+                    .iter()
+                    .copied()
+                    .filter(|i| {
+                        let f = &inventory.families[*i];
+                        !query.is_empty()
+                            && (f.common_dir.display().contains(query)
+                                || f.worktrees.iter().any(|w| w.path.display().contains(query)))
+                    })
+                    .collect();
+                page = 0;
+            }
+            _ => {
+                let choices: Option<BTreeSet<usize>> = line
+                    .split_whitespace()
+                    .map(|s| {
+                        s.parse::<usize>()
+                            .ok()
+                            .and_then(|n| n.checked_sub(1))
+                            .filter(|n| matching.contains(n))
+                    })
+                    .collect();
+                if let Some(choices) = choices.filter(|c| !c.is_empty()) {
+                    return Ok(choices.into_iter().collect());
+                }
+                writeln!(out, "No selection. Choose matching numbers, find TEXT, worktrees, all, more, reset or quit.").map_err(io_error)?;
+            }
+        }
+    }
 }
 
 fn binding(family: &Family, targets: Vec<BytePath>) -> TargetMapFamily {

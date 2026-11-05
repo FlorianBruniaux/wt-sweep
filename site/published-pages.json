@@ -41,7 +41,7 @@
   {
     "slug": "cli",
     "source": "docs/cli.md",
-    "sourceHash": "a9bf0d9aa5bcbd0a7b45908cd2d0fb2f014f9c0d5d19faf4aed1687a1ebf2002",
+    "sourceHash": "97f397873817b68c5d404c64f641c2be35de350a41799de3ed2fa63992bfb36c",
     "title": {
       "en": "CLI workflow",
       "fr": "Parcours CLI"
@@ -80,7 +80,7 @@
   {
     "slug": "targets",
     "source": "docs/targets-and-filters.md",
-    "sourceHash": "7ac55a9f8c60c8a4eb7ca6b1e48c56a7d93d51d726d807b0563ebd3586444c76",
+    "sourceHash": "ea8ad73e56801e77dfd741aa1a5f6f4ba3bd978c8f706fa299790c2ebdd925b3",
     "title": {
       "en": "Targets and focused reviews",
       "fr": "Cibles et analyses ciblées"
@@ -132,7 +132,7 @@
   {
     "slug": "changelog",
     "source": "CHANGELOG.md",
-    "sourceHash": "9bd4b301b74ef6360a75620e5a88c498ce4311decc7fd610511bbfce8108732d",
+    "sourceHash": "cc9ba47858b07c220caf68fe710ba374329260de08b65ddf3b9049441e2e4acb",
     "title": {
       "en": "Changelog",
       "fr": "Historique des changements"

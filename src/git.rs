@@ -569,6 +569,7 @@ fn run_bounded_inner(
         if started.elapsed() >= timeout {
             return Err(error("git_timeout", "Git read deadline exceeded".into()));
         }
+        let previous_progress = (written, out.len(), err.len());
         if let Some(writer) = stdin.as_mut() {
             for _ in 0..32 {
                 if written == input.len() {
@@ -615,6 +616,12 @@ fn run_bounded_inner(
         }
         if started.elapsed() >= timeout {
             return Err(error("git_timeout", "Git read deadline exceeded".into()));
+        }
+        // Reading output can unblock the child's input immediately. Retry a
+        // finite batch after progress; wait only when all streams would block.
+        // The deadline check still runs on every iteration.
+        if previous_progress != (written, out.len(), err.len()) {
+            continue;
         }
         // macOS socketpairs commonly buffer only 8KiB. Sleeping after EAGAIN
         // throttles each producer burst; readiness wakes as soon as more I/O

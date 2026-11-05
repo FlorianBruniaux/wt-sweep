@@ -101,9 +101,13 @@ fn render(review: &Review, rows: &[&ReviewItem], filtered: bool) -> String {
         .items
         .iter()
         .filter(|item| {
-            item.unknowns
-                .iter()
-                .any(|reason| reason == "Not selected for evidence collection (--worktree).")
+            item.unknowns.iter().any(|reason| {
+                matches!(
+                    reason.as_str(),
+                    "Not selected for evidence collection (--worktree)."
+                        | "Not selected for evidence collection (repository selection)."
+                )
+            })
         })
         .count();
     if not_requested > 0 {
@@ -735,9 +739,13 @@ fn compact(review: &Review, rows: &[&ReviewItem], executable: &BytePath) -> Stri
         .items
         .iter()
         .filter(|item| {
-            item.unknowns
-                .iter()
-                .any(|r| r == "Not selected for evidence collection (--worktree).")
+            item.unknowns.iter().any(|r| {
+                matches!(
+                    r.as_str(),
+                    "Not selected for evidence collection (--worktree)."
+                        | "Not selected for evidence collection (repository selection)."
+                )
+            })
         })
         .count();
     if not_requested > 0 {

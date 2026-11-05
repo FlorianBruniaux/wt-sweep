@@ -22,6 +22,8 @@ use targets::{FamilyTargets, TargetInput};
 pub struct ReviewOptions {
     /// Collect expensive evidence only for this exact recorded worktree.
     pub worktree: Option<BytePath>,
+    /// Explicit interactive family scope; omitted families retain unknown rows.
+    pub families: Option<BTreeSet<BytePath>>,
     pub comparison: Option<crate::local::comparison::CaptureStore>,
     pub evidence: ReviewLimits,
     pub budget_profile: &'static str,
@@ -35,6 +37,7 @@ impl Default for ReviewOptions {
     fn default() -> Self {
         Self {
             worktree: None,
+            families: None,
             comparison: None,
             evidence: ReviewLimits::default(),
             budget_profile: "standard",
@@ -1345,10 +1348,23 @@ fn collect_with_options(
 ) -> Result<Observations, SweepError> {
     limits.validate()?;
     let family_targets = FamilyTargets::bind_with(inventory, input, hooks)?;
-    let mut evidence_inventory = inventory.clone();
+    let mut control_inventory = inventory.clone();
+    if let Some(selected) = &options.families {
+        if selected.is_empty()
+            || selected
+                .iter()
+                .any(|path| !inventory.families.iter().any(|f| &f.common_dir == path))
+        {
+            return Err(error("repository selection must name recorded families"));
+        }
+        control_inventory
+            .families
+            .retain(|f| selected.contains(&f.common_dir));
+    }
+    let mut evidence_inventory = control_inventory.clone();
     if let Some(selected) = selected_worktree {
         if !selected.to_path()?.is_absolute()
-            || inventory
+            || evidence_inventory
                 .families
                 .iter()
                 .flat_map(|f| &f.worktrees)
@@ -1367,6 +1383,12 @@ fn collect_with_options(
             .families
             .retain(|f| !f.worktrees.is_empty());
     }
+    let requested_paths: BTreeSet<_> = evidence_inventory
+        .families
+        .iter()
+        .flat_map(|f| &f.worktrees)
+        .map(|w| w.path.clone())
+        .collect();
     if let Some(export) = forge {
         verify_forge(export)?;
     }
@@ -1374,7 +1396,7 @@ fn collect_with_options(
     let mut collection_metrics = options.metrics();
     let phase_started = Instant::now();
     progress(callback, "controls", 0, None);
-    let mut controls = control::ControlRun::collect(inventory, control_limits, hooks)?;
+    let mut controls = control::ControlRun::collect(&control_inventory, control_limits, hooks)?;
     record_phase(&mut collection_metrics, "controls", phase_started, []);
     let phase_started = Instant::now();
     let mut history = history::HistoryRun::collect(
@@ -1471,12 +1493,20 @@ fn collect_with_options(
         reader.git = ControlledGit::default();
         let family_id = (family.identity.device, family.identity.inode);
         let family_timeout = history.stopped_families.get(&family_id);
-        if family_timeout.is_some() || reader.expired() {
-            let reason = family_timeout
-                .map(family_timeout_reason)
-                .unwrap_or_else(|| {
-                    "whole-review time budget reached; family not revalidated".into()
-                });
+        let omitted_family = options
+            .families
+            .as_ref()
+            .is_some_and(|selected| !selected.contains(&family.common_dir));
+        if omitted_family || family_timeout.is_some() || reader.expired() {
+            let reason = if omitted_family {
+                "Not selected for evidence collection (repository selection).".into()
+            } else {
+                family_timeout
+                    .map(family_timeout_reason)
+                    .unwrap_or_else(|| {
+                        "whole-review time budget reached; family not revalidated".into()
+                    })
+            };
             for worktree in &family.worktrees {
                 items.push(ReviewItem {
                     worktree_state: controls.states.get(&worktree.path).cloned(),
@@ -1716,9 +1746,12 @@ fn collect_with_options(
         deep_auxiliary_processes += git.spawned_processes();
     }
     for item in &mut items {
-        if selected_worktree.is_some_and(|selected| selected != &item.path) {
+        if !requested_paths.contains(&item.path) {
             let omitted = "Not selected for evidence collection (--worktree).";
-            if !item.unknowns.iter().any(|reason| reason == omitted) {
+            if !item.unknowns.iter().any(|reason| {
+                reason == omitted
+                    || reason == "Not selected for evidence collection (repository selection)."
+            }) {
                 item.unknowns.push(omitted.into());
             }
             continue;
@@ -1801,7 +1834,7 @@ fn collect_with_options(
         history.metrics.first_pass_items,
         history.metrics.stop_reason.clone(),
     );
-    controls.finish(inventory, &history.stopped_families)?;
+    controls.finish(&control_inventory, &history.stopped_families)?;
     history
         .stopped_families
         .extend(controls.stopped_families.clone());
@@ -1825,9 +1858,7 @@ fn collect_with_options(
     history.reconcile_stopped(&evidence_inventory, &mut items);
     for item in &mut items {
         item.private_history = private.output.histories.remove(&item.path);
-        if item.private_history.is_none()
-            && selected_worktree.is_none_or(|selected| selected == &item.path)
-        {
+        if item.private_history.is_none() && requested_paths.contains(&item.path) {
             item.unknowns
                 .push("private history not collected: output byte budget reached".into());
         }
@@ -1884,7 +1915,7 @@ fn collect_with_options(
         progress(callback, "context", items.len() as u64, None);
         let context_items: Vec<_> = items
             .iter()
-            .filter(|item| selected_worktree.is_none_or(|selected| selected == &item.path))
+            .filter(|item| requested_paths.contains(&item.path))
             .cloned()
             .collect();
         Some(context::collect(

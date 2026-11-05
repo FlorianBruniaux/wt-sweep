@@ -552,6 +552,7 @@ pub fn verify(document: &Document, review: &Review) -> Result<(), SweepError> {
     }
     Ok(())
 }
+#[allow(clippy::too_many_arguments)]
 pub fn collect(
     inventory: &Inventory,
     review: &Review,
@@ -559,6 +560,7 @@ pub fn collect(
     captures: &CaptureStore,
     checkout: Option<&BytePath>,
     selected: Option<&BytePath>,
+    families: Option<&BTreeSet<BytePath>>,
     max_rows: usize,
 ) -> Result<Document, SweepError> {
     let phase_started = Instant::now();
@@ -591,6 +593,7 @@ pub fn collect(
     if inventory
         .families
         .iter()
+        .filter(|f| families.is_none_or(|chosen| chosen.contains(&f.common_dir)))
         .any(|f| targets.for_family(f).is_empty())
         && checkout.is_none()
     {
@@ -610,9 +613,17 @@ pub fn collect(
         items: Vec::new(),
         digest_sha256: String::new(),
     };
+    let requested_paths: BTreeSet<_> = inventory
+        .families
+        .iter()
+        .filter(|f| families.is_none_or(|chosen| chosen.contains(&f.common_dir)))
+        .flat_map(|f| &f.worktrees)
+        .map(|w| &w.path)
+        .collect();
     // Reserve bounded metadata first; details consume only the remaining run envelope.
     for source in &review.items {
-        let collection = if selected.is_some_and(|p| p != &source.path)
+        let collection = if !requested_paths.contains(&source.path)
+            || selected.is_some_and(|p| p != &source.path)
             || checkout == Some(&source.path)
             || checkout_binding.as_ref().is_some_and(|binding| {
                 inventory.families[0].worktrees.iter().any(|w| {
