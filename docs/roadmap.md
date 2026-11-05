@@ -2,6 +2,23 @@
 
 [Index documentaire](README.md) · [Preuves du triage](finish-ledger.md#triage-t01-t09) · [Plan T01-T09](superpowers/plans/2026-10-05-worktree-triage-v2.md)
 
+## Après alpha.4 : inventaires volumineux
+
+La sélection des dépôts précède celle des branches : recherche par chemin,
+pagination et sélection explicite des familles avec checkout. Les familles non
+retenues restent dans le rapport, sans collecte courante. Les scans sauvegardés
+séparent les compteurs de worktrees et de dépôts nus et regroupent les diagnostics.
+Ces corrections sont dans les sources, pas dans le paquet alpha.4 publié.
+
+La publication vérifie encore les limites de toutes les familles enregistrées.
+Un gros inventaire peut donc rester coûteux à publier, et une famille disparue
+ou remplacée impose un nouvel inventaire. Le sélecteur ne retire pas ces contrôles.
+Pour poursuivre après un nettoyage, refaire une revue ciblée du projet concerné.
+
+La suite opérationnelle reste la revue ciblée des projets les plus volumineux,
+puis la préparation séparée de lots de nettoyage. Les limites de découverte,
+les tailles partielles et le partage APFS ne permettent pas de promettre un gain.
+
 ## Alpha.4 : installation et analyse guidée, 03/11/2026
 
 Alpha.4 ajoute une installation persistante dans `~/.local`, avec vérification

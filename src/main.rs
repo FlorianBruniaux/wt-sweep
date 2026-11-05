@@ -202,7 +202,7 @@ fn command_help(command: &str) -> Result<(), String> {
         }
     };
     let guided = if command == "plan" {
-        "--interactive proposes locally recorded branches for each repository family.\nChoose numbers or full refs, then confirm the complete selection with yes.\nNo default; skip leaves integration unknown. quit, EOF or Ctrl-C cancel.\nRequires terminal stdin/stderr; conflicts with --target and --target-map.\nAdd --open to save and open HTML; --compare-local adds optional file comparisons.\nInteractive runs saved with --run-dir or --html also retain inventory.json.\n\n"
+        "--interactive selects repositories before proposing their locally recorded branches.\nRepositories: numbers, find TEXT, worktrees, all (matching), more, reset, quit.\nTargets: numbers or full refs; confirm with yes. No default; skip leaves the family uncollected. quit, EOF or Ctrl-C cancel.\nRequires terminal stdin/stderr; conflicts with --target and --target-map.\nAdd --open to save and open HTML; --compare-local adds optional file comparisons.\nInteractive runs saved with --run-dir or --html also retain inventory.json.\n\n"
     } else {
         ""
     };
@@ -285,16 +285,35 @@ fn scan(args: &[OsString]) -> Result<(), String> {
         }
     }
     progress.finish();
+    let compact = !opts.contains_key("--verbose")
+        && ["--out", "--run-dir", "--html"]
+            .iter()
+            .any(|flag| opts.contains_key(*flag));
+    let console = if compact {
+        let mut summary = wt_sweep::output::inventory_summary(&prepared.inventory);
+        if let Some(out) = one(&opts, "--out") {
+            summary.push_str(&format!(
+                "Inventory: {}\n",
+                BytePath::from_path(&out).display()
+            ));
+        }
+        if let Some(offset) = prepared.report.find("\nDiscovery checkpoint:") {
+            summary.push_str(&prepared.report[offset..]);
+        }
+        summary
+    } else {
+        prepared.report.clone()
+    };
     deliver(
         &opts,
         prepared.json,
-        prepared.report,
+        console,
         &boundaries,
         RunInfo {
             command: "scan",
             name: "inventory.json",
             partial: prepared.partial,
-            detail: None,
+            detail: Some(&prepared.report),
             inventory_json: None,
             html: html.as_deref(),
             comparison: None,
@@ -637,7 +656,19 @@ fn plan(args: &[OsString]) -> Result<(), String> {
     }
     let inventory: Inventory = serde_json::from_value(value).map_err(|e| e.to_string())?;
     if opts.contains_key("--interactive") {
-        settings.target_map = Some(interactive_plan::select(&inventory, &input)?);
+        let selected = interactive_plan::select(&inventory, &input)?;
+        settings.review_options.families = Some(
+            selected
+                .families
+                .iter()
+                .map(|f| f.common_dir.clone())
+                .collect(),
+        );
+        if selected.families.len() == 1 && settings.filters.repository.is_none() {
+            settings.filters.repository = Some(selected.families[0].common_dir.clone());
+            settings.use_view = true;
+        }
+        settings.target_map = Some(selected);
     }
     let mut progress = terminal::Progress::new(&opts);
     produce_review(&opts, inventory, settings, false, &mut progress)
@@ -870,6 +901,7 @@ fn produce_review(
                 store,
                 reference.as_ref(),
                 review_options.worktree.as_ref(),
+                review_options.families.as_ref(),
                 if review_options.budget_profile == "thorough" {
                     32768
                 } else {
@@ -978,6 +1010,15 @@ fn produce_review(
         || opts.contains_key("--run-dir")
         || opts.contains_key("--html")
     {
+        if opts.contains_key("--interactive") {
+            progress.update(
+                &format!(
+                    "Checking report destination against all {} recorded Git families...",
+                    inventory.families.len()
+                ),
+                true,
+            );
+        }
         wt_sweep::output::revalidate_boundaries(&inventory).map_err(|e| e.to_string())?
     } else {
         inventory

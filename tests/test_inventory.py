@@ -172,10 +172,10 @@ class InventoryTests(unittest.TestCase):
         self.assertIn(b"detached", output)
         self.assertIn(b"registered missing", output)
 
-    def test_explicit_out_writes_json_and_stdout_table_without_target_changes(self):
+    def test_explicit_out_verbose_writes_json_and_full_table_without_target_changes(self):
         destination = self.fixture.root / "inventory.json"
         before = self.fixture.target_manifest()
-        result = self.fixture.scan("--out", str(destination))
+        result = self.fixture.scan("--verbose", "--out", str(destination))
         self.assert_targets_unchanged(before)
         self.assertEqual(result.returncode, 0, result.stderr.decode(errors="replace"))
         self.assert_table(result.stdout)

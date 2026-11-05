@@ -9,7 +9,8 @@ All refs are local observations. The tool never fetches them.
 
 ## Guided selection
 
-Source builds after alpha.3 can replace the map-building Python script with:
+Alpha.4 supports guided target selection. Source builds after alpha.4 add repository
+selection first, so a large inventory does not require answering for every family:
 
 ```sh
 wt-sweep plan --inventory "$report_dir/inventory.json" \
@@ -17,11 +18,31 @@ wt-sweep plan --inventory "$report_dir/inventory.json" \
 ```
 
 Here `report_dir` is the existing run directory containing the inventory.
-The CLI lists locally recorded branches per physical family, with common branch
-names first. Choose displayed numbers or full refs, separated by spaces, then
+The inventory recap separates worktree records (including main checkouts) from
+bare repository records. A Git cache can contain thousands of bare repositories
+without occupying much disk space.
+
+At `Repositories>`, use:
+
+- `find MethodeAristote` to search displayed administration and worktree paths.
+- `worktrees` to list families with at least one non-bare checkout.
+- Numbers separated by spaces to choose matching families, or `all` for all matches.
+- `more` for the next page, `reset` for the full list, `quit` to cancel.
+
+Search is case-sensitive and uses the escaped paths shown by the CLI. Nothing
+is selected implicitly. Bare families remain available through search or reset.
+
+The CLI then lists locally recorded branches only for the chosen families, with
+common branch names first. Choose displayed numbers or full refs, separated by spaces, then
 confirm the complete selection with `yes`. There is no default target. `more`
-pages through long lists; `skip` leaves that family’s integration unknown;
-`quit`, EOF or Ctrl-C cancel before analysis. All rows remain in the report.
+pages through long lists; `skip` leaves that family uncollected;
+`quit`, EOF or Ctrl-C cancel before analysis. All rows remain in the report. Unselected and skipped families receive no current
+Git evidence collection; their rows say `Not selected for evidence collection
+(repository selection).` and cannot become cleanup candidates. Saved disk sizes
+still cover their original scope. Publication still checks every source family boundary. If a family disappeared
+or changed identity since the scan, create a fresh inventory before publication.
+The picker does not bypass these checks.
+Display filters remain separate from this collection scope.
 
 The prompts require a terminal on stdin and stderr. They do not fetch, infer a
 merge from a branch name or change the verdict policy. Ref and directory checks
@@ -144,3 +165,7 @@ not reduce collection. `plan --inventory` accepts the same budget selector.
 Larger allowances do not bypass access failures, missing objects, changed
 identities or unsupported index interpretation. Ignored files remain included.
 See [profile ceilings and metrics](cli.md#thorough-allowances).
+
+When exactly one family has confirmed targets, the report focuses on that family
+unless `--filter-repo` was supplied. The view retains the complete source review
+and its original disk scope. Other explicit view filters still apply.

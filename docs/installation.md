@@ -84,6 +84,18 @@ The terminal must be interactive. For automation, use explicit `--target` or
 Read `keep`, `verify` and `cleanup_candidate` together with the missing checks;
 this flow never removes a worktree.
 
+## Large inventories: source builds after alpha.4
+
+The released alpha.4 asks about every family. Newer source builds first ask
+`Repositories>`: enter `find PROJECT_NAME`, then choose numbers or `all` for the
+matching families. `worktrees` lists non-bare families; `reset` restores the full
+list. Only families with confirmed targets are collected. Other rows remain
+unknown, and saved disk measurements keep their original scope.
+
+Reuse the existing `inventory.json` with `plan --interactive --summary --open`;
+no new machine scan is required. Saved scans now summarize gap counts instead
+of printing every path; `--verbose` and the artifacts retain the details.
+
 ## Troubleshooting
 
 - **Command not found:** use `"$HOME/.local/bin/wt-sweep"` and check `--version`.
@@ -94,3 +106,7 @@ this flow never removes a worktree.
   does not overwrite an installed version.
 - **macOS blocks the downloaded binary:** retain the protection. Browser
   quarantine and Apple notarization are not qualified by the local archive test.
+
+When exactly one family has confirmed targets, the report focuses on that family
+unless `--filter-repo` was supplied. The view retains the complete source review
+and its original disk scope. Other explicit view filters still apply.

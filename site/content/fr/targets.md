@@ -33,3 +33,22 @@ Un filtre de présentation n’économise pas la collecte. Même une sélection 
 Lisez d’abord les limites signalées dans le rapport. Si le budget standard a été atteint, choisissez un nouveau dossier de sortie et relancez l’analyse du même worktree avec `--budget thorough`. Les limites augmentent, mais la collecte reste bornée : ce budget ne résout ni les refus d’accès, ni les objets absents, ni un changement d’identité. Les mesures disque ont leur propre `--disk-budget`.
 
 Lisez le résultat ciblé avant d’élargir le périmètre. Chaque exécution conserve ses dates et ses preuves. Vérifier si un agent ou un terminal utilise encore le worktree reste un contrôle distinct.
+
+## Sélection des dépôts après alpha.4
+
+Les sources après alpha.4 affichent `Repositories>` avant les branches.
+Utilisez `find NOM_DU_PROJET` pour chercher dans les chemins enregistrés, puis
+les numéros ou `all` pour les résultats. `worktrees` liste les familles avec
+checkout ; `more` change de page et `reset` réaffiche tout. Aucun choix par défaut.
+Seules les familles avec des cibles confirmées reçoivent une collecte courante.
+Les autres lignes restent inconnues dans la source. Un seul dépôt choisi ouvre
+une vue ciblée, sauf si `--filter-repo` est fourni. Les mesures disque gardent
+leur périmètre d’origine.
+
+Les scans sauvegardés séparent les compteurs de worktrees et de dépôts nus et
+regroupent les avertissements. Les détails restent dans les fichiers et dans
+la sortie `--verbose`.
+
+La publication vérifie toujours les limites de toutes les familles source. Une
+famille disparue ou remplacée impose un nouvel inventaire ; le sélecteur ne
+contourne pas ces contrôles.

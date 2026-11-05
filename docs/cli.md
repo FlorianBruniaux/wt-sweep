@@ -122,7 +122,7 @@ overwritten or removed.
 | Option | Behavior |
 | --- | --- |
 | `--inventory FILE` | Required saved `wt-sweep.inventory/1` artifact. |
-| `--interactive` | Source builds after alpha.3: propose current local and remote-tracking branches per recorded family, then require explicit selection and final `yes`. Terminal stdin/stderr required. Conflicts with `--target` and `--target-map`; only `plan` accepts it. |
+| `--interactive` | Alpha.4 proposes local branches. Source builds after alpha.4 first offer a paged repository picker (`find TEXT`, `worktrees`, numbers, `all`, `more`, `reset`), then branch selection and final `yes`. Only families with confirmed targets receive current evidence collection; all source rows remain. Terminal stdin/stderr required. Conflicts with `--target` and `--target-map`; only `plan` accepts it. |
 | `--target FULL_REF` | Explicit integration ref under `refs/heads/` or `refs/remotes/`; repeat for several. Requires one physical repository family. No default is guessed. |
 | `--target-map FILE` | `wt-sweep.targets/1` mapping of physical families to explicit refs. Cannot combine with `--target`. Missing families get no target. |
 | `--budget PROFILE` | `standard` by default; `thorough` selects larger finite local, history, deep-object and private-history allowances. Available on `review` and `plan`, not `scan` or forge commands. |
@@ -139,7 +139,7 @@ overwritten or removed.
 | `--changelog-path RELATIVE` | Read this tracked path at each recorded HEAD; repeat to replace the default changelog paths. Paths are relative to the repository root. |
 | `--no-context` | Skip optional commit samples, changelog reads and remote-link metadata. Cannot combine with `--changelog-path`. Decisions and their required checks remain the same. |
 | `--summary` | Print a short recap of verdicts, disk sizes and coverage; incompatible with `--format json`. |
-| `--verbose` | Show detailed progress, disk paths and recap metrics. Also accepted by `scan`. |
+| `--verbose` | Show detailed progress, disk paths and recap metrics. Saved scans show a compact inventory recap by default; `scan --verbose` restores full paths and individual gaps. Saved JSON and report details retain those gaps. |
 | `--color auto\|always\|never` | Control terminal colors and icons; default `auto`. Also accepted by `scan`. |
 
 For a saved multi-project inventory, use:

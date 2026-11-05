@@ -33,3 +33,19 @@ Presentation filters do not save collection work. Even an empty selection retain
 Read the saved gaps first. If standard collection caps are the cause, choose a new output and retry the same exact worktree with `--budget thorough`. Collection remains bounded by higher limits; they do not fix access denial, missing objects or changed identities. Disk has its independent `--disk-budget`.
 
 Read the focused result before widening the scope. Each run keeps its own dates and evidence. Usage by agents and terminals remains a separate check.
+
+## Repository selection after alpha.4
+
+Source builds after alpha.4 ask `Repositories>` before listing branches.
+Use `find PROJECT_NAME` to search recorded paths, then choose numbers or `all`
+for matches. `worktrees` lists families with non-bare checkouts; `more` pages
+results and `reset` restores the full list. Nothing is selected by default.
+Only families with confirmed targets receive current evidence collection.
+Other rows remain unknown in the source. A single chosen family opens a focused
+view, unless `--filter-repo` was supplied. Saved disk sizes keep their original scope.
+
+Saved scans show separate worktree and bare-repository counts and grouped gaps.
+Full paths and diagnostics remain in the artifacts and `--verbose` output.
+
+Publication still verifies every source family boundary. A disappeared or replaced
+family requires a fresh inventory; the picker does not bypass these checks.

@@ -86,6 +86,7 @@ impl Fixture {
             &store,
             None,
             options.worktree.as_ref(),
+            options.families.as_ref(),
             4096,
         )
         .unwrap_or_else(|e| panic!("{e}"));
@@ -242,6 +243,7 @@ fn final_source_payload_mutation_cannot_reuse_a_previous_positive_capture() {
         &store,
         None,
         options.worktree.as_ref(),
+        options.families.as_ref(),
         4096,
     )
     .unwrap_or_else(|e| panic!("{e}"));
@@ -289,6 +291,7 @@ fn omitted_projection_paths_never_become_a_complete_zero() {
         &store,
         None,
         options.worktree.as_ref(),
+        options.families.as_ref(),
         4096,
     )
     .unwrap_or_else(|e| panic!("{e}"));

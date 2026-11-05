@@ -174,7 +174,13 @@ Depuis le checkout compilé, saisissez le chemin de votre `inventory.json` :
 )
 ```
 
-Choisissez les numéros ou les refs complètes par dépôt, puis confirmez le bilan
+Les sources après alpha.4 demandent d’abord quels dépôts analyser :
+`find NOM_DU_PROJET`, puis les numéros ou `all` pour les résultats.
+`worktrees` liste les familles avec checkout ; `reset` réaffiche toutes les familles.
+Les dépôts non choisis restent dans le rapport avec des preuves non collectées.
+Voir [la sélection des dépôts](docs/targets-and-filters.md#guided-selection).
+
+Choisissez les numéros ou les refs complètes par dépôt sélectionné, puis confirmez le bilan
 avec `yes`. Aucune cible n’est présélectionnée. `skip` passe un dépôt en laissant
 son intégration inconnue ; `quit` annule. L’analyse relit les preuves courantes,
 garde les mesures disque capturées et ouvre un nouveau rapport HTML. Aucun

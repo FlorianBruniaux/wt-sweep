@@ -170,7 +170,12 @@ Run in a terminal and enter the path to your saved `inventory.json`:
 )
 ```
 
-Choose branch numbers or full refs for each repository, then confirm the recap
+Source builds after alpha.4 first ask which repositories to analyze. Use
+`find PROJECT_NAME`, then numbers or `all` for matches. `worktrees` lists families
+with non-bare checkouts; `reset` restores all families. Unchosen families remain
+in the report with uncollected evidence. See [repository selection](docs/targets-and-filters.md#guided-selection).
+
+Choose branch numbers or full refs for each chosen repository, then confirm the recap
 with `yes`. Nothing is preselected. `skip` leaves that repository without an
 integration target; `quit` cancels. The analysis reads current evidence, keeps
 the captured disk measurements and opens a new HTML report. No Python script or

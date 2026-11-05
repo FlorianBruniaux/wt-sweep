@@ -76,3 +76,16 @@ Add `--compare-reference ABSOLUTE_PATH` only for a different checkout in the
 same physical Git family. Self-comparison, path aliases and ambiguous families
 are refused. The linked `local-comparison.json` retains exact matches, differences,
 unknowns and coverage. It does not change the CLI verdicts.
+
+## Repository selection after alpha.4
+
+Source builds after alpha.4 ask `Repositories>` before listing branches.
+Use `find PROJECT_NAME` to search recorded paths, then choose numbers or `all`
+for matches. `worktrees` lists families with non-bare checkouts; `more` pages
+results and `reset` restores the full list. Nothing is selected by default.
+Only families with confirmed targets receive current evidence collection.
+Other rows remain unknown in the source. A single chosen family opens a focused
+view, unless `--filter-repo` was supplied. Saved disk sizes keep their original scope.
+
+Saved scans show separate worktree and bare-repository counts and grouped gaps.
+Full paths and diagnostics remain in the artifacts and `--verbose` output.

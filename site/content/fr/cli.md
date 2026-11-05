@@ -77,3 +77,18 @@ Ajoutez `--compare-local` à la commande ci-dessus, en gardant `--open` ou `--ht
 Git physique. L’auto-comparaison, ses alias et les familles ambiguës sont refusés.
 Le fichier lié `local-comparison.json` conserve égalités, différences, inconnues
 et couverture. Il ne change pas les verdicts CLI.
+
+## Sélection des dépôts après alpha.4
+
+Les sources après alpha.4 affichent `Repositories>` avant les branches.
+Utilisez `find NOM_DU_PROJET` pour chercher dans les chemins enregistrés, puis
+les numéros ou `all` pour les résultats. `worktrees` liste les familles avec
+checkout ; `more` change de page et `reset` réaffiche tout. Aucun choix par défaut.
+Seules les familles avec des cibles confirmées reçoivent une collecte courante.
+Les autres lignes restent inconnues dans la source. Un seul dépôt choisi ouvre
+une vue ciblée, sauf si `--filter-repo` est fourni. Les mesures disque gardent
+leur périmètre d’origine.
+
+Les scans sauvegardés séparent les compteurs de worktrees et de dépôts nus et
+regroupent les avertissements. Les détails restent dans les fichiers et dans
+la sortie `--verbose`.
